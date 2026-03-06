@@ -21,12 +21,12 @@ function App() {
           setIsHealthy(true);
         } else {
           console.error(`API Health Check Failed: ${r.status} ${r.statusText}`);
-          setApiStatus('API: Down');
+          setApiStatus(`API: ${r.status} ${r.statusText}`);
           setIsHealthy(false);
         }
       } catch (err) {
         console.error('API Health Check Exception:', err);
-        setApiStatus('API: Down');
+        setApiStatus(`API: Connection Error`);
         setIsHealthy(false);
       }
     };

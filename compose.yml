@@ -14,6 +14,9 @@ services:
       PORT: "3000"
       DB_PATH: /data/db/expenses.sqlite
       RECEIPT_DIR: /data/receipts
+      # Add Supabase credentials here (or in .env)
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-}
     volumes:
       - ./data/db:/data/db
       - ./data/receipts:/data/receipts
@@ -27,7 +30,7 @@ services:
 
   expense_web:
     build:
-      context: ./web
+      context: ./web-react
       dockerfile: Dockerfile
     container_name: expense_web
     restart: unless-stopped
