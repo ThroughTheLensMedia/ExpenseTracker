@@ -18,10 +18,19 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 // Ensure URL is valid before creating client
 let supabase;
 try {
-  if (SUPABASE_URL) {
+  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
     supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   } else {
-    supabase = { from: () => ({ select: () => ({ throwOnError: () => ({ data: [], error: "DB NOT CONFIGURED" }) }) }) };
+    // Return a proxy to prevent crashes on chained calls like supabase.from().select().order()...
+    const mock = () => mock;
+    supabase = new Proxy({}, {
+      get: () => {
+        return new Proxy(() => { }, {
+          get: () => mock,
+          apply: () => new Proxy({}, { get: () => mock })
+        });
+      }
+    });
   }
 } catch (e) {
   console.error("Failed to initialize Supabase client:", e);
