@@ -67,15 +67,24 @@ const RECEIPT_DIR = process.env.RECEIPT_DIR || (process.env.VERCEL ? "/tmp/recei
 if (!fs.existsSync(RECEIPT_DIR)) fs.mkdirSync(RECEIPT_DIR, { recursive: true });
 app.use("/receipts", express.static(RECEIPT_DIR));
 
-// Healthcheck
-app.get("/health", (_req, res) => res.json({ ok: true }));
-
 // Routing
+const apiRouter = express.Router();
+apiRouter.use("/expenses", expenseRouter);
+apiRouter.use("/tax", taxRouter);
+apiRouter.use("/import", importRouter);
+apiRouter.use("/receipts", receiptsRouter);
+apiRouter.use("/rules", rulesRouter);
+apiRouter.get("/health", (_req, res) => res.json({ ok: true }));
+
+app.use("/api", apiRouter);
+
+// Fallback for non-prefixed paths (for legacy/local support)
 app.use("/expenses", expenseRouter);
 app.use("/tax", taxRouter);
 app.use("/import", importRouter);
 app.use("/receipts", receiptsRouter);
 app.use("/rules", rulesRouter);
+app.get("/health", (_req, res) => res.json({ ok: true }));
 
 // Global Error Handler
 app.use((err, req, res, next) => {
