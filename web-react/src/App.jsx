@@ -20,10 +20,12 @@ function App() {
           setApiStatus('API: OK');
           setIsHealthy(true);
         } else {
+          console.error(`API Health Check Failed: ${r.status} ${r.statusText}`);
           setApiStatus('API: Down');
           setIsHealthy(false);
         }
       } catch (err) {
+        console.error('API Health Check Exception:', err);
         setApiStatus('API: Down');
         setIsHealthy(false);
       }

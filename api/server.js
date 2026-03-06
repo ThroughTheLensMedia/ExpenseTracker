@@ -24,6 +24,12 @@ initDb();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Debug log for Vercel
+app.use((req, res, next) => {
+  console.log(`[API] ${req.method} ${req.path}`);
+  next();
+});
+
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: "10mb" }));
 
