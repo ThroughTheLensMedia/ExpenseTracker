@@ -55,7 +55,8 @@ if (REQUIRE_CF_JWT) {
   }
 
   app.use((req, res, next) => {
-    if (req.path === "/health") return next(); // allow healthcheck
+    // Correctly bypass health check even with /api prefix
+    if (req.path === "/health" || req.path === "/api/health") return next();
 
     const token = req.cookies?.CF_Authorization || req.headers["cf-access-jwt-assertion"];
     if (!token) return res.status(403).json({ error: "Missing Cloudflare Access Token" });
@@ -70,37 +71,51 @@ if (REQUIRE_CF_JWT) {
 
 // Serve static receipts
 const RECEIPT_DIR = process.env.RECEIPT_DIR || (process.env.VERCEL ? "/tmp/receipts" : path.join(__dirname, "receipts"));
-if (!fs.existsSync(RECEIPT_DIR)) fs.mkdirSync(RECEIPT_DIR, { recursive: true });
+try {
+  if (!fs.existsSync(RECEIPT_DIR)) fs.mkdirSync(RECEIPT_DIR, { recursive: true });
+} catch (e) {
+  console.error("Failed to create receipts directory:", e);
+}
 app.use("/receipts", express.static(RECEIPT_DIR));
 
 // Routing
 const apiRouter = express.Router();
+
+// Health check inside apiRouter for /api/health
+apiRouter.get("/health", (_req, res) => res.json({ ok: true, environment: process.env.VERCEL ? "vercel" : "local" }));
+
+// Standard routes
 apiRouter.use("/expenses", expenseRouter);
 apiRouter.use("/tax", taxRouter);
 apiRouter.use("/import", importRouter);
 apiRouter.use("/receipts", receiptsRouter);
 apiRouter.use("/rules", rulesRouter);
-apiRouter.get("/health", (_req, res) => res.json({ ok: true }));
 
+// Mount all API routes under /api
 app.use("/api", apiRouter);
 
-// Fallback for non-prefixed paths (for legacy/local support)
-app.use("/expenses", expenseRouter);
-app.use("/tax", taxRouter);
-app.use("/import", importRouter);
-app.use("/receipts", receiptsRouter);
-app.use("/rules", rulesRouter);
+// Top-level health check (for convenience)
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
-// Global Error Handler
+// Global Error Handler - Very Verbose for Vercel Debugging
 app.use((err, req, res, next) => {
-  console.error("Unhandled error:", err);
-  res.status(500).json({ error: "Internal Server Error" });
+  console.error("--- UNHANDLED ERROR ---");
+  console.error("Path:", req.path);
+  console.error("Error:", err);
+  if (err.stack) console.error(err.stack);
+  console.error("-----------------------");
+
+  res.status(500).json({
+    error: "Internal Server Error",
+    message: err.message,
+    path: req.path,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
 });
 
 module.exports = app;
 
-if (process.env.NODE_ENV !== "production") {
+if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`API listening on port ${PORT}`);
     if (REQUIRE_CF_JWT) console.log("Cloudflare JWT Verification ENABLED.");
