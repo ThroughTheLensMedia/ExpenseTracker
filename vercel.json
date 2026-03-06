@@ -16,15 +16,15 @@
     "rewrites": [
         {
             "source": "/api/(.*)",
-            "destination": "/api/server.js"
+            "destination": "api/server.js"
         },
         {
             "source": "/(.*)",
-            "destination": "/web-react/$1"
+            "destination": "web-react/dist/$1"
         },
         {
             "source": "/(.*)",
-            "destination": "/web-react/index.html"
+            "destination": "web-react/dist/index.html"
         }
     ]
 }
