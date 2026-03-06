@@ -1,0 +1,1048 @@
+<!--
+Expense Tracker — index.html
+Version: v2.2.0
+Changes (from v2.1.1):
+- Title updated to "Expense Tracker v2026"
+- Added 📊 favicon (SVG data URI)
+- Removed subtitle ("Single-user — tax-ready first")
+- Ensured header never overflows (tabs horizontal-scroll; actions wrap; no off-screen pills)
+- API indicator remains footer-only
+- Kept mobile transactions Option B (cards on phones)
+-->
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Expense Tracker v2026</title>
+
+  <!-- 📊 favicon via inline SVG -->
+  <link rel="icon" type="image/svg+xml"
+    href='data:image/svg+xml;utf8,
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">
+  <rect width="64" height="64" rx="14" fill="%230b1230"/>
+  <text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle" font-size="34">📊</text>
+</svg>' />
+
+  <style>
+    :root{
+      --bg0:#060a14;
+      --bg1:#0b1230;
+      --card:#0d1636cc;
+      --card2:#0a122bcc;
+      --line:rgba(255,255,255,.10);
+      --line2:rgba(255,255,255,.14);
+      --txt:#e9eefc;
+      --muted:rgba(233,238,252,.70);
+      --muted2:rgba(233,238,252,.55);
+      --accent:#4f7dff;
+      --accent2:#39d0ff;
+      --good:#3ad39f;
+      --warn:#ffcc66;
+      --bad:#ff5a7a;
+      --shadow:0 14px 60px rgba(0,0,0,.45);
+      --r:18px;
+      --r2:14px;
+      --pad:18px;
+      --pad2:14px;
+      --chip:rgba(255,255,255,.07);
+      --chip2:rgba(255,255,255,.10);
+      --focus:0 0 0 3px rgba(79,125,255,.25);
+      --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --maxw:1240px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:var(--font);
+      color:var(--txt);
+      background:
+        radial-gradient(1200px 700px at 15% 10%, rgba(79,125,255,.22), transparent 55%),
+        radial-gradient(900px 600px at 85% 15%, rgba(57,208,255,.18), transparent 55%),
+        radial-gradient(1000px 700px at 70% 85%, rgba(58,211,159,.14), transparent 60%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      overflow-x:hidden;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    }
+
+    .shell{max-width:var(--maxw); margin:0 auto; padding:18px 16px 92px}
+
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:14px;
+      border:1px solid var(--line);
+      border-radius:22px;
+      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      box-shadow:var(--shadow);
+      position:sticky;
+      top:0;
+      z-index:10;
+      backdrop-filter: blur(10px);
+      min-width:0;
+      flex-wrap:wrap; /* critical: prevents overflow */
+    }
+
+    .brand{
+      display:flex; align-items:center; gap:10px;
+      min-width:0;
+      flex: 0 1 auto;
+    }
+    .dot{
+      width:10px; height:10px; border-radius:999px;
+      background: radial-gradient(circle at 30% 30%, #fff, var(--accent));
+      box-shadow:0 0 0 3px rgba(79,125,255,.18);
+      flex:0 0 auto;
+    }
+    .brand h1{
+      font-size:16px;
+      letter-spacing:.2px;
+      margin:0;
+      font-weight:650;
+      white-space:nowrap;
+    }
+
+    /* tabs row grows but never forces overflow */
+    .tabRow{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex: 1 1 520px;
+      min-width: 0;
+    }
+
+    .tabs{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      flex-wrap:nowrap;
+      overflow-x:auto;
+      -webkit-overflow-scrolling:touch;
+      max-width: 100%;
+      padding-bottom:2px;
+      scrollbar-width:thin;
+      min-width:0;
+    }
+    .tabs::-webkit-scrollbar{height:6px}
+    .tabs::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14); border-radius:999px}
+    .tabs::-webkit-scrollbar-track{background:transparent}
+
+    .tab{
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      color:var(--txt);
+      padding:8px 12px;
+      border-radius:999px;
+      cursor:pointer;
+      font-size:13px;
+      letter-spacing:.2px;
+      transition: transform .08s ease, background .2s ease, border-color .2s ease;
+      user-select:none;
+      white-space:nowrap;
+      flex:0 0 auto;
+    }
+    .tab:hover{background:rgba(255,255,255,.06); transform: translateY(-1px)}
+    .tab.active{border-color:rgba(79,125,255,.45); background:rgba(79,125,255,.18)}
+    .tab:focus{outline:none; box-shadow:var(--focus)}
+
+    /* action row always wraps instead of pushing off-screen */
+    .btnRow{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex: 0 1 auto;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      margin-left:auto;
+      min-width: 0;
+    }
+    .btn{
+      border:1px solid var(--line2);
+      background:rgba(255,255,255,.05);
+      color:var(--txt);
+      padding:9px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:600;
+      letter-spacing:.2px;
+      transition: transform .08s ease, background .2s ease;
+      white-space:nowrap;
+    }
+    .btn:hover{background:rgba(255,255,255,.08); transform: translateY(-1px)}
+    .btn.primary{
+      border-color:rgba(79,125,255,.55);
+      background:linear-gradient(180deg, rgba(79,125,255,.45), rgba(79,125,255,.20));
+    }
+
+    .pill{
+      font-size:12px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      color:var(--muted);
+      white-space:nowrap;
+    }
+    .mono{font-family:var(--mono)}
+
+    /* Footer (API indicator lives here) */
+    .footer{
+      position:fixed;
+      left:0; right:0;
+      bottom:0;
+      z-index:20;
+      padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+      background: linear-gradient(180deg, rgba(6,10,20,.0), rgba(6,10,20,.88) 35%, rgba(6,10,20,.92));
+      backdrop-filter: blur(10px);
+      border-top:1px solid rgba(255,255,255,.08);
+    }
+    .footerInner{
+      max-width:var(--maxw);
+      margin:0 auto;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding: 10px 12px;
+      border:1px solid rgba(255,255,255,.10);
+      border-radius: 16px;
+      background: rgba(255,255,255,.03);
+    }
+    .footerLeft{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+    .footerRight{display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end}
+    .linkBtn{
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.04);
+      color:var(--txt);
+      padding:7px 10px;
+      border-radius:999px;
+      cursor:pointer;
+      font-size:12px;
+      white-space:nowrap;
+    }
+
+    /* Main layout */
+    .grid{
+      margin-top:16px;
+      display:grid;
+      grid-template-columns: 360px 1fr;
+      gap:16px;
+      align-items:stretch;
+    }
+    .panel{
+      border:1px solid var(--line);
+      border-radius:22px;
+      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .panelHead{
+      padding:14px 14px 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      border-bottom:1px solid var(--line);
+    }
+    .panelHead h2{
+      margin:0;
+      font-size:13px;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      color:rgba(233,238,252,.82);
+      font-weight:800;
+    }
+    .panelBody{padding:14px}
+    .muted{color:var(--muted); font-size:13px; line-height:1.35}
+    .hint{color:var(--muted2); font-size:12px; line-height:1.35}
+
+    .kpiGrid{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap:10px;
+      margin-top:10px;
+    }
+    .kpi{
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      border-radius:14px;
+      padding:10px 12px;
+    }
+    .kpi .label{font-size:12px; color:var(--muted2); margin-bottom:5px}
+    .kpi .value{font-size:18px; font-weight:800; letter-spacing:.3px}
+    .kpi.warn .value{color:var(--warn)}
+
+    label{display:block; font-size:12px; color:var(--muted2); margin-bottom:6px}
+    input, select, textarea{
+      width:100%;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(10,16,40,.6);
+      color:var(--txt);
+      padding:10px 10px;
+      border-radius:12px;
+      outline:none;
+      font-size:14px;
+    }
+    textarea{min-height:62px; resize:vertical}
+    input:focus, select:focus, textarea:focus{box-shadow:var(--focus); border-color:rgba(79,125,255,.35)}
+    .row{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+    .splitBtn{display:flex; gap:10px}
+    .splitBtn .btn{flex:1}
+    .divider{height:1px; background:var(--line); margin:14px 0}
+
+    .notice{
+      border:1px solid rgba(79,125,255,.25);
+      background:rgba(79,125,255,.09);
+      padding:10px 12px;
+      border-radius:14px;
+      color:rgba(233,238,252,.85);
+      font-size:12px;
+      line-height:1.35;
+    }
+    .error{
+      border:1px solid rgba(255,90,122,.35);
+      background:rgba(255,90,122,.10);
+      padding:10px 12px;
+      border-radius:14px;
+      color:rgba(255,210,220,.95);
+      font-size:12px;
+      line-height:1.35;
+      white-space:pre-wrap;
+    }
+
+    .filters{
+      display:grid;
+      grid-template-columns: 160px 160px 180px 180px 1fr 140px auto auto;
+      gap:10px;
+      align-items:end;
+      margin-bottom:12px;
+    }
+    .filters .btn{height:40px}
+
+    .tableWrap{
+      border:1px solid var(--line);
+      border-radius:16px;
+      overflow:hidden;
+      background:rgba(0,0,0,.12);
+    }
+    table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      font-size:13px;
+    }
+    thead th{
+      position:sticky;
+      top:0;
+      z-index:2;
+      background:rgba(10,16,40,.85);
+      border-bottom:1px solid var(--line);
+      color:rgba(233,238,252,.86);
+      text-align:left;
+      padding:10px 10px;
+      font-weight:800;
+      font-size:12px;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+    tbody td{
+      padding:10px 10px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      color:rgba(233,238,252,.88);
+      vertical-align:top;
+    }
+    tbody tr:hover td{background:rgba(255,255,255,.03)}
+    .right{text-align:right}
+
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      background:rgba(255,255,255,.07);
+      border:1px solid rgba(255,255,255,.10);
+      font-size:12px;
+      color:rgba(233,238,252,.85);
+      white-space:nowrap;
+    }
+    .chip.good{border-color:rgba(58,211,159,.28); background:rgba(58,211,159,.10); color:rgba(195,255,235,.95)}
+    .chip.bad{border-color:rgba(255,90,122,.28); background:rgba(255,90,122,.10); color:rgba(255,210,220,.95)}
+
+    /* Mobile card layout (Option B) */
+    .cards{display:none}
+    .cardItem{
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:12px 12px;
+      background:rgba(255,255,255,.04);
+      margin-bottom:10px;
+    }
+    .cardTop{display:flex; justify-content:space-between; gap:12px; align-items:flex-start}
+    .cardTop .date{font-weight:800}
+    .cardTop .amt{font-weight:900}
+    .cardMeta{margin-top:6px; color:var(--muted); font-size:13px; line-height:1.25}
+    .cardMeta b{color:rgba(233,238,252,.9)}
+    .cardActions{margin-top:10px; display:flex; gap:10px}
+    .cardActions .btn{flex:1}
+
+    [data-view]{display:none}
+    [data-view].active{display:block}
+
+    @media (max-width: 1040px){
+      .grid{grid-template-columns: 1fr}
+      .filters{grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 720px){
+      .shell{padding:12px 10px 104px}
+      .filters{grid-template-columns:1fr}
+      .tableWrap{display:none}
+      .cards{display:block}
+      .kpiGrid{grid-template-columns:1fr}
+      .footerInner{flex-direction:column; align-items:flex-start}
+      .footerRight{justify-content:flex-start}
+    }
+  </style>
+</head>
+
+<body>
+  <div class="shell">
+
+    <div class="topbar">
+      <div class="brand">
+        <span class="dot"></span>
+        <div>
+          <h1>Expense Tracker</h1>
+        </div>
+      </div>
+
+      <div class="tabRow">
+        <div class="tabs" role="tablist" aria-label="Pages">
+          <button class="tab active" data-tab="dashboard">Dashboard</button>
+          <button class="tab" data-tab="transactions">Transactions</button>
+          <button class="tab" data-tab="import">Import</button>
+          <button class="tab" data-tab="review">Review</button>
+          <button class="tab" data-tab="reports">Reports</button>
+          <button class="tab" data-tab="tax">Tax</button>
+          <button class="tab" data-tab="backup">Backup</button>
+          <button class="tab" data-tab="invoices">Invoices</button>
+        </div>
+      </div>
+
+      <div class="btnRow">
+        <button class="btn" id="refreshBtn">Refresh</button>
+        <button class="btn" id="downloadBtn">Download CSV</button>
+      </div>
+    </div>
+
+    <div class="grid">
+
+      <!-- LEFT -->
+      <div class="panel">
+        <div class="panelHead">
+          <h2>Dashboard</h2>
+          <span class="pill" id="selectedIdPill">None</span>
+        </div>
+        <div class="panelBody">
+
+          <div class="notice">
+            <strong>Receipt SOP</strong> — import RM CSV → review high-dollar items → attach receipt (&gt;$75) → export reports for taxes.
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="muted"><b>Selected transaction</b></div>
+          <div style="height:10px"></div>
+
+          <div class="row">
+            <div>
+              <label>Date</label>
+              <input id="fDate" type="date" />
+            </div>
+            <div>
+              <label>Amount (USD) — negative = income</label>
+              <input id="fAmount" type="number" step="0.01" placeholder="12.34 or -1200.00" />
+            </div>
+          </div>
+
+          <div style="height:10px"></div>
+
+          <div class="row">
+            <div>
+              <label>Vendor</label>
+              <input id="fVendor" type="text" placeholder="Vendor" />
+            </div>
+            <div>
+              <label>Category</label>
+              <input id="fCategory" type="text" placeholder="Category" />
+            </div>
+          </div>
+
+          <div style="height:10px"></div>
+
+          <div class="row">
+            <div>
+              <label>Notes</label>
+              <textarea id="fNotes" placeholder="What was it for?&#10;Client? Project? Location?"></textarea>
+            </div>
+            <div>
+              <label>Receipt link (Google Drive URL — optional)</label>
+              <input id="fReceiptLink" type="url" placeholder="https://drive.google.com/..." />
+              <div style="height:10px"></div>
+              <button class="btn" id="openLinkBtn">Open link</button>
+            </div>
+          </div>
+
+          <div style="height:12px"></div>
+          <div class="splitBtn">
+            <button class="btn primary" id="saveBtn">Save (create or update)</button>
+            <button class="btn" id="newBtn">New</button>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="muted"><b>Receipt (PDF/JPG/PNG/WEBP)</b> — attach if &gt;$75</div>
+          <div style="height:10px"></div>
+          <input id="receiptFile" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/*" />
+          <div style="height:10px"></div>
+          <div class="splitBtn">
+            <button class="btn" id="uploadReceiptBtn">Upload receipt</button>
+            <button class="btn" id="openReceiptBtn">Open receipt</button>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="muted"><b>Import (Rocket Money CSV)</b></div>
+          <div class="hint" style="margin-top:6px">
+            Uses RM headers: <b>Date</b>, <b>Name</b>, <b>Amount</b>, <b>Category</b>, <b>Account</b>, <b>Tags</b>, <b>Notes</b>, <b>Group</b>, <b>Type</b>, <b>Status</b>.
+            Import is conservative — preview first, then bulk import.
+          </div>
+
+          <div style="height:10px"></div>
+          <input id="rmFile" type="file" accept=".csv,text/csv" />
+
+          <div style="height:10px"></div>
+          <div class="splitBtn">
+            <button class="btn" id="rmPreviewBtn">Preview</button>
+            <button class="btn primary" id="rmImportBtn">Import to tracker</button>
+          </div>
+          <div id="rmStatus" class="hint" style="margin-top:8px"></div>
+
+          <div class="divider"></div>
+
+          <div class="muted"><b>Charts (MVP)</b></div>
+          <div class="kpiGrid">
+            <div class="kpi">
+              <div class="label">Total expenses (filtered)</div>
+              <div class="value" id="kpiExp">$0.00</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Receipts attached</div>
+              <div class="value" id="kpiReceipts">0</div>
+            </div>
+            <div class="kpi warn">
+              <div class="label">Over $75 without receipt</div>
+              <div class="value" id="kpiOver75">0</div>
+            </div>
+          </div>
+
+          <div id="leftMsg" style="margin-top:12px"></div>
+        </div>
+      </div>
+
+      <!-- RIGHT -->
+      <div class="panel">
+        <div class="panelHead">
+          <h2 id="panelTitle">Transactions</h2>
+          <span class="pill" id="rowCountPill">0 rows</span>
+        </div>
+
+        <div class="panelBody">
+
+          <div data-view="dashboard" class="active">
+            <div class="filters">
+              <div>
+                <label>Start</label>
+                <input id="qStart" type="date" />
+              </div>
+              <div>
+                <label>End</label>
+                <input id="qEnd" type="date" />
+              </div>
+              <div>
+                <label>Category</label>
+                <input id="qCategory" type="text" placeholder="Exact match" />
+              </div>
+              <div>
+                <label>Vendor</label>
+                <input id="qVendor" type="text" placeholder="Exact match" />
+              </div>
+              <div>
+                <label>Search (vendor/notes)</label>
+                <input id="qSearch" type="text" placeholder="e.g. Starbucks" />
+              </div>
+              <div>
+                <label>Has receipt</label>
+                <select id="qHasReceipt">
+                  <option value="any">Any</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
+              </div>
+              <button class="btn primary" id="applyBtn">Apply</button>
+              <button class="btn" id="clearBtn">Clear</button>
+            </div>
+
+            <div class="tableWrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width:64px">ID</th>
+                    <th style="width:120px">Date</th>
+                    <th>Vendor</th>
+                    <th style="width:160px">Category</th>
+                    <th class="right" style="width:120px">Amount</th>
+                    <th style="width:90px">Receipt</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody"></tbody>
+              </table>
+            </div>
+
+            <div class="cards" id="cards"></div>
+          </div>
+
+          <div data-view="transactions">
+            <div class="hint">Same as Dashboard list — split view for future enhancements.</div>
+          </div>
+
+          <div data-view="import">
+            <div class="hint">Use the Import panel on the left. This tab is reserved for a bigger import wizard (Phase 2).</div>
+          </div>
+
+          <div data-view="review">
+            <div class="hint">Phase 1: Filter “Over $75 without receipt” using Has receipt = No, then attach receipts.</div>
+          </div>
+
+          <div data-view="reports">
+            <div class="hint">Phase 2: Reports export (Schedule C / category summary) lives here.</div>
+          </div>
+
+          <div data-view="tax">
+            <div class="hint">Phase 2: Tax reporting (year rollups + attachments checklist) lives here.</div>
+          </div>
+
+          <div data-view="backup">
+            <div class="hint">Phase 2: Backup/export DB and receipts bundle lives here.</div>
+          </div>
+
+          <div data-view="invoices">
+            <div class="hint">Phase 3: Invoices + client income tracker lives here.</div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer" role="contentinfo" aria-label="System status">
+    <div class="footerInner">
+      <div class="footerLeft">
+        <span class="pill">API: <span class="mono">/api</span> (same origin)</span>
+        <span class="pill">UI: <span class="mono">v2.2.0</span></span>
+      </div>
+      <div class="footerRight">
+        <button class="linkBtn" id="apiHealthBtn">Open /api/health</button>
+        <button class="linkBtn" id="openDbInfoBtn">Where is my data?</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API = "/api";
+    const $ = (sel) => document.querySelector(sel);
+    const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+    let selectedId = null;
+    let expenses = [];
+
+    function money(n){
+      const v = Number(n||0);
+      const abs = Math.abs(v).toFixed(2);
+      return (v < 0 ? "-" : "") + "$" + abs;
+    }
+    function centsToUsd(c){ return (Number(c||0)/100).toFixed(2); }
+    function usdToCents(u){ return Math.round(Number(u||0)*100); }
+
+    function setSelected(id){
+      selectedId = id;
+      $("#selectedIdPill").textContent = id ? ("#" + id) : "None";
+    }
+
+    function toast(msg, kind="notice"){
+      $("#leftMsg").innerHTML = `<div class="${kind}">${msg}</div>`;
+    }
+    function clearToast(){ $("#leftMsg").innerHTML = ""; }
+
+    function setView(view){
+      $$(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === view));
+      $$("[data-view]").forEach(v => v.classList.toggle("active", v.dataset.view === view));
+      const titles = {
+        dashboard: "Transactions",
+        transactions: "Transactions",
+        import: "Import",
+        review: "Review",
+        reports: "Reports",
+        tax: "Tax",
+        backup: "Backup",
+        invoices: "Invoices"
+      };
+      $("#panelTitle").textContent = titles[view] || "Transactions";
+    }
+
+    async function apiJson(path, opts={}){
+      const res = await fetch(API + path, { credentials: "include", ...opts });
+      if(!res.ok){
+        const t = await res.text().catch(()=> "");
+        throw new Error(`${res.status} ${res.statusText} ${t}`.trim());
+      }
+      const ct = res.headers.get("content-type") || "";
+      if(ct.includes("application/json")) return res.json();
+      return res.text();
+    }
+
+    function applyFilters(list){
+      const s = $("#qStart").value;
+      const e = $("#qEnd").value;
+      const cat = $("#qCategory").value.trim();
+      const ven = $("#qVendor").value.trim();
+      const q = $("#qSearch").value.trim().toLowerCase();
+      const has = $("#qHasReceipt").value;
+
+      return list.filter(x=>{
+        if(s && x.expense_date < s) return false;
+        if(e && x.expense_date > e) return false;
+        if(cat && (x.category||"") !== cat) return false;
+        if(ven && (x.vendor||"") !== ven) return false;
+        if(q){
+          const hay = ((x.vendor||"") + " " + (x.notes||"")).toLowerCase();
+          if(!hay.includes(q)) return false;
+        }
+        const r = !!x.receipt_path;
+        if(has==="yes" && !r) return false;
+        if(has==="no" && r) return false;
+        return true;
+      });
+    }
+
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, c => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"
+      }[c]));
+    }
+
+    function render(){
+      const filtered = applyFilters(expenses);
+      $("#rowCountPill").textContent = `${filtered.length} rows`;
+
+      const tbody = $("#tbody");
+      tbody.innerHTML = "";
+      filtered.forEach(x=>{
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><span class="chip">#${x.id}</span></td>
+          <td>${x.expense_date||""}</td>
+          <td>${escapeHtml(x.vendor||"")}</td>
+          <td>${escapeHtml(x.category||"")}</td>
+          <td class="right">${money(Number(centsToUsd(x.amount_cents)))}</td>
+          <td>${x.receipt_path ? `<span class="chip good">✔</span>` : `<span class="chip bad">—</span>`}</td>
+          <td>${escapeHtml(x.notes||"")}</td>
+        `;
+        tr.style.cursor="pointer";
+        tr.addEventListener("click", ()=> fillForm(x));
+        tbody.appendChild(tr);
+      });
+
+      const cards = $("#cards");
+      cards.innerHTML = "";
+      filtered.forEach(x=>{
+        const div = document.createElement("div");
+        div.className="cardItem";
+        div.innerHTML = `
+          <div class="cardTop">
+            <div>
+              <div class="date">${x.expense_date||""}</div>
+              <div class="cardMeta"><b>${escapeHtml(x.vendor||"")}</b> — ${escapeHtml(x.category||"")}</div>
+            </div>
+            <div class="amt">${money(Number(centsToUsd(x.amount_cents)))}</div>
+          </div>
+          <div class="cardMeta" style="margin-top:8px">${escapeHtml(x.notes||"")}</div>
+          <div class="cardActions">
+            <button class="btn" data-act="select">Edit</button>
+            <button class="btn" data-act="receipt">${x.receipt_path ? "Open receipt" : "Add receipt"}</button>
+          </div>
+        `;
+        div.querySelector('[data-act="select"]').addEventListener("click", ()=> fillForm(x));
+        div.querySelector('[data-act="receipt"]').addEventListener("click", ()=> { fillForm(x); x.receipt_path ? openReceipt() : $("#receiptFile").click(); });
+        cards.appendChild(div);
+      });
+
+      const expCents = filtered
+        .filter(x => (x.amount_cents||0) > 0)
+        .reduce((sum, x) => sum + (x.amount_cents||0), 0);
+
+      const receipts = filtered.filter(x => !!x.receipt_path).length;
+      const over75NoReceipt = filtered.filter(x => (x.amount_cents||0) >= 7500 && !x.receipt_path).length;
+
+      $("#kpiExp").textContent = money(Number((expCents/100).toFixed(2)));
+      $("#kpiReceipts").textContent = String(receipts);
+      $("#kpiOver75").textContent = String(over75NoReceipt);
+    }
+
+    function fillForm(x){
+      setSelected(x.id);
+      $("#fDate").value = x.expense_date || "";
+      $("#fVendor").value = x.vendor || "";
+      $("#fCategory").value = x.category || "";
+      $("#fAmount").value = centsToUsd(x.amount_cents);
+      $("#fNotes").value = x.notes || "";
+      $("#fReceiptLink").value = x.receipt_link || "";
+      clearToast();
+    }
+
+    function clearForm(){
+      setSelected(null);
+      $("#fDate").value = "";
+      $("#fVendor").value = "";
+      $("#fCategory").value = "";
+      $("#fAmount").value = "";
+      $("#fNotes").value = "";
+      $("#fReceiptLink").value = "";
+      $("#receiptFile").value = "";
+      clearToast();
+    }
+
+    async function loadExpenses(){
+      const data = await apiJson(`/expenses?limit=300`);
+      expenses = Array.isArray(data) ? data : (data.items || []);
+      render();
+    }
+
+    async function saveExpense(){
+      const payload = {
+        expense_date: $("#fDate").value,
+        vendor: $("#fVendor").value.trim() || "Unknown",
+        category: $("#fCategory").value.trim() || "Uncategorized",
+        amount_cents: usdToCents($("#fAmount").value),
+        currency: "USD",
+        notes: $("#fNotes").value.trim() || "",
+        receipt_link: $("#fReceiptLink").value.trim() || null
+      };
+
+      if(!payload.expense_date) return toast("Date is required.", "error");
+      if(!Number.isFinite(payload.amount_cents)) return toast("Amount is invalid.", "error");
+
+      try{
+        if(selectedId){
+          await apiJson(`/expenses/${selectedId}`, {
+            method:"PATCH",
+            headers: { "content-type":"application/json" },
+            body: JSON.stringify(payload)
+          });
+          toast("Saved update.", "notice");
+        }else{
+          const created = await apiJson(`/expenses`, {
+            method:"POST",
+            headers: { "content-type":"application/json" },
+            body: JSON.stringify(payload)
+          });
+          setSelected(created.id);
+          toast("Created transaction.", "notice");
+        }
+        await loadExpenses();
+      }catch(err){
+        toast("Save failed: " + err.message, "error");
+      }
+    }
+
+    async function uploadReceipt(){
+      if(!selectedId) return toast("Select a transaction row first.", "error");
+      const file = $("#receiptFile").files[0];
+      if(!file) return toast("Choose a receipt file first.", "error");
+
+      const fd = new FormData();
+      fd.append("receipt", file);
+
+      try{
+        await apiJson(`/expenses/${selectedId}/receipt`, { method:"POST", body: fd });
+        toast("Receipt uploaded.", "notice");
+        await loadExpenses();
+      }catch(err){
+        toast("Receipt upload failed: " + err.message, "error");
+      }
+    }
+
+    async function openReceipt(){
+      if(!selectedId) return toast("Select a transaction first.", "error");
+      window.open(API + `/expenses/${selectedId}/receipt`, "_blank", "noopener,noreferrer");
+    }
+
+    function openLink(){
+      const url = $("#fReceiptLink").value.trim();
+      if(!url) return toast("No receipt link set.", "error");
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
+
+    // Rocket Money CSV import
+    function splitCsvLine(line){
+      const out = [];
+      let cur = "";
+      let inQ = false;
+      for(let i=0;i<line.length;i++){
+        const ch = line[i];
+        if(ch === '"'){
+          if(inQ && line[i+1] === '"'){ cur+='"'; i++; }
+          else inQ = !inQ;
+        }else if(ch === ',' && !inQ){
+          out.push(cur); cur="";
+        }else{
+          cur += ch;
+        }
+      }
+      out.push(cur);
+      return out;
+    }
+
+    function parseCsv(text){
+      const lines = text.split(/\r?\n/).filter(l => l.trim().length);
+      if(!lines.length) return { header:[], rows:[] };
+      const header = splitCsvLine(lines[0]).map(h => h.trim());
+      const rows = lines.slice(1).map(line => {
+        const cols = splitCsvLine(line);
+        const obj = {};
+        header.forEach((h, i)=> obj[h] = (cols[i] ?? "").trim());
+        return obj;
+      });
+      return { header, rows };
+    }
+
+    function rmRowToItem(r){
+      const date = (r["Date"]||"").slice(0,10);
+      const vendor = (r["Name"]||"").trim() || "Unknown";
+      const category = (r["Category"]||"").trim() || "Uncategorized";
+
+      let amt = (r["Amount"]||"").replace(/[,$]/g,"").trim();
+      const amount = Number(amt);
+      if(!Number.isFinite(amount)) return null;
+
+      const notesParts = [];
+      if(r["Notes"]) notesParts.push(r["Notes"]);
+      if(r["Account"]) notesParts.push(`Account: ${r["Account"]}`);
+      if(r["Tags"]) notesParts.push(`Tags: ${r["Tags"]}`);
+      if(r["Group"]) notesParts.push(`Group: ${r["Group"]}`);
+      if(r["Type"]) notesParts.push(`Type: ${r["Type"]}`);
+      if(r["Status"]) notesParts.push(`Status: ${r["Status"]}`);
+
+      const rm_id = `rm_${date}_${vendor}_${category}_${amount}`.replace(/\s+/g,"_").slice(0,180);
+
+      return {
+        date,
+        vendor,
+        category,
+        amount: amount.toFixed(2),
+        rm_id,
+        source: "rm",
+        notes: notesParts.join(" | ")
+      };
+    }
+
+    async function rmPreview(){
+      const file = $("#rmFile").files[0];
+      if(!file) return ($("#rmStatus").textContent = "Choose a CSV first.");
+      const txt = await file.text();
+      const parsed = parseCsv(txt);
+      $("#rmStatus").textContent = `Detected ${parsed.rows.length} rows. First headers: ${parsed.header.slice(0,10).join(", ")}${parsed.header.length>10?"...":""}`;
+    }
+
+    async function rmImport(){
+      const file = $("#rmFile").files[0];
+      if(!file) return ($("#rmStatus").textContent = "Choose a CSV first.");
+
+      try{
+        const txt = await file.text();
+        const parsed = parseCsv(txt);
+        const items = parsed.rows.map(rmRowToItem).filter(Boolean);
+
+        $("#rmStatus").textContent = `Importing ${items.length} items...`;
+
+        const res = await apiJson(`/expenses/bulk`, {
+          method:"POST",
+          headers:{ "content-type":"application/json" },
+          body: JSON.stringify({ items })
+        });
+
+        $("#rmStatus").textContent = `Imported ${res.inserted + res.updated} expenses. Inserted ${res.inserted}, updated ${res.updated}, skipped ${res.skipped}.`;
+        await loadExpenses();
+      }catch(err){
+        $("#rmStatus").textContent = "Import failed.";
+        toast(String(err.message || err), "error");
+      }
+    }
+
+    function downloadCsv(){
+      const filtered = applyFilters(expenses);
+      const header = ["id","expense_date","vendor","category","amount_cents","currency","notes","source","rm_id","receipt_path","receipt_link"];
+      const rows = filtered.map(x => header.map(h => {
+        const v = x[h] ?? "";
+        const s = String(v).replace(/"/g,'""');
+        return `"${s}"`;
+      }).join(","));
+
+      const blob = new Blob([header.join(",") + "\n" + rows.join("\n")], {type:"text/csv"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "expenses.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    $$(".tab").forEach(btn => btn.addEventListener("click", ()=> setView(btn.dataset.tab)));
+    $("#refreshBtn").addEventListener("click", ()=> loadExpenses().catch(e=> toast(e.message,"error")));
+    $("#downloadBtn").addEventListener("click", downloadCsv);
+
+    $("#applyBtn").addEventListener("click", render);
+    $("#clearBtn").addEventListener("click", ()=>{
+      $("#qStart").value=""; $("#qEnd").value=""; $("#qCategory").value=""; $("#qVendor").value="";
+      $("#qSearch").value=""; $("#qHasReceipt").value="any";
+      render();
+    });
+
+    $("#saveBtn").addEventListener("click", saveExpense);
+    $("#newBtn").addEventListener("click", clearForm);
+    $("#uploadReceiptBtn").addEventListener("click", uploadReceipt);
+    $("#openReceiptBtn").addEventListener("click", openReceipt);
+    $("#openLinkBtn").addEventListener("click", openLink);
+
+    $("#rmPreviewBtn").addEventListener("click", rmPreview);
+    $("#rmImportBtn").addEventListener("click", rmImport);
+
+    $("#apiHealthBtn").addEventListener("click", ()=> window.open(API + "/health", "_blank", "noopener,noreferrer"));
+    $("#openDbInfoBtn").addEventListener("click", ()=> {
+      toast("Data lives on NAS: /volume1/docker/expense-tracker/data/db/expenses.sqlite and receipts in /volume1/docker/expense-tracker/data/receipts", "notice");
+    });
+
+    loadExpenses().catch(e=>{
+      toast("Failed to fetch: " + e.message, "error");
+    });
+  </script>
+</body>
+</html>

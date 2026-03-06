@@ -1,0 +1,73 @@
+IN TERMINAL
+ssh joshua.deuermeyer@192.168.1.173
+
+#From /volume1/docker/expense-tracker:
+sudo docker compose -f compose.yml --env-file .env up -d
+
+#If something is “wedged” (tunnel errors, container stuck restarting), do a clean restart:
+sudo docker compose -f compose.yml --env-file .env down
+sudo docker compose -f compose.yml --env-file .env up -d
+
+#If you changed code and need rebuild:
+sudo docker compose -f compose.yml --env-file .env down --remove-orphans
+sudo docker compose -f compose.yml --env-file .env up -d --build
+
+#Check version of index.html in web container:
+sudo docker exec -it expense_web sh -lc 'grep -n "Version: v" /usr/share/nginx/html/index.html | head'
+
+
+#Force a no-cache rebuild of expense_web only
+cd /volume1/docker/expense-tracker
+sudo docker compose -f compose.yml --env-file .env build --no-cache expense_web
+sudo docker compose -f compose.yml --env-file .env up -d --force-recreate expense_web
+
+#Confirm externally what Cloudflare serves (bypass browser)
+curl -fsSL https://tracker.throughthelens.media/ | grep -n "Version: v" | head
+
+##one-liner “full reset” (safe, repeatable)##
+cd /volume1/docker/expense-tracker && \
+sudo docker compose -f compose.yml --env-file .env down --remove-orphans && \
+sudo docker compose -f compose.yml --env-file .env build --no-cache expense_api && \
+sudo docker compose -f compose.yml --env-file .env up -d
+
+
+
+
+
+###API health check commands###
+# From project root
+cd /volume1/docker/expense-tracker
+
+# Show container state
+sudo docker ps --format "table {{.Names}}\t{{.Status}}"
+
+# Show compose service state (if supported)
+sudo docker compose -f compose.yml --env-file .env ps
+
+
+##API health (3 ways)
+#A) Inside the docker network (most reliable)
+sudo docker exec -it expense_web sh -lc 'wget -qO- http://expense_api:3000/health && echo'
+
+#B) API container loopback
+sudo docker exec -it expense_api sh -lc 'wget -qO- http://127.0.0.1:3000/health && echo'
+
+#C) Through the public site path (will redirect to Cloudflare Access if not logged in)
+curl -sS -D - https://tracker.throughthelens.media/api/health -o /dev/null | head -n 20
+
+#	•	200 means good (and you’re authenticated)
+#	•	302 to cloudflareaccess.com/.../login is normal if not authenticated
+
+
+###API functional sanity tests###
+# List a few expenses via docker network
+sudo docker exec -it expense_web sh -lc 'wget -qO- "http://expense_api:3000/expenses?limit=5" && echo'
+
+# Create one test expense
+sudo docker exec -it expense_web sh -lc 'wget -qO- --header="Content-Type: application/json" --post-data "{\"expense_date\":\"2026-01-10\",\"vendor\":\"Test\",\"category\":\"Software\",\"amount_cents\":1234,\"currency\":\"USD\",\"notes\":\"health test\"}" http://expense_api:3000/expenses && echo'
+
+
+##Tail logs (quit with Ctrl+C)##
+#This is an easy way to see traffic from the tracker to port 3000
+sudo docker logs -f expense_api
+

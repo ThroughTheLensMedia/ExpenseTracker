@@ -1,0 +1,10 @@
+# Only publish the tracker hostname.
+# /api/* is handled internally by nginx (expense_web) proxying to expense_api.
+
+protocol: http2   # avoids QUIC UDP buffer warnings
+loglevel: info
+
+ingress:
+  - hostname: tracker.throughthelens.media
+    service: http://expense_web:80
+  - service: http_status:404

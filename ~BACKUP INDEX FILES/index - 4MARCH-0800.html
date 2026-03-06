@@ -1,0 +1,1420 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Expense Tracker</title>
+  <style>
+    :root{
+      --bg:#070a12;
+      --panel:#0c1020;
+      --panel2:#0b0f1d;
+      --stroke:rgba(255,255,255,.10);
+      --stroke2:rgba(255,255,255,.14);
+      --text:#e9ecff;
+      --muted:#9aa4c7;
+      --accent:#4c6fff;
+      --good:#25d07f;
+      --warn:#ffca5b;
+      --bad:#ff4d6d;
+
+      --radius:18px;
+      --shadow: 0 18px 50px rgba(0,0,0,.38);
+      --shadow2: 0 12px 30px rgba(0,0,0,.30);
+
+      --pad:18px;
+      --topbarH:64px;
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      background: radial-gradient(1200px 600px at 20% 0%, rgba(76,111,255,.25), transparent 60%),
+                  radial-gradient(1000px 600px at 90% 10%, rgba(37,208,127,.18), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+      font: 14px/1.35 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+      overflow:hidden; /* no page scroll on desktop */
+    }
+
+    /* Make sure nothing can cause horizontal overflow on phones */
+    .app, .wrap, .main, .grid, .card { min-width:0; }
+    body{ overflow-x:hidden; }
+
+    a{ color: var(--accent); text-decoration:none; }
+    a:hover{ text-decoration:underline; }
+    code{ font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace; }
+
+    .topbar{
+      height:var(--topbarH);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding: 0 var(--pad);
+      border-bottom:1px solid var(--stroke);
+      backdrop-filter: blur(10px);
+      background: rgba(7,10,18,.55);
+      position: sticky;
+      top:0;
+      z-index:10;
+    }
+    .brand{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      min-width:0;
+    }
+    .dot{
+      width:10px; height:10px; border-radius:50%;
+      background: var(--good);
+      box-shadow: 0 0 0 4px rgba(37,208,127,.12);
+      flex:none;
+    }
+    .title{
+      font-weight:800;
+      letter-spacing:.2px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width: 42vw;
+    }
+    .sub{
+      color:var(--muted);
+      font-size:12px;
+      margin-left:8px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width: 42vw;
+    }
+
+    .tabs{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+    .tab{
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.03);
+      color: var(--text);
+      padding:8px 10px;
+      border-radius:999px;
+      cursor:pointer;
+      user-select:none;
+      font-weight:650;
+      font-size:12px;
+    }
+    .tab[aria-selected="true"]{
+      border-color: rgba(76,111,255,.55);
+      background: rgba(76,111,255,.18);
+    }
+
+    .wrap{
+      height: calc(100vh - var(--topbarH));
+      padding: var(--pad);
+      overflow:hidden; /* internal scrolling only */
+    }
+
+    .main{
+      height:100%;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      overflow:hidden;
+    }
+
+    .banner{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding: 12px 14px;
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.03);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow2);
+      min-width:0;
+    }
+    .banner .left{
+      min-width:0;
+    }
+    .banner h2{
+      margin:0;
+      font-size:13px;
+      letter-spacing:.3px;
+      font-weight:800;
+      text-transform:uppercase;
+      color:#cfd6ff;
+    }
+    .banner .hint{
+      margin-top:6px;
+      color: var(--muted);
+      font-size:12px;
+    }
+    .pill{
+      padding: 8px 10px;
+      border-radius:999px;
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.02);
+      font-size:12px;
+      color: var(--muted);
+      white-space:nowrap;
+    }
+
+    .panel{
+      flex: 1;
+      min-height:0;
+      border:1px solid var(--stroke);
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .panelHead{
+      padding: 12px 14px;
+      border-bottom:1px solid var(--stroke);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      min-width:0;
+    }
+    .panelHead h3{
+      margin:0;
+      font-size:13px;
+      font-weight:850;
+      letter-spacing:.2px;
+    }
+    .panelBody{
+      flex:1;
+      min-height:0;
+      overflow:hidden;
+    }
+
+    /* Views */
+    .view{ display:none; height:100%; }
+    .view.active{ display:flex; flex-direction:column; gap:12px; height:100%; }
+
+    /* Dashboard layout: fixed height; internal scroll sections only */
+    .grid{
+      flex:1;
+      min-height:0;
+      display:grid;
+      grid-template-columns: 360px 1fr;
+      gap:12px;
+      overflow:hidden;
+    }
+
+    .leftCol, .rightCol{
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      overflow:hidden;
+    }
+
+    .card{
+      border:1px solid var(--stroke);
+      background: rgba(10,14,28,.62);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow2);
+      overflow:hidden;
+      min-width:0;
+    }
+
+    .cardHead{
+      padding: 12px 14px;
+      border-bottom:1px solid var(--stroke);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      min-width:0;
+    }
+    .cardHead h4{
+      margin:0;
+      font-size:12px;
+      font-weight:850;
+      letter-spacing:.2px;
+      text-transform:uppercase;
+      color:#cfd6ff;
+    }
+    .cardBody{
+      padding: 12px 14px;
+      min-width:0;
+    }
+
+    .row{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .row3{
+      display:grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap:10px;
+      margin-bottom:10px;
+    }
+
+    label{
+      display:block;
+      font-size:11px;
+      color: var(--muted);
+      margin-bottom:6px;
+    }
+
+    input, select, textarea, button{
+      width:100%;
+      font: inherit;
+      color: var(--text);
+      border-radius: 12px;
+      border:1px solid var(--stroke2);
+      background: rgba(255,255,255,.03);
+      padding: 10px 10px;
+      outline:none;
+      min-width:0;
+    }
+    input[type="file"]{ padding: 9px 10px; }
+    textarea{ resize: vertical; min-height: 44px; }
+
+    input:focus, select:focus, textarea:focus{
+      border-color: rgba(76,111,255,.7);
+      box-shadow: 0 0 0 3px rgba(76,111,255,.18);
+    }
+
+    .btnRow{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .btn{
+      border:1px solid rgba(76,111,255,.55);
+      background: rgba(76,111,255,.18);
+      color: var(--text);
+      cursor:pointer;
+      font-weight:800;
+      padding: 10px 12px;
+      border-radius: 14px;
+      width:auto;
+      white-space:nowrap;
+    }
+    .btn.secondary{
+      border-color: var(--stroke2);
+      background: rgba(255,255,255,.03);
+      font-weight:750;
+    }
+    .btn.danger{
+      border-color: rgba(255,77,109,.55);
+      background: rgba(255,77,109,.15);
+    }
+
+    .status{
+      margin-top:10px;
+      font-size:12px;
+      color: var(--muted);
+      word-break: break-word;
+    }
+    .status.ok{ color: rgba(37,208,127,.95); }
+    .status.bad{ color: rgba(255,77,109,.95); }
+
+    /* Transactions list */
+    .listWrap{
+      display:flex;
+      flex-direction:column;
+      height:100%;
+      min-height:0;
+    }
+
+    .filters{
+      padding: 12px 14px;
+      border-bottom:1px solid var(--stroke);
+      display:grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr)) auto auto;
+      gap:10px;
+      align-items:end;
+    }
+
+    .tableArea{
+      flex:1;
+      min-height:0;
+      overflow:auto;
+      padding: 10px 14px 14px;
+    }
+
+    table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      overflow:hidden;
+      border:1px solid var(--stroke);
+      border-radius: 14px;
+      background: rgba(255,255,255,.02);
+    }
+    thead th{
+      position:sticky;
+      top:0;
+      z-index:1;
+      background: rgba(12,16,32,.95);
+      border-bottom:1px solid var(--stroke);
+      padding: 10px 10px;
+      font-size:11px;
+      color: var(--muted);
+      text-align:left;
+      white-space:nowrap;
+    }
+    tbody td{
+      padding: 10px 10px;
+      border-bottom:1px solid rgba(255,255,255,.06);
+      font-size:13px;
+      vertical-align:top;
+    }
+    tbody tr:hover td{
+      background: rgba(76,111,255,.08);
+      cursor:pointer;
+    }
+    .mono{ font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace; font-size:12px; color: #b8c0e0; }
+    .amt.pos{ color: rgba(255,202,91,.95); font-weight:800; }
+    .amt.neg{ color: rgba(37,208,127,.95); font-weight:800; }
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding: 4px 8px;
+      border-radius:999px;
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.03);
+      color: var(--muted);
+      font-size:11px;
+      white-space:nowrap;
+    }
+    .dotSm{ width:8px; height:8px; border-radius:50%; background: var(--muted); }
+    .dotSm.good{ background: var(--good); }
+    .dotSm.warn{ background: var(--warn); }
+    .dotSm.bad{ background: var(--bad); }
+
+    /* Mobile card list (Option B) */
+    .cardsArea{
+      display:none;
+      flex:1;
+      min-height:0;
+      overflow:auto;
+      padding: 10px 14px 14px;
+      gap:10px;
+      flex-direction:column;
+    }
+    .txCard{
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.03);
+      border-radius: 16px;
+      padding: 12px 12px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .txTop{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+      min-width:0;
+    }
+    .txTitle{
+      font-weight:900;
+      letter-spacing:.2px;
+      min-width:0;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .txMeta{
+      color: var(--muted);
+      font-size:12px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .txNotes{
+      color:#cfd6ff;
+      opacity:.9;
+      font-size:12px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    /* Small stat cards */
+    .stats{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+    }
+    .stat{
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.03);
+      border-radius: 16px;
+      padding: 12px 12px;
+    }
+    .stat .k{ color: var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.25px; font-weight:850; }
+    .stat .v{ margin-top:6px; font-size:20px; font-weight:950; }
+
+    /* Breakpoints */
+    @media (max-width: 980px){
+      body{ overflow:auto; } /* allow natural scroll on smaller screens */
+      .wrap{ height:auto; overflow:visible; }
+      .main{ height:auto; overflow:visible; }
+      .panel{ overflow:visible; }
+      .grid{ grid-template-columns: 1fr; overflow:visible; }
+      .leftCol,.rightCol{ overflow:visible; }
+      .filters{ grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 720px){
+      .sub{ display:none; }
+      .filters{ grid-template-columns: 1fr; }
+      .tableArea{ display:none; }
+      .cardsArea{ display:flex; }
+      .row, .row3{ grid-template-columns: 1fr; }
+      .tabs{ justify-content:flex-start; }
+      .title{ max-width: 70vw; }
+    }
+
+    .muted{ color: var(--muted); }
+    .hr{ height:1px; background: var(--stroke); margin: 10px 0; }
+    .small{ font-size:12px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">
+      <div class="dot" id="apiDot"></div>
+      <div class="title">Expense Tracker</div>
+      <div class="sub">Single-user — tax-ready first</div>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Sections">
+      <button class="tab" role="tab" data-view="dashboard" aria-selected="true">Dashboard</button>
+      <button class="tab" role="tab" data-view="transactions" aria-selected="false">Transactions</button>
+      <button class="tab" role="tab" data-view="import" aria-selected="false">Import</button>
+      <button class="tab" role="tab" data-view="reports" aria-selected="false">Reports</button>
+      <button class="tab" role="tab" data-view="tax" aria-selected="false">Tax</button>
+      <button class="tab" role="tab" data-view="backup" aria-selected="false">Backup</button>
+      <button class="tab" role="tab" data-view="invoices" aria-selected="false">Invoices</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="main">
+
+      <div class="banner">
+        <div class="left">
+          <h2 id="bannerTitle">Dashboard</h2>
+          <div class="hint">
+            Receipt SOP — import RM CSV → review high-dollar items → attach receipt (>$75) → export reports for taxes.
+          </div>
+        </div>
+        <div class="pill">
+          API: <code>/api</code> (same origin)
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panelHead">
+          <h3 id="panelTitle">Tax-ready overview</h3>
+          <div class="btnRow">
+            <button class="btn secondary" id="refreshBtn">Refresh</button>
+            <button class="btn secondary" id="downloadBtn">Download CSV</button>
+          </div>
+        </div>
+
+        <div class="panelBody">
+          <!-- DASHBOARD VIEW -->
+          <div class="view active" id="view-dashboard">
+            <div class="grid">
+              <div class="leftCol">
+                <div class="card">
+                  <div class="cardHead"><h4>Selected transaction</h4><span class="badge" id="selBadge"><span class="dotSm"></span>None</span></div>
+                  <div class="cardBody">
+                    <div class="row">
+                      <div>
+                        <label>Date</label>
+                        <input id="f_date" type="date" />
+                      </div>
+                      <div>
+                        <label>Amount (USD) — negative = income</label>
+                        <input id="f_amount" inputmode="decimal" placeholder="12.34 or -1200.00" />
+                      </div>
+                    </div>
+                    <div class="row">
+                      <div>
+                        <label>Vendor</label>
+                        <input id="f_vendor" placeholder="Vendor" />
+                      </div>
+                      <div>
+                        <label>Category</label>
+                        <input id="f_category" placeholder="Category" />
+                      </div>
+                    </div>
+                    <div class="row">
+                      <div>
+                        <label>Notes</label>
+                        <textarea id="f_notes" placeholder="What was it for? Client? Project? Location?"></textarea>
+                      </div>
+                      <div>
+                        <label>Receipt link (Google Drive URL — optional)</label>
+                        <input id="f_receipt_link" placeholder="https://drive.google.com/..." />
+                        <div class="btnRow" style="margin-top:10px;">
+                          <button class="btn secondary" id="openReceiptLinkBtn" type="button">Open link</button>
+                          <button class="btn" id="saveBtn" type="button">Save (create or update)</button>
+                          <button class="btn secondary" id="newBtn" type="button">New</button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="hr"></div>
+
+                    <div>
+                      <label>Receipt upload (PDF/JPG/PNG/WEBP) — attach for expenses over $75</label>
+                      <div class="btnRow">
+                        <input id="receiptFile" type="file" accept=".pdf,image/*" />
+                        <button class="btn secondary" id="uploadReceiptBtn" type="button">Upload receipt</button>
+                        <button class="btn secondary" id="openReceiptBtn" type="button">Open receipt</button>
+                      </div>
+                      <div class="status" id="receiptStatus"></div>
+                    </div>
+
+                    <div class="status" id="saveStatus"></div>
+                  </div>
+                </div>
+
+                <div class="card">
+                  <div class="cardHead"><h4>Import (Rocket Money CSV)</h4></div>
+                  <div class="cardBody">
+                    <div class="small">
+                      Uses RM headers: <code>Date, Name, Amount, Category, Account, Tags, Notes, Group, Type, Status</code>.
+                      Import is conservative — preview first, then bulk import.
+                    </div>
+                    <div style="height:10px;"></div>
+                    <div class="btnRow">
+                      <input id="rmFile" type="file" accept=".csv,text/csv" />
+                      <button class="btn secondary" id="rmPreviewBtn" type="button">Preview</button>
+                      <button class="btn" id="rmImportBtn" type="button">Import to tracker</button>
+                    </div>
+                    <div class="status" id="rmStatus"></div>
+
+                    <div class="hr"></div>
+                    <div class="small">
+                      Over $75 without receipt (based on current filter set): <b id="over75Count">0</b>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card">
+                  <div class="cardHead"><h4>Charts (MVP)</h4></div>
+                  <div class="cardBody">
+                    <div class="stats">
+                      <div class="stat">
+                        <div class="k">Total expenses (filtered)</div>
+                        <div class="v" id="totalExpenses">$0.00</div>
+                      </div>
+                      <div class="stat">
+                        <div class="k">Receipts attached</div>
+                        <div class="v" id="receiptCount">0</div>
+                      </div>
+                    </div>
+                    <div class="hr"></div>
+                    <div class="small muted">
+                      Reports/Tax charts expand in Phase 2 (pie + bar + trend line). MVP focuses on accurate data + receipts + exports.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="rightCol">
+                <div class="card" style="flex:1; min-height:0;">
+                  <div class="cardHead">
+                    <h4>Transactions</h4>
+                    <span class="small muted" id="countLabel">0 rows</span>
+                  </div>
+
+                  <div class="listWrap">
+                    <div class="filters">
+                      <div>
+                        <label>Start</label>
+                        <input id="q_start" type="date" />
+                      </div>
+                      <div>
+                        <label>End</label>
+                        <input id="q_end" type="date" />
+                      </div>
+                      <div>
+                        <label>Category</label>
+                        <input id="q_category" placeholder="Exact match" />
+                      </div>
+                      <div>
+                        <label>Vendor</label>
+                        <input id="q_vendor" placeholder="Exact match" />
+                      </div>
+                      <div>
+                        <label>Search (vendor/notes)</label>
+                        <input id="q_search" placeholder="e.g. Starbucks" />
+                      </div>
+                      <div>
+                        <label>Has receipt</label>
+                        <select id="q_has_receipt">
+                          <option value="">Any</option>
+                          <option value="1">Yes</option>
+                          <option value="0">No</option>
+                        </select>
+                      </div>
+                      <button class="btn secondary" id="filterBtn" type="button">Apply</button>
+                      <button class="btn secondary" id="clearBtn" type="button">Clear</button>
+                    </div>
+
+                    <!-- Desktop table -->
+                    <div class="tableArea" id="tableArea">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>ID</th>
+                            <th>Date</th>
+                            <th>Vendor</th>
+                            <th>Category</th>
+                            <th>Amount</th>
+                            <th>Receipt</th>
+                            <th>Notes</th>
+                          </tr>
+                        </thead>
+                        <tbody id="tbody"></tbody>
+                      </table>
+                    </div>
+
+                    <!-- Mobile cards (Option B) -->
+                    <div class="cardsArea" id="cardsArea"></div>
+
+                    <div class="status" id="fetchStatus" style="padding:0 14px 12px;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TRANSACTIONS VIEW (same list, larger) -->
+          <div class="view" id="view-transactions">
+            <div class="card" style="flex:1; min-height:0; margin:12px;">
+              <div class="cardHead">
+                <h4>Transactions</h4>
+                <div class="btnRow">
+                  <span class="small muted" id="countLabel2">0 rows</span>
+                  <button class="btn secondary" id="refreshBtn2">Refresh</button>
+                  <button class="btn secondary" id="downloadBtn2">Download CSV</button>
+                </div>
+              </div>
+              <div class="listWrap">
+                <div class="filters" style="border-top:0;">
+                  <div>
+                    <label>Start</label>
+                    <input id="q_start2" type="date" />
+                  </div>
+                  <div>
+                    <label>End</label>
+                    <input id="q_end2" type="date" />
+                  </div>
+                  <div>
+                    <label>Category</label>
+                    <input id="q_category2" placeholder="Exact match" />
+                  </div>
+                  <div>
+                    <label>Vendor</label>
+                    <input id="q_vendor2" placeholder="Exact match" />
+                  </div>
+                  <div>
+                    <label>Search (vendor/notes)</label>
+                    <input id="q_search2" placeholder="e.g. Starbucks" />
+                  </div>
+                  <div>
+                    <label>Has receipt</label>
+                    <select id="q_has_receipt2">
+                      <option value="">Any</option>
+                      <option value="1">Yes</option>
+                      <option value="0">No</option>
+                    </select>
+                  </div>
+                  <button class="btn secondary" id="filterBtn2" type="button">Apply</button>
+                  <button class="btn secondary" id="clearBtn2" type="button">Clear</button>
+                </div>
+
+                <div class="tableArea" id="tableArea2">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>ID</th><th>Date</th><th>Vendor</th><th>Category</th><th>Amount</th><th>Receipt</th><th>Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody id="tbody2"></tbody>
+                  </table>
+                </div>
+                <div class="cardsArea" id="cardsArea2"></div>
+                <div class="status" id="fetchStatus2" style="padding:0 14px 12px;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- IMPORT VIEW -->
+          <div class="view" id="view-import">
+            <div style="padding:12px;">
+              <div class="card">
+                <div class="cardHead"><h4>Import — Rocket Money CSV</h4></div>
+                <div class="cardBody">
+                  <div class="small">
+                    Import mapping uses: <code>Date</code> → date, <code>Name</code> → vendor, <code>Category</code> → category,
+                    <code>Notes/Tags/Account/Group/Type/Status</code> → appended to Notes.
+                    Amount: positive = expense, negative = income (stored as negative amount).
+                  </div>
+                  <div style="height:10px;"></div>
+                  <div class="btnRow">
+                    <input id="rmFile2" type="file" accept=".csv,text/csv" />
+                    <button class="btn secondary" id="rmPreviewBtn2" type="button">Preview</button>
+                    <button class="btn" id="rmImportBtn2" type="button">Import to tracker</button>
+                  </div>
+                  <div class="status" id="rmStatus2"></div>
+
+                  <div class="hr"></div>
+
+                  <div class="small muted">
+                    Preview shows first 50 normalized rows. Import uses API bulk endpoint: <code>POST /api/expenses/bulk</code>.
+                  </div>
+
+                  <div style="height:12px;"></div>
+
+                  <div class="card" style="background:rgba(255,255,255,.02); border-color:rgba(255,255,255,.06);">
+                    <div class="cardHead"><h4>Preview</h4></div>
+                    <div class="cardBody" style="padding:0;">
+                      <div class="tableArea" style="max-height: 340px;">
+                        <table>
+                          <thead>
+                            <tr><th>Date</th><th>Vendor</th><th>Category</th><th>Amount</th><th class="mono">rm_id</th></tr>
+                          </thead>
+                          <tbody id="rmPreviewBody"></tbody>
+                        </table>
+                      </div>
+                      <div class="cardsArea" id="rmPreviewCards" style="max-height: 340px;"></div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PLACEHOLDER VIEWS -->
+          <div class="view" id="view-reports"><div style="padding:18px;" class="muted">Reports — coming soon (Phase 2).</div></div>
+          <div class="view" id="view-tax"><div style="padding:18px;" class="muted">Tax — coming soon (Phase 2: schedule C buckets, exports).</div></div>
+          <div class="view" id="view-backup"><div style="padding:18px;" class="muted">Backup — coming soon (Phase 2: snapshot DB + receipts).</div></div>
+          <div class="view" id="view-invoices"><div style="padding:18px;" class="muted">Invoices — coming soon (Phase 3).</div></div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ========= Config ========= */
+const API = "/api";
+
+/* ========= Utilities ========= */
+const $ = (id) => document.getElementById(id);
+const esc = (s) => (s ?? "").toString().replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const fmtMoney = (cents) => {
+  const n = Number(cents || 0) / 100;
+  const sign = n < 0 ? "-" : "";
+  const abs = Math.abs(n);
+  return sign + abs.toLocaleString(undefined, { style:"currency", currency:"USD" });
+};
+const toCents = (amountStr) => {
+  const n = Number(String(amountStr).replace(/[^0-9.-]/g,""));
+  if (!Number.isFinite(n)) return null;
+  return Math.round(n * 100);
+};
+const isoDate = (d) => {
+  // accepts YYYY-MM-DD or MM/DD/YYYY etc, returns YYYY-MM-DD
+  const s = String(d || "").trim();
+  if (!s) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  // common US format
+  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if (m){
+    const mm = String(m[1]).padStart(2,"0");
+    const dd = String(m[2]).padStart(2,"0");
+    const yy = m[3].length === 2 ? ("20"+m[3]) : m[3];
+    return `${yy}-${mm}-${dd}`;
+  }
+  // fallback: Date parse
+  const dt = new Date(s);
+  if (!isNaN(dt)) return dt.toISOString().slice(0,10);
+  return "";
+};
+
+/* ========= Tabs ========= */
+function setView(name){
+  for (const v of document.querySelectorAll(".view")){
+    v.classList.toggle("active", v.id === `view-${name}`);
+  }
+  for (const t of document.querySelectorAll(".tab")){
+    const on = t.dataset.view === name;
+    t.setAttribute("aria-selected", on ? "true" : "false");
+  }
+  $("bannerTitle").textContent = name.charAt(0).toUpperCase()+name.slice(1);
+  $("panelTitle").textContent = (name === "dashboard") ? "Tax-ready overview" : "Section";
+}
+document.querySelectorAll(".tab").forEach(btn=>{
+  btn.addEventListener("click", ()=> setView(btn.dataset.view));
+});
+
+/* ========= State ========= */
+let expenses = [];
+let selectedId = null;
+
+/* ========= API calls ========= */
+async function apiJson(path, opts = {}){
+  const res = await fetch(API + path, {
+    ...opts,
+    headers: {
+      ...(opts.headers || {}),
+      "content-type": opts.body && !(opts.body instanceof FormData) ? "application/json" : (opts.headers || {})["content-type"]
+    }
+  });
+  // allow non-2xx with json body
+  let data = null;
+  const ct = res.headers.get("content-type") || "";
+  if (ct.includes("application/json")){
+    data = await res.json().catch(()=>null);
+  } else {
+    const txt = await res.text().catch(()=> "");
+    data = txt ? { error: txt } : null;
+  }
+  if (!res.ok){
+    const msg = data?.error || data?.message || `HTTP ${res.status}`;
+    throw new Error(msg);
+  }
+  return data;
+}
+
+async function ping(){
+  try{
+    await apiJson("/health");
+    $("apiDot").style.background = "var(--good)";
+  }catch(e){
+    $("apiDot").style.background = "var(--bad)";
+  }
+}
+
+/* ========= Fetch + render ========= */
+function buildQueryFrom(prefix){
+  const qs = new URLSearchParams();
+  const start = $(`q_start${prefix}`)?.value || "";
+  const end = $(`q_end${prefix}`)?.value || "";
+  const category = $(`q_category${prefix}`)?.value.trim() || "";
+  const vendor = $(`q_vendor${prefix}`)?.value.trim() || "";
+  const search = $(`q_search${prefix}`)?.value.trim() || "";
+  const hasReceipt = $(`q_has_receipt${prefix}`)?.value || "";
+
+  if (start) qs.set("start", start);
+  if (end) qs.set("end", end);
+  if (category) qs.set("category", category);
+  if (vendor) qs.set("vendor", vendor);
+  if (search) qs.set("q", search);
+  if (hasReceipt !== "") qs.set("has_receipt", hasReceipt);
+  qs.set("limit", "300");
+  return qs.toString();
+}
+
+async function refreshAll(){
+  await ping();
+  await fetchExpenses();
+  renderAll();
+}
+
+async function fetchExpenses(){
+  const q = buildQueryFrom("");
+  const q2 = buildQueryFrom("2");
+  // use dashboard filters as source of truth; mirror into other view if needed
+  const query = q || q2 || "limit=300";
+  const statusEl = $("fetchStatus");
+  const statusEl2 = $("fetchStatus2");
+  statusEl.textContent = "Loading…";
+  statusEl.className = "status";
+  statusEl2.textContent = "Loading…";
+  statusEl2.className = "status";
+
+  try{
+    const data = await apiJson(`/expenses?${query}`);
+    // Some older builds returned {} on empty/error; normalize
+    expenses = Array.isArray(data) ? data : [];
+    statusEl.textContent = "";
+    statusEl2.textContent = "";
+  }catch(e){
+    expenses = [];
+    statusEl.textContent = "Failed to fetch: " + e.message;
+    statusEl.className = "status bad";
+    statusEl2.textContent = "Failed to fetch: " + e.message;
+    statusEl2.className = "status bad";
+  }
+}
+
+function renderAll(){
+  // sort newest first
+  const rows = [...expenses].sort((a,b)=> String(b.expense_date||"").localeCompare(String(a.expense_date||"")));
+
+  $("countLabel").textContent = `${rows.length} rows`;
+  $("countLabel2").textContent = `${rows.length} rows`;
+
+  // stats (expenses only: amount_cents > 0)
+  const expOnly = rows.filter(r => Number(r.amount_cents) > 0);
+  const total = expOnly.reduce((s,r)=> s + Number(r.amount_cents||0), 0);
+  const receipts = rows.filter(r => !!r.receipt_path || !!r.receipt_original_name).length;
+
+  $("totalExpenses").textContent = fmtMoney(total);
+  $("receiptCount").textContent = String(receipts);
+
+  // Over $75 without receipt (using current filter set)
+  const over75 = rows.filter(r => Number(r.amount_cents) > 7500 && !(r.receipt_path || r.receipt_original_name)).length;
+  $("over75Count").textContent = String(over75);
+
+  // render table + cards (dashboard)
+  renderTable("tbody", rows);
+  renderCards("cardsArea", rows);
+
+  // render table + cards (transactions view)
+  renderTable("tbody2", rows);
+  renderCards("cardsArea2", rows);
+}
+
+function renderTable(tbodyId, rows){
+  const tb = $(tbodyId);
+  tb.innerHTML = rows.map(r=>{
+    const has = (r.receipt_path || r.receipt_original_name) ? "✅" : "—";
+    const cents = Number(r.amount_cents || 0);
+    const cls = cents < 0 ? "neg" : "pos";
+    const notes = esc(r.notes || "");
+    return `
+      <tr data-id="${esc(r.id)}">
+        <td class="mono">${esc(r.id)}</td>
+        <td>${esc(r.expense_date || "")}</td>
+        <td>${esc(r.vendor || "")}</td>
+        <td>${esc(r.category || "")}</td>
+        <td class="amt ${cls}">${esc(fmtMoney(cents))}</td>
+        <td>${has}</td>
+        <td title="${notes}">${notes}</td>
+      </tr>
+    `;
+  }).join("");
+
+  tb.querySelectorAll("tr").forEach(tr=>{
+    tr.addEventListener("click", ()=> selectExpense(Number(tr.dataset.id)));
+  });
+}
+
+function renderCards(areaId, rows){
+  const area = $(areaId);
+  area.innerHTML = rows.map(r=>{
+    const cents = Number(r.amount_cents || 0);
+    const cls = cents < 0 ? "neg" : "pos";
+    const receipt = (r.receipt_path || r.receipt_original_name) ? "Receipt attached" : "No receipt";
+    const note = (r.notes || "").trim();
+    return `
+      <div class="txCard" data-id="${esc(r.id)}">
+        <div class="txTop">
+          <div class="txTitle">${esc(r.vendor || "(no vendor)")}</div>
+          <div class="amt ${cls}">${esc(fmtMoney(cents))}</div>
+        </div>
+        <div class="txMeta">
+          <span class="badge"><span class="dotSm"></span>${esc(r.expense_date || "")}</span>
+          <span class="badge"><span class="dotSm"></span>${esc(r.category || "")}</span>
+          <span class="badge"><span class="dotSm ${receipt.includes("attached") ? "good" : "warn"}"></span>${receipt}</span>
+          <span class="badge"><span class="dotSm"></span>ID ${esc(r.id)}</span>
+        </div>
+        ${note ? `<div class="txNotes">${esc(note)}</div>` : ``}
+      </div>
+    `;
+  }).join("");
+
+  area.querySelectorAll(".txCard").forEach(card=>{
+    card.addEventListener("click", ()=> selectExpense(Number(card.dataset.id)));
+  });
+}
+
+/* ========= Select + edit ========= */
+function setSelectedBadge(id){
+  const badge = $("selBadge");
+  if (!id){
+    badge.innerHTML = `<span class="dotSm"></span>None`;
+    return;
+  }
+  badge.innerHTML = `<span class="dotSm good"></span>#${id}`;
+}
+
+function parseReceiptUrlFromNotes(notes){
+  const n = String(notes || "");
+  const m = n.match(/receipt_url=([^\s]+)/i);
+  return m ? m[1] : "";
+}
+function upsertReceiptUrlInNotes(notes, url){
+  const n = String(notes || "").trim();
+  const cleaned = n.replace(/(?:^|\s)receipt_url=([^\s]+)/ig, "").trim();
+  if (!url) return cleaned;
+  return (cleaned ? (cleaned + "\n") : "") + `receipt_url=${url}`;
+}
+
+function selectExpense(id){
+  const r = expenses.find(x => Number(x.id) === Number(id));
+  if (!r) return;
+  selectedId = Number(id);
+  setSelectedBadge(selectedId);
+
+  $("f_date").value = r.expense_date || "";
+  $("f_vendor").value = r.vendor || "";
+  $("f_category").value = r.category || "";
+  $("f_amount").value = (Number(r.amount_cents||0) / 100).toFixed(2);
+  $("f_notes").value = r.notes || "";
+  $("f_receipt_link").value = parseReceiptUrlFromNotes(r.notes);
+
+  $("saveStatus").textContent = "";
+  $("receiptStatus").textContent = (r.receipt_path || r.receipt_original_name)
+    ? `Current receipt: ${r.receipt_original_name || r.receipt_path}`
+    : "No receipt attached.";
+  $("receiptStatus").className = "status";
+}
+
+function clearForm(){
+  selectedId = null;
+  setSelectedBadge(null);
+  $("f_date").value = "";
+  $("f_vendor").value = "";
+  $("f_category").value = "";
+  $("f_amount").value = "";
+  $("f_notes").value = "";
+  $("f_receipt_link").value = "";
+  $("receiptFile").value = "";
+  $("saveStatus").textContent = "";
+  $("receiptStatus").textContent = "";
+}
+
+/* ========= Save / Create / Update ========= */
+async function saveExpense(){
+  const date = $("f_date").value;
+  const vendor = $("f_vendor").value.trim();
+  const category = $("f_category").value.trim();
+  const cents = toCents($("f_amount").value);
+  const receiptLink = $("f_receipt_link").value.trim();
+  let notes = $("f_notes").value || "";
+
+  if (!date || !vendor || !category || cents === null){
+    $("saveStatus").textContent = "Missing required fields: date, vendor, category, amount.";
+    $("saveStatus").className = "status bad";
+    return;
+  }
+
+  notes = upsertReceiptUrlInNotes(notes, receiptLink);
+
+  try{
+    if (!selectedId){
+      const body = {
+        expense_date: date,
+        vendor,
+        category,
+        amount_cents: cents,
+        currency: "USD",
+        notes
+      };
+      const res = await apiJson("/expenses", { method:"POST", body: JSON.stringify(body) });
+      $("saveStatus").textContent = `Created #${res.id}`;
+      $("saveStatus").className = "status ok";
+      await refreshAll();
+      selectExpense(res.id);
+    } else {
+      const body = { expense_date: date, vendor, category, amount_cents: cents, notes };
+      const res = await apiJson(`/expenses/${selectedId}`, { method:"PATCH", body: JSON.stringify(body) });
+      $("saveStatus").textContent = `Updated #${res.id}`;
+      $("saveStatus").className = "status ok";
+      await refreshAll();
+      selectExpense(res.id);
+    }
+  }catch(e){
+    $("saveStatus").textContent = "Save failed: " + e.message;
+    $("saveStatus").className = "status bad";
+  }
+}
+
+/* ========= Receipt upload ========= */
+async function uploadReceipt(){
+  if (!selectedId){
+    $("receiptStatus").textContent = "Select a transaction first.";
+    $("receiptStatus").className = "status bad";
+    return;
+  }
+  const file = $("receiptFile").files?.[0];
+  if (!file){
+    $("receiptStatus").textContent = "Choose a file first.";
+    $("receiptStatus").className = "status bad";
+    return;
+  }
+  const fd = new FormData();
+  fd.append("receipt", file);
+
+  $("receiptStatus").textContent = "Uploading…";
+  $("receiptStatus").className = "status";
+
+  try{
+    await apiJson(`/expenses/${selectedId}/receipt`, { method:"POST", body: fd, headers:{} });
+    $("receiptStatus").textContent = "Receipt uploaded.";
+    $("receiptStatus").className = "status ok";
+    await refreshAll();
+    selectExpense(selectedId);
+  }catch(e){
+    $("receiptStatus").textContent = "Receipt upload failed: " + e.message;
+    $("receiptStatus").className = "status bad";
+  }
+}
+
+function openReceipt(){
+  if (!selectedId) return;
+  window.open(`${API}/expenses/${selectedId}/receipt`, "_blank", "noopener,noreferrer");
+}
+function openReceiptLink(){
+  const url = $("f_receipt_link").value.trim();
+  if (!url) return;
+  window.open(url, "_blank", "noopener,noreferrer");
+}
+
+/* ========= CSV Download ========= */
+function downloadCsv(){
+  const q = buildQueryFrom("") || "limit=300";
+  window.open(`${API}/expenses.csv?${q}`, "_blank", "noopener,noreferrer");
+}
+
+/* ========= Rocket Money import ========= */
+let rmPreviewItems = [];
+
+function normalizeRmRow(row, idx){
+  // Rocket Money header set (observed):
+  // Date, Name, Amount, Category, Account, Tags, Notes, Group, Type, Status
+  const date = isoDate(row["Date"]);
+  const vendor = String(row["Name"] || "").trim() || "(blank)";
+  const category = String(row["Category"] || "Uncategorized").trim() || "Uncategorized";
+  const amountRaw = row["Amount"];
+  const cents = toCents(amountRaw);
+  if (!date || cents === null) return null;
+
+  // Create a stable rm_id if possible:
+  // prefer explicit transaction id if RM provided one; otherwise hash essentials
+  const base = `${date}|${vendor}|${String(amountRaw).trim()}|${String(row["Account"]||"").trim()}|${String(row["Notes"]||"").trim()}`;
+  const rm_id = "rm_" + sha1(base).slice(0, 18) + "_" + idx;
+
+  // Notes enrichment (kept short but useful)
+  const parts = [];
+  if (row["Account"]) parts.push(`rm_account=${String(row["Account"]).trim()}`);
+  if (row["Group"]) parts.push(`rm_group=${String(row["Group"]).trim()}`);
+  if (row["Type"]) parts.push(`rm_type=${String(row["Type"]).trim()}`);
+  if (row["Status"]) parts.push(`rm_status=${String(row["Status"]).trim()}`);
+  if (row["Tags"]) parts.push(`rm_tags=${String(row["Tags"]).trim()}`);
+  if (row["Notes"]) parts.push(`rm_notes=${String(row["Notes"]).trim()}`);
+
+  const notes = parts.join("\n");
+
+  return {
+    date,
+    vendor,
+    category,
+    amount: (Number(cents) / 100).toFixed(2), // keep sign if present
+    rm_id,
+    source: "rm",
+    notes
+  };
+}
+
+function sha1(str){
+  // tiny sha1 for stable rm_id; uses SubtleCrypto if available
+  // fallback: simple non-crypt hash (stable-ish) if crypto missing
+  // For our usage, stable ID > cryptographic strength.
+  if (window.crypto && window.crypto.subtle){
+    // We'll do sync fallback because subtle is async; keep simple
+  }
+  let h1=0x811c9dc5;
+  for (let i=0;i<str.length;i++){
+    h1 ^= str.charCodeAt(i);
+    h1 = (h1 * 0x01000193) >>> 0;
+  }
+  return ("00000000" + h1.toString(16)).slice(-8).repeat(5);
+}
+
+function parseCsv(text){
+  // minimal CSV parser (handles quoted fields)
+  const rows = [];
+  let i=0, field="", row=[], inQuotes=false;
+  const pushField=()=>{ row.push(field); field=""; };
+  const pushRow=()=>{ rows.push(row); row=[]; };
+
+  while (i < text.length){
+    const c = text[i];
+    if (inQuotes){
+      if (c === '"'){
+        if (text[i+1] === '"'){ field += '"'; i+=2; continue; }
+        inQuotes=false; i++; continue;
+      }
+      field += c; i++; continue;
+    } else {
+      if (c === '"'){ inQuotes=true; i++; continue; }
+      if (c === ','){ pushField(); i++; continue; }
+      if (c === '\n'){ pushField(); pushRow(); i++; continue; }
+      if (c === '\r'){ i++; continue; }
+      field += c; i++; continue;
+    }
+  }
+  pushField(); pushRow();
+  // remove trailing empty row
+  if (rows.length && rows[rows.length-1].every(x=> String(x||"").trim()==="")) rows.pop();
+  return rows;
+}
+
+async function rmPreview(file, statusElId, bodyId, cardsId){
+  const statusEl = $(statusElId);
+  statusEl.textContent = "Reading CSV…";
+  statusEl.className = "status";
+
+  const text = await file.text();
+  const matrix = parseCsv(text);
+  if (!matrix.length){
+    statusEl.textContent = "CSV empty.";
+    statusEl.className = "status bad";
+    return;
+  }
+  const headers = matrix[0].map(h=> String(h||"").trim());
+  const dataRows = matrix.slice(1);
+
+  // Build objects
+  const objs = dataRows.map(r=>{
+    const o = {};
+    headers.forEach((h,idx)=> o[h] = r[idx]);
+    return o;
+  });
+
+  rmPreviewItems = [];
+  let skipped = 0;
+  objs.forEach((o, idx)=>{
+    const item = normalizeRmRow(o, idx);
+    if (item) rmPreviewItems.push(item); else skipped++;
+  });
+
+  // render preview (first 50)
+  const slice = rmPreviewItems.slice(0, 50);
+  const tb = $(bodyId);
+  tb.innerHTML = slice.map(it=>`
+    <tr>
+      <td>${esc(it.date)}</td>
+      <td>${esc(it.vendor)}</td>
+      <td>${esc(it.category)}</td>
+      <td class="amt ${Number(it.amount)<0 ? "neg" : "pos"}">${esc(it.amount)}</td>
+      <td class="mono" title="${esc(it.rm_id)}">${esc(it.rm_id)}</td>
+    </tr>
+  `).join("");
+
+  const cards = $(cardsId);
+  cards.innerHTML = slice.map(it=>`
+    <div class="txCard">
+      <div class="txTop">
+        <div class="txTitle">${esc(it.vendor)}</div>
+        <div class="amt ${Number(it.amount)<0 ? "neg" : "pos"}">${esc(it.amount)}</div>
+      </div>
+      <div class="txMeta">
+        <span class="badge"><span class="dotSm"></span>${esc(it.date)}</span>
+        <span class="badge"><span class="dotSm"></span>${esc(it.category)}</span>
+      </div>
+      <div class="txNotes mono">${esc(it.rm_id)}</div>
+    </div>
+  `).join("");
+
+  statusEl.textContent = `Preview ready: ${rmPreviewItems.length} rows normalized, ${skipped} skipped.`;
+  statusEl.className = "status ok";
+}
+
+async function rmImport(statusElId){
+  const statusEl = $(statusElId);
+  if (!rmPreviewItems.length){
+    statusEl.textContent = "No preview loaded. Click Preview first.";
+    statusEl.className = "status bad";
+    return;
+  }
+  statusEl.textContent = "Importing…";
+  statusEl.className = "status";
+
+  try{
+    const payload = { items: rmPreviewItems };
+    const res = await apiJson("/expenses/bulk", { method:"POST", body: JSON.stringify(payload) });
+    const ins = res?.inserted ?? 0;
+    const upd = res?.updated ?? 0;
+    const skp = res?.skipped ?? 0;
+    statusEl.textContent = `Import complete: inserted ${ins}, updated ${upd}, skipped ${skp}.`;
+    statusEl.className = "status ok";
+    await refreshAll();
+  }catch(e){
+    statusEl.textContent = "Import failed: " + e.message;
+    statusEl.className = "status bad";
+  }
+}
+
+/* ========= Wire up ========= */
+$("refreshBtn").addEventListener("click", refreshAll);
+$("refreshBtn2").addEventListener("click", refreshAll);
+
+$("downloadBtn").addEventListener("click", downloadCsv);
+$("downloadBtn2").addEventListener("click", downloadCsv);
+
+$("filterBtn").addEventListener("click", refreshAll);
+$("filterBtn2").addEventListener("click", refreshAll);
+
+$("clearBtn").addEventListener("click", ()=>{
+  ["q_start","q_end","q_category","q_vendor","q_search"].forEach(id=> $(id).value="");
+  $("q_has_receipt").value="";
+  refreshAll();
+});
+$("clearBtn2").addEventListener("click", ()=>{
+  ["q_start2","q_end2","q_category2","q_vendor2","q_search2"].forEach(id=> $(id).value="");
+  $("q_has_receipt2").value="";
+  refreshAll();
+});
+
+$("saveBtn").addEventListener("click", saveExpense);
+$("newBtn").addEventListener("click", clearForm);
+
+$("uploadReceiptBtn").addEventListener("click", uploadReceipt);
+$("openReceiptBtn").addEventListener("click", openReceipt);
+$("openReceiptLinkBtn").addEventListener("click", openReceiptLink);
+
+$("rmPreviewBtn").addEventListener("click", async ()=>{
+  const f = $("rmFile").files?.[0];
+  if (!f){ $("rmStatus").textContent="Choose a CSV first."; $("rmStatus").className="status bad"; return; }
+  await rmPreview(f, "rmStatus", "rmPreviewBody", "rmPreviewCards");
+});
+$("rmImportBtn").addEventListener("click", ()=> rmImport("rmStatus"));
+
+$("rmPreviewBtn2").addEventListener("click", async ()=>{
+  const f = $("rmFile2").files?.[0];
+  if (!f){ $("rmStatus2").textContent="Choose a CSV first."; $("rmStatus2").className="status bad"; return; }
+  await rmPreview(f, "rmStatus2", "rmPreviewBody", "rmPreviewCards");
+});
+$("rmImportBtn2").addEventListener("click", ()=> rmImport("rmStatus2"));
+
+/* initial load */
+(async function init(){
+  await refreshAll();
+})();
+</script>
+</body>
+</html>

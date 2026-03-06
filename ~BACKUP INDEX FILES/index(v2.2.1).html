@@ -1,0 +1,1094 @@
+<!--
+Expense Tracker — index.html
+Version: v2.2.1
+Changes (from v2.1.1):
+- Title updated to "Expense Tracker v2026"
+- Added 📊 favicon (SVG data URI)
+- Removed subtitle ("Single-user — tax-ready first")
+- Ensured header never overflows (tabs horizontal-scroll; actions wrap; no off-screen pills)
+- API indicator remains footer-only
+- Kept mobile transactions Option B (cards on phones)
+- Added desktop-only "Quick lanes" pills row under header (no overflow)
+-->
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Expense Tracker v2026</title>
+
+  <!-- 📊 favicon via inline SVG -->
+  <link rel="icon" type="image/svg+xml"
+    href='data:image/svg+xml;utf8,
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">
+  <rect width="64" height="64" rx="14" fill="%230b1230"/>
+  <text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle" font-size="34">📊</text>
+</svg>' />
+
+  <style>
+    :root{
+      --bg0:#060a14;
+      --bg1:#0b1230;
+      --card:#0d1636cc;
+      --card2:#0a122bcc;
+      --line:rgba(255,255,255,.10);
+      --line2:rgba(255,255,255,.14);
+      --txt:#e9eefc;
+      --muted:rgba(233,238,252,.70);
+      --muted2:rgba(233,238,252,.55);
+      --accent:#4f7dff;
+      --accent2:#8cc8ff;
+      --good:#22c55e;
+      --warn:#f59e0b;
+      --bad:#ef4444;
+      --shadow: 0 18px 60px rgba(0,0,0,.45);
+      --radius: 18px;
+      --radius2: 22px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      color:var(--txt);
+      background:
+        radial-gradient(1000px 420px at 20% 8%, rgba(79,125,255,.30), transparent 60%),
+        radial-gradient(1200px 520px at 82% 10%, rgba(34,197,94,.22), transparent 65%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      overflow-x:hidden;
+    }
+
+    a{color:inherit}
+    .wrap{
+      max-width: 1420px;
+      margin: 22px auto;
+      padding: 0 14px 28px;
+    }
+
+    .shell{
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 28px;
+      background: rgba(7,10,18,.52);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+
+    /* Header */
+    .hdr{
+      display:flex;
+      gap:14px;
+      align-items:center;
+      justify-content:space-between;
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255,255,255,.10);
+      background: linear-gradient(90deg, rgba(10,16,30,.78), rgba(10,16,30,.38));
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-width: 240px;
+    }
+    .dot{
+      width:14px;height:14px;border-radius:50%;
+      background: radial-gradient(circle at 35% 35%, #cbe2ff, #4f7dff 55%, #1d2b6a);
+      box-shadow: 0 0 0 4px rgba(79,125,255,.12);
+      flex:0 0 auto;
+    }
+    .title{
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: .01em;
+      line-height:1;
+    }
+
+    .tabRow{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      overflow-x:auto;
+      overflow-y:hidden;
+      padding: 4px 2px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      flex: 1 1 auto;
+    }
+    .tabRow::-webkit-scrollbar{ display:none; }
+
+    .tab{
+      appearance:none;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04);
+      color: var(--txt);
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-weight: 800;
+      cursor:pointer;
+      white-space: nowrap;
+      transition: transform .12s ease, background .12s ease, border-color .12s ease;
+      flex:0 0 auto;
+    }
+    .tab:hover{ transform: translateY(-1px); background: rgba(255,255,255,.07); }
+    .tab.active{
+      border-color: rgba(79,125,255,.55);
+      background: rgba(79,125,255,.14);
+      box-shadow: 0 0 0 4px rgba(79,125,255,.10) inset;
+    }
+
+    .btnRow{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex:0 0 auto;
+      flex-wrap: wrap;
+      justify-content:flex-end;
+    }
+    .btn{
+      appearance:none;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color: var(--txt);
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-weight: 800;
+      cursor:pointer;
+      transition: transform .12s ease, background .12s ease, border-color .12s ease;
+    }
+    .btn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.10); border-color: rgba(140,200,255,.35); }
+    .btn.primary{
+      border-color: rgba(79,125,255,.55);
+      background: rgba(79,125,255,.14);
+    }
+
+    /* Quick lanes (desktop-only) */
+    .quickLanes{
+      display:none;
+      margin: 12px 16px 0;
+      padding: 10px 12px;
+      gap: 10px;
+      align-items:center;
+      justify-content:flex-end;
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 18px;
+      background: rgba(10,16,30,.35);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    }
+    .quickLanes .lane{
+      appearance:none;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color: var(--txt);
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-weight: 800;
+      cursor:pointer;
+      transition: transform .12s ease, background .12s ease, border-color .12s ease;
+      white-space: nowrap;
+    }
+    .quickLanes .lane:hover{ transform: translateY(-1px); background: rgba(255,255,255,.10); border-color: rgba(140,200,255,.35); }
+    .quickLanes .quickHint{
+      margin-left: 10px;
+      opacity:.70;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    @media (min-width: 1100px){
+      .quickLanes{ display:flex; }
+    }
+
+    /* Layout */
+    .grid{
+      display:grid;
+      grid-template-columns: 360px 1fr;
+      gap: 14px;
+      padding: 14px 16px 18px;
+      align-items:start;
+    }
+    @media (max-width: 980px){
+      .grid{ grid-template-columns: 1fr; }
+      .brand{ min-width: unset; }
+    }
+
+    .card{
+      border:1px solid rgba(255,255,255,.10);
+      border-radius: var(--radius2);
+      background: rgba(10,16,30,.46);
+      box-shadow: 0 18px 60px rgba(0,0,0,.35);
+      overflow:hidden;
+    }
+    .cardH{
+      padding: 14px 14px 10px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+    }
+    .cardT{
+      font-weight:900;
+      letter-spacing: .12em;
+      opacity:.88;
+      font-size: 14px;
+    }
+    .pill{
+      padding: 6px 10px;
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 999px;
+      background: rgba(255,255,255,.05);
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .cardB{ padding: 12px 14px 14px; }
+
+    .hint{
+      font-size: 13px;
+      color: var(--muted);
+      line-height:1.35;
+    }
+
+    .row{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    @media (max-width: 460px){ .row{ grid-template-columns:1fr; } }
+
+    label{
+      display:block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      letter-spacing:.02em;
+    }
+    input, select, textarea{
+      width:100%;
+      padding: 11px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.22);
+      color: var(--txt);
+      outline:none;
+      font-size: 14px;
+    }
+    textarea{ min-height: 70px; resize: vertical; }
+
+    .muter{ color: var(--muted2); font-size:12px; }
+
+    /* Table */
+    .tableWrap{
+      border:1px solid rgba(255,255,255,.10);
+      border-radius: 18px;
+      overflow:hidden;
+      background: rgba(0,0,0,.15);
+    }
+    table{
+      width:100%;
+      border-collapse: collapse;
+      font-variant-numeric: tabular-nums;
+    }
+    thead th{
+      text-align:left;
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing:.02em;
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.03);
+      white-space: nowrap;
+    }
+    tbody td{
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      vertical-align: top;
+    }
+    tbody tr:hover{ background: rgba(255,255,255,.03); cursor:pointer; }
+    .right{ text-align:right; }
+    .mono{ font-family: var(--mono); }
+
+    /* Mobile: Option B card layout for transactions */
+    .cards{ display:none; }
+    @media (max-width: 760px){
+      .tableWrap{ display:none; }
+      .cards{ display:block; }
+      .txCard{
+        border:1px solid rgba(255,255,255,.10);
+        border-radius: 18px;
+        background: rgba(0,0,0,.16);
+        padding: 12px;
+        margin-bottom: 10px;
+      }
+      .txTop{
+        display:flex;
+        justify-content:space-between;
+        gap:10px;
+        align-items:flex-start;
+      }
+      .txVendor{ font-weight: 900; }
+      .txAmt{ font-weight: 900; white-space:nowrap; }
+      .txMeta{
+        margin-top: 8px;
+        display:flex;
+        flex-wrap:wrap;
+        gap:8px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .tag{
+        padding: 4px 8px;
+        border-radius: 999px;
+        border: 1px solid rgba(255,255,255,.10);
+        background: rgba(255,255,255,.05);
+      }
+    }
+
+    .footer{
+      padding: 10px 14px 14px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      color: var(--muted2);
+      font-size: 12px;
+      border-top: 1px solid rgba(255,255,255,.08);
+    }
+    .apiHint{ font-family: var(--mono); opacity:.8; }
+    .danger{ color: var(--bad); }
+    .ok{ color: var(--good); }
+    .warn{ color: var(--warn); }
+
+    .hidden{ display:none !important; }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="shell">
+      <div class="hdr">
+        <div class="brand">
+          <div class="dot"></div>
+          <div class="title">Expense Tracker</div>
+        </div>
+
+        <div class="tabRow" role="tablist" aria-label="Primary navigation">
+          <button class="tab active" type="button" data-tab="dashboard">Dashboard</button>
+          <button class="tab" type="button" data-tab="transactions">Transactions</button>
+          <button class="tab" type="button" data-tab="import">Import</button>
+          <button class="tab" type="button" data-tab="review">Review</button>
+          <button class="tab" type="button" data-tab="reports">Reports</button>
+          <button class="tab" type="button" data-tab="tax">Tax</button>
+          <button class="tab" type="button" data-tab="backup">Backup</button>
+          <button class="tab" type="button" data-tab="invoices">Invoices</button>
+        </div>
+
+        <div class="btnRow">
+          <button class="btn" id="btnRefresh" type="button">Refresh</button>
+          <button class="btn" id="btnCsv" type="button">Download CSV</button>
+        </div>
+      </div>
+
+    <div class="quickLanes" aria-label="Quick lanes">
+      <button class="lane" type="button" data-goto="reports" title="Jump to Reports">Reports</button>
+      <button class="lane" type="button" data-goto="tax" title="Jump to Tax">Tax</button>
+      <button class="lane" type="button" data-goto="backup" title="Jump to Backup">Backup</button>
+      <button class="lane" type="button" data-goto="invoices" title="Jump to Invoices">Invoices</button>
+      <div class="quickHint">Desktop shortcut pills—same as tabs.</div>
+    </div>
+
+      <div class="grid">
+        <!-- LEFT -->
+        <div class="colL">
+          <div class="card" id="cardDashboard">
+            <div class="cardH">
+              <div class="cardT">DASHBOARD</div>
+              <div class="pill" id="selBadge">None</div>
+            </div>
+            <div class="cardB">
+              <div class="hint"><b>Receipt SOP</b> — import RM CSV → review high-dollar items → attach receipt (&gt;$75) → export reports for taxes.</div>
+              <hr style="border:none;border-top:1px solid rgba(255,255,255,.08); margin:12px 0;">
+              <div class="hint"><b>Selected transaction</b></div>
+
+              <div style="height:10px"></div>
+              <div class="row">
+                <div>
+                  <label>Date</label>
+                  <input id="fDate" type="date">
+                </div>
+                <div>
+                  <label>Amount (USD) — negative = income</label>
+                  <input id="fAmt" type="number" step="0.01" placeholder="12.34 or -1200.00">
+                </div>
+              </div>
+
+              <div style="height:10px"></div>
+              <div class="row">
+                <div>
+                  <label>Vendor</label>
+                  <input id="fVendor" type="text" placeholder="Vendor">
+                </div>
+                <div>
+                  <label>Category</label>
+                  <input id="fCat" type="text" placeholder="Category">
+                </div>
+              </div>
+
+              <div style="height:10px"></div>
+              <div class="row">
+                <div>
+                  <label>Notes</label>
+                  <textarea id="fNotes" placeholder="What was it for? Client? Project? Location?"></textarea>
+                </div>
+                <div>
+                  <label>Receipt link (Google Drive URL — optional)</label>
+                  <input id="fReceiptLink" type="url" placeholder="https://drive.google.com/...">
+                  <div style="height:8px"></div>
+                  <button class="btn primary" id="btnOpenLink" type="button">Open link</button>
+                </div>
+              </div>
+
+              <div style="height:10px"></div>
+              <div class="row">
+                <button class="btn primary" id="btnSave" type="button">Save (create or update)</button>
+                <button class="btn" id="btnNew" type="button">New</button>
+              </div>
+
+              <div style="height:10px"></div>
+              <div class="hint">Receipt (PDF/JPG/PNG/WEBP) — attach here (stored on NAS).</div>
+              <div style="height:8px"></div>
+              <div class="row">
+                <div>
+                  <input id="receiptFile" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/*">
+                </div>
+                <div style="display:flex; gap:10px">
+                  <button class="btn" id="btnUpload" type="button">Upload receipt</button>
+                  <button class="btn" id="btnOpenReceipt" type="button">Open receipt</button>
+                </div>
+              </div>
+
+              <div style="height:10px"></div>
+              <div id="msg" class="muter"></div>
+            </div>
+          </div>
+
+          <div class="card" id="cardImport" style="margin-top:14px">
+            <div class="cardH">
+              <div class="cardT">IMPORT (ROCKET MONEY CSV)</div>
+            </div>
+            <div class="cardB">
+              <div class="hint">
+                Uses RM headers: Date, Name, Amount, Category, Account, Tags, Notes, Group, Type, Status (and optional Tax Deductible).
+                Import is conservative — preview first, then bulk import.
+              </div>
+              <div style="height:10px"></div>
+              <input id="rmFile" type="file" accept=".csv,text/csv">
+              <div style="height:10px"></div>
+              <div class="row">
+                <button class="btn" id="btnPreview" type="button">Preview</button>
+                <button class="btn primary" id="btnImport" type="button">Import to tracker</button>
+              </div>
+              <div style="height:10px"></div>
+              <div id="rmMsg" class="muter"></div>
+            </div>
+          </div>
+
+          <div class="card" id="cardCharts" style="margin-top:14px">
+            <div class="cardH">
+              <div class="cardT">CHARTS (MVP)</div>
+            </div>
+            <div class="cardB">
+              <div class="row">
+                <div class="pill"><b>Total expenses (filtered)</b> <span id="sumExp">$0.00</span></div>
+                <div class="pill"><b>Receipts attached</b> <span id="sumRcpt">0</span></div>
+              </div>
+              <div style="height:10px"></div>
+              <div class="pill"><b>Over $75 without receipt</b> <span id="sumHi">0</span></div>
+              <div style="height:12px"></div>
+              <canvas id="pie" width="300" height="240"></canvas>
+              <div class="muter" style="margin-top:6px">Spend by category (pie)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT -->
+        <div class="colR">
+          <div class="card" id="cardTransactions">
+            <div class="cardH">
+              <div class="cardT">TRANSACTIONS</div>
+              <div class="pill"><span id="rowCount">0</span> rows</div>
+            </div>
+            <div class="cardB">
+              <div class="row">
+                <div>
+                  <label>Start</label>
+                  <input id="qStart" type="date">
+                </div>
+                <div>
+                  <label>End</label>
+                  <input id="qEnd" type="date">
+                </div>
+              </div>
+
+              <div style="height:10px"></div>
+              <div class="row">
+                <div>
+                  <label>Category</label>
+                  <input id="qCat" type="text" placeholder="Exact match">
+                </div>
+                <div>
+                  <label>Vendor</label>
+                  <input id="qVendor" type="text" placeholder="Exact match">
+                </div>
+              </div>
+
+              <div style="height:10px"></div>
+              <div class="row">
+                <div>
+                  <label>Search (vendor/notes)</label>
+                  <input id="qSearch" type="text" placeholder="e.g. Starbucks">
+                </div>
+                <div>
+                  <label>Has receipt</label>
+                  <select id="qHasReceipt">
+                    <option value="any">Any</option>
+                    <option value="yes">Yes</option>
+                    <option value="no">No</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style="height:10px"></div>
+              <div class="row">
+                <button class="btn primary" id="btnApply" type="button">Apply</button>
+                <button class="btn" id="btnClear" type="button">Clear</button>
+              </div>
+
+              <div style="height:12px"></div>
+
+              <div class="tableWrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th class="mono">ID</th>
+                      <th>Date</th>
+                      <th>Vendor</th>
+                      <th>Category</th>
+                      <th class="right">Amount</th>
+                      <th>Receipt</th>
+                      <th>Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbody"></tbody>
+                </table>
+              </div>
+
+              <div class="cards" id="cards"></div>
+            </div>
+          </div>
+
+          <div class="card hidden" id="cardReports" style="margin-top:14px">
+            <div class="cardH"><div class="cardT">REPORTS</div></div>
+            <div class="cardB">
+              <div class="hint">Phase 1.5—category rollups, annual summaries, export presets.</div>
+            </div>
+          </div>
+
+          <div class="card hidden" id="cardTax" style="margin-top:14px">
+            <div class="cardH"><div class="cardT">TAX</div></div>
+            <div class="cardB">
+              <div class="hint">Phase 1.5—tax deductible review + Schedule C style export.</div>
+            </div>
+          </div>
+
+          <div class="card hidden" id="cardBackup" style="margin-top:14px">
+            <div class="cardH"><div class="cardT">BACKUP</div></div>
+            <div class="cardB">
+              <div class="hint">Phase 1.5—export DB + receipts index + restore instructions.</div>
+            </div>
+          </div>
+
+          <div class="card hidden" id="cardInvoices" style="margin-top:14px">
+            <div class="cardH"><div class="cardT">INVOICES</div></div>
+            <div class="cardB">
+              <div class="hint">Phase 3: Invoices + client income tracker lives here.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <div class="apiHint">API: <span id="apiBase">/api</span> (same origin)</div>
+        <div class="muter">Expense Tracker v2026</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  // ====== Config ======
+  const API = "/api";
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => Array.from(document.querySelectorAll(s));
+
+  $("#apiBase").textContent = API;
+
+  // ====== Tabs / views ======
+  const viewToCard = {
+    dashboard: ["#cardDashboard","#cardImport","#cardCharts","#cardTransactions"],
+    transactions: ["#cardDashboard","#cardTransactions"],
+    import: ["#cardImport","#cardTransactions"],
+    review: ["#cardDashboard","#cardTransactions"],
+    reports: ["#cardReports"],
+    tax: ["#cardTax"],
+    backup: ["#cardBackup"],
+    invoices: ["#cardInvoices"],
+  };
+
+  function setView(view){
+    $$(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === view));
+    // hide all view cards
+    ["#cardDashboard","#cardImport","#cardCharts","#cardTransactions","#cardReports","#cardTax","#cardBackup","#cardInvoices"].forEach(id=>{
+      const el = $(id);
+      if(el) el.classList.add("hidden");
+    });
+    // show requested cards
+    (viewToCard[view] || ["#cardDashboard"]).forEach(id=>{
+      const el = $(id);
+      if(el) el.classList.remove("hidden");
+    });
+  }
+
+  $$(".tab").forEach((b) => {
+    b.addEventListener("click", () => setView(b.dataset.tab));
+  });
+
+  // Quick lanes (desktop-only) — jump to tab + scroll to top of content
+  $$(".quickLanes .lane").forEach((b) => {
+    b.addEventListener("click", () => {
+      const goto = b.getAttribute("data-goto");
+      if (!goto) return;
+      setView(goto);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  });
+
+  // ====== API helpers ======
+  async function apiJson(url, opts={}){
+    const res = await fetch(url, opts);
+    if(!res.ok){
+      const t = await res.text().catch(()=> "");
+      throw new Error(t || `HTTP ${res.status}`);
+    }
+    const ct = res.headers.get("content-type") || "";
+    if(ct.includes("application/json")) return res.json();
+    return res.text();
+  }
+
+  function fmtUSD(cents){
+    const v = (cents||0)/100;
+    return v.toLocaleString(undefined,{style:"currency",currency:"USD"});
+  }
+
+  // ====== State ======
+  let expenses = [];
+  let selected = null;
+
+  function setMsg(s, cls=""){
+    const el = $("#msg");
+    el.className = "muter " + cls;
+    el.textContent = s;
+  }
+  function setRmMsg(s, cls=""){
+    const el = $("#rmMsg");
+    el.className = "muter " + cls;
+    el.textContent = s;
+  }
+
+  // ====== Fetch & render ======
+  async function refresh(){
+    setMsg("Loading…");
+    try{
+      const params = new URLSearchParams();
+      params.set("limit","300");
+      if($("#qStart").value) params.set("start", $("#qStart").value);
+      if($("#qEnd").value) params.set("end", $("#qEnd").value);
+      if($("#qCat").value) params.set("category", $("#qCat").value.trim());
+      if($("#qVendor").value) params.set("vendor", $("#qVendor").value.trim());
+      if($("#qSearch").value) params.set("q", $("#qSearch").value.trim());
+      if($("#qHasReceipt").value !== "any") params.set("has_receipt", $("#qHasReceipt").value);
+
+      const data = await apiJson(`${API}/expenses?${params.toString()}`);
+      expenses = data.items || [];
+      $("#rowCount").textContent = String(expenses.length);
+      renderTable();
+      renderCards();
+      renderStats();
+      setMsg("Ready.", "ok");
+    }catch(e){
+      setMsg(`Fetch failed: ${e.message}`, "danger");
+    }
+  }
+
+  function renderTable(){
+    const tb = $("#tbody");
+    tb.innerHTML = "";
+    for(const e of expenses){
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="mono">${e.id}</td>
+        <td>${e.expense_date || ""}</td>
+        <td>${escapeHtml(e.vendor || "")}</td>
+        <td>${escapeHtml(e.category || "")}</td>
+        <td class="right">${fmtUSD(e.amount_cents)}</td>
+        <td>${e.receipt_path ? "✅" : ""}</td>
+        <td>${escapeHtml(e.notes || "")}</td>
+      `;
+      tr.addEventListener("click", ()=> selectExpense(e));
+      tb.appendChild(tr);
+    }
+  }
+
+  function renderCards(){
+    const wrap = $("#cards");
+    wrap.innerHTML = "";
+    for(const e of expenses){
+      const d = document.createElement("div");
+      d.className = "txCard";
+      const amt = fmtUSD(e.amount_cents);
+      d.innerHTML = `
+        <div class="txTop">
+          <div>
+            <div class="txVendor">${escapeHtml(e.vendor||"")}</div>
+            <div class="muter">${escapeHtml(e.expense_date||"")}</div>
+          </div>
+          <div class="txAmt">${amt}</div>
+        </div>
+        <div class="txMeta">
+          <span class="tag">${escapeHtml(e.category||"")}</span>
+          <span class="tag">${e.receipt_path ? "Receipt ✅" : "No receipt"}</span>
+          <span class="tag mono">#${e.id}</span>
+        </div>
+      `;
+      d.addEventListener("click", ()=> selectExpense(e));
+      wrap.appendChild(d);
+    }
+  }
+
+  function renderStats(){
+    // Total expenses (filtered) = positive spend only
+    const spend = expenses.filter(e => (e.amount_cents||0) > 0).reduce((s,e)=> s + (e.amount_cents||0), 0);
+    $("#sumExp").textContent = fmtUSD(spend);
+
+    const rcpt = expenses.filter(e => !!e.receipt_path).length;
+    $("#sumRcpt").textContent = String(rcpt);
+
+    const hi = expenses.filter(e => (e.amount_cents||0) >= 7500 && !e.receipt_path).length;
+    $("#sumHi").textContent = String(hi);
+
+    drawPie();
+  }
+
+  // ====== Select / edit ======
+  function selectExpense(e){
+    selected = e;
+    $("#selBadge").textContent = `#${e.id}`;
+    $("#fDate").value = e.expense_date || "";
+    $("#fAmt").value = ((e.amount_cents||0)/100).toFixed(2);
+    $("#fVendor").value = e.vendor || "";
+    $("#fCat").value = e.category || "";
+    $("#fNotes").value = e.notes || "";
+    $("#fReceiptLink").value = e.receipt_link || "";
+  }
+
+  function clearForm(){
+    selected = null;
+    $("#selBadge").textContent = "None";
+    $("#fDate").value = "";
+    $("#fAmt").value = "";
+    $("#fVendor").value = "";
+    $("#fCat").value = "";
+    $("#fNotes").value = "";
+    $("#fReceiptLink").value = "";
+    $("#receiptFile").value = "";
+  }
+
+  async function save(){
+    try{
+      const payload = {
+        expense_date: $("#fDate").value || null,
+        vendor: $("#fVendor").value.trim(),
+        category: $("#fCat").value.trim(),
+        amount_cents: Math.round(parseFloat($("#fAmt").value||"0")*100),
+        notes: $("#fNotes").value || "",
+        receipt_link: $("#fReceiptLink").value || ""
+      };
+      if(!payload.expense_date || !payload.vendor || !payload.category) throw new Error("Date, Vendor, Category required.");
+
+      let res;
+      if(selected && selected.id){
+        res = await apiJson(`${API}/expenses/${selected.id}`, {
+          method:"PATCH",
+          headers:{ "content-type":"application/json" },
+          body: JSON.stringify(payload)
+        });
+      }else{
+        res = await apiJson(`${API}/expenses`, {
+          method:"POST",
+          headers:{ "content-type":"application/json" },
+          body: JSON.stringify(payload)
+        });
+      }
+      setMsg("Saved.", "ok");
+      await refresh();
+      // keep selection
+      if(res?.id){
+        const found = expenses.find(x=> x.id === res.id);
+        if(found) selectExpense(found);
+      }
+    }catch(e){
+      setMsg(`Save failed: ${e.message}`, "danger");
+    }
+  }
+
+  async function uploadReceipt(){
+    try{
+      if(!selected?.id) throw new Error("Select a transaction row first.");
+      const f = $("#receiptFile").files?.[0];
+      if(!f) throw new Error("Choose a file first.");
+      const fd = new FormData();
+      fd.append("receipt", f);
+      const res = await apiJson(`${API}/expenses/${selected.id}/receipt`, { method:"POST", body: fd });
+      setMsg("Receipt uploaded.", "ok");
+      await refresh();
+      const found = expenses.find(x=> x.id === selected.id);
+      if(found) selectExpense(found);
+    }catch(e){
+      setMsg(`Upload failed: ${e.message}`, "danger");
+    }
+  }
+
+  function openReceipt(){
+    if(!selected?.receipt_path){ setMsg("No receipt on this transaction.", "warn"); return; }
+    window.open(`${API}/receipts/${encodeURIComponent(selected.receipt_path)}`, "_blank", "noopener,noreferrer");
+  }
+  function openLink(){
+    const u = ($("#fReceiptLink").value || "").trim();
+    if(!u){ setMsg("No link set.", "warn"); return; }
+    window.open(u, "_blank", "noopener,noreferrer");
+  }
+
+  // ====== Import (RM CSV) ======
+  function parseCsv(text){
+    // minimal CSV parser (handles quoted fields)
+    const rows = [];
+    let i=0, field="", row=[], inQ=false;
+    while(i<text.length){
+      const c=text[i];
+      if(inQ){
+        if(c === '"' && text[i+1] === '"'){ field+='"'; i+=2; continue; }
+        if(c === '"'){ inQ=false; i++; continue; }
+        field+=c; i++; continue;
+      }else{
+        if(c === '"'){ inQ=true; i++; continue; }
+        if(c === ','){ row.push(field); field=""; i++; continue; }
+        if(c === '\n'){
+          row.push(field); field="";
+          if(row.length>1 || row[0]!== "") rows.push(row);
+          row=[]; i++; continue;
+        }
+        if(c === '\r'){ i++; continue; }
+        field+=c; i++; continue;
+      }
+    }
+    row.push(field);
+    if(row.length>1 || row[0]!== "") rows.push(row);
+    return rows;
+  }
+
+  function mapRm(rows){
+    if(rows.length<2) return { items:[], warnings:["CSV appears empty."] };
+    const hdr = rows[0].map(h => (h||"").trim());
+    const idx = (name) => hdr.findIndex(h => h.toLowerCase() === name.toLowerCase());
+
+    const iDate = idx("Date");
+    const iName = idx("Name");
+    const iAmount = idx("Amount");
+    const iCat = idx("Category");
+    const iNotes = idx("Notes");
+    const iTags = idx("Tags");
+    const iTaxDed = idx("Tax Deductible"); // optional
+
+    const warnings = [];
+    for(const need of ["Date","Name","Amount","Category"]){
+      if(idx(need) === -1) warnings.push(`Missing header: ${need}`);
+    }
+    if(warnings.length) return { items:[], warnings };
+
+    const out = [];
+    for(let r=1;r<rows.length;r++){
+      const row = rows[r];
+      const date = (row[iDate]||"").trim();
+      const vendor = (row[iName]||"").trim();
+      const cat = (row[iCat]||"").trim() || "Uncategorized";
+      const amtRaw = (row[iAmount]||"").replace(/[^0-9\.\-]/g,"");
+      const amount = parseFloat(amtRaw||"0");
+      const notes = ((row[iNotes]||"") + (row[iTags] ? ` | tags: ${row[iTags]}` : "")).trim();
+
+      // rm_id: stable-ish synthetic id
+      const rm_id = `rm:${date}:${vendor}:${cat}:${amtRaw}:${r}`;
+
+      const item = {
+        date,
+        vendor,
+        category: cat,
+        amount: amount.toFixed(2),
+        notes,
+        rm_id,
+        source: "rm"
+      };
+
+      // tax deductible (RM provided) — store as tag in notes for now
+      if(iTaxDed !== -1){
+        const td = (row[iTaxDed]||"").trim().toLowerCase();
+        if(td === "yes" || td === "true" || td === "1") item.notes = (item.notes ? (item.notes + " | ") : "") + "tax_deductible:true";
+      }
+
+      if(date && vendor) out.push(item);
+    }
+    return { items: out, warnings };
+  }
+
+  let previewItems = [];
+
+  async function rmPreview(){
+    try{
+      const f = $("#rmFile").files?.[0];
+      if(!f) throw new Error("Choose an RM CSV first.");
+      const txt = await f.text();
+      const rows = parseCsv(txt);
+      const mapped = mapRm(rows);
+      if(mapped.warnings?.length){
+        setRmMsg("Preview warnings: " + mapped.warnings.join(" | "), "warn");
+      }else{
+        setRmMsg(`Preview OK: ${mapped.items.length} rows ready.`, "ok");
+      }
+      previewItems = mapped.items;
+    }catch(e){
+      setRmMsg(`Preview failed: ${e.message}`, "danger");
+      previewItems = [];
+    }
+  }
+
+  async function rmImport(){
+    try{
+      if(!previewItems.length){
+        await rmPreview();
+        if(!previewItems.length) throw new Error("No preview items to import.");
+      }
+      const payload = { items: previewItems };
+      const res = await apiJson(`${API}/expenses/bulk`, {
+        method:"POST",
+        headers:{ "content-type":"application/json" },
+        body: JSON.stringify(payload)
+      });
+      setRmMsg(`Imported. inserted=${res.inserted} updated=${res.updated} skipped=${res.skipped}`, "ok");
+      await refresh();
+      setView("transactions");
+    }catch(e){
+      setRmMsg(`Import failed: ${e.message}`, "danger");
+    }
+  }
+
+  // ====== Charts (simple pie) ======
+  function drawPie(){
+    const c = $("#pie");
+    if(!c) return;
+    const ctx = c.getContext("2d");
+    ctx.clearRect(0,0,c.width,c.height);
+
+    // category totals (spend only)
+    const m = new Map();
+    for(const e of expenses){
+      const v = e.amount_cents||0;
+      if(v<=0) continue;
+      const k = e.category || "Uncategorized";
+      m.set(k, (m.get(k)||0) + v);
+    }
+    const top = Array.from(m.entries()).sort((a,b)=>b[1]-a[1]).slice(0,8);
+    const total = top.reduce((s,kv)=>s+kv[1],0);
+    if(!total){
+      ctx.fillStyle = "rgba(233,238,252,.6)";
+      ctx.font = "12px " + getComputedStyle(document.body).fontFamily;
+      ctx.fillText("No spend data in current filter.", 10, 20);
+      return;
+    }
+
+    const cx = 120, cy = 120, r = 90;
+    let a0 = -Math.PI/2;
+
+    // default palette via HSL (no hard-coded colors list)
+    top.forEach((kv, i)=>{
+      const frac = kv[1]/total;
+      const a1 = a0 + frac * Math.PI*2;
+      ctx.beginPath();
+      ctx.moveTo(cx,cy);
+      ctx.arc(cx,cy,r,a0,a1);
+      ctx.closePath();
+      const hue = (i*42) % 360;
+      ctx.fillStyle = `hsla(${hue}, 78%, 60%, 0.85)`;
+      ctx.fill();
+      a0 = a1;
+    });
+
+    // legend
+    ctx.font = "12px " + getComputedStyle(document.body).fontFamily;
+    top.forEach((kv, i)=>{
+      const hue = (i*42) % 360;
+      const y = 22 + i*16;
+      ctx.fillStyle = `hsla(${hue}, 78%, 60%, 0.90)`;
+      ctx.fillRect(230, y-10, 10, 10);
+      ctx.fillStyle = "rgba(233,238,252,.85)";
+      const pct = Math.round((kv[1]/total)*100);
+      ctx.fillText(`${kv[0]} (${pct}%)`, 246, y);
+    });
+  }
+
+  function escapeHtml(s){
+    return (s||"").replace(/[&<>"']/g, (c)=>({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    }[c]));
+  }
+
+  // ====== Bind UI ======
+  $("#btnRefresh").addEventListener("click", refresh);
+  $("#btnApply").addEventListener("click", refresh);
+  $("#btnClear").addEventListener("click", ()=>{
+    $("#qStart").value=""; $("#qEnd").value="";
+    $("#qCat").value=""; $("#qVendor").value="";
+    $("#qSearch").value=""; $("#qHasReceipt").value="any";
+    refresh();
+  });
+
+  $("#btnSave").addEventListener("click", save);
+  $("#btnNew").addEventListener("click", clearForm);
+  $("#btnUpload").addEventListener("click", uploadReceipt);
+  $("#btnOpenReceipt").addEventListener("click", openReceipt);
+  $("#btnOpenLink").addEventListener("click", openLink);
+
+  $("#btnPreview").addEventListener("click", rmPreview);
+  $("#btnImport").addEventListener("click", rmImport);
+
+  $("#btnCsv").addEventListener("click", ()=>{
+    const url = `${API}/export.csv`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  });
+
+  // boot
+  setView("dashboard");
+  refresh();
+  </script>
+</body>
+</html>

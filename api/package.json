@@ -1,0 +1,19 @@
+{
+  "name": "expense-api",
+  "version": "1.0.0",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.48.1",
+    "cors": "^2.8.5",
+    "csv-parser": "^3.2.0",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.3",
+    "jwks-rsa": "^4.0.1",
+    "multer": "^2.1.0",
+    "zod": "^4.3.6"
+  }
+}

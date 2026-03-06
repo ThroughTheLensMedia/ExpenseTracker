@@ -1,0 +1,813 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Expense Tracker</title>
+  <style>
+    :root{
+      --bg:#0b0c10;
+      --card:#11131a;
+      --card2:#0f1117;
+      --muted:#a6adbb;
+      --text:#e5e7eb;
+      --line:#1f2430;
+      --accent:#7dd3fc;
+      --danger:#fb7185;
+      --ok:#34d399;
+      --shadow: 0 12px 24px rgba(0,0,0,.35);
+      --r:14px;
+      --pad:16px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font: 14px/1.4 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background: radial-gradient(1200px 700px at 50% -10%, rgba(125,211,252,.12), transparent 60%), var(--bg);
+      color:var(--text);
+    }
+    a{color:var(--accent);text-decoration:none}
+    .wrap{max-width:1200px;margin:0 auto;padding:18px}
+    header{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:14px; padding:10px 12px; border:1px solid var(--line);
+      background:rgba(17,19,26,.7); border-radius:var(--r); box-shadow:var(--shadow);
+      position:sticky; top:12px; backdrop-filter: blur(10px); z-index:50;
+    }
+    .brand{display:flex; align-items:center; gap:10px;}
+    .brand h1{margin:0; font-size:16px; letter-spacing:.2px}
+    nav{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end}
+    .pill{
+      border:1px solid var(--line); background:var(--card2); color:var(--text);
+      padding:8px 10px; border-radius:999px; cursor:pointer;
+      transition:.15s ease; user-select:none;
+    }
+    .pill:hover{border-color:rgba(125,211,252,.35)}
+    .pill.active{border-color:rgba(125,211,252,.75); box-shadow:0 0 0 2px rgba(125,211,252,.08) inset}
+    main{margin-top:14px; display:grid; gap:14px}
+    .card{
+      border:1px solid var(--line); background:rgba(17,19,26,.85);
+      border-radius:var(--r); box-shadow:var(--shadow); padding:var(--pad);
+    }
+    .card h2{margin:0 0 10px; font-size:14px; color:var(--text); display:flex; align-items:center; justify-content:space-between}
+    .muted{color:var(--muted)}
+    .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+    .grid{display:grid; gap:12px; grid-template-columns: 1fr}
+    @media (min-width: 900px){ .grid{grid-template-columns: 1fr 1fr} }
+    input, select, textarea{
+      width:100%;
+      background:#0b0d12;
+      border:1px solid var(--line);
+      border-radius:10px;
+      color:var(--text);
+      padding:10px 10px;
+      outline:none;
+    }
+    textarea{min-height:90px; resize:vertical}
+    .btn{
+      border:1px solid rgba(125,211,252,.55);
+      background:rgba(125,211,252,.12);
+      color:var(--text);
+      padding:10px 12px; border-radius:12px; cursor:pointer;
+      transition:.15s ease; user-select:none;
+    }
+    .btn:hover{background:rgba(125,211,252,.18)}
+    .btn.secondary{
+      border-color:var(--line); background:var(--card2);
+    }
+    .btn.danger{border-color:rgba(251,113,133,.6); background:rgba(251,113,133,.12)}
+    .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end}
+    .controls > *{flex: 0 0 auto}
+    .controls .grow{flex:1 1 280px}
+    .stat{
+      border:1px solid var(--line); border-radius:14px; padding:12px;
+      background:rgba(15,17,23,.8)
+    }
+    .stat .k{font-size:12px; color:var(--muted)}
+    .stat .v{font-size:18px; margin-top:6px}
+    .tableWrap{
+      overflow:auto;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:rgba(15,17,23,.7);
+    }
+    table{width:100%; border-collapse:collapse; min-width:900px}
+    th, td{padding:10px 10px; border-bottom:1px solid var(--line); text-align:left; white-space:nowrap}
+    th{font-size:12px; color:var(--muted); background:rgba(17,19,26,.75); position:sticky; top:0}
+    tr:hover td{background:rgba(125,211,252,.06)}
+    .tag{
+      display:inline-flex; align-items:center; gap:6px;
+      border:1px solid var(--line); border-radius:999px;
+      padding:3px 8px; font-size:12px; color:var(--muted);
+      background:rgba(15,17,23,.75);
+    }
+    .tag.ok{border-color:rgba(52,211,153,.5); color:rgba(52,211,153,.95)}
+    .tag.warn{border-color:rgba(251,191,36,.55); color:rgba(251,191,36,.95)}
+    .tag.bad{border-color:rgba(251,113,133,.55); color:rgba(251,113,133,.95)}
+    .hide{display:none !important}
+    .drawer{
+      position:fixed; inset:0; background:rgba(0,0,0,.55);
+      display:flex; align-items:flex-start; justify-content:flex-end;
+      padding:18px; z-index:99;
+    }
+    .panel{
+      width:min(560px, 100%);
+      background:rgba(17,19,26,.96);
+      border:1px solid var(--line);
+      border-radius:16px;
+      box-shadow:var(--shadow);
+      padding:16px;
+    }
+    .panel h3{margin:0 0 10px; font-size:14px}
+    .two{display:grid; gap:10px; grid-template-columns:1fr 1fr}
+    .field small{display:block; color:var(--muted); margin-bottom:6px}
+    .chk{display:flex; gap:8px; align-items:center; color:var(--muted); font-size:13px}
+    .footer{padding:12px 0; color:var(--muted); font-size:12px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="stack">
+          <h1><strong>Expense Tracker</strong></h1>
+        </div>
+      </div>
+
+      <nav id="nav">
+        <button class="pill active" data-tab="dashboard">Dashboard</button>
+        <button class="pill" data-tab="transactions">Transactions</button>
+        <button class="pill" data-tab="tax">Tax</button>
+      </nav>
+    </header>
+
+    <main>
+      <!-- DASHBOARD -->
+      <section id="tab-dashboard" class="card">
+        <h2>
+          <span>Dashboard</span>
+          <span class="muted" id="dashRange"></span>
+        </h2>
+
+        <div class="controls">
+          <div class="grow">
+            <small class="muted">Year</small>
+            <select id="yearSelect"></select>
+          </div>
+          <div class="grow">
+            <small class="muted">Search</small>
+            <input id="searchInput" placeholder="Vendor, category, notes…" />
+          </div>
+          <button class="btn secondary" id="refreshBtn">Refresh</button>
+        </div>
+
+        <div class="grid" style="margin-top:12px">
+          <div class="stat">
+            <div class="k">Total income</div>
+            <div class="v" id="statIncome">$0</div>
+          </div>
+          <div class="stat">
+            <div class="k">Total spend</div>
+            <div class="v" id="statSpend">$0</div>
+          </div>
+          <div class="stat">
+            <div class="k">Net</div>
+            <div class="v" id="statNet">$0</div>
+          </div>
+          <div class="stat">
+            <div class="k">Receipts needed (>$75, missing)</div>
+            <div class="v" id="statMissingReceipts">0</div>
+          </div>
+        </div>
+
+        <div class="grid" style="margin-top:12px">
+          <div class="card" style="margin:0">
+            <h2>Top categories (spend)</h2>
+            <div class="tableWrap">
+              <table style="min-width:520px">
+                <thead><tr><th>Category</th><th>Transactions</th><th>Spend</th></tr></thead>
+                <tbody id="topCats"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card" style="margin:0">
+            <h2>Top vendors (spend)</h2>
+            <div class="tableWrap">
+              <table style="min-width:520px">
+                <thead><tr><th>Vendor</th><th>Transactions</th><th>Spend</th></tr></thead>
+                <tbody id="topVendors"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TRANSACTIONS -->
+      <section id="tab-transactions" class="card hide">
+        <h2>
+          <span>Transactions</span>
+          <span class="muted" id="txnCount"></span>
+        </h2>
+
+        <div class="controls">
+          <div class="grow">
+            <small class="muted">Start</small>
+            <input id="startDate" placeholder="YYYY-MM-DD" />
+          </div>
+          <div class="grow">
+            <small class="muted">End</small>
+            <input id="endDate" placeholder="YYYY-MM-DD" />
+          </div>
+          <button class="btn secondary" id="applyRangeBtn">Apply</button>
+          <button class="btn secondary" id="exportBtn">Export CSV</button>
+        </div>
+
+        <div class="tableWrap" style="margin-top:12px">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Vendor</th>
+                <th>Category</th>
+                <th>Amount</th>
+                <th>Tax</th>
+                <th>Receipt</th>
+                <th>Source</th>
+              </tr>
+            </thead>
+            <tbody id="txnBody"></tbody>
+          </table>
+        </div>
+
+        <div class="muted" id="txnMsg" style="margin-top:10px; min-height:18px"></div>
+      </section>
+
+      <!-- TAX -->
+      <section id="tab-tax" class="card hide">
+        <h2>
+          <span>Tax</span>
+          <span class="muted" id="taxYearLabel"></span>
+        </h2>
+
+        <div class="controls">
+          <label class="chk">
+            Year
+            <select id="taxYearSelect"></select>
+          </label>
+          <button class="btn secondary" id="taxRefreshBtn">Refresh</button>
+          <button class="btn secondary" id="taxExportBtn">Export Summary CSV</button>
+        </div>
+
+        <div class="grid" style="margin-top:12px">
+          <div class="card" style="margin:0">
+            <h2>Schedule C buckets (summary)</h2>
+            <div class="tableWrap">
+              <table style="min-width:720px">
+                <thead>
+                  <tr>
+                    <th>Bucket</th>
+                    <th>Transactions</th>
+                    <th>Total spend</th>
+                    <th>Deductible (adj.)</th>
+                  </tr>
+                </thead>
+                <tbody id="taxBody"></tbody>
+              </table>
+            </div>
+            <div class="muted" id="taxMsg" style="margin-top:10px; min-height:18px"></div>
+          </div>
+
+          <div class="card" style="margin:0">
+            <h2>Bulk assign by category</h2>
+            <div class="muted" style="margin-bottom:10px">
+              Fast workflow—pick a category and apply a Schedule C bucket to all matching transactions for the selected year.
+            </div>
+
+            <div class="controls">
+              <select id="bulkCategory" style="flex:1; min-width:220px"></select>
+
+              <select id="bulkBucket" style="flex:1; min-width:220px">
+                <option value="">Select bucket…</option>
+                <option>Advertising</option>
+                <option>Car and truck</option>
+                <option>Commissions and fees</option>
+                <option>Contract labor</option>
+                <option>Depreciation</option>
+                <option>Insurance</option>
+                <option>Interest</option>
+                <option>Legal and professional</option>
+                <option>Office expense</option>
+                <option>Rent/lease</option>
+                <option>Repairs and maintenance</option>
+                <option>Supplies</option>
+                <option>Taxes and licenses</option>
+                <option>Travel</option>
+                <option>Meals (50%)</option>
+                <option>Utilities</option>
+                <option>Wages</option>
+                <option>Other</option>
+              </select>
+
+              <label class="chk">
+                <input type="checkbox" id="bulkDeduct" checked />
+                Mark deductible
+              </label>
+
+              <label class="chk">
+                Business use %
+                <input id="bulkPct" type="number" min="0" max="100" step="1" value="100" style="width:96px" />
+              </label>
+
+              <button class="btn" id="bulkApplyBtn">Apply</button>
+            </div>
+
+            <div class="muted" id="bulkMsg" style="margin-top:10px; min-height:18px"></div>
+
+            <div style="margin-top:12px" class="muted">
+              Tip: Keep “Meals (50%)” bucket at 50%—set Business use % to 50 when you bulk-apply.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="footer">
+        <span class="muted">Version: 2.7.0</span>
+      </div>
+    </main>
+
+    <!-- Editor Drawer -->
+    <div id="drawer" class="drawer hide">
+      <div class="panel">
+        <div class="row" style="justify-content:space-between">
+          <h3>Edit transaction</h3>
+          <button class="btn secondary" id="closeBtn">Close</button>
+        </div>
+
+        <div class="two">
+          <div class="field">
+            <small>Date</small>
+            <input id="eDate" placeholder="YYYY-MM-DD" />
+          </div>
+          <div class="field">
+            <small>Amount (USD)</small>
+            <input id="eAmount" type="number" step="0.01" />
+          </div>
+        </div>
+
+        <div class="two" style="margin-top:10px">
+          <div class="field">
+            <small>Vendor</small>
+            <input id="eVendor" />
+          </div>
+          <div class="field">
+            <small>Category</small>
+            <input id="eCategory" />
+          </div>
+        </div>
+
+        <label class="chk" style="margin-top:10px">
+          <input type="checkbox" id="eDeduct" />
+          Tax deductible
+        </label>
+
+        <div class="field" style="margin-top:10px">
+          <small>Tax bucket (Schedule C)</small>
+          <input id="eTaxBucket" type="text" placeholder="e.g., Travel, Supplies, Advertising…" />
+        </div>
+
+        <div class="field" style="margin-top:10px">
+          <small>Business use % (0–100)</small>
+          <input id="eBizPct" type="number" min="0" max="100" step="1" />
+        </div>
+
+        <div class="field" style="margin-top:10px">
+          <small>Notes</small>
+          <textarea id="eNotes"></textarea>
+        </div>
+
+        <div class="field" style="margin-top:10px">
+          <small>Receipt link (optional)</small>
+          <input id="eReceiptLink" placeholder="/receipts/..." />
+        </div>
+
+        <div class="row" style="margin-top:12px">
+          <input id="receiptFile" type="file" />
+          <button class="btn secondary" id="uploadReceiptBtn">Upload receipt</button>
+        </div>
+
+        <div class="row" style="margin-top:12px; justify-content:space-between">
+          <button class="btn danger" id="deleteBtn">Delete</button>
+          <button class="btn" id="saveBtn">Save</button>
+        </div>
+
+        <div class="muted" id="editMsg" style="margin-top:10px; min-height:18px"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // web/index.html v2.7.0
+
+    const tabs = ["dashboard","transactions","tax"];
+
+    const $ = (id)=>document.getElementById(id);
+
+    const money = (cents)=>{
+      const n = Number(cents || 0)/100;
+      const sign = n < 0 ? "-" : "";
+      const abs = Math.abs(n);
+      return `${sign}$${abs.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2})}`;
+    };
+
+    const escapeHtml = (s)=>String(s??"").replace(/[&<>"']/g, m=>({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[m]));
+
+    const ymd = (d)=>String(d??"").slice(0,10);
+
+    async function apiGet(path){
+      const r = await fetch(`/api${path}`, { credentials:"include" });
+      if(!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+      return await r.json();
+    }
+
+    let ALL = [];
+    let selected = null;
+
+    async function loadAllExpenses(){
+      // Pull enough rows so Rocket Money imports are actually visible
+      const r = await apiGet(`/expenses?limit=5000&offset=0`);
+      ALL = r.rows || [];
+    }
+
+    function yearsFromData(rows){
+      const set = new Set();
+      for(const r of rows){
+        const y = Number(String(r.expense_date||"").slice(0,4));
+        if(y) set.add(y);
+      }
+      const arr = [...set].sort((a,b)=>b-a);
+      if(!arr.length) arr.push(new Date().getFullYear());
+      return arr;
+    }
+
+    function initYearSelect(){
+      const years = yearsFromData(ALL);
+      const sel = $("yearSelect");
+      sel.innerHTML = years.map(y=>`<option value="${y}">${y}</option>`).join("");
+      sel.value = String(years[0]);
+    }
+
+    function filterByYear(rows, year){
+      const start = `${year}-01-01`;
+      const end = `${year}-12-31`;
+      return rows.filter(r=>{
+        const d = ymd(r.expense_date);
+        return d >= start && d <= end;
+      });
+    }
+
+    function renderDashboard(year){
+      const q = $("searchInput").value.trim().toLowerCase();
+      let rows = filterByYear(ALL, year);
+      if(q){
+        rows = rows.filter(r=>{
+          const s = `${r.vendor||""} ${r.category||""} ${r.notes||""}`.toLowerCase();
+          return s.includes(q);
+        });
+      }
+
+      $("dashRange").textContent = `${year}`;
+
+      let income = 0, spend = 0;
+      let missing = 0;
+
+      const byCat = new Map();
+      const byVendor = new Map();
+
+      for(const r of rows){
+        const cents = Number(r.amount_cents||0);
+        if(cents < 0) income += Math.abs(cents);
+        else spend += cents;
+
+        if(cents > 7500 && !r.receipt_link) missing++;
+
+        if(cents > 0){
+          const c = (r.category || "Uncategorized").trim() || "Uncategorized";
+          const v = (r.vendor || "Unknown").trim() || "Unknown";
+
+          const cPrev = byCat.get(c) || {count:0, cents:0};
+          cPrev.count++; cPrev.cents += cents;
+          byCat.set(c, cPrev);
+
+          const vPrev = byVendor.get(v) || {count:0, cents:0};
+          vPrev.count++; vPrev.cents += cents;
+          byVendor.set(v, vPrev);
+        }
+      }
+
+      $("statIncome").textContent = money(income);
+      $("statSpend").textContent = money(spend);
+      $("statNet").textContent = money(income - spend);
+      $("statMissingReceipts").textContent = String(missing);
+
+      const topCats = [...byCat.entries()].sort((a,b)=>b[1].cents - a[1].cents).slice(0,10);
+      $("topCats").innerHTML = topCats.map(([k,meta])=>`
+        <tr>
+          <td>${escapeHtml(k)}</td>
+          <td>${meta.count}</td>
+          <td>${money(meta.cents)}</td>
+        </tr>
+      `).join("");
+
+      const topV = [...byVendor.entries()].sort((a,b)=>b[1].cents - a[1].cents).slice(0,10);
+      $("topVendors").innerHTML = topV.map(([k,meta])=>`
+        <tr>
+          <td>${escapeHtml(k)}</td>
+          <td>${meta.count}</td>
+          <td>${money(meta.cents)}</td>
+        </tr>
+      `).join("");
+    }
+
+    function renderTransactions(){
+      const start = $("startDate").value.trim();
+      const end = $("endDate").value.trim();
+
+      let rows = [...ALL];
+      if(start) rows = rows.filter(r=>ymd(r.expense_date) >= start);
+      if(end) rows = rows.filter(r=>ymd(r.expense_date) <= end);
+
+      $("txnCount").textContent = `${rows.length.toLocaleString()} rows`;
+
+      $("txnBody").innerHTML = rows.map(r=>{
+        const cents = Number(r.amount_cents||0);
+        const taxTag = r.tax_deductible ? `<span class="tag ok">Deductible</span>` : `<span class="tag">—</span>`;
+        const receiptTag = r.receipt_link
+          ? `<a class="tag ok" href="${r.receipt_link}" target="_blank" rel="noreferrer">View</a>`
+          : (cents > 7500 ? `<span class="tag warn">Needed</span>` : `<span class="tag">—</span>`);
+        const amt = cents < 0 ? `<span class="tag ok">${money(cents)}</span>` : money(cents);
+
+        return `
+          <tr data-id="${r.id}">
+            <td>${escapeHtml(ymd(r.expense_date))}</td>
+            <td>${escapeHtml(r.vendor||"")}</td>
+            <td>${escapeHtml(r.category||"")}</td>
+            <td>${amt}</td>
+            <td>${taxTag}</td>
+            <td>${receiptTag}</td>
+            <td><span class="tag">${escapeHtml(r.source||"")}</span></td>
+          </tr>
+        `;
+      }).join("");
+
+      $("txnBody").querySelectorAll("tr").forEach(tr=>{
+        tr.addEventListener("click", ()=>{
+          const id = Number(tr.getAttribute("data-id"));
+          const row = ALL.find(x=>Number(x.id) === id);
+          if(row) openEditor(row);
+        });
+      });
+    }
+
+    function openEditor(row){
+      selected = row;
+      $("drawer").classList.remove("hide");
+      $("editMsg").textContent = "";
+
+      $("eDate").value = ymd(selected.expense_date);
+      $("eVendor").value = selected.vendor || "";
+      $("eCategory").value = selected.category || "";
+      $("eAmount").value = (Number(selected.amount_cents||0)/100).toFixed(2);
+      $("eDeduct").checked = !!selected.tax_deductible;
+      $("eTaxBucket").value = selected.tax_bucket || "";
+      $("eBizPct").value = (selected.business_use_pct === undefined || selected.business_use_pct === null) ? 100 : selected.business_use_pct;
+      $("eNotes").value = selected.notes || "";
+      $("eReceiptLink").value = selected.receipt_link || "";
+      $("receiptFile").value = "";
+    }
+
+    function closeEditor(){
+      $("drawer").classList.add("hide");
+      selected = null;
+    }
+
+    async function saveEditor(){
+      if(!selected) return;
+      $("editMsg").textContent = "Saving…";
+      try{
+        const payload = {
+          expense_date: $("eDate").value.trim(),
+          vendor: $("eVendor").value.trim(),
+          category: $("eCategory").value.trim(),
+          amount_cents: Math.round(Number($("eAmount").value || 0) * 100),
+          tax_deductible: $("eDeduct").checked,
+          tax_bucket: $("eTaxBucket").value.trim(),
+          business_use_pct: Number($("eBizPct").value || 100),
+          notes: $("eNotes").value.trim(),
+          receipt_link: $("eReceiptLink").value.trim() || null
+        };
+
+        const r = await fetch(`/api/expenses/${selected.id}`, {
+          method:"PATCH",
+          headers: { "Content-Type":"application/json" },
+          credentials:"include",
+          body: JSON.stringify(payload)
+        });
+        if(!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+        const updated = await r.json();
+
+        // update local cache
+        const idx = ALL.findIndex(x=>Number(x.id) === Number(updated.id));
+        if(idx >= 0) ALL[idx] = updated;
+
+        $("editMsg").textContent = "Saved.";
+        renderTransactions();
+        const y = Number($("yearSelect").value);
+        renderDashboard(y);
+        loadTaxSummary();
+      }catch(e){
+        $("editMsg").textContent = `Save failed: ${e.message}`;
+      }
+    }
+
+    async function uploadReceipt(){
+      if(!selected) return;
+      const file = $("receiptFile").files[0];
+      if(!file){ $("editMsg").textContent = "Choose a file first."; return; }
+
+      $("editMsg").textContent = "Uploading…";
+      try{
+        const fd = new FormData();
+        fd.append("file", file);
+
+        const r = await fetch(`/api/receipts/${selected.id}`, {
+          method:"POST",
+          credentials:"include",
+          body: fd
+        });
+        if(!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+        const updated = await r.json();
+
+        const idx = ALL.findIndex(x=>Number(x.id) === Number(updated.id));
+        if(idx >= 0) ALL[idx] = updated;
+
+        $("eReceiptLink").value = updated.receipt_link || "";
+        $("editMsg").textContent = "Receipt uploaded.";
+        renderTransactions();
+        const y = Number($("yearSelect").value);
+        renderDashboard(y);
+        loadTaxSummary();
+      }catch(e){
+        $("editMsg").textContent = `Upload failed: ${e.message}`;
+      }
+    }
+
+    async function exportCsv(){
+      const start = $("startDate").value.trim();
+      const end = $("endDate").value.trim();
+      const qs = new URLSearchParams();
+      if(start) qs.set("start", start);
+      if(end) qs.set("end", end);
+      window.location.href = `/api/expenses/export.csv?${qs.toString()}`;
+    }
+
+    // ---------- Tax (UI) ----------
+    function initTaxYearSelect(){
+      const years = yearsFromData(ALL);
+      const sel = $("taxYearSelect");
+      const current = Number(sel.value) || years[0];
+      sel.innerHTML = years.map(y=>`<option value="${y}">${y}</option>`).join("");
+      sel.value = years.includes(current) ? String(current) : String(years[0]);
+      $("taxYearLabel").textContent = `${sel.value}`;
+    }
+
+    function buildCategoryDropdown(year){
+      const start = `${year}-01-01`, end = `${year}-12-31`;
+      const byCat = new Map();
+      for(const r of ALL){
+        const d = ymd(r.expense_date);
+        if(d < start || d > end) continue;
+        if(Number(r.amount_cents||0) <= 0) continue;
+        const cat = (r.category || "Uncategorized").trim() || "Uncategorized";
+        const prev = byCat.get(cat) || { count:0, cents:0 };
+        prev.count += 1;
+        prev.cents += Number(r.amount_cents||0);
+        byCat.set(cat, prev);
+      }
+      const cats = [...byCat.entries()].sort((a,b)=>b[1].cents - a[1].cents);
+      $("bulkCategory").innerHTML = cats.map(([c,meta])=>`<option value="${escapeHtml(c)}">${escapeHtml(c)} (${meta.count})</option>`).join("");
+    }
+
+    async function loadTaxSummary(){
+      const year = Number($("taxYearSelect").value);
+      $("taxYearLabel").textContent = `${year}`;
+      $("taxMsg").textContent = "Loading…";
+      try{
+        const data = await apiGet(`/tax/summary?year=${year}`);
+        $("taxBody").innerHTML = (data.totals || []).map(r=>`
+          <tr>
+            <td>${escapeHtml(r.tax_bucket)}</td>
+            <td>${Number(r.count||0).toLocaleString()}</td>
+            <td>${money(r.spend_cents||0)}</td>
+            <td>${money(r.deductible_cents||0)}</td>
+          </tr>
+        `).join("");
+        $("taxMsg").textContent = data.unassigned_count ? `Unassigned: ${data.unassigned_count.toLocaleString()} transactions` : "Ready.";
+        buildCategoryDropdown(year);
+      }catch(e){
+        $("taxMsg").textContent = `Tax load failed: ${e.message}`;
+      }
+    }
+
+    function exportTaxCsv(){
+      const year = Number($("taxYearSelect").value);
+      window.location.href = `/api/tax/export.csv?year=${year}`;
+    }
+
+    async function bulkApply(){
+      const year = Number($("taxYearSelect").value);
+      const category = $("bulkCategory").value;
+      const bucket = $("bulkBucket").value;
+      const deduct = $("bulkDeduct").checked;
+      const pct = Number($("bulkPct").value || 100);
+
+      if(!category){ $("bulkMsg").textContent = "Pick a category."; return; }
+      if(!bucket){ $("bulkMsg").textContent = "Pick a bucket."; return; }
+
+      $("bulkMsg").textContent = "Applying…";
+      try{
+        const r = await fetch("/api/tax/assign", {
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          credentials:"include",
+          body: JSON.stringify({ year, category, tax_bucket: bucket, tax_deductible: deduct, business_use_pct: pct })
+        });
+        if(!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+
+        await loadAllExpenses();
+        renderTransactions();
+        loadTaxSummary();
+
+        const data = await r.json();
+        $("bulkMsg").textContent = `Updated ${Number(data.updated||0).toLocaleString()} transactions.`;
+      }catch(e){
+        $("bulkMsg").textContent = `Apply failed: ${e.message}`;
+      }
+    }
+
+    // ---------- Tabs ----------
+    function showTab(name){
+      for(const t of tabs){
+        $(`tab-${t}`).classList.toggle("hide", t !== name);
+      }
+      document.querySelectorAll("#nav .pill").forEach(b=>{
+        b.classList.toggle("active", b.getAttribute("data-tab") === name);
+      });
+    }
+
+    async function boot(){
+      document.querySelectorAll("#nav .pill").forEach(btn=>{
+        btn.addEventListener("click", ()=>showTab(btn.getAttribute("data-tab")));
+      });
+
+      $("refreshBtn").addEventListener("click", async ()=>{
+        await loadAllExpenses();
+        initYearSelect();
+        initTaxYearSelect();
+        renderDashboard(Number($("yearSelect").value));
+        renderTransactions();
+        loadTaxSummary();
+      });
+
+      $("yearSelect").addEventListener("change", ()=>renderDashboard(Number($("yearSelect").value)));
+      $("searchInput").addEventListener("input", ()=>renderDashboard(Number($("yearSelect").value)));
+
+      $("applyRangeBtn").addEventListener("click", renderTransactions);
+      $("exportBtn").addEventListener("click", exportCsv);
+
+      $("closeBtn").addEventListener("click", closeEditor);
+      $("drawer").addEventListener("click", (e)=>{ if(e.target === $("drawer")) closeEditor(); });
+
+      $("saveBtn").addEventListener("click", saveEditor);
+      $("uploadReceiptBtn").addEventListener("click", uploadReceipt);
+
+      $("taxRefreshBtn").addEventListener("click", loadTaxSummary);
+      $("taxExportBtn").addEventListener("click", exportTaxCsv);
+      $("taxYearSelect").addEventListener("change", loadTaxSummary);
+      $("bulkApplyBtn").addEventListener("click", bulkApply);
+
+      await loadAllExpenses();
+      initYearSelect();
+      initTaxYearSelect();
+
+      renderDashboard(Number($("yearSelect").value));
+      renderTransactions();
+      loadTaxSummary();
+    }
+
+    boot();
+  </script>
+</body>
+</html>
