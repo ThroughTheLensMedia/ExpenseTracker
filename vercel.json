@@ -20,11 +20,11 @@
         },
         {
             "source": "/(.*)",
-            "destination": "web-react/dist/$1"
+            "destination": "/$1"
         },
         {
             "source": "/(.*)",
-            "destination": "web-react/dist/index.html"
+            "destination": "/index.html"
         }
     ]
 }
