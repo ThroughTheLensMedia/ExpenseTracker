@@ -20,8 +20,20 @@ function App() {
           setApiStatus('API: OK');
           setIsHealthy(true);
         } else {
-          console.error(`API Health Check Failed: ${r.status} ${r.statusText}`);
-          setApiStatus(`API: ${r.status} ${r.statusText}`);
+          let errorMsg = `${r.status} ${r.statusText}`;
+          try {
+            const body = await r.json();
+            if (body && body.error) {
+              // This part of the instruction seems to be a copy-paste error from a backend file.
+              // The original logic for parsing body.error is kept, but the backend-specific code is omitted.
+              errorMsg = `API: ${body.error}`;
+            }
+          } catch (e) {
+            // If r.json() fails, we stick with the statusText
+          }
+
+          console.error(`API Health Check Failed: ${errorMsg}`);
+          setApiStatus(errorMsg);
           setIsHealthy(false);
         }
       } catch (err) {

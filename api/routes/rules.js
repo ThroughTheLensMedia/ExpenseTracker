@@ -15,8 +15,8 @@ router.get("/", async (req, res) => {
         if (error) throw error;
         return res.json({ rules: data });
     } catch (err) {
-        console.error(err);
-        return res.status(500).json({ error: "Failed listing rules" });
+        console.error("[API] GET /rules Error:", err);
+        return res.status(500).json({ error: err.message || "Failed listing rules", code: err.code });
     }
 });
 
@@ -69,8 +69,8 @@ router.delete("/:id", async (req, res) => {
         if (error) throw error;
         return res.json({ success: true });
     } catch (err) {
-        console.error(err);
-        return res.status(500).json({ error: "Failed deleting rule" });
+        console.error("[API] DELETE /rules/:id Error:", err);
+        return res.status(500).json({ error: err.message || "Failed deleting rule", code: err.code });
     }
 });
 

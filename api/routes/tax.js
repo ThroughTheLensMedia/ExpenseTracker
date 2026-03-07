@@ -64,8 +64,9 @@ router.get("/summary", async (req, res) => {
 
     res.json({ year, totals, unassigned_count: unassignedCount });
   } catch (e) {
+    console.error("[API] GET /tax/summary Error:", e);
     if (e instanceof z.ZodError) return res.status(400).json({ error: e.errors });
-    res.status(500).json({ error: String(e.message || e) });
+    res.status(500).json({ error: e.message || String(e), code: e.code });
   }
 });
 
@@ -93,8 +94,9 @@ router.post("/assign", async (req, res) => {
 
     res.json({ ok: true, updated: count });
   } catch (e) {
+    console.error("[API] POST /tax/assign Error:", e);
     if (e instanceof z.ZodError) return res.status(400).json({ error: e.errors });
-    res.status(500).json({ error: String(e.message || e) });
+    res.status(500).json({ error: e.message || String(e), code: e.code });
   }
 });
 
