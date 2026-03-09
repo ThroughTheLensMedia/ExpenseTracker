@@ -112,16 +112,36 @@ router.post("/rocketmoney", upload.single("file"), async (req, res) => {
         }
 
         fs.unlink(req.file.path, () => { });
-        if (!items.length) return res.status(400).json({ error: "CSV appears empty or malformatted" });
+        if (!items.length) return res.status(400).json({ error: "CSV appears empty or malformatted", rowsScanned: rowCount, parseErrors: errors.length });
 
-        // Upsert items into Supabase
-        const { data, error: upsertError } = await supabase
+        // Since RM CSVs have no unique transaction ID, deduplicate by date+vendor+amount
+        // Get the date range of items being imported to check for existing data
+        const dates = items.map(i => i.expense_date).sort();
+        const rangeStart = dates[0];
+        const rangeEnd = dates[dates.length - 1];
+
+        const { data: existing } = await supabase
             .from("expenses")
-            .upsert(items, { onConflict: 'rm_id' })
-            .select();
+            .select("expense_date, vendor, amount_cents")
+            .gte("expense_date", rangeStart)
+            .lte("expense_date", rangeEnd);
 
-        if (upsertError) throw upsertError;
-        res.json({ ok: true, parsed: items.length, count: data.length, errors });
+        const existingKeys = new Set((existing || []).map(e => `${e.expense_date}|${e.vendor}|${e.amount_cents}`));
+
+        const toInsert = items.filter(i => !existingKeys.has(`${i.expense_date}|${i.vendor}|${i.amount_cents}`));
+        const skipped = items.length - toInsert.length;
+
+        let inserted = 0;
+        if (toInsert.length > 0) {
+            const { data: insertedData, error: insertError } = await supabase
+                .from("expenses")
+                .insert(toInsert)
+                .select();
+            if (insertError) throw insertError;
+            inserted = insertedData?.length || 0;
+        }
+
+        res.json({ ok: true, inserted, updated: 0, skipped, errors });
 
     } catch (e) {
         if (req.file) fs.unlink(req.file.path, () => { });
