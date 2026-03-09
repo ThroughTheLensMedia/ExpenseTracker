@@ -9,8 +9,12 @@ export default function Transactions() {
     // Filters
     const [start, setStart] = useState('');
     const [end, setEnd] = useState('');
-    const [search, setSearch] = useState('');
+    const [searchVendor, setSearchVendor] = useState('');
+    const [searchCategory, setSearchCategory] = useState('');
+    const [searchNotes, setSearchNotes] = useState('');
     const [deductOnly, setDeductOnly] = useState(false);
+    const [sortCol, setSortCol] = useState('expense_date');
+    const [sortDir, setSortDir] = useState('desc');
 
     // Editor
     const [editingId, setEditingId] = useState(null);
@@ -37,20 +41,34 @@ export default function Transactions() {
         loadData();
     }, []);
 
+    const handleSort = (col) => {
+        if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+        else { setSortCol(col); setSortDir('asc'); }
+    };
+
+    const SortIcon = ({ col }) => {
+        if (sortCol !== col) return <span style={{ opacity: 0.3 }}> ↕</span>;
+        return <span>{sortDir === 'asc' ? ' ↑' : ' ↓'}</span>;
+    };
+
     const filtered = useMemo(() => {
-        let rows = [...expenses].sort((a, b) => (b.expense_date || '').localeCompare(a.expense_date || ''));
+        let rows = [...expenses];
         if (start) rows = rows.filter(r => formatDate(r.expense_date) >= start);
         if (end) rows = rows.filter(r => formatDate(r.expense_date) <= end);
-        if (search) {
-            const q = search.toLowerCase();
-            rows = rows.filter(r => {
-                const hay = `${r.vendor || ''} ${r.category || ''} ${r.notes || ''}`.toLowerCase();
-                return hay.includes(q);
-            });
-        }
+        if (searchVendor) rows = rows.filter(r => (r.vendor || '').toLowerCase().includes(searchVendor.toLowerCase()));
+        if (searchCategory) rows = rows.filter(r => (r.category || '').toLowerCase().includes(searchCategory.toLowerCase()));
+        if (searchNotes) rows = rows.filter(r => (r.notes || '').toLowerCase().includes(searchNotes.toLowerCase()));
         if (deductOnly) rows = rows.filter(r => r.tax_deductible);
+        rows.sort((a, b) => {
+            let av = a[sortCol] ?? '';
+            let bv = b[sortCol] ?? '';
+            if (sortCol === 'amount_cents') { av = Number(av); bv = Number(bv); }
+            if (av < bv) return sortDir === 'asc' ? -1 : 1;
+            if (av > bv) return sortDir === 'asc' ? 1 : -1;
+            return 0;
+        });
         return rows;
-    }, [expenses, start, end, search, deductOnly]);
+    }, [expenses, start, end, searchVendor, searchCategory, searchNotes, deductOnly, sortCol, sortDir]);
 
     const exportCsv = () => {
         const qs = new URLSearchParams();
@@ -112,20 +130,28 @@ export default function Transactions() {
                 </span>
             </h2>
 
-            <div className="controls">
-                <div className="grow">
-                    <small className="muted">Start</small>
-                    <input value={start} onChange={e => setStart(e.target.value)} placeholder="YYYY-MM-DD" />
+            <div className="controls" style={{ flexWrap: 'wrap', gap: '10px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    <small className="muted">Start Date</small>
+                    <input type="date" value={start} onChange={e => setStart(e.target.value)} style={{ width: '150px' }} />
                 </div>
-                <div className="grow">
-                    <small className="muted">End</small>
-                    <input value={end} onChange={e => setEnd(e.target.value)} placeholder="YYYY-MM-DD" />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    <small className="muted">End Date</small>
+                    <input type="date" value={end} onChange={e => setEnd(e.target.value)} style={{ width: '150px' }} />
                 </div>
-                <div className="grow">
-                    <small className="muted">Search</small>
-                    <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Vendor, category, notes…" />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    <small className="muted">Vendor</small>
+                    <input value={searchVendor} onChange={e => setSearchVendor(e.target.value)} placeholder="e.g. USAA" style={{ width: '140px' }} />
                 </div>
-                <label className="tag" style={{ alignSelf: 'end' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    <small className="muted">Category</small>
+                    <input value={searchCategory} onChange={e => setSearchCategory(e.target.value)} placeholder="e.g. Travel" style={{ width: '140px' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    <small className="muted">Notes</small>
+                    <input value={searchNotes} onChange={e => setSearchNotes(e.target.value)} placeholder="keyword…" style={{ width: '130px' }} />
+                </div>
+                <label className="tag" style={{ alignSelf: 'flex-end' }}>
                     <input
                         type="checkbox"
                         checked={deductOnly}
@@ -134,8 +160,11 @@ export default function Transactions() {
                     />
                     Deductible only
                 </label>
-                <button className="btn secondary" onClick={exportCsv}>Export CSV</button>
-                <button className="btn secondary" onClick={loadData} disabled={loading}>Reload</button>
+                <div style={{ alignSelf: 'flex-end', display: 'flex', gap: '8px' }}>
+                    <button className="btn secondary" onClick={() => { setStart(''); setEnd(''); setSearchVendor(''); setSearchCategory(''); setSearchNotes(''); setDeductOnly(false); }}>Clear</button>
+                    <button className="btn secondary" onClick={exportCsv}>Export CSV</button>
+                    <button className="btn secondary" onClick={loadData} disabled={loading}>Reload</button>
+                </div>
             </div>
 
             <div className="card" style={{ marginTop: '12px' }}>
@@ -182,7 +211,11 @@ export default function Transactions() {
                     <table>
                         <thead>
                             <tr>
-                                <th>Date</th><th>Vendor</th><th>Category</th><th>Amount</th>
+                                <th onClick={() => handleSort('expense_date')} style={{ cursor: 'pointer' }}>Date<SortIcon col="expense_date" /></th>
+                                <th onClick={() => handleSort('vendor')} style={{ cursor: 'pointer' }}>Vendor<SortIcon col="vendor" /></th>
+                                <th onClick={() => handleSort('category')} style={{ cursor: 'pointer' }}>Category<SortIcon col="category" /></th>
+                                <th onClick={() => handleSort('tax_bucket')} style={{ cursor: 'pointer' }}>Tax Bucket<SortIcon col="tax_bucket" /></th>
+                                <th onClick={() => handleSort('amount_cents')} style={{ cursor: 'pointer' }}>Amount<SortIcon col="amount_cents" /></th>
                                 <th>Type</th><th>Deductible</th><th>Receipt</th><th></th>
                             </tr>
                         </thead>
@@ -190,9 +223,10 @@ export default function Transactions() {
                             {filtered.slice(0, 800).map(r => (
                                 <tr key={r.id}>
                                     <td>{formatDate(r.expense_date)}</td>
-                                    <td>{r.vendor || ''}</td>
+                                    <td><strong>{r.vendor || ''}</strong></td>
                                     <td>{r.category || ''}</td>
-                                    <td>{formatMoney(r.amount_cents)}</td>
+                                    <td>{r.tax_bucket ? <span className="tag">{r.tax_bucket}</span> : <span className="muted">—</span>}</td>
+                                    <td style={{ fontWeight: 'bold' }}>{formatMoney(r.amount_cents)}</td>
                                     <td>{Number(r.amount_cents || 0) < 0 ? <span className="tag ok">Income</span> : <span className="tag">Expense</span>}</td>
                                     <td>{r.tax_deductible ? <span className="tag ok">Yes</span> : <span className="tag">No</span>}</td>
                                     <td>

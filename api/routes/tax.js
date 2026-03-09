@@ -100,56 +100,59 @@ router.post("/assign", async (req, res) => {
   }
 });
 
-// GET /tax/export.csv
+// GET /tax/export.csv  – full line-item export (CPA-ready)
 router.get("/export.csv", async (req, res) => {
   try {
     const { year } = YearQuerySchema.parse(req.query);
     const start = `${year}-01-01`;
     const end = `${year}-12-31`;
 
+    // Fetch all fields needed for line-item detail
     const { data, error } = await supabase
       .from("expenses")
-      .select("tax_bucket, amount_cents, tax_deductible, business_use_pct")
+      .select("expense_date, vendor, category, tax_bucket, amount_cents, tax_deductible, business_use_pct, notes")
       .gte("expense_date", start)
-      .lte("expense_date", end);
+      .lte("expense_date", end)
+      .order("tax_bucket", { ascending: true })
+      .order("expense_date", { ascending: true });
 
     if (error) throw error;
 
-    const buckets = {};
-    for (const r of data) {
-      const bucketName = (r.tax_bucket || "").trim() || "Unassigned";
-      if (!buckets[bucketName]) {
-        buckets[bucketName] = { bucket: bucketName, count: 0, spend_cents: 0, deductible_cents: 0 };
-      }
-      const b = buckets[bucketName];
-      b.count++;
-      const amt = r.amount_cents || 0;
-      if (amt > 0) {
-        b.spend_cents += amt;
-        if (r.tax_deductible) {
-          const pct = (r.business_use_pct === null || r.business_use_pct === undefined) ? 100 : r.business_use_pct;
-          b.deductible_cents += Math.round(amt * (pct / 100.0));
-        }
-      }
-    }
+    const SCHEDULE_C = {
+      'Advertising': 'Line 8', 'Car and truck': 'Line 9', 'Commissions and fees': 'Line 10',
+      'Contract labor': 'Line 11', 'Depreciation': 'Line 13', 'Insurance': 'Line 15',
+      'Interest': 'Line 16b', 'Legal and professional': 'Line 17', 'Office expense': 'Line 18',
+      'Rent/lease': 'Line 20b', 'Repairs and maintenance': 'Line 21', 'Supplies': 'Line 22',
+      'Taxes and licenses': 'Line 23', 'Travel': 'Line 24a', 'Meals (50%)': 'Line 24b',
+      'Utilities': 'Line 25', 'Wages': 'Line 26', 'Other': 'Line 27a',
+    };
 
-    const totals = Object.values(buckets).sort((a, b) => b.deductible_cents - a.deductible_cents || b.spend_cents - a.spend_cents);
-
-    const header = ["year", "tax_bucket", "transaction_count", "spend", "deductible_spend"];
+    const header = ["year", "date", "vendor", "category", "tax_bucket", "schedule_c_line",
+      "amount", "business_use_pct", "deductible_amount", "tax_deductible", "notes"];
     const lines = [header.join(",")];
 
-    for (const r of totals) {
+    for (const r of data) {
+      const amt = Number(r.amount_cents || 0) / 100;
+      const pct = (r.business_use_pct === null || r.business_use_pct === undefined) ? 100 : r.business_use_pct;
+      const deductible = r.tax_deductible ? (amt * pct / 100).toFixed(2) : "0.00";
+      const bucket = (r.tax_bucket || "").trim() || "Unassigned";
       lines.push([
         year,
-        csvEscape(r.bucket),
-        r.count,
-        (Number(r.spend_cents || 0) / 100).toFixed(2),
-        (Number(r.deductible_cents || 0) / 100).toFixed(2)
+        csvEscape(r.expense_date),
+        csvEscape(r.vendor),
+        csvEscape(r.category),
+        csvEscape(bucket),
+        csvEscape(SCHEDULE_C[bucket] || ""),
+        amt.toFixed(2),
+        pct,
+        deductible,
+        r.tax_deductible ? "Yes" : "No",
+        csvEscape(r.notes || "")
       ].join(","));
     }
 
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
-    res.setHeader("Content-Disposition", `attachment; filename="tax_summary_${year}.csv"`);
+    res.setHeader("Content-Disposition", `attachment; filename="tax_line_items_${year}.csv"`);
     res.send(lines.join("\n"));
   } catch (e) {
     res.status(500).json({ error: String(e.message || e) });

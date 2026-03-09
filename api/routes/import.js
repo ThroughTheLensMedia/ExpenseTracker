@@ -25,7 +25,9 @@ function parseMoneyToCents(s) {
 function mmddyyyyToYmd(s) {
     const t = String(s || "").trim();
     if (!t) return null;
+    // Already in YYYY-MM-DD format (e.g. Rocket Money exports)
     if (/^\d{4}-\d{2}-\d{2}$/.test(t)) return t;
+    // MM/DD/YYYY format
     const m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
     if (!m) return null;
     return `${m[3]}-${String(m[1]).padStart(2, "0")}-${String(m[2]).padStart(2, "0")}`;
@@ -75,10 +77,10 @@ router.post("/rocketmoney", upload.single("file"), async (req, res) => {
             if (amount_cents < 0) amount_cents = Math.abs(amount_cents);
             else if (amount_cents > 0) amount_cents = -Math.abs(amount_cents);
 
-            let vendor = pick(o, ["merchant", "payee", "description", "name", "transaction"]) || "Unknown";
+            let vendor = pick(o, ["name", "custom name", "merchant", "payee", "description"]) || "Unknown";
             let category = pick(o, ["category", "transaction category"]) || "Uncategorized";
             const rm_id = pick(o, ["id", "transaction id", "transactionid"]) || null;
-            const notes = pick(o, ["notes", "memo"]) || "";
+            const notes = pick(o, ["note", "notes", "memo", "description"]) || "";
 
             let tax_deductible = false;
             let tax_bucket = "";
