@@ -33,13 +33,44 @@ CREATE TABLE IF NOT EXISTS classification_rules (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- 3. Indexes for performance
+-- 3. Mileage Logs Table
+CREATE TABLE IF NOT EXISTS mileage_logs (
+  id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  log_date DATE NOT NULL,
+  miles numeric(10, 2) NOT NULL DEFAULT 0,
+  purpose TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 4. Mileage Rates Table (IRS Standard Business Mileage Rates)
+CREATE TABLE IF NOT EXISTS mileage_rates (
+  year INTEGER PRIMARY KEY,
+  rate_per_mile NUMERIC(5, 4) NOT NULL, -- e.g. 0.7000 = $0.70/mile
+  source TEXT NOT NULL DEFAULT 'IRS',
+  last_synced_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Seed with known IRS rates (cents converted to dollars)
+INSERT INTO mileage_rates (year, rate_per_mile, source) VALUES
+  (2019, 0.58, 'IRS IR-2018-251'),
+  (2020, 0.575, 'IRS IR-2019-215'),
+  (2021, 0.56, 'IRS IR-2020-279'),
+  (2022, 0.625, 'IRS IR-2022-124 (mid-year increase)'),
+  (2023, 0.655, 'IRS IR-2022-234'),
+  (2024, 0.67, 'IRS IR-2023-239'),
+  (2025, 0.70, 'IRS IR-2024-312')
+ON CONFLICT (year) DO NOTHING;
+
+-- 5. Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(expense_date);
 CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category);
 CREATE INDEX IF NOT EXISTS idx_expenses_tax_bucket ON expenses(tax_bucket);
+CREATE INDEX IF NOT EXISTS idx_mileage_logs_date ON mileage_logs(log_date);
 
--- 4. Enable Row Level Security (RLS) - Optional but recommended for Supabase
+-- 5. Enable Row Level Security (RLS) - Optional but recommended for Supabase
 -- ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
 -- ALTER TABLE classification_rules ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE mileage_logs ENABLE ROW LEVEL SECURITY;
 
 -- Note: In a production Supabase app, you'd add policies here to restrict access to authenticated users.

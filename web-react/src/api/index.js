@@ -36,10 +36,28 @@ export async function apiPost(path, payload) {
     return r.json();
 }
 
+export async function apiDelete(path) {
+    const r = await fetch("/api" + path, {
+        method: "DELETE",
+        credentials: "include"
+    });
+    if (!r.ok) {
+        let msg = `${r.status} ${r.statusText}`;
+        try { const j = await r.json(); if (j && j.error) msg = j.error; } catch (_) { }
+        throw new Error(msg);
+    }
+    return r.json();
+}
+
 // Utility to fetch all expenses (can be paginated later)
 export async function fetchAllExpenses() {
     const data = await apiGet('/expenses?limit=10000&offset=0');
     return data.rows || [];
+}
+
+export async function fetchAllMileage(year) {
+    const path = year ? `/mileage?year=${year}` : '/mileage';
+    return apiGet(path);
 }
 
 // Global utility for formatting

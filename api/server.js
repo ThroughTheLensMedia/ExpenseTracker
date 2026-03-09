@@ -17,6 +17,7 @@ const taxRouter = require("./routes/tax");
 const importRouter = require("./routes/import");
 const receiptsRouter = require("./routes/receipts");
 const rulesRouter = require("./routes/rules");
+const mileageRouter = require("./routes/mileage");
 
 // Initialize Database
 initDb();
@@ -90,6 +91,7 @@ apiRouter.use("/tax", taxRouter);
 apiRouter.use("/import", importRouter);
 apiRouter.use("/receipts", receiptsRouter);
 apiRouter.use("/rules", rulesRouter);
+apiRouter.use("/mileage", mileageRouter);
 
 // Mount all API routes under /api
 app.use("/api", apiRouter);
