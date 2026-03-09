@@ -205,44 +205,144 @@ export default function Tax() {
                 </div>
             </div>
 
-            {/* ── Schedule C Summary — full width ── */}
+            {/* ── Schedule C — IRS Form Layout ── */}
             <div className="card">
-                <h2>Schedule C Summary ({selectedYear})</h2>
-                <div className="tableWrap">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Line</th>
-                                <th>Tax Bucket</th>
-                                <th>Total Spend</th>
-                                <th>Deductible</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {summary.map(r => (
-                                <tr key={r.tax_bucket}>
-                                    <td><span className="tag ok">{SCHEDULE_C_MAPPING[r.tax_bucket] || '—'}</span></td>
-                                    <td>{r.tax_bucket}</td>
-                                    <td>{formatMoney(r.spend_cents || 0)}</td>
-                                    <td style={{ fontWeight: 'bold' }}>{formatMoney(r.deductible_cents || 0)}</td>
-                                    <td><button className="btn sm" onClick={() => setAuditingBucket(r.tax_bucket === auditingBucket ? null : r.tax_bucket)}>
-                                        {auditingBucket === r.tax_bucket ? 'Close' : 'Audit'}
-                                    </button></td>
-                                </tr>
-                            ))}
-                            {summary.length === 0 && (
-                                <tr><td colSpan="5" className="muted" style={{ textAlign: 'center' }}>No tax data assigned yet — use Bulk Assign below.</td></tr>
-                            )}
-                        </tbody>
-                    </table>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+                    <div>
+                        <h2 style={{ margin: 0 }}>Schedule C — Profit or Loss from Business ({selectedYear})</h2>
+                        <div className="muted small" style={{ marginTop: '4px' }}>
+                            Sole Proprietorship · Photography Business · Principal business code: 711510
+                        </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        {(() => {
+                            const unassigned = summary.find(r => r.tax_bucket === 'Unassigned');
+                            return unassigned ? (
+                                <span className="tag warn" style={{ fontSize: '0.8rem' }}>
+                                    ⚠ {unassigned.count} unclassified transactions · use Bulk Assign below
+                                </span>
+                            ) : null;
+                        })()}
+                        <button className="btn secondary" onClick={exportCsv}>⬇ Export CSV</button>
+                    </div>
                 </div>
+
+                {/* Part I — Gross Income */}
+                {(() => {
+                    const incomeRows = expenses.filter(e =>
+                        String(e.expense_date || '').startsWith(String(selectedYear)) &&
+                        Number(e.amount_cents || 0) < 0
+                    );
+                    const grossReceipts = incomeRows.reduce((s, e) => s + Math.abs(Number(e.amount_cents || 0)), 0);
+                    const totalDeductible = summary.reduce((s, r) => s + (r.tax_bucket !== 'Unassigned' ? (r.deductible_cents || 0) : 0), 0);
+                    const mileageDeductCents = Math.round(totalMiles * currentRate * 100);
+                    const totalExpenses = totalDeductible + mileageDeductCents;
+                    const netProfit = grossReceipts - totalExpenses;
+
+                    return (
+                        <>
+                            {/* Part I */}
+                            <div style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
+                                <div style={{ fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.1em', color: 'var(--accent, #6366f1)', marginBottom: '12px' }}>
+                                    PART I — INCOME
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                                    <span><strong>Line 1</strong> · Gross receipts or sales</span>
+                                    <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>{formatMoney(grossReceipts)}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0' }}>
+                                    <span className="muted small">Line 7 · Gross income (Line 1 minus returns)</span>
+                                    <span style={{ fontWeight: 700 }}>{formatMoney(grossReceipts)}</span>
+                                </div>
+                            </div>
+
+                            {/* Part II — Expenses */}
+                            <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
+                                <div style={{ fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.1em', color: 'var(--accent, #6366f1)', marginBottom: '12px' }}>
+                                    PART II — EXPENSES
+                                </div>
+                                <div className="tableWrap" style={{ maxHeight: 'none' }}>
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th style={{ width: '80px' }}>Line</th>
+                                                <th>Expense Category</th>
+                                                <th style={{ textAlign: 'right' }}>Total Spend</th>
+                                                <th style={{ textAlign: 'right' }}>Deductible Amount</th>
+                                                <th style={{ width: '80px' }}></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {Object.entries(SCHEDULE_C_MAPPING).map(([bucket, line]) => {
+                                                const row = summary.find(r => r.tax_bucket === bucket);
+                                                const spend = row?.spend_cents || 0;
+                                                const deduct = row?.deductible_cents || 0;
+                                                const isEmpty = spend === 0;
+                                                return (
+                                                    <tr key={bucket} style={{ opacity: isEmpty ? 0.45 : 1 }}>
+                                                        <td><span className={`tag ${!isEmpty ? 'ok' : ''}`} style={{ fontSize: '0.75rem' }}>{line}</span></td>
+                                                        <td style={{ fontWeight: isEmpty ? 400 : 600 }}>{bucket}</td>
+                                                        <td style={{ textAlign: 'right' }}>{isEmpty ? '—' : formatMoney(spend)}</td>
+                                                        <td style={{ textAlign: 'right', fontWeight: 700, color: deduct > 0 ? '#4ade80' : 'inherit' }}>
+                                                            {isEmpty ? '—' : formatMoney(deduct)}
+                                                        </td>
+                                                        <td style={{ textAlign: 'center' }}>
+                                                            {!isEmpty && (
+                                                                <button className="btn sm" onClick={() => setAuditingBucket(bucket === auditingBucket ? null : bucket)}>
+                                                                    {auditingBucket === bucket ? 'Close' : 'Audit'}
+                                                                </button>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                            {/* Mileage line */}
+                                            <tr style={{ borderTop: '2px solid rgba(99,102,241,0.3)' }}>
+                                                <td><span className="tag ok" style={{ fontSize: '0.75rem' }}>Line 9</span></td>
+                                                <td style={{ fontWeight: 600 }}>Car & Truck — Standard Mileage ({totalMiles.toLocaleString()} mi @ ${currentRate.toFixed(2)})</td>
+                                                <td style={{ textAlign: 'right' }}>{formatMoney(mileageDeductCents)}</td>
+                                                <td style={{ textAlign: 'right', fontWeight: 700, color: '#4ade80' }}>{formatMoney(mileageDeductCents)}</td>
+                                                <td></td>
+                                            </tr>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr style={{ borderTop: '2px solid rgba(255,255,255,0.15)', background: 'rgba(0,0,0,0.2)' }}>
+                                                <td colSpan={2} style={{ fontWeight: 700, padding: '10px 8px' }}>Line 28 · Total Expenses</td>
+                                                <td style={{ textAlign: 'right', fontWeight: 700 }}></td>
+                                                <td style={{ textAlign: 'right', fontWeight: 800, fontSize: '1.05rem' }}>{formatMoney(totalExpenses)}</td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+
+                            {/* Net Profit */}
+                            <div style={{
+                                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                background: netProfit >= 0 ? 'rgba(74,222,128,0.08)' : 'rgba(248,113,113,0.08)',
+                                border: `1px solid ${netProfit >= 0 ? 'rgba(74,222,128,0.3)' : 'rgba(248,113,113,0.3)'}`,
+                                borderRadius: '10px', padding: '16px 20px'
+                            }}>
+                                <div>
+                                    <div style={{ fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.1em', color: netProfit >= 0 ? '#4ade80' : '#f87171' }}>
+                                        LINE 31 — NET {netProfit >= 0 ? 'PROFIT' : 'LOSS'}
+                                    </div>
+                                    <div className="muted small">Gross Income − Total Expenses · Transfers to Schedule SE</div>
+                                </div>
+                                <div style={{ fontSize: '1.8rem', fontWeight: 900, color: netProfit >= 0 ? '#4ade80' : '#f87171' }}>
+                                    {formatMoney(Math.abs(netProfit))}
+                                </div>
+                            </div>
+                        </>
+                    );
+                })()}
 
                 {/* Audit drill-down */}
                 {auditingBucket && (
                     <div className="card" style={{ marginTop: '16px', background: 'rgba(255,255,255,0.03)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                            <h3 style={{ margin: 0 }}>Auditing: {auditingBucket}</h3>
+                            <h3 style={{ margin: 0 }}>📋 Audit: {auditingBucket} ({SCHEDULE_C_MAPPING[auditingBucket]})</h3>
                             <button className="btn sm outline" onClick={() => setAuditingBucket(null)}>Close</button>
                         </div>
                         <div className="tableWrap">
@@ -257,9 +357,12 @@ export default function Tax() {
                                             <td>{e.vendor}</td>
                                             <td>{formatMoney(e.amount_cents)}</td>
                                             <td>{e.business_use_pct}%</td>
-                                            <td>{formatMoney(Math.round(e.amount_cents * (e.business_use_pct / 100)))}</td>
+                                            <td style={{ fontWeight: 'bold', color: '#4ade80' }}>{formatMoney(Math.round(e.amount_cents * (e.business_use_pct / 100)))}</td>
                                         </tr>
                                     ))}
+                                    {filteredAuditing.length === 0 && (
+                                        <tr><td colSpan={5} className="muted center">No transactions in this bucket for {selectedYear}</td></tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>
