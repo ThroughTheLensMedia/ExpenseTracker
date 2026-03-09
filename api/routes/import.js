@@ -73,14 +73,26 @@ router.post("/rocketmoney", upload.single("file"), async (req, res) => {
                 continue;
             }
 
-            // Standardize RocketMoney signs
-            if (amount_cents < 0) amount_cents = Math.abs(amount_cents);
-            else if (amount_cents > 0) amount_cents = -Math.abs(amount_cents);
+            // In Rocket Money: positive = expense (money out), negative = income (money in)
+            // Keep as-is — do NOT flip signs.
 
             let vendor = pick(o, ["name", "custom name", "merchant", "payee", "description"]) || "Unknown";
             let category = pick(o, ["category", "transaction category"]) || "Uncategorized";
             const rm_id = pick(o, ["id", "transaction id", "transactionid"]) || null;
             const notes = pick(o, ["note", "notes", "memo", "description"]) || "";
+
+            // Skip internal account-to-account transfers (CC payments, fund moves, etc.)
+            // These are NOT income or expenses — just money moving between your own accounts
+            const vendorUp = vendor.toUpperCase();
+            const TRANSFERS = [
+                'CREDIT CARD PAYMENT', 'FUNDS TRANSFER',
+                'APPLECARD GSBANK PAYMENT', 'APPLE CARD PAYMENT',
+                'TRANSFER FROM', 'TRANSFER TO',
+            ];
+            if (TRANSFERS.some(t => vendorUp.includes(t))) {
+                errors.push({ row: rowCount, error: `Skipped transfer: "${vendor}"` });
+                continue;
+            }
 
             let tax_deductible = false;
             let tax_bucket = "";
