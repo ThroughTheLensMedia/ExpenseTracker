@@ -49,10 +49,19 @@ export async function apiDelete(path) {
     return r.json();
 }
 
-// Utility to fetch all expenses (can be paginated later)
+// Utility to fetch ALL expenses across all pages (handles large datasets)
 export async function fetchAllExpenses() {
-    const data = await apiGet('/expenses?limit=10000&offset=0');
-    return data.rows || [];
+    const PAGE = 2000;
+    let offset = 0;
+    let allRows = [];
+    while (true) {
+        const data = await apiGet(`/expenses?limit=${PAGE}&offset=${offset}`);
+        const rows = data.rows || [];
+        allRows = allRows.concat(rows);
+        if (rows.length < PAGE) break; // last page reached
+        offset += PAGE;
+    }
+    return allRows;
 }
 
 export async function fetchAllMileage(year) {

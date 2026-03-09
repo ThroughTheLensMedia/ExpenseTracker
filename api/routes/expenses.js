@@ -14,7 +14,7 @@ const QuerySchema = z.object({
   start: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid start date format").optional().nullable(),
   end: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid end date format").optional().nullable(),
   q: z.string().trim().optional(),
-  limit: z.coerce.number().min(1).max(20000).default(10000),
+  limit: z.coerce.number().min(1).max(50000).default(2000),
   offset: z.coerce.number().min(0).default(0),
 });
 
