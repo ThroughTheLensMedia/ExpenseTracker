@@ -49,19 +49,29 @@ export async function apiDelete(path) {
     return r.json();
 }
 
-// Utility to fetch ALL expenses across all pages (handles large datasets)
+// Fetch ALL expenses by paginating in batches of 1000 (Supabase hard-caps at 1000/page)
 export async function fetchAllExpenses() {
-    const PAGE = 2000;
+    const PAGE = 1000;
     let offset = 0;
     let allRows = [];
     while (true) {
         const data = await apiGet(`/expenses?limit=${PAGE}&offset=${offset}`);
         const rows = data.rows || [];
         allRows = allRows.concat(rows);
-        if (rows.length < PAGE) break; // last page reached
+        if (rows.length < PAGE) break; // last page — fewer rows than page size means no more
         offset += PAGE;
     }
     return allRows;
+}
+
+// Lightweight: get just the distinct years that have data (for year dropdowns)
+export async function fetchExpenseYears() {
+    try {
+        const data = await apiGet('/expenses/years');
+        return data.years || [];
+    } catch (_) {
+        return [];
+    }
 }
 
 export async function fetchAllMileage(year) {

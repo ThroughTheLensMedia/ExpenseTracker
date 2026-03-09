@@ -61,6 +61,25 @@ router.get("/", async (req, res) => {
   }
 });
 
+// GET /expenses/years – returns distinct years that have data (lightweight, no row cap issues)
+router.get("/years", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("expenses")
+      .select("expense_date")
+      .not("expense_date", "is", null);
+    if (error) throw error;
+    const yearSet = new Set();
+    for (const r of data || []) {
+      const y = String(r.expense_date || "").slice(0, 4);
+      if (/^\d{4}$/.test(y)) yearSet.add(Number(y));
+    }
+    res.json({ years: [...yearSet].sort((a, b) => b - a) });
+  } catch (e) {
+    res.status(500).json({ error: String(e.message || e) });
+  }
+});
+
 // GET /expenses/export.csv
 router.get("/export.csv", async (req, res) => {
   try {

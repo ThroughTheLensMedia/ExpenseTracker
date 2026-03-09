@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { fetchAllExpenses, formatMoney } from '../api';
+import { fetchAllExpenses, fetchExpenseYears, formatMoney } from '../api';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -27,6 +27,7 @@ export default function Dashboard({ apiStatus }) {
     const [loading, setLoading] = useState(true);
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [search, setSearch] = useState('');
+    const [availableYears, setAvailableYears] = useState([new Date().getFullYear()]);
 
     const loadData = async () => {
         setLoading(true);
@@ -40,29 +41,32 @@ export default function Dashboard({ apiStatus }) {
         }
     };
 
+    // Load years immediately (fast, lightweight endpoint)
     useEffect(() => {
+        fetchExpenseYears().then(yrs => {
+            if (yrs.length > 0) setAvailableYears(yrs);
+        });
         loadData();
     }, []);
 
+    // When full data loads, update available years from actual data as well
     const years = useMemo(() => {
-        const set = new Set();
+        const set = new Set(availableYears);
         for (const r of expenses) {
             const y = Number(String(r.expense_date || '').slice(0, 4));
             if (y) set.add(y);
         }
         const arr = [...set].sort((a, b) => b - a);
         if (!arr.length) arr.push(new Date().getFullYear());
-        // User requested 2025 default explicitly earlier
-        if (!arr.includes(2025)) arr.push(2025);
-        return arr.sort((a, b) => b - a);
-    }, [expenses]);
+        return arr;
+    }, [expenses, availableYears]);
 
-    // Ensure default year selection
+    // Ensure selectedYear stays valid when years list updates
     useEffect(() => {
-        if (!years.includes(selectedYear) && years.length > 0) {
-            setSelectedYear(2025);
+        if (years.length > 0 && !years.includes(selectedYear)) {
+            setSelectedYear(years[0]); // default to most recent year
         }
-    }, [years, selectedYear]);
+    }, [years]);
 
     // Derived Stats
     const filtered = useMemo(() => {
