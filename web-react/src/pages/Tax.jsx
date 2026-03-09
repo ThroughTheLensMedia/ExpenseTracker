@@ -182,14 +182,17 @@ export default function Tax() {
         window.open(`/api/tax/export.csv?year=${encodeURIComponent(selectedYear)}`, "_blank");
     };
 
+    const [ratesOpen, setRatesOpen] = useState(false);
+
     return (
         <section style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+            {/* ── Header / Year / Export ── */}
             <div className="card">
                 <h2>Tax Reporting (1040 Schedule C)</h2>
                 <div className="muted" style={{ marginBottom: '12px' }}>
-                    Tax-ready workflow—assign deductible + Schedule C bucket + business-use %—then export summary CSV or use the line items directly for your return.
+                    Tax-ready workflow — assign deductible + Schedule C bucket + business-use %, then export line-item CSV for your CPA.
                 </div>
-
                 <div className="controls">
                     <div className="grow">
                         <small className="muted">Year</small>
@@ -198,130 +201,77 @@ export default function Tax() {
                         </select>
                     </div>
                     <button className="btn secondary" onClick={() => { loadData(); loadSummary(selectedYear); }}>Refresh</button>
-                    <button className="btn secondary" onClick={exportCsv}>Export Tax Summary CSV</button>
-                </div>
-
-                <div className="grid two" style={{ marginTop: '12px' }}>
-                    <div className="card" style={{ margin: 0 }}>
-                        <h2>Schedule C Summary ({selectedYear})</h2>
-                        <div className="tableWrap">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Line</th>
-                                        <th>Tax Bucket</th>
-                                        <th>Total Spend</th>
-                                        <th>Deductible</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {summary.map(r => (
-                                        <tr key={r.tax_bucket}>
-                                            <td><span className="tag ok">{SCHEDULE_C_MAPPING[r.tax_bucket] || '-'}</span></td>
-                                            <td>{r.tax_bucket}</td>
-                                            <td>{formatMoney(r.spend_cents || 0)}</td>
-                                            <td style={{ fontWeight: 'bold' }}>{formatMoney(r.deductible_cents || 0)}</td>
-                                            <td>
-                                                <button className="btn sm" onClick={() => setAuditingBucket(r.tax_bucket)}>Audit</button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    {summary.length === 0 && (
-                                        <tr><td colSpan="5" className="muted" style={{ textAlign: 'center' }}>No tax data assigned.</td></tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        {/* Auditing Table */}
-                        {auditingBucket && (
-                            <div className="card" style={{ marginTop: '20px', backgroundColor: 'rgba(255,255,255,0.03)' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <h3>Auditing: {auditingBucket}</h3>
-                                    <button className="btn sm outline" onClick={() => setAuditingBucket(null)}>Close</button>
-                                </div>
-                                <div className="tableWrap">
-                                    <table className="sm">
-                                        <thead>
-                                            <tr>
-                                                <th>Date</th>
-                                                <th>Vendor</th>
-                                                <th>Amount</th>
-                                                <th>Biz %</th>
-                                                <th>Deductible</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {filteredAuditing.map(e => (
-                                                <tr key={e.id}>
-                                                    <td>{e.expense_date}</td>
-                                                    <td>{e.vendor}</td>
-                                                    <td>{formatMoney(e.amount_cents)}</td>
-                                                    <td>{e.business_use_pct}%</td>
-                                                    <td>{formatMoney(Math.round(e.amount_cents * (e.business_use_pct / 100)))}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="card" style={{ margin: 0 }}>
-                        <h2>Business Mileage Tracking</h2>
-                        <div className="grid two" style={{ gap: '10px', marginBottom: '15px' }}>
-                            <div className="card accent" style={{ textAlign: 'center', padding: '15px' }}>
-                                <div className="muted small">Total Business Miles</div>
-                                <h1 style={{ margin: '5px 0' }}>{totalMiles.toLocaleString()}</h1>
-                            </div>
-                            <div className="card accent" style={{ textAlign: 'center', padding: '15px' }}>
-                                <div className="muted small">IRS Deduction (${currentRate.toFixed(2)}/mi)</div>
-                                <h1 style={{ margin: '5px 0' }}>{formatMoney(mileageDeduction * 100)}</h1>
-                            </div>
-                        </div>
-
-                        <div className="controls" style={{ gap: '8px' }}>
-                            <input type="date" value={mileageInput.date} onChange={e => setMileageInput({ ...mileageInput, date: e.target.value })} style={{ width: '130px' }} />
-                            <input type="number" placeholder="Miles" value={mileageInput.miles} onChange={e => setMileageInput({ ...mileageInput, miles: e.target.value })} style={{ width: '80px' }} />
-                            <input type="text" placeholder="Purpose (e.g. Wedding Photo Shoot)" value={mileageInput.purpose} onChange={e => setMileageInput({ ...mileageInput, purpose: e.target.value })} style={{ flex: 1 }} />
-                            <button className="btn primary" onClick={handleAddMileage}>Add Trip</button>
-                        </div>
-
-                        <div className="tableWrap" style={{ maxHeight: '300px', marginTop: '15px' }}>
-                            <table className="sm">
-                                <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Miles</th>
-                                        <th>Purpose</th>
-                                        <th></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {mileage.map(m => (
-                                        <tr key={m.id}>
-                                            <td>{m.log_date}</td>
-                                            <td>{m.miles}</td>
-                                            <td className="muted small">{m.purpose}</td>
-                                            <td><button className="btn sm danger" onClick={() => handleDeleteMileage(m.id)}>×</button></td>
-                                        </tr>
-                                    ))}
-                                    {mileage.length === 0 && (
-                                        <tr><td colSpan="4" className="muted center">No trips logged for {selectedYear}</td></tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                    <button className="btn secondary" onClick={exportCsv}>Export Line-Item CSV</button>
                 </div>
             </div>
 
+            {/* ── Schedule C Summary — full width ── */}
+            <div className="card">
+                <h2>Schedule C Summary ({selectedYear})</h2>
+                <div className="tableWrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Line</th>
+                                <th>Tax Bucket</th>
+                                <th>Total Spend</th>
+                                <th>Deductible</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {summary.map(r => (
+                                <tr key={r.tax_bucket}>
+                                    <td><span className="tag ok">{SCHEDULE_C_MAPPING[r.tax_bucket] || '—'}</span></td>
+                                    <td>{r.tax_bucket}</td>
+                                    <td>{formatMoney(r.spend_cents || 0)}</td>
+                                    <td style={{ fontWeight: 'bold' }}>{formatMoney(r.deductible_cents || 0)}</td>
+                                    <td><button className="btn sm" onClick={() => setAuditingBucket(r.tax_bucket === auditingBucket ? null : r.tax_bucket)}>
+                                        {auditingBucket === r.tax_bucket ? 'Close' : 'Audit'}
+                                    </button></td>
+                                </tr>
+                            ))}
+                            {summary.length === 0 && (
+                                <tr><td colSpan="5" className="muted" style={{ textAlign: 'center' }}>No tax data assigned yet — use Bulk Assign below.</td></tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Audit drill-down */}
+                {auditingBucket && (
+                    <div className="card" style={{ marginTop: '16px', background: 'rgba(255,255,255,0.03)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                            <h3 style={{ margin: 0 }}>Auditing: {auditingBucket}</h3>
+                            <button className="btn sm outline" onClick={() => setAuditingBucket(null)}>Close</button>
+                        </div>
+                        <div className="tableWrap">
+                            <table className="sm">
+                                <thead>
+                                    <tr><th>Date</th><th>Vendor</th><th>Amount</th><th>Biz %</th><th>Deductible</th></tr>
+                                </thead>
+                                <tbody>
+                                    {filteredAuditing.map(e => (
+                                        <tr key={e.id}>
+                                            <td>{e.expense_date}</td>
+                                            <td>{e.vendor}</td>
+                                            <td>{formatMoney(e.amount_cents)}</td>
+                                            <td>{e.business_use_pct}%</td>
+                                            <td>{formatMoney(Math.round(e.amount_cents * (e.business_use_pct / 100)))}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* ── Bulk Assign — full width ── */}
             <div className="card">
                 <h2>Bulk Assign by Category</h2>
                 <div className="muted" style={{ marginBottom: '10px' }}>
-                    Select a category—apply tax bucket + business-use % across the entire year.
+                    Select a category — apply tax bucket + business-use % across the entire year in one click.
                 </div>
                 <div className="controls">
                     <select style={{ flex: 1 }} value={bulkCategory} onChange={e => setBulkCategory(e.target.value)}>
@@ -348,55 +298,108 @@ export default function Tax() {
                 {bulkMsg && <div className="tag ok" style={{ marginTop: '10px' }}>{bulkMsg}</div>}
             </div>
 
-            {/* IRS Mileage Rate Management */}
+            {/* ── Business Mileage Tracking — full width ── */}
             <div className="card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <div>
-                        <h2 style={{ margin: 0 }}>IRS Standard Mileage Rates</h2>
-                        <div className="muted small">Auto-synced from IRS.gov each year · $0.70/mi for 2025</div>
+                <h2>Business Mileage Tracking ({selectedYear})</h2>
+
+                {/* Summary stats */}
+                <div style={{ display: 'flex', gap: '16px', marginBottom: '18px', flexWrap: 'wrap' }}>
+                    <div className="card accent" style={{ flex: 1, textAlign: 'center', padding: '15px', minWidth: '160px' }}>
+                        <div className="muted small">Total Business Miles</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 800, margin: '5px 0' }}>{totalMiles.toLocaleString()}</div>
                     </div>
-                    <button className="btn primary" onClick={handleSyncIRS}>🔄 Sync from IRS.gov</button>
+                    <div className="card accent" style={{ flex: 1, textAlign: 'center', padding: '15px', minWidth: '160px' }}>
+                        <div className="muted small">IRS Rate (${currentRate.toFixed(2)}/mi)</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 800, margin: '5px 0' }}>{formatMoney(mileageDeduction * 100)}</div>
+                    </div>
+                </div>
+
+                {/* Add trip form */}
+                <div className="controls" style={{ gap: '8px', marginBottom: '14px' }}>
+                    <input type="date" value={mileageInput.date} onChange={e => setMileageInput({ ...mileageInput, date: e.target.value })} style={{ width: '148px' }} />
+                    <input type="number" placeholder="Miles" value={mileageInput.miles} onChange={e => setMileageInput({ ...mileageInput, miles: e.target.value })} style={{ width: '90px' }} />
+                    <input type="text" placeholder="Purpose (e.g. Wedding Photo Shoot - Las Vegas)" value={mileageInput.purpose} onChange={e => setMileageInput({ ...mileageInput, purpose: e.target.value })} style={{ flex: 1 }} />
+                    <button className="btn primary" onClick={handleAddMileage}>Add Trip</button>
+                </div>
+
+                {/* Trip log table */}
+                <div className="tableWrap" style={{ maxHeight: '320px' }}>
+                    <table>
+                        <thead>
+                            <tr><th>Date</th><th>Miles</th><th>Purpose</th><th>Deduction</th><th></th></tr>
+                        </thead>
+                        <tbody>
+                            {mileage.map(m => (
+                                <tr key={m.id}>
+                                    <td>{m.log_date}</td>
+                                    <td><strong>{Number(m.miles).toLocaleString()}</strong></td>
+                                    <td className="muted">{m.purpose}</td>
+                                    <td>{formatMoney(Number(m.miles) * currentRate * 100)}</td>
+                                    <td><button className="btn sm danger" onClick={() => handleDeleteMileage(m.id)}>×</button></td>
+                                </tr>
+                            ))}
+                            {mileage.length === 0 && (
+                                <tr><td colSpan="5" className="muted center">No trips logged for {selectedYear}.</td></tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* ── IRS Standard Mileage Rates — collapsible ── */}
+            <div className="card">
+                <div
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+                    onClick={() => setRatesOpen(o => !o)}
+                >
+                    <div>
+                        <h2 style={{ margin: 0 }}>IRS Standard Mileage Rates {ratesOpen ? '▲' : '▼'}</h2>
+                        <div className="muted small">Current rate for {selectedYear}: <strong>${currentRate.toFixed(2)}/mile</strong> · Click to {ratesOpen ? 'collapse' : 'expand'}</div>
+                    </div>
+                    <button className="btn primary" onClick={e => { e.stopPropagation(); handleSyncIRS(); }}>🔄 Sync from IRS.gov</button>
                 </div>
 
                 {syncStatus && (
-                    <div className="tag" style={{ marginBottom: '12px', background: syncStatus.startsWith('✅') ? 'rgba(74,222,128,0.1)' : 'rgba(251,191,36,0.1)', color: syncStatus.startsWith('✅') ? '#4ade80' : '#fbbf24' }}>
+                    <div className="tag" style={{ marginTop: '10px', background: syncStatus.startsWith('✅') ? 'rgba(74,222,128,0.1)' : 'rgba(251,191,36,0.1)', color: syncStatus.startsWith('✅') ? '#4ade80' : '#fbbf24' }}>
                         {syncStatus}
                     </div>
                 )}
 
-                <div className="grid two" style={{ gap: '16px' }}>
-                    <div>
-                        <div className="tableWrap" style={{ maxHeight: '220px' }}>
-                            <table className="sm">
-                                <thead>
-                                    <tr><th>Year</th><th>Rate/Mile</th><th>Source</th><th>Last Synced</th></tr>
-                                </thead>
-                                <tbody>
-                                    {mileageRates.map(r => (
-                                        <tr key={r.year} style={r.year === selectedYear ? { background: 'rgba(99,102,241,0.15)' } : {}}>
-                                            <td><strong>{r.year}</strong></td>
-                                            <td><span className="tag ok">${Number(r.rate_per_mile).toFixed(2)}</span></td>
-                                            <td className="muted small">{r.source}</td>
-                                            <td className="muted small">{r.last_synced_at?.slice(0, 10)}</td>
-                                        </tr>
-                                    ))}
-                                    {mileageRates.length === 0 && (
-                                        <tr><td colSpan="4" className="muted center">No rates loaded. Click Sync from IRS.gov.</td></tr>
-                                    )}
-                                </tbody>
-                            </table>
+                {ratesOpen && (
+                    <div className="grid two" style={{ gap: '16px', marginTop: '16px' }}>
+                        <div>
+                            <div className="tableWrap" style={{ maxHeight: '220px' }}>
+                                <table className="sm">
+                                    <thead>
+                                        <tr><th>Year</th><th>Rate/Mile</th><th>Source</th><th>Last Synced</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        {mileageRates.map(r => (
+                                            <tr key={r.year} style={r.year === selectedYear ? { background: 'rgba(99,102,241,0.15)' } : {}}>
+                                                <td><strong>{r.year}</strong></td>
+                                                <td><span className="tag ok">${Number(r.rate_per_mile).toFixed(2)}</span></td>
+                                                <td className="muted small">{r.source}</td>
+                                                <td className="muted small">{r.last_synced_at?.slice(0, 10)}</td>
+                                            </tr>
+                                        ))}
+                                        {mileageRates.length === 0 && (
+                                            <tr><td colSpan="4" className="muted center">No rates — click Sync from IRS.gov.</td></tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 style={{ marginTop: 0 }}>Add / Override Rate Manually</h3>
+                            <div className="muted small" style={{ marginBottom: '10px' }}>Use if sync fails or IRS hasn't published the new year's rate yet.</div>
+                            <div className="controls">
+                                <input type="number" min="2019" max="2099" placeholder="Year" value={manualRate.year} onChange={e => setManualRate({ ...manualRate, year: Number(e.target.value) })} style={{ width: '80px' }} />
+                                <input type="number" step="0.005" min="0" max="5" placeholder="Rate (e.g. 0.70)" value={manualRate.rate} onChange={e => setManualRate({ ...manualRate, rate: e.target.value })} style={{ width: '140px' }} />
+                                <button className="btn secondary" onClick={handleManualRate}>Save Rate</button>
+                            </div>
                         </div>
                     </div>
-                    <div>
-                        <h3 style={{ marginTop: 0 }}>Add / Override Rate Manually</h3>
-                        <div className="muted small" style={{ marginBottom: '10px' }}>Use this if the sync fails or IRS hasn't yet published the year's rate.</div>
-                        <div className="controls">
-                            <input type="number" min="2019" max="2099" placeholder="Year" value={manualRate.year} onChange={e => setManualRate({ ...manualRate, year: Number(e.target.value) })} style={{ width: '80px' }} />
-                            <input type="number" step="0.005" min="0" max="5" placeholder="Rate (e.g. 0.70)" value={manualRate.rate} onChange={e => setManualRate({ ...manualRate, rate: e.target.value })} style={{ width: '130px' }} />
-                            <button className="btn secondary" onClick={handleManualRate}>Save Rate</button>
-                        </div>
-                    </div>
-                </div>
+                )}
             </div>
         </section>
     );
