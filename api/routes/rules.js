@@ -74,4 +74,86 @@ router.delete("/:id", async (req, res) => {
     }
 });
 
+// GET /rules/:id/preview
+// Returns all transactions that match this rule, and shows what would change.
+router.get("/:id/preview", async (req, res) => {
+    try {
+        const { data: rule, error: rErr } = await supabase
+            .from("classification_rules").select("*").eq("id", req.params.id).single();
+        if (rErr || !rule) return res.status(404).json({ error: "Rule not found" });
+
+        const { data: expenses, error: eErr } = await supabase
+            .from("expenses").select("id, vendor, notes, category, tax_bucket, tax_deductible, business_use_pct");
+        if (eErr) throw eErr;
+
+        const matched = [];
+        for (const exp of expenses || []) {
+            const text = rule.match_column === 'vendor'
+                ? (exp.vendor || '').toLowerCase()
+                : (exp.notes || '').toLowerCase();
+            const val = (rule.match_value || '').toLowerCase();
+            const isMatch = rule.match_type === 'exact' ? text === val : text.includes(val);
+            if (isMatch) {
+                matched.push({
+                    id: exp.id,
+                    vendor: exp.vendor,
+                    currentCategory: exp.category,
+                    currentBucket: exp.tax_bucket,
+                    currentDeductible: exp.tax_deductible,
+                    newCategory: rule.assign_category || null,
+                    newBucket: rule.assign_tax_bucket || null,
+                    newDeductible: rule.assign_tax_deductible,
+                });
+            }
+        }
+        return res.json({ rule, matchCount: matched.length, matches: matched.slice(0, 20) });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+// POST /rules/:id/apply
+// Applies a single rule to all matching existing transactions.
+router.post("/:id/apply", async (req, res) => {
+    try {
+        const { data: rule, error: rErr } = await supabase
+            .from("classification_rules").select("*").eq("id", req.params.id).single();
+        if (rErr || !rule) return res.status(404).json({ error: "Rule not found" });
+
+        const { data: expenses, error: eErr } = await supabase
+            .from("expenses").select("id, vendor, notes, category, tax_bucket, tax_deductible, business_use_pct");
+        if (eErr) throw eErr;
+
+        let updated = 0;
+        const errors = [];
+
+        for (const exp of expenses || []) {
+            const text = rule.match_column === 'vendor'
+                ? (exp.vendor || '').toLowerCase()
+                : (exp.notes || '').toLowerCase();
+            const val = (rule.match_value || '').toLowerCase();
+            const isMatch = rule.match_type === 'exact' ? text === val : text.includes(val);
+            if (!isMatch) continue;
+
+            const patch = {};
+            if (rule.assign_category) patch.category = rule.assign_category;
+            if (rule.assign_tax_bucket) patch.tax_bucket = rule.assign_tax_bucket;
+            if (rule.assign_tax_deductible !== null && rule.assign_tax_deductible !== undefined) {
+                patch.tax_deductible = rule.assign_tax_deductible;
+            }
+            if (rule.assign_business_use_pct) patch.business_use_pct = rule.assign_business_use_pct;
+
+            if (Object.keys(patch).length === 0) continue;
+
+            const { error: updErr } = await supabase.from("expenses").update(patch).eq("id", exp.id);
+            if (updErr) errors.push({ vendor: exp.vendor, error: updErr.message });
+            else updated++;
+        }
+
+        return res.json({ ok: true, updated, total: (expenses || []).length, errors });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;

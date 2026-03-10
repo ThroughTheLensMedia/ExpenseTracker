@@ -20,6 +20,7 @@ export default function Rules() {
     const [applyMsg, setApplyMsg] = useState('');
     const [applying, setApplying] = useState(false);
     const [allExpenses, setAllExpenses] = useState([]);
+    const [ruleStatus, setRuleStatus] = useState({}); // { [ruleId]: { loading, preview, applyMsg } }
 
     // Unique, sorted vendor / notes lists for datalist suggestions
     const vendorOptions = useMemo(() => {
@@ -102,6 +103,28 @@ export default function Rules() {
             setApplyMsg(`❌ Failed: ${e.message}`);
         } finally {
             setApplying(false);
+        }
+    };
+
+    const handlePreviewRule = async (id) => {
+        setRuleStatus(s => ({ ...s, [id]: { loading: true } }));
+        try {
+            const r = await fetch(`/api/rules/${id}/preview`, { credentials: 'include' });
+            const data = await r.json();
+            setRuleStatus(s => ({ ...s, [id]: { loading: false, preview: data } }));
+        } catch (e) {
+            setRuleStatus(s => ({ ...s, [id]: { loading: false, applyMsg: `❌ ${e.message}` } }));
+        }
+    };
+
+    const handleApplySingleRule = async (id) => {
+        setRuleStatus(s => ({ ...s, [id]: { ...s[id], applying: true, applyMsg: '' } }));
+        try {
+            const r = await fetch(`/api/rules/${id}/apply`, { method: 'POST', credentials: 'include' });
+            const data = await r.json();
+            setRuleStatus(s => ({ ...s, [id]: { applying: false, applyMsg: `✅ ${data.updated} transaction(s) updated.` } }));
+        } catch (e) {
+            setRuleStatus(s => ({ ...s, [id]: { applying: false, applyMsg: `❌ ${e.message}` } }));
         }
     };
 
@@ -252,21 +275,70 @@ export default function Rules() {
                             </tr>
                         </thead>
                         <tbody>
-                            {rules.map(r => (
-                                <tr key={r.id}>
-                                    <td><strong>{r.match_column}</strong></td>
-                                    <td>{r.match_type}</td>
-                                    <td style={{ color: '#f7b955' }}>"{r.match_value}"</td>
-                                    <td>{r.assign_category || <span className="muted">—</span>}</td>
-                                    <td>{r.assign_tax_bucket || <span className="muted">—</span>}</td>
-                                    <td>
-                                        {r.assign_tax_deductible ? <span className="tag ok">Yes ({r.assign_business_use_pct}%)</span> : <span className="tag">No</span>}
-                                    </td>
-                                    <td>
-                                        <button className="btn secondary" onClick={() => handleDelete(r.id)}>Delete</button>
-                                    </td>
-                                </tr>
-                            ))}
+                            {rules.map(r => {
+                                const rs = ruleStatus[r.id] || {};
+                                return (
+                                    <>
+                                        <tr key={r.id}>
+                                            <td><strong>{r.match_column}</strong></td>
+                                            <td>{r.match_type}</td>
+                                            <td style={{ color: '#f7b955' }}>"{r.match_value}"</td>
+                                            <td>{r.assign_category || <span className="muted">—</span>}</td>
+                                            <td>{r.assign_tax_bucket || <span className="muted">—</span>}</td>
+                                            <td>
+                                                {r.assign_tax_deductible ? <span className="tag ok">Yes ({r.assign_business_use_pct}%)</span> : <span className="tag">No</span>}
+                                            </td>
+                                            <td style={{ display: 'flex', gap: '6px', flexWrap: 'nowrap' }}>
+                                                <button
+                                                    className="btn secondary"
+                                                    style={{ fontSize: '12px', padding: '5px 10px', whiteSpace: 'nowrap' }}
+                                                    onClick={() => handlePreviewRule(r.id)}
+                                                    disabled={rs.loading}
+                                                >
+                                                    {rs.loading ? '⏳' : '🔍 Test'}
+                                                </button>
+                                                <button
+                                                    className="btn"
+                                                    style={{ fontSize: '12px', padding: '5px 10px', whiteSpace: 'nowrap', background: 'rgba(99,102,241,0.8)' }}
+                                                    onClick={() => handleApplySingleRule(r.id)}
+                                                    disabled={rs.applying}
+                                                >
+                                                    {rs.applying ? '⏳' : '⚡ Apply'}
+                                                </button>
+                                                <button className="btn secondary" style={{ fontSize: '12px', padding: '5px 10px' }} onClick={() => handleDelete(r.id)}>Delete</button>
+                                            </td>
+                                        </tr>
+                                        {/* Preview panel */}
+                                        {(rs.preview || rs.applyMsg) && (
+                                            <tr key={`${r.id}-preview`}>
+                                                <td colSpan="7" style={{ padding: '0 0 10px 20px', background: 'rgba(255,255,255,0.02)' }}>
+                                                    {rs.applyMsg && (
+                                                        <div style={{ fontSize: '12px', color: rs.applyMsg.startsWith('✅') ? 'var(--green)' : '#f87171', marginBottom: '6px' }}>
+                                                            {rs.applyMsg}
+                                                        </div>
+                                                    )}
+                                                    {rs.preview && (
+                                                        <div style={{ fontSize: '12px' }}>
+                                                            <strong style={{ color: rs.preview.matchCount > 0 ? 'var(--green)' : '#f87171' }}>
+                                                                {rs.preview.matchCount === 0
+                                                                    ? '❌ No transactions match this rule — check the match value exactly matches vendor text in your data'
+                                                                    : `✅ ${rs.preview.matchCount} transaction(s) will be updated:`
+                                                                }
+                                                            </strong>
+                                                            {rs.preview.matches?.slice(0, 8).map((m, i) => (
+                                                                <div key={i} style={{ marginTop: '4px', color: 'var(--muted)', paddingLeft: '12px' }}>
+                                                                    → <span style={{ color: '#fff' }}>{m.vendor}</span> &nbsp;
+                                                                    {m.currentCategory} → <span style={{ color: 'var(--accent)' }}>{m.newCategory || '(unchanged)'}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </>
+                                );
+                            })}
                             {rules.length === 0 && (
                                 <tr>
                                     <td colSpan="7" className="muted" style={{ textAlign: 'center' }}>
