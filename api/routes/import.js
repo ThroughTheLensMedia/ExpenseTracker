@@ -121,27 +121,53 @@ router.post("/rocketmoney", upload.single("file"), async (req, res) => {
 
             // --- Seamless background auto-mapping for Rocket Money categories ---
             if (!tax_bucket) {
-                const RM_MAPPING = [
-                    { categories: ['Bills & Utilities'], bucket: 'Utilities', deductible: false, pct: 100 },
-                    { categories: ['Auto & Transport', 'Fuel (Van)', 'Gas & Fuel'], bucket: 'Car and truck', deductible: true, pct: 50 },
-                    { categories: ['Travel & Vacation', 'Travel'], bucket: 'Travel', deductible: true, pct: 100 },
-                    { categories: ['Dining & Drinks', 'Food & Dining', 'Restaurants'], bucket: 'Meals (50%)', deductible: true, pct: 50 },
-                    { categories: ['Software & Tech', 'Office Supplies', 'Software', 'Electronics & Software'], bucket: 'Office expense', deductible: true, pct: 100 },
-                    { categories: ['Advertising'], bucket: 'Advertising', deductible: true, pct: 100 },
-                    { categories: ['Insurance (Business)', 'Insurance'], bucket: 'Insurance', deductible: true, pct: 100 },
-                    { categories: ['Professional Services', 'Legal'], bucket: 'Legal and professional', deductible: true, pct: 100 },
-                    { categories: ['Photography', 'Camera & Photo', 'Equipment'], bucket: 'Supplies', deductible: true, pct: 100 }
+                // First: Specific Vendor overrides (case-insensitive substring match)
+                const VENDOR_MAPPING = [
+                    { vendor: 't-mobile', bucket: 'Utilities', deductible: true, pct: 50 },
+                    { vendor: 'tnsos', bucket: 'Taxes and licenses', deductible: true, pct: 100 },
+                    { vendor: 'iapp press', bucket: 'Taxes and licenses', deductible: true, pct: 100 },
+                    { vendor: 'booking', bucket: 'Travel', deductible: true, pct: 100 },
+                    { vendor: 'amazon', bucket: 'Supplies', deductible: true, pct: 100 },
+                    { vendor: 'taxact', bucket: 'Legal and professional', deductible: true, pct: 100 },
+                    { vendor: 'harvest', bucket: 'Travel', deductible: true, pct: 100 },
+                    { vendor: 'print shop', bucket: 'Advertising', deductible: true, pct: 100 }
                 ];
-
-                for (const mapping of RM_MAPPING) {
-                    if (mapping.categories.includes(category)) {
-                        tax_bucket = mapping.bucket;
-                        if (!rmTaxDeductible) {
-                            // Only override if user didn't explicitly tag it in RM (we respect user 'Yes')
-                            tax_deductible = mapping.deductible;
-                        }
-                        business_use_pct = mapping.pct;
+                let matchedVendor = false;
+                for (const vmap of VENDOR_MAPPING) {
+                    if (vendor.toLowerCase().includes(vmap.vendor)) {
+                        tax_bucket = vmap.bucket;
+                        if (!rmTaxDeductible) tax_deductible = vmap.deductible;
+                        business_use_pct = vmap.pct;
+                        matchedVendor = true;
                         break;
+                    }
+                }
+
+                // Second: Category mapping
+                if (!matchedVendor) {
+                    const RM_MAPPING = [
+                        { categories: ['Bills & Utilities'], bucket: 'Utilities', deductible: false, pct: 100 },
+                        { categories: ['Auto & Transport', 'Fuel (Van)', 'Gas & Fuel'], bucket: 'Car and truck', deductible: true, pct: 50 },
+                        { categories: ['Travel & Vacation', 'Travel', 'Harvest host', 'Booking.com'], bucket: 'Travel', deductible: true, pct: 100 },
+                        { categories: ['Dining & Drinks', 'Food & Dining', 'Restaurants'], bucket: 'Meals (50%)', deductible: true, pct: 50 },
+                        { categories: ['Software & Tech', 'Office Supplies', 'Software', 'Electronics & Software'], bucket: 'Office expense', deductible: true, pct: 100 },
+                        { categories: ['Advertising', 'The Print Shop'], bucket: 'Advertising', deductible: true, pct: 100 },
+                        { categories: ['Insurance (Business)', 'Insurance'], bucket: 'Insurance', deductible: true, pct: 100 },
+                        { categories: ['Professional Services', 'Legal', 'TaxAct'], bucket: 'Legal and professional', deductible: true, pct: 100 },
+                        { categories: ['Photography', 'Camera & Photo', 'Equipment', 'Amazon'], bucket: 'Supplies', deductible: true, pct: 100 },
+                        { categories: ['TNSOS', 'IAPP Press'], bucket: 'Taxes and licenses', deductible: true, pct: 100 },
+                        { categories: ['T-mobile', 'Phone'], bucket: 'Utilities', deductible: true, pct: 50 }
+                    ];
+
+                    for (const mapping of RM_MAPPING) {
+                        if (mapping.categories.includes(category)) {
+                            tax_bucket = mapping.bucket;
+                            if (!rmTaxDeductible) {
+                                tax_deductible = mapping.deductible;
+                            }
+                            business_use_pct = mapping.pct;
+                            break;
+                        }
                     }
                 }
             }
