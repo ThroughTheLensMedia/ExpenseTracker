@@ -59,9 +59,15 @@ function App() {
             <NavLink to="/transactions" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Transactions</NavLink>
             <NavLink to="/tax" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Tax</NavLink>
             <NavLink to="/equipment" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Equipment</NavLink>
-            <NavLink to="/rules" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Rules</NavLink>
-            <NavLink to="/backup" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Backup</NavLink>
             <NavLink to="/invoice" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Invoice</NavLink>
+
+            <div className="dropdown-wrap">
+              <div className="pill" style={{ cursor: 'pointer' }}>System ▾</div>
+              <div className="dropdown-content">
+                <NavLink to="/rules" className="dropdown-item">⚙️ Audit Rules</NavLink>
+                <NavLink to="/backup" className="dropdown-item">💾 Backup & Export</NavLink>
+              </div>
+            </div>
           </div>
         </header>
 
