@@ -298,10 +298,9 @@ export default function Transactions() {
                             <tr>
                                 <th style={{ width: '58px' }}></th>{/* Edit first */}
                                 <th onClick={() => handleSort('expense_date')} style={{ cursor: 'pointer' }}>Date<SortIcon col="expense_date" /></th>
-                                <th onClick={() => handleSort('vendor')} style={{ cursor: 'pointer' }}>Vendor<SortIcon col="vendor" /></th>
                                 <th onClick={() => handleSort('category')} style={{ cursor: 'pointer' }}>Category<SortIcon col="category" /></th>
                                 <th onClick={() => handleSort('amount_cents')} style={{ cursor: 'pointer' }}>Amount<SortIcon col="amount_cents" /></th>
-                                <th onClick={() => handleSort('tax_bucket')} style={{ cursor: 'pointer' }}>Tax Bucket<SortIcon col="tax_bucket" /></th>
+                                <th onClick={() => handleSort('tax_bucket')} style={{ cursor: 'pointer', width: '120px' }}>Tax Bucket<SortIcon col="tax_bucket" /></th>
                                 <th style={{ textAlign: 'center' }}>Receipt</th>
                                 <th>Type</th>
                                 <th>Ded.</th>
@@ -309,7 +308,7 @@ export default function Transactions() {
                         </thead>
                         <tbody>
                             {filtered.slice(0, 800).map(r => {
-                                const needsReceipt = !r.receipt_link && Number(r.amount_cents || 0) > 7500;
+                                const needsReceipt = r.tax_deductible && !r.receipt_link && Number(r.amount_cents || 0) > 7500;
                                 return (
                                     <tr key={r.id} style={{ background: needsReceipt ? 'rgba(251,191,36,0.04)' : undefined }}>
                                         <td style={{ padding: '4px 6px' }}>
@@ -319,9 +318,9 @@ export default function Transactions() {
                                         <td style={{ fontWeight: 600, maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.vendor || ''}</td>
                                         <td style={{ maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.category || <span className="muted">—</span>}</td>
                                         <td style={{ fontWeight: 700, textAlign: 'right' }}>{formatMoney(r.amount_cents)}</td>
-                                        <td>
+                                        <td style={{ maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                             {r.tax_bucket
-                                                ? <span className="tag" style={{ fontSize: '11px' }}>
+                                                ? <span className="tag" style={{ fontSize: '10px', whiteSpace: 'nowrap' }}>
                                                     {r.tax_bucket}
                                                     {r.tax_deductible && r.business_use_pct && r.business_use_pct !== 100 && !String(r.tax_bucket).includes('%')
                                                         ? ` (${r.business_use_pct}%)`
