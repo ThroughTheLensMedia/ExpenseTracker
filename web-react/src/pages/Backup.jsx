@@ -34,6 +34,19 @@ export default function Backup() {
                     Requires env vars—<span className="mono">CF_API_TOKEN</span> and optionally <span className="mono">CF_ZONE_ID</span>.
                 </div>
             </div>
+
+            <div className="card" style={{ marginTop: '20px' }}>
+                <h2 style={{ marginBottom: '6px' }}>Data Portability</h2>
+                <div className="muted" style={{ marginBottom: '14px' }}>
+                    Download a full snapshot of your entire database (Expenses, Equipment, Clients, and Invoices) as a JSON file for your records.
+                </div>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    <a href="/api/admin/export-all" download className="btn primary">
+                        📥 Download Full Backup (.json)
+                    </a>
+                    <span className="muted small">Recommended before major manual edits.</span>
+                </div>
+            </div>
         </section>
     );
 }
