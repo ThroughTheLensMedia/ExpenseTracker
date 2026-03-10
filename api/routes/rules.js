@@ -74,6 +74,25 @@ router.delete("/:id", async (req, res) => {
     }
 });
 
+// Helper to fetch ALL rows from a table (Supabase defaults to 1000)
+async function fetchAllRows(tableName, selectStr = "*") {
+    let all = [];
+    let page = 0;
+    const PAGE_SIZE = 1000;
+    while (true) {
+        const { data, error } = await supabase
+            .from(tableName)
+            .select(selectStr)
+            .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        all = all.concat(data);
+        if (data.length < PAGE_SIZE) break;
+        page++;
+    }
+    return all;
+}
+
 // GET /rules/:id/preview
 // Returns all transactions that match this rule, and shows what would change.
 router.get("/:id/preview", async (req, res) => {
@@ -82,9 +101,8 @@ router.get("/:id/preview", async (req, res) => {
             .from("classification_rules").select("*").eq("id", req.params.id).single();
         if (rErr || !rule) return res.status(404).json({ error: "Rule not found" });
 
-        const { data: expenses, error: eErr } = await supabase
-            .from("expenses").select("id, vendor, notes, category, tax_bucket, tax_deductible, business_use_pct");
-        if (eErr) throw eErr;
+        // Fetch ALL expenses to ensure we catch those beyond the 1000-row default limit
+        const expenses = await fetchAllRows("expenses", "id, vendor, notes, category, tax_bucket, tax_deductible, business_use_pct");
 
         const matched = [];
         const val = (rule.match_value || '').toLowerCase().trim();
@@ -124,8 +142,9 @@ router.get("/:id/preview", async (req, res) => {
             }
         }
 
-        return res.json({ rule, matchCount: matched.length, matches: matched.slice(0, 20), nearMisses });
+        return res.json({ rule, matchCount: matched.length, matches: matched.slice(0, 20), nearMisses, totalScanned: expenses.length });
     } catch (err) {
+        console.error("[PREVIEW ERROR]", err);
         return res.status(500).json({ error: err.message });
     }
 });
@@ -138,9 +157,8 @@ router.post("/:id/apply", async (req, res) => {
             .from("classification_rules").select("*").eq("id", req.params.id).single();
         if (rErr || !rule) return res.status(404).json({ error: "Rule not found" });
 
-        const { data: expenses, error: eErr } = await supabase
-            .from("expenses").select("id, vendor, notes, category, tax_bucket, tax_deductible, business_use_pct");
-        if (eErr) throw eErr;
+        // Fetch ALL expenses to ensure we catch those beyond the 1000-row default limit
+        const expenses = await fetchAllRows("expenses", "id, vendor, notes, category, tax_bucket, tax_deductible, business_use_pct");
 
         let updated = 0;
         const errors = [];
@@ -149,7 +167,7 @@ router.post("/:id/apply", async (req, res) => {
             const text = rule.match_column === 'vendor'
                 ? (exp.vendor || '').toLowerCase()
                 : (exp.notes || '').toLowerCase();
-            const val = (rule.match_value || '').toLowerCase();
+            const val = (rule.match_value || '').toLowerCase().trim();
             const isMatch = rule.match_type === 'exact' ? text === val : text.includes(val);
             if (!isMatch) continue;
 
@@ -170,6 +188,7 @@ router.post("/:id/apply", async (req, res) => {
 
         return res.json({ ok: true, updated, total: (expenses || []).length, errors });
     } catch (err) {
+        console.error("[APPLY ERROR]", err);
         return res.status(500).json({ error: err.message });
     }
 });

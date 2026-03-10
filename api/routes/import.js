@@ -442,8 +442,7 @@ router.post("/rocketmoney", upload.single("file"), async (req, res) => {
 // Batch-updates all existing transactions with cleaned vendor names
 router.post("/normalize-vendors", async (req, res) => {
     try {
-        const { data, error } = await supabase.from("expenses").select("id, vendor");
-        if (error) throw error;
+        const data = await fetchAllRows("expenses", "id, vendor");
 
         let updated = 0;
         const batch = [];
@@ -469,6 +468,25 @@ router.post("/normalize-vendors", async (req, res) => {
     }
 });
 
+// Helper to fetch ALL rows from a table (Supabase defaults to 1000)
+async function fetchAllRows(tableName, selectStr = "*") {
+    let all = [];
+    let page = 0;
+    const PAGE_SIZE = 1000;
+    while (true) {
+        const { data, error } = await supabase
+            .from(tableName)
+            .select(selectStr)
+            .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        all = all.concat(data);
+        if (data.length < PAGE_SIZE) break;
+        page++;
+    }
+    return all;
+}
+
 // POST /import/apply-rules
 // Retroactively runs all classification rules + vendor mapping against every existing transaction.
 // Updates category, tax_bucket, tax_deductible, and business_use_pct where rules match.
@@ -478,11 +496,8 @@ router.post('/apply-rules', async (req, res) => {
         const { data: rules, error: rulesError } = await supabase.from('classification_rules').select('*');
         if (rulesError) throw rulesError;
 
-        // Load all expenses (id, vendor, category, notes, tax_deductible, tax_bucket, business_use_pct)
-        const { data: expenses, error: expError } = await supabase
-            .from('expenses')
-            .select('id, vendor, category, notes, tax_deductible, tax_bucket, business_use_pct');
-        if (expError) throw expError;
+        // Load ALL expenses to ensure we catch those beyond the 1000-row default limit
+        const expenses = await fetchAllRows('expenses', 'id, vendor, category, notes, tax_deductible, tax_bucket, business_use_pct');
 
         const VENDOR_MAPPING_LOCAL = [
             { vendor: 't-mobile', bucket: 'Utilities', category: 'Bills & Utilities', deductible: true, pct: 50 },
