@@ -105,12 +105,12 @@ router.post("/auto-map", async (req, res) => {
   try {
     const RM_MAPPING = [
       { categories: ['Bills & Utilities'], bucket: 'Utilities', deductible: false, pct: 100 },
-      { categories: ['Auto & Transport', 'Gas & Fuel'], bucket: 'Car and truck', deductible: true, pct: 50 },
-      { categories: ['Travel'], bucket: 'Travel', deductible: true, pct: 100 },
-      { categories: ['Food & Dining', 'Restaurants'], bucket: 'Meals (50%)', deductible: true, pct: 50 },
-      { categories: ['Office Supplies', 'Software', 'Electronics & Software'], bucket: 'Office expense', deductible: true, pct: 100 },
+      { categories: ['Auto & Transport', 'Fuel (Van)', 'Gas & Fuel'], bucket: 'Car and truck', deductible: true, pct: 50 },
+      { categories: ['Travel & Vacation', 'Travel'], bucket: 'Travel', deductible: true, pct: 100 },
+      { categories: ['Dining & Drinks', 'Food & Dining', 'Restaurants'], bucket: 'Meals (50%)', deductible: true, pct: 50 },
+      { categories: ['Software & Tech', 'Office Supplies', 'Software', 'Electronics & Software'], bucket: 'Office expense', deductible: true, pct: 100 },
       { categories: ['Advertising'], bucket: 'Advertising', deductible: true, pct: 100 },
-      { categories: ['Insurance'], bucket: 'Insurance', deductible: true, pct: 100 },
+      { categories: ['Insurance (Business)', 'Insurance'], bucket: 'Insurance', deductible: true, pct: 100 },
       { categories: ['Professional Services', 'Legal'], bucket: 'Legal and professional', deductible: true, pct: 100 },
       { categories: ['Photography', 'Camera & Photo', 'Equipment'], bucket: 'Supplies', deductible: true, pct: 100 }
     ];

@@ -119,6 +119,33 @@ router.post("/rocketmoney", upload.single("file"), async (req, res) => {
                 }
             }
 
+            // --- Seamless background auto-mapping for Rocket Money categories ---
+            if (!tax_bucket) {
+                const RM_MAPPING = [
+                    { categories: ['Bills & Utilities'], bucket: 'Utilities', deductible: false, pct: 100 },
+                    { categories: ['Auto & Transport', 'Fuel (Van)', 'Gas & Fuel'], bucket: 'Car and truck', deductible: true, pct: 50 },
+                    { categories: ['Travel & Vacation', 'Travel'], bucket: 'Travel', deductible: true, pct: 100 },
+                    { categories: ['Dining & Drinks', 'Food & Dining', 'Restaurants'], bucket: 'Meals (50%)', deductible: true, pct: 50 },
+                    { categories: ['Software & Tech', 'Office Supplies', 'Software', 'Electronics & Software'], bucket: 'Office expense', deductible: true, pct: 100 },
+                    { categories: ['Advertising'], bucket: 'Advertising', deductible: true, pct: 100 },
+                    { categories: ['Insurance (Business)', 'Insurance'], bucket: 'Insurance', deductible: true, pct: 100 },
+                    { categories: ['Professional Services', 'Legal'], bucket: 'Legal and professional', deductible: true, pct: 100 },
+                    { categories: ['Photography', 'Camera & Photo', 'Equipment'], bucket: 'Supplies', deductible: true, pct: 100 }
+                ];
+
+                for (const mapping of RM_MAPPING) {
+                    if (mapping.categories.includes(category)) {
+                        tax_bucket = mapping.bucket;
+                        if (!rmTaxDeductible) {
+                            // Only override if user didn't explicitly tag it in RM (we respect user 'Yes')
+                            tax_deductible = mapping.deductible;
+                        }
+                        business_use_pct = mapping.pct;
+                        break;
+                    }
+                }
+            }
+
             items.push({
                 expense_date, vendor, category, amount_cents, currency: "USD", notes,
                 source: "rocketmoney", rm_id, tax_deductible, tax_bucket, business_use_pct
