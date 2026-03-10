@@ -103,29 +103,48 @@ export default function TransactionDrawer({ transaction, onClose, onSave }) {
                     </div>
                     <div style={{ marginTop: '10px' }}>
                         <small className="muted">Category</small>
-                        <input list="category-options" value={category} onChange={e => setCategory(e.target.value)} placeholder="Category" autocomplete="off" />
-                        <datalist id="category-options">
-                            {/* Custom Income Sources */}
-                            <option value="Photo Income" />
-                            <option value="Military Retirement" />
-                            <option value="VA Benefits" />
-                            <option value="IRS Tax Refund" />
-
-                            {/* Standard RM / Expense Categories */}
-                            <option value="Advertising" />
-                            <option value="Auto & Transport" />
-                            <option value="Bills & Utilities" />
-                            <option value="Dining & Drinks" />
-                            <option value="Gas & Fuel" />
-                            <option value="Groceries" />
-                            <option value="Insurance (Business)" />
-                            <option value="Internal Transfer" />
-                            <option value="Photography" />
-                            <option value="Professional Services" />
-                            <option value="Shopping" />
-                            <option value="Software & Tech" />
-                            <option value="Travel & Vacation" />
-                        </datalist>
+                        <select
+                            value={
+                                ["Photo Income", "Military Retirement", "VA Benefits", "IRS Tax Refund", "Advertising", "Auto & Transport", "Bills & Utilities", "Dining & Drinks", "Gas & Fuel", "Groceries", "Insurance (Business)", "Internal Transfer", "Photography", "Professional Services", "Shopping", "Software & Tech", "Travel & Vacation"].includes(category)
+                                    ? category
+                                    : (category ? "Other" : "")
+                            }
+                            onChange={e => {
+                                if (e.target.value === "Other") setCategory("");
+                                else setCategory(e.target.value);
+                            }}
+                            style={{ width: '100%', padding: '10px' }}
+                        >
+                            <option value="">Select category...</option>
+                            <optgroup label="Income Sources">
+                                <option value="Photo Income">Photo Income</option>
+                                <option value="Military Retirement">Military Retirement</option>
+                                <option value="VA Benefits">VA Benefits</option>
+                                <option value="IRS Tax Refund">IRS Tax Refund</option>
+                            </optgroup>
+                            <optgroup label="Standard Categories">
+                                <option value="Advertising">Advertising</option>
+                                <option value="Auto & Transport">Auto & Transport</option>
+                                <option value="Bills & Utilities">Bills & Utilities</option>
+                                <option value="Dining & Drinks">Dining & Drinks</option>
+                                <option value="Gas & Fuel">Gas & Fuel</option>
+                                <option value="Groceries">Groceries</option>
+                                <option value="Insurance (Business)">Insurance (Business)</option>
+                                <option value="Internal Transfer">Internal Transfer</option>
+                                <option value="Photography">Photography</option>
+                                <option value="Professional Services">Professional Services</option>
+                                <option value="Shopping">Shopping</option>
+                                <option value="Software & Tech">Software & Tech</option>
+                                <option value="Travel & Vacation">Travel & Vacation</option>
+                            </optgroup>
+                            <option value="Other">✚ Custom Category...</option>
+                        </select>
+                        {!["Photo Income", "Military Retirement", "VA Benefits", "IRS Tax Refund", "Advertising", "Auto & Transport", "Bills & Utilities", "Dining & Drinks", "Gas & Fuel", "Groceries", "Insurance (Business)", "Internal Transfer", "Photography", "Professional Services", "Shopping", "Software & Tech", "Travel & Vacation"].includes(category) && category !== "" && (
+                            <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Type custom category..." style={{ marginTop: '8px' }} />
+                        )}
+                        {!["Photo Income", "Military Retirement", "VA Benefits", "IRS Tax Refund", "Advertising", "Auto & Transport", "Bills & Utilities", "Dining & Drinks", "Gas & Fuel", "Groceries", "Insurance (Business)", "Internal Transfer", "Photography", "Professional Services", "Shopping", "Software & Tech", "Travel & Vacation"].includes(category) && category === "" && (
+                            <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Type custom category..." style={{ marginTop: '8px' }} autoFocus />
+                        )}
                     </div>
                 </div>
 

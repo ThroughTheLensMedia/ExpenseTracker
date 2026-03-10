@@ -267,7 +267,8 @@ export default function Tax() {
                 {(() => {
                     const incomeRows = expenses.filter(e =>
                         String(e.expense_date || '').startsWith(String(selectedYear)) &&
-                        Number(e.amount_cents || 0) < 0
+                        Number(e.amount_cents || 0) < 0 &&
+                        e.tax_deductible === true
                     );
                     const grossReceipts = incomeRows.reduce((s, e) => s + Math.abs(Number(e.amount_cents || 0)), 0);
                     const totalDeductible = summary.reduce((s, r) => s + (r.tax_bucket !== 'Unassigned' ? (r.deductible_cents || 0) : 0), 0);

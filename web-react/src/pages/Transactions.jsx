@@ -207,61 +207,50 @@ export default function Transactions() {
                 )}
             </div>
 
-            <div className="grid two" style={{ marginTop: '12px' }}>
-                <div className="tableWrap">
+            <div style={{ marginTop: '12px' }}>
+                <div className="tableWrap" style={{ maxHeight: 'calc(100vh - 250px)', overflowY: 'auto' }}>
                     <table>
-                        <thead>
+                        <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                             <tr>
                                 <th onClick={() => handleSort('expense_date')} style={{ cursor: 'pointer' }}>Date<SortIcon col="expense_date" /></th>
                                 <th onClick={() => handleSort('vendor')} style={{ cursor: 'pointer' }}>Vendor<SortIcon col="vendor" /></th>
                                 <th onClick={() => handleSort('category')} style={{ cursor: 'pointer' }}>Category<SortIcon col="category" /></th>
                                 <th onClick={() => handleSort('tax_bucket')} style={{ cursor: 'pointer' }}>Tax Bucket<SortIcon col="tax_bucket" /></th>
+                                <th>Biz %</th>
                                 <th onClick={() => handleSort('amount_cents')} style={{ cursor: 'pointer' }}>Amount<SortIcon col="amount_cents" /></th>
-                                <th>Type</th><th>Deductible</th><th>Receipt</th><th></th>
+                                <th>Type</th>
+                                <th>Deductible</th>
+                                <th>Notes</th>
+                                <th>Receipt</th>
+                                <th></th>
                             </tr>
                         </thead>
                         <tbody>
                             {filtered.slice(0, 800).map(r => (
                                 <tr key={r.id}>
-                                    <td>{formatDate(r.expense_date)}</td>
+                                    <td className="date-col">{formatDate(r.expense_date)}</td>
                                     <td><strong>{r.vendor || ''}</strong></td>
                                     <td>{r.category || ''}</td>
                                     <td>{r.tax_bucket ? <span className="tag">{r.tax_bucket}</span> : <span className="muted">—</span>}</td>
+                                    <td>{r.business_use_pct ?? 100}%</td>
                                     <td style={{ fontWeight: 'bold' }}>{formatMoney(r.amount_cents)}</td>
                                     <td>{Number(r.amount_cents || 0) < 0 ? <span className="tag ok">Income</span> : <span className="tag">Expense</span>}</td>
                                     <td>{r.tax_deductible ? <span className="tag ok">Yes</span> : <span className="tag">No</span>}</td>
+                                    <td style={{ maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={r.notes}>{r.notes || <span className="muted">—</span>}</td>
                                     <td>
                                         {r.receipt_link
                                             ? <a className="tag ok" href={r.receipt_link} target="_blank" rel="noreferrer">View</a>
                                             : Number(r.amount_cents || 0) > 7500 ? <span className="tag warn">Needed</span> : <span className="tag">—</span>
                                         }
                                     </td>
-                                    <td><button className="btn secondary" onClick={() => setEditingId(r.id)}>Edit</button></td>
+                                    <td><button className="btn secondary sm" onClick={() => setEditingId(r.id)}>Edit</button></td>
                                 </tr>
                             ))}
+                            {filtered.length === 0 && (
+                                <tr><td colSpan={11} className="center muted" style={{ padding: '30px' }}>No transactions found for these filters.</td></tr>
+                            )}
                         </tbody>
                     </table>
-                </div>
-
-                <div className="txnCards">
-                    {filtered.slice(0, 300).map(r => (
-                        <div className="txnCard" key={`card-${r.id}`}>
-                            <div className="top">
-                                <div>
-                                    <div className="vendor">{r.vendor || ''}</div>
-                                    <div className="muted">{formatDate(r.expense_date)} · {r.category || ''}</div>
-                                </div>
-                                <div className="amt">{formatMoney(r.amount_cents)}</div>
-                            </div>
-                            <div style={{ marginTop: '10px' }}>
-                                {Number(r.amount_cents || 0) < 0 ? <span className="tag ok" style={{ marginRight: '6px' }}>Income</span> : <span className="tag" style={{ marginRight: '6px' }}>Expense</span>}
-                                {r.tax_deductible ? <span className="tag ok" style={{ marginRight: '6px' }}>Deductible</span> : <span className="tag" style={{ marginRight: '6px' }}>No</span>}
-                            </div>
-                            <div style={{ marginTop: '10px' }}>
-                                <button className="btn secondary" onClick={() => setEditingId(r.id)}>Edit</button>
-                            </div>
-                        </div>
-                    ))}
                 </div>
             </div>
 
