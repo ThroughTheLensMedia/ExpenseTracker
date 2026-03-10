@@ -38,6 +38,10 @@ export default function Tax() {
     // Auditing
     const [auditingBucket, setAuditingBucket] = useState(null);
     const [editingId, setEditingId] = useState(null);
+    const [showIncomeAudit, setShowIncomeAudit] = useState(false);
+
+    // Manual 1099 / outside income
+    const [manual1099, setManual1099] = useState('');
 
     // Bulk Assign State
     const [bulkCategory, setBulkCategory] = useState('');
@@ -270,7 +274,9 @@ export default function Tax() {
                         Number(e.amount_cents || 0) < 0 &&
                         e.tax_deductible === true
                     );
-                    const grossReceipts = incomeRows.reduce((s, e) => s + Math.abs(Number(e.amount_cents || 0)), 0);
+                    const transactionIncome = incomeRows.reduce((s, e) => s + Math.abs(Number(e.amount_cents || 0)), 0);
+                    const extraIncome = Math.round(parseFloat(manual1099 || 0) * 100);
+                    const grossReceipts = transactionIncome + extraIncome;
                     const totalDeductible = summary.reduce((s, r) => s + (r.tax_bucket !== 'Unassigned' ? (r.deductible_cents || 0) : 0), 0);
                     const mileageDeductCents = Math.round(totalMiles * currentRate * 100);
                     const totalExpenses = totalDeductible + mileageDeductCents;
@@ -283,11 +289,45 @@ export default function Tax() {
                                 <div style={{ fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.1em', color: 'var(--accent, #6366f1)', marginBottom: '12px' }}>
                                     PART I — INCOME
                                 </div>
+
+                                {/* Line 1 — clickable to audit */}
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                                     <span><strong>Line 1</strong> · Gross receipts or sales</span>
-                                    <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>{formatMoney(grossReceipts)}</span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <button
+                                            className="btn sm"
+                                            onClick={() => setShowIncomeAudit(true)}
+                                            title={`${incomeRows.length} transaction(s) from Rocket Money`}
+                                        >
+                                            Audit ({incomeRows.length} txns)
+                                        </button>
+                                        <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>{formatMoney(grossReceipts)}</span>
+                                    </div>
                                 </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0' }}>
+
+                                {/* Manual 1099 income entry */}
+                                <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                                    <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--muted)', marginBottom: '8px', letterSpacing: '0.05em' }}>+ ADD 1099 / OUTSIDE INCOME (not in Rocket Money)</div>
+                                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            value={manual1099}
+                                            onChange={e => setManual1099(e.target.value)}
+                                            placeholder="e.g. 4250.00"
+                                            style={{ width: '160px', fontSize: '13px' }}
+                                        />
+                                        <span className="muted" style={{ fontSize: '12px' }}>
+                                            e.g. your 1099 total, cash payments, Wise transfers not synced to RM
+                                        </span>
+                                        {extraIncome > 0 && (
+                                            <span className="tag ok" style={{ fontSize: '12px' }}>+{formatMoney(extraIncome)} added</span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', marginTop: '8px' }}>
                                     <span className="muted small">Line 7 · Gross income (Line 1 minus returns)</span>
                                     <span style={{ fontWeight: 700 }}>{formatMoney(grossReceipts)}</span>
                                 </div>
@@ -553,6 +593,99 @@ export default function Tax() {
                     </div>
                 )}
             </div>
+            {/* Income Audit Modal */}
+            {showIncomeAudit && (() => {
+                const incomeRows = expenses.filter(e =>
+                    String(e.expense_date || '').startsWith(String(selectedYear)) &&
+                    Number(e.amount_cents || 0) < 0 &&
+                    e.tax_deductible === true
+                );
+                const transactionIncome = incomeRows.reduce((s, e) => s + Math.abs(Number(e.amount_cents || 0)), 0);
+                const extraIncome = Math.round(parseFloat(manual1099 || 0) * 100);
+                return (
+                    <div style={{
+                        position: 'fixed', inset: 0,
+                        background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        zIndex: 9999, padding: '20px'
+                    }}>
+                        <div className="card" style={{
+                            width: '100%', maxWidth: '860px', height: '82vh',
+                            display: 'flex', flexDirection: 'column',
+                            background: 'linear-gradient(180deg,rgba(15,26,51,0.99),rgba(11,18,32,0.97))',
+                            padding: 0, overflow: 'hidden'
+                        }}>
+                            {/* Header */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                                <div>
+                                    <h3 style={{ margin: 0 }}>💰 Income Audit — {selectedYear}</h3>
+                                    <div className="muted" style={{ marginTop: '4px', fontSize: '12px' }}>
+                                        Transactions flagged as Tax Deductible with negative amounts (income)
+                                    </div>
+                                </div>
+                                <button className="btn secondary" onClick={() => setShowIncomeAudit(false)}>Close</button>
+                            </div>
+
+                            {/* Summary bar */}
+                            <div style={{ display: 'flex', gap: '16px', padding: '14px 24px', background: 'rgba(0,0,0,0.2)', borderBottom: '1px solid rgba(255,255,255,0.07)', flexWrap: 'wrap' }}>
+                                <div className="stat" style={{ flex: 1, minWidth: '140px' }}>
+                                    <div className="k">Rocket Money Transactions</div>
+                                    <div className="v" style={{ color: '#4ade80', fontSize: '18px' }}>{formatMoney(transactionIncome)}</div>
+                                    <div className="muted" style={{ fontSize: '11px' }}>{incomeRows.length} transactions</div>
+                                </div>
+                                <div className="stat" style={{ flex: 1, minWidth: '140px' }}>
+                                    <div className="k">Manual 1099 / Outside Income</div>
+                                    <div className="v" style={{ color: '#facc15', fontSize: '18px' }}>{extraIncome > 0 ? formatMoney(extraIncome) : '—'}</div>
+                                    <div className="muted" style={{ fontSize: '11px' }}>entered below on Tax tab</div>
+                                </div>
+                                <div className="stat" style={{ flex: 1, minWidth: '140px' }}>
+                                    <div className="k">Total Line 1 Income</div>
+                                    <div className="v" style={{ color: '#4ade80', fontSize: '18px' }}>{formatMoney(transactionIncome + extraIncome)}</div>
+                                </div>
+                            </div>
+
+                            {/* Table */}
+                            <div style={{ flex: 1, overflowY: 'auto', padding: '0 24px 20px' }}>
+                                {incomeRows.length === 0 ? (
+                                    <div style={{ padding: '40px', textAlign: 'center' }}>
+                                        <div style={{ fontSize: '32px', marginBottom: '12px' }}>📭</div>
+                                        <div className="muted">No income transactions found for {selectedYear}.</div>
+                                        <div className="muted" style={{ marginTop: '8px', fontSize: '12px' }}>
+                                            To add income: go to Transactions, find your income deposit, click Edit, check "Tax Deductible", and set the Category to "Photo Income" or similar.
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <table style={{ marginTop: '12px' }}>
+                                        <thead style={{ position: 'sticky', top: 0, background: 'var(--bg)' }}>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Vendor / Source</th>
+                                                <th>Category</th>
+                                                <th style={{ textAlign: 'right' }}>Amount</th>
+                                                <th>Notes</th>
+                                                <th></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {incomeRows.map(e => (
+                                                <tr key={e.id}>
+                                                    <td className="date-col">{e.expense_date}</td>
+                                                    <td><strong>{e.vendor}</strong></td>
+                                                    <td><span className="tag ok">{e.category || 'Income'}</span></td>
+                                                    <td style={{ textAlign: 'right', fontWeight: 700, color: '#4ade80' }}>{formatMoney(Math.abs(e.amount_cents))}</td>
+                                                    <td style={{ maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={e.notes}>{e.notes || <span className="muted">—</span>}</td>
+                                                    <td><button className="btn secondary" style={{ fontSize: '11px', padding: '4px 10px' }} onClick={() => setEditingId(e.id)}>Edit</button></td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
+
             {editingId && (
                 <TransactionDrawer
                     transaction={expenses.find(x => x.id === editingId)}
