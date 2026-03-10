@@ -52,7 +52,7 @@ function App() {
   return (
     <Router>
       <div className="wrap">
-        <header>
+        <header className="glass" style={{ border: 'none' }}>
           <div className="title">Expense Tracker</div>
           <div className="nav">
             <NavLink to="/" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`} end>Dashboard</NavLink>

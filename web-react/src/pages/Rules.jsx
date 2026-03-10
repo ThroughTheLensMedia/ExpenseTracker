@@ -1,7 +1,16 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { apiGet, apiPost, fetchAllExpenses } from '../api';
+import { apiGet, apiPost, fetchAllExpenses, apiDelete } from '../api';
 import { useModal } from '../components/ModalContext.jsx';
 import CategorySelect from '../components/CategorySelect.jsx';
+
+const QUICK_SUBS = [
+    { name: 'Starlink', cat: 'Bills & Utilities', bucket: 'Utilities', bizPct: 100 },
+    { name: 'Adobe', cat: 'Software & Tech', bucket: 'Other', bizPct: 100 },
+    { name: 'Pixieset', cat: 'Software & Tech', bucket: 'Other', bizPct: 100 },
+    { name: 'Google', cat: 'Software & Tech', bucket: 'Other', bizPct: 100 },
+    { name: 'Cloudflare', cat: 'Software & Tech', bucket: 'Other', bizPct: 100 },
+    { name: 'Apple.com', cat: 'Software & Tech', bucket: 'Other', bizPct: 100 }
+];
 
 export default function Rules() {
     const [rules, setRules] = useState([]);
@@ -20,31 +29,15 @@ export default function Rules() {
     const [applyMsg, setApplyMsg] = useState('');
     const [applying, setApplying] = useState(false);
     const [allExpenses, setAllExpenses] = useState([]);
-    const [ruleStatus, setRuleStatus] = useState({}); // { [ruleId]: { loading, preview, applyMsg } }
-
-    // Unique, sorted vendor / notes lists for datalist suggestions
-    const vendorOptions = useMemo(() => {
-        const s = new Set();
-        allExpenses.forEach(e => { if (e.vendor) s.add(e.vendor); });
-        return [...s].sort((a, b) => a.localeCompare(b));
-    }, [allExpenses]);
-
-    const notesOptions = useMemo(() => {
-        const s = new Set();
-        allExpenses.forEach(e => { if (e.notes) s.add(e.notes.slice(0, 60)); });
-        return [...s].sort((a, b) => a.localeCompare(b)).slice(0, 200);
-    }, [allExpenses]);
+    const [ruleStatus, setRuleStatus] = useState({});
 
     const loadRules = async () => {
         setLoading(true);
         try {
             const data = await apiGet('/rules');
             setRules(data.rules || []);
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setLoading(false);
-        }
+        } catch (e) { console.error(e); }
+        finally { setLoading(false); }
     };
 
     useEffect(() => {
@@ -52,10 +45,24 @@ export default function Rules() {
         fetchAllExpenses().then(data => setAllExpenses(data || [])).catch(() => { });
     }, []);
 
-    const handleCreate = async () => {
+    // Discovery: Vendors with 3+ transactions and NO rule
+    const discoveryVendors = useMemo(() => {
+        const counts = {};
+        allExpenses.forEach(e => { if (e.vendor) counts[e.vendor] = (counts[e.vendor] || 0) + 1; });
+
+        return Object.entries(counts)
+            .filter(([name, count]) => {
+                const hasRule = rules.some(r => r.match_column === 'vendor' && name.toLowerCase().includes(r.match_value.toLowerCase()));
+                return !hasRule && count >= 2;
+            })
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 8);
+    }, [allExpenses, rules]);
+
+    const handleCreate = async (customPayload = null) => {
         setMsg("Saving rule...");
         try {
-            await apiPost('/rules', {
+            const data = customPayload || {
                 match_column: matchColumn,
                 match_type: matchType,
                 match_value: matchValue,
@@ -63,47 +70,29 @@ export default function Rules() {
                 assign_tax_bucket: taxBucket,
                 assign_tax_deductible: deductible,
                 assign_business_use_pct: Number(bizPct) || 100
-            });
-            setMsg("Rule created successfully.");
-            setMatchValue('');
-            setCategory('');
-            setTaxBucket('');
+            };
+
+            await apiPost('/rules', data);
+            setMsg("✅ Rule created.");
+            setMatchValue(''); setCategory(''); setTaxBucket('');
             loadRules();
-        } catch (err) {
-            setMsg(`Failed: ${err.message}`);
-        }
+        } catch (err) { setMsg(`❌ Failed: ${err.message}`); }
     };
 
     const handleDelete = async (id) => {
-        const ok = await modal.confirm('Delete this rule? This cannot be undone.');
-        if (!ok) return;
-        try {
-            await fetch(`/api/rules/${id}`, { method: 'DELETE', credentials: 'include' });
-            loadRules();
-        } catch (e) {
-            console.error(e);
-        }
+        if (!confirm('Delete rule?')) return;
+        await apiDelete(`/rules/${id}`); loadRules();
     };
 
     const handleApplyRules = async () => {
-        const ok = await modal.confirm(
-            'Apply all saved rules + vendor mappings to EVERY existing transaction? ' +
-            'This will update category, tax bucket, deductible status, and business % for any row that matches a rule. ' +
-            'Transactions that don\'t match any rule are left untouched.'
-        );
-        if (!ok) return;
-        setApplying(true);
-        setApplyMsg('Applying rules…');
+        setApplying(true); setApplyMsg('Applying...');
         try {
             const r = await fetch('/api/import/apply-rules', { method: 'POST', credentials: 'include' });
             const data = await r.json();
-            if (!r.ok) throw new Error(data.error || r.statusText);
-            setApplyMsg(`✅ Done — ${data.updated.toLocaleString()} transactions updated out of ${data.total.toLocaleString()} total.`);
-        } catch (e) {
-            setApplyMsg(`❌ Failed: ${e.message}`);
-        } finally {
-            setApplying(false);
-        }
+            setApplyMsg(`✅ Updated ${data.updated} rows.`);
+            setTimeout(() => setApplyMsg(''), 5000);
+        } catch (e) { setApplyMsg(`❌ ${e.message}`); }
+        finally { setApplying(false); }
     };
 
     const handlePreviewRule = async (id) => {
@@ -122,265 +111,155 @@ export default function Rules() {
         try {
             const r = await fetch(`/api/rules/${id}/apply`, { method: 'POST', credentials: 'include' });
             const data = await r.json();
-            setRuleStatus(s => ({ ...s, [id]: { applying: false, applyMsg: `✅ ${data.updated} transaction(s) updated.` } }));
+            setRuleStatus(s => ({ ...s, [id]: { applying: false, applyMsg: `✅ ${data.updated} transactions updated.` } }));
         } catch (e) {
             setRuleStatus(s => ({ ...s, [id]: { applying: false, applyMsg: `❌ ${e.message}` } }));
         }
     };
 
     return (
-        <section className="card">
-            <h2>Tax Automation Engine (Rules)</h2>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
-                <div className="muted" style={{ maxWidth: '680px' }}>
-                    Create rules here. When you import a CSV, these rules run top to bottom — first match wins and sets category, tax bucket, deductible status &amp; business %.
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
-                    <button
-                        className="btn"
-                        onClick={handleApplyRules}
-                        disabled={applying}
-                        style={{ whiteSpace: 'nowrap', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)' }}
-                    >
-                        {applying ? '⏳ Applying…' : '⚡ Apply Rules to All Existing'}
+        <section style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '1200px', margin: '0 auto' }}>
+
+            {/* Elite Rule Header */}
+            <div className="card glass glow-blue" style={{ padding: '24px', border: 'none', margin: 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                        <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 900 }}>⚡ Tax Automation Engine</h2>
+                        <div className="muted" style={{ fontSize: '13px' }}>Classify imports automatically via smart matching rules.</div>
+                    </div>
+                    <button className="btn primary" onClick={handleApplyRules} disabled={applying}>
+                        {applying ? '⏳ Syncing...' : 'Apply Rules to Ledger'}
                     </button>
-                    {applyMsg && (
-                        <div style={{
-                            fontSize: '12px',
-                            color: applyMsg.startsWith('✅') ? 'var(--green)' : applyMsg.startsWith('❌') ? '#f87171' : 'var(--muted)'
-                        }}>
-                            {applyMsg}
-                        </div>
-                    )}
                 </div>
             </div>
 
-            <div className="card" style={{ margin: 0, marginBottom: '16px' }}>
-                <h2 style={{ marginBottom: '6px' }}>Create New Rule</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '16px', alignItems: 'start' }}>
 
-                <div className="grid two" style={{ gap: '16px' }}>
-                    <div>
-                        <div className="row two" style={{ marginBottom: '10px' }}>
-                            <div>
-                                <small className="muted">Match Column</small>
-                                <select value={matchColumn} onChange={e => setMatchColumn(e.target.value)}>
-                                    <option value="vendor">Vendor</option>
-                                    <option value="notes">Notes / Memo</option>
-                                </select>
-                            </div>
-                            <div>
-                                <small className="muted">Match Type</small>
-                                <select value={matchType} onChange={e => setMatchType(e.target.value)}>
-                                    <option value="contains">Contains</option>
-                                    <option value="exact">Exact Match</option>
-                                </select>
-                            </div>
+                {/* Rule List Area */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div className="card glass" style={{ margin: 0, padding: '20px' }}>
+                        <h2 style={{ fontSize: '1.2rem', marginBottom: '16px' }}>Active Matching Rules</h2>
+                        <div className="tableWrap" style={{ maxHeight: '700px' }}>
+                            <table className="glass">
+                                <thead>
+                                    <tr>
+                                        <th>Match Criteria</th>
+                                        <th>Target Category</th>
+                                        <th>Tax Bucket</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {rules.map(r => {
+                                        const rs = ruleStatus[r.id] || {};
+                                        return (
+                                            <React.Fragment key={r.id}>
+                                                <tr>
+                                                    <td>
+                                                        <div style={{ fontWeight: 800, color: '#f7b955' }}>"{r.match_value}"</div>
+                                                        <div className="muted small">{r.match_column} · {r.match_type}</div>
+                                                    </td>
+                                                    <td>
+                                                        <div>{r.assign_category || '—'}</div>
+                                                        <span className="tag ok" style={{ fontSize: '9px' }}>{r.assign_business_use_pct}% Biz</span>
+                                                    </td>
+                                                    <td className="muted small">{r.assign_tax_bucket || '—'}</td>
+                                                    <td>
+                                                        <div style={{ display: 'flex', gap: '6px' }}>
+                                                            <button className="btn sm secondary" style={{ padding: '4px 8px' }} onClick={() => handlePreviewRule(r.id)}>Test</button>
+                                                            <button className="btn sm danger" style={{ padding: '4px 8px' }} onClick={() => handleDelete(r.id)}>×</button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                {rs.preview && (
+                                                    <tr>
+                                                        <td colSpan="4" className="glass" style={{ background: 'rgba(25, 195, 125, 0.05)', padding: '10px 15px' }}>
+                                                            <div style={{ fontSize: '12px', color: '#4ade80', fontWeight: 700 }}>
+                                                                {rs.preview.matchCount} matches in your database.
+                                                            </div>
+                                                            <button className="btn primary sm" style={{ marginTop: '8px', fontSize: '11px' }} onClick={() => handleApplySingleRule(r.id)}>
+                                                                Apply Changes Now
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </React.Fragment>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
                         </div>
-                        <div className="row">
-                            <small className="muted">
-                                {matchColumn === 'vendor' ? 'Match Value — type or pick a vendor' : 'Match Value — keyword in notes/memo'}
-                            </small>
-                            <input
-                                list={matchColumn === 'vendor' ? 'rule-vendor-list' : 'rule-notes-list'}
-                                value={matchValue}
-                                onChange={e => setMatchValue(e.target.value)}
-                                placeholder={matchColumn === 'vendor' ? 'Type vendor name…' : 'Type keyword…'}
-                                autoComplete="off"
-                                style={{ fontFamily: 'inherit' }}
-                            />
-                            <datalist id="rule-vendor-list">
-                                {vendorOptions.map(v => <option key={v} value={v} />)}
-                            </datalist>
-                            <datalist id="rule-notes-list">
-                                {notesOptions.map(n => <option key={n} value={n} />)}
-                            </datalist>
-                            {matchValue && matchColumn === 'vendor' && (
-                                <small className="muted" style={{ marginTop: '4px', fontSize: '11px' }}>
-                                    {vendorOptions.filter(v => v.toLowerCase().includes(matchValue.toLowerCase())).length} vendor(s) match “{matchValue}” in your data
-                                </small>
-                            )}
+                    </div>
+                </div>
+
+                {/* Sidebar Wizard */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+                    {/* Discovery Wizard */}
+                    <div className="card glass glow-green" style={{ margin: 0, padding: '16px' }}>
+                        <h3 style={{ margin: 0, fontSize: '0.9rem', color: '#4ade80' }}>💡 SMART DISCOVERY</h3>
+                        <div className="muted small" style={{ margin: '4px 0 12px' }}>Frequent vendors missing a rule.</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {discoveryVendors.map(([name, count]) => (
+                                <button
+                                    key={name}
+                                    className="btn secondary sm"
+                                    style={{ textAlign: 'left', display: 'flex', justifyContent: 'space-between', padding: '8px 12px', fontSize: '11px' }}
+                                    onClick={() => { setMatchColumn('vendor'); setMatchValue(name); }}
+                                >
+                                    <span>{name}</span>
+                                    <span className="muted">{count}x</span>
+                                </button>
+                            ))}
+                            {!discoveryVendors.length && <div className="muted small italic">All frequent vendors classified.</div>}
                         </div>
                     </div>
 
-                    <div style={{ paddingLeft: '16px', borderLeft: '1px solid var(--line)' }}>
-                        <div className="row two" style={{ marginBottom: '10px', gap: '12px' }}>
+                    {/* Quick Lib */}
+                    <div className="card glass" style={{ margin: 0, padding: '16px' }}>
+                        <h3 style={{ margin: 0, fontSize: '0.9rem' }}>📦 PHOTO SUB LIBRARY</h3>
+                        <div className="muted small" style={{ margin: '4px 0 12px' }}>One-click rules for common bills.</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                            {QUICK_SUBS.map(sub => (
+                                <button
+                                    key={sub.name}
+                                    className="btn secondary sm"
+                                    style={{ fontSize: '10px' }}
+                                    onClick={() => handleCreate({
+                                        match_column: 'vendor', match_type: 'contains', match_value: sub.name,
+                                        assign_category: sub.cat, assign_tax_bucket: sub.bucket,
+                                        assign_tax_deductible: true, assign_business_use_pct: sub.bizPct
+                                    })}
+                                >+ {sub.name}</button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Manual Form */}
+                    <div className="card glass" style={{ margin: 0, padding: '16px' }}>
+                        <h3 style={{ margin: 0, fontSize: '0.9rem' }}>➕ CUSTOM RULE</h3>
+                        <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                             <div>
-                                <small className="muted">Assign Category</small>
-                                <CategorySelect
-                                    value={category}
-                                    onChange={val => setCategory(val)}
-                                    emptyLabel="— No change —"
+                                <small className="muted" style={{ fontSize: '10px' }}>Match Keyword</small>
+                                <input
+                                    value={matchValue}
+                                    onChange={e => setMatchValue(e.target.value)}
+                                    placeholder="e.g. Vensure"
+                                    style={{ fontSize: '12px', padding: '8px' }}
                                 />
                             </div>
                             <div>
-                                <small className="muted">Assign Tax Bucket (Sch. C)</small>
-                                <select value={taxBucket} onChange={e => setTaxBucket(e.target.value)} style={{ width: '100%', padding: '8px' }}>
-                                    <option value="">— No change —</option>
-                                    <option value="Advertising">Line 8 · Advertising</option>
-                                    <option value="Car and truck">Line 9 · Car and truck</option>
-                                    <option value="Commissions and fees">Line 10 · Commissions and fees</option>
-                                    <option value="Contract labor">Line 11 · Contract labor</option>
-                                    <option value="Depreciation">Line 13 · Depreciation</option>
-                                    <option value="Insurance">Line 15 · Insurance</option>
-                                    <option value="Interest">Line 16 · Interest</option>
-                                    <option value="Legal and professional">Line 17 · Legal and professional</option>
-                                    <option value="Office expense">Line 18 · Office expense</option>
-                                    <option value="Rent/lease">Line 20 · Rent/lease</option>
-                                    <option value="Repairs and maintenance">Line 21 · Repairs and maintenance</option>
-                                    <option value="Supplies">Line 22 · Supplies</option>
-                                    <option value="Taxes and licenses">Line 23 · Taxes and licenses</option>
-                                    <option value="Travel">Line 24a · Travel</option>
-                                    <option value="Meals (50%)">Line 24b · Meals (50%)</option>
-                                    <option value="Utilities">Line 25 · Utilities</option>
-                                    <option value="Wages">Line 26 · Wages</option>
-                                    <option value="Other">Line 27a · Other</option>
-                                </select>
+                                <small className="muted" style={{ fontSize: '10px' }}>Category</small>
+                                <CategorySelect value={category} onChange={val => setCategory(val)} />
                             </div>
+                            <button className="btn primary" style={{ marginTop: '4px' }} onClick={() => handleCreate()} disabled={!matchValue}>Save Rule</button>
                         </div>
-
-
-                        <div className="controls" style={{ marginTop: '20px' }}>
-                            <label className="tag" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                <input type="checkbox" checked={deductible} onChange={e => setDeductible(e.target.checked)} style={{ width: 'auto', margin: 0 }} />
-                                Deductible
-                            </label>
-
-                            <label className="tag" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                Biz %
-                                <input type="number" min="0" max="100" value={bizPct} onChange={e => setBizPct(e.target.value)} style={{ width: '70px', padding: '4px' }} />
-                            </label>
-
-                            <button className="btn" onClick={handleCreate} disabled={!matchValue || (!category && !taxBucket)}>
-                                Save Rule
-                            </button>
-                        </div>
-                        <div className="muted" style={{ marginTop: '6px', minHeight: '18px' }}>{msg}</div>
+                        {msg && <div className="muted" style={{ marginTop: '8px', fontSize: '11px', textAlign: 'center' }}>{msg}</div>}
                     </div>
+
                 </div>
+
             </div>
-
-            <div className="card" style={{ margin: 0 }}>
-                <h2>Active Rules</h2>
-                <div className="tableWrap">
-                    <table style={{ minWidth: '800px' }}>
-                        <thead>
-                            <tr>
-                                <th>If (Column)</th>
-                                <th>Condition</th>
-                                <th>Value</th>
-                                <th>Then: Category</th>
-                                <th>Tax Bucket</th>
-                                <th>Deductible (Biz %)</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {rules.map(r => {
-                                const rs = ruleStatus[r.id] || {};
-                                return (
-                                    <>
-                                        <tr key={r.id}>
-                                            <td><strong>{r.match_column}</strong></td>
-                                            <td>{r.match_type}</td>
-                                            <td style={{ color: '#f7b955' }}>"{r.match_value}"</td>
-                                            <td>{r.assign_category || <span className="muted">—</span>}</td>
-                                            <td>{r.assign_tax_bucket || <span className="muted">—</span>}</td>
-                                            <td>
-                                                {r.assign_tax_deductible ? <span className="tag ok">Yes ({r.assign_business_use_pct}%)</span> : <span className="tag">No</span>}
-                                            </td>
-                                            <td style={{ display: 'flex', gap: '6px', flexWrap: 'nowrap' }}>
-                                                <button
-                                                    className="btn secondary"
-                                                    style={{ fontSize: '12px', padding: '5px 10px', whiteSpace: 'nowrap' }}
-                                                    onClick={() => handlePreviewRule(r.id)}
-                                                    disabled={rs.loading}
-                                                >
-                                                    {rs.loading ? '⏳' : '🔍 Test'}
-                                                </button>
-                                                <button
-                                                    className="btn"
-                                                    style={{ fontSize: '12px', padding: '5px 10px', whiteSpace: 'nowrap', background: 'rgba(99,102,241,0.8)' }}
-                                                    onClick={() => handleApplySingleRule(r.id)}
-                                                    disabled={rs.applying}
-                                                >
-                                                    {rs.applying ? '⏳' : '⚡ Apply'}
-                                                </button>
-                                                <button className="btn secondary" style={{ fontSize: '12px', padding: '5px 10px' }} onClick={() => handleDelete(r.id)}>Delete</button>
-                                            </td>
-                                        </tr>
-                                        {/* Preview panel */}
-                                        {(rs.preview || rs.applyMsg) && (
-                                            <tr key={`${r.id}-preview`}>
-                                                <td colSpan="7" style={{ padding: '0 0 10px 20px', background: 'rgba(255,255,255,0.02)' }}>
-                                                    {rs.applyMsg && (
-                                                        <div style={{ fontSize: '12px', color: rs.applyMsg.startsWith('✅') ? 'var(--green)' : '#f87171', marginBottom: '6px' }}>
-                                                            {rs.applyMsg}
-                                                        </div>
-                                                    )}
-                                                    {rs.preview && (
-                                                        <div style={{ fontSize: '12px' }}>
-                                                            <strong style={{ color: rs.preview.matchCount > 0 ? 'var(--green)' : '#f87171' }}>
-                                                                {rs.preview.matchCount === 0
-                                                                    ? '❌ No exact match — your rule value doesn\'t match any vendor text in the database.'
-                                                                    : `✅ ${rs.preview.matchCount} transaction(s) will be updated:`
-                                                                }
-                                                            </strong>
-
-                                                            {/* Matched rows */}
-                                                            {rs.preview.matches?.slice(0, 8).map((m, i) => (
-                                                                <div key={i} style={{ marginTop: '4px', color: 'var(--muted)', paddingLeft: '12px' }}>
-                                                                    → <span style={{ color: '#fff' }}>{m.vendor}</span> &nbsp;
-                                                                    {m.currentCategory} → <span style={{ color: 'var(--accent)' }}>{m.newCategory || '(unchanged)'}</span>
-                                                                </div>
-                                                            ))}
-
-                                                            {/* Near-miss vendors when nothing matched */}
-                                                            {rs.preview.matchCount === 0 && rs.preview.nearMisses?.length > 0 && (
-                                                                <div style={{ marginTop: '8px' }}>
-                                                                    <div style={{ color: '#facc15', marginBottom: '4px' }}>
-                                                                        💡 Did you mean one of these? (actual vendor text in your data)
-                                                                    </div>
-                                                                    {rs.preview.nearMisses.map((v, i) => (
-                                                                        <div
-                                                                            key={i}
-                                                                            style={{ paddingLeft: '12px', color: 'var(--muted)', cursor: 'pointer', marginTop: '2px' }}
-                                                                            title="Click to copy"
-                                                                            onClick={() => navigator.clipboard?.writeText(v)}
-                                                                        >
-                                                                            📋 <span style={{ color: '#fff', fontFamily: 'monospace' }}>{v}</span>
-                                                                        </div>
-                                                                    ))}
-                                                                    <div style={{ color: 'var(--muted)', marginTop: '6px', fontStyle: 'italic' }}>
-                                                                        Click any vendor name above to copy it. Delete this rule and re-create with that exact text (or just the first few unique words).
-                                                                    </div>
-                                                                </div>
-                                                            )}
-
-                                                            {rs.preview.matchCount === 0 && rs.preview.nearMisses?.length === 0 && (
-                                                                <div style={{ color: 'var(--muted)', marginTop: '6px', paddingLeft: '12px' }}>
-                                                                    No vendors found containing any word from your match value. Double-check the spelling or try a shorter keyword.
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </>
-                                );
-                            })}
-                            {rules.length === 0 && (
-                                <tr>
-                                    <td colSpan="7" className="muted" style={{ textAlign: 'center' }}>
-                                        No rules built yet. Create one above to automatically classify imports!
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
         </section>
     );
 }
