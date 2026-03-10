@@ -475,7 +475,12 @@ export default function Tax() {
                                                                 <span title={irsTip} style={{ cursor: 'help', fontSize: '10px', opacity: 0.6 }}>ℹ️</span>
                                                             </div>
                                                         </td>
-                                                        <td style={{ fontWeight: isEmpty ? 400 : 600 }}>{bucket}</td>
+                                                        <td style={{ fontWeight: isEmpty ? 400 : 600 }}>
+                                                            {bucket}
+                                                            {bucket === 'Depreciation' && (
+                                                                <div style={{ fontSize: '9px', color: 'var(--accent)', fontWeight: 600, marginTop: '2px', opacity: 0.8 }}>Pulls from Assets ↗</div>
+                                                            )}
+                                                        </td>
                                                         <td style={{ textAlign: 'right' }}>{isEmpty ? '—' : formatMoney(spend)}</td>
                                                         <td style={{ textAlign: 'right', fontWeight: 700, color: deduct > 0 ? '#4ade80' : 'inherit' }}>
                                                             {isEmpty ? '—' : formatMoney(deduct)}
@@ -486,9 +491,6 @@ export default function Tax() {
                                                                     <button className="btn sm secondary" onClick={() => setAuditingBucket(bucket === auditingBucket ? null : bucket)} style={{ fontSize: '10px', padding: '4px 8px' }}>
                                                                         {auditingBucket === bucket ? 'Close' : 'Details'}
                                                                     </button>
-                                                                    {bucket === 'Depreciation' && (
-                                                                        <span style={{ fontSize: '9px', color: 'var(--blue)', fontWeight: 600 }}>Pulls from Assets ↗</span>
-                                                                    )}
                                                                 </div>
                                                             )}
                                                         </td>
