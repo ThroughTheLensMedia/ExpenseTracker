@@ -383,3 +383,82 @@ footer {
 .hide {
   display: none !important;
 }
+/* --- ELITE UI DESIGN SYSTEM --- */
+.glass {
+  background: rgba(255, 255, 255, 0.03) !important;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  transition: all 0.3s ease;
+}
+
+.glass:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  transform: translateY(-2px);
+}
+
+.glow-blue {
+  box-shadow: 0 0 20px rgba(47, 107, 255, 0.15), inset 0 0 10px rgba(47, 107, 255, 0.1);
+  border-color: rgba(47, 107, 255, 0.3) !important;
+}
+
+.glow-green {
+  box-shadow: 0 0 20px rgba(25, 195, 125, 0.15), inset 0 0 10px rgba(25, 195, 125, 0.1);
+  border-color: rgba(25, 195, 125, 0.3) !important;
+}
+
+.locker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.gear-slot {
+  position: relative;
+  padding: 24px;
+  border-radius: 24px;
+}
+
+.gear-slot .cat-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+  background: rgba(255,255,255,0.05);
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.gear-slot .price-tag {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  font-weight: 900;
+  font-family: var(--mono);
+  font-size: 15px;
+}
+
+.gear-slot .status-pill {
+    position: absolute;
+    top: 60px;
+    right: 24px;
+}
+
+.gear-slot .meta {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.gear-slot .actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 8px;
+}
