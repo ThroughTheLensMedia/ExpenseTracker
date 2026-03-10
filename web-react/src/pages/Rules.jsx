@@ -17,6 +17,8 @@ export default function Rules() {
     const [deductible, setDeductible] = useState(true);
     const [bizPct, setBizPct] = useState(100);
     const [msg, setMsg] = useState('');
+    const [applyMsg, setApplyMsg] = useState('');
+    const [applying, setApplying] = useState(false);
 
     const loadRules = async () => {
         setLoading(true);
@@ -67,12 +69,52 @@ export default function Rules() {
         }
     };
 
+    const handleApplyRules = async () => {
+        const ok = await modal.confirm(
+            'Apply all saved rules + vendor mappings to EVERY existing transaction? ' +
+            'This will update category, tax bucket, deductible status, and business % for any row that matches a rule. ' +
+            'Transactions that don\'t match any rule are left untouched.'
+        );
+        if (!ok) return;
+        setApplying(true);
+        setApplyMsg('Applying rules…');
+        try {
+            const r = await fetch('/api/import/apply-rules', { method: 'POST', credentials: 'include' });
+            const data = await r.json();
+            if (!r.ok) throw new Error(data.error || r.statusText);
+            setApplyMsg(`✅ Done — ${data.updated.toLocaleString()} transactions updated out of ${data.total.toLocaleString()} total.`);
+        } catch (e) {
+            setApplyMsg(`❌ Failed: ${e.message}`);
+        } finally {
+            setApplying(false);
+        }
+    };
+
     return (
         <section className="card">
             <h2>Tax Automation Engine (Rules)</h2>
-            <div className="muted" style={{ marginBottom: '12px' }}>
-                Create rules here. When you import a Rocket Money CSV, these rules run sequentially from top to bottom.
-                If a transaction matches, the configured category and tax rules are instantly applied!
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
+                <div className="muted" style={{ maxWidth: '680px' }}>
+                    Create rules here. When you import a CSV, these rules run top to bottom — first match wins and sets category, tax bucket, deductible status &amp; business %.
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+                    <button
+                        className="btn"
+                        onClick={handleApplyRules}
+                        disabled={applying}
+                        style={{ whiteSpace: 'nowrap', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)' }}
+                    >
+                        {applying ? '⏳ Applying…' : '⚡ Apply Rules to All Existing'}
+                    </button>
+                    {applyMsg && (
+                        <div style={{
+                            fontSize: '12px',
+                            color: applyMsg.startsWith('✅') ? 'var(--green)' : applyMsg.startsWith('❌') ? '#f87171' : 'var(--muted)'
+                        }}>
+                            {applyMsg}
+                        </div>
+                    )}
+                </div>
             </div>
 
             <div className="card" style={{ margin: 0, marginBottom: '16px' }}>

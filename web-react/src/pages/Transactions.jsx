@@ -31,6 +31,30 @@ export default function Transactions() {
     const [rmErrors, setRmErrors] = useState([]);
     const [normalizing, setNormalizing] = useState(false);
     const [toast, setToast] = useState(null); // { msg, ok }
+    const [importSource, setImportSource] = useState('rocketmoney');
+    const [detecting, setDetecting] = useState(false);
+    const [detectedSource, setDetectedSource] = useState(null);
+    const [pendingFile, setPendingFile] = useState(null);
+
+    const BANK_PROFILES = [
+        { key: 'rocketmoney', label: '🟣 Rocket Money' },
+        { key: 'usbank', label: '🔵 US Bank' },
+        { key: 'chase', label: '🔵 Chase' },
+        { key: 'bankofamerica', label: '🔴 Bank of America' },
+        { key: 'wellsfargo', label: '🟡 Wells Fargo' },
+        { key: 'applecard', label: '⬛ Apple Card' },
+        { key: 'capitalone', label: '🔴 Capital One' },
+    ];
+
+    const BANK_TIPS = {
+        rocketmoney: 'Export from Rocket Money → Settings → Export. Positive = expense, negative = income.',
+        usbank: 'Download CSV from US Bank online → Accounts → Download. Personal accounts use a single Amount column.',
+        chase: 'Download from Chase → Account Activity → Download. Negative amounts = expenses.',
+        bankofamerica: 'Download from BofA → Account Details → Download. Negative amounts = expenses.',
+        wellsfargo: 'Download from Wells Fargo → Account Activity → Download Account Activity.',
+        applecard: 'Export from iPhone Wallet app → Apple Card → Statements → Export Transactions.',
+        capitalone: 'Download from Capital One → View Transactions → Download CSV. Uses separate Debit/Credit columns.',
+    };
 
     const loadData = async (force = false) => {
         setLoading(true);
@@ -98,22 +122,47 @@ export default function Transactions() {
         window.open(`/api/expenses/export.csv${qs.toString() ? '?' + qs.toString() : ''}`, '_blank');
     };
 
-    const importRocketMoney = async (file) => {
+    const detectAndStage = async (file) => {
+        if (!file) return;
+        setDetecting(true);
+        setDetectedSource(null);
+        setPendingFile(file);
+        setRmMsg('');
+        setRmErrors([]);
+        try {
+            const fd = new FormData();
+            fd.append('file', file);
+            const r = await fetch('/api/import/detect', { method: 'POST', credentials: 'include', body: fd });
+            const data = await r.json().catch(() => ({}));
+            if (data.detected) {
+                setImportSource(data.detected);
+                setDetectedSource(data.detected);
+                const profile = BANK_PROFILES.find(p => p.key === data.detected);
+                setRmMsg(`🔍 Auto-detected: ${profile?.label || data.detected}. Confirm and click Import.`);
+            } else {
+                setRmMsg('⚠️ Could not auto-detect bank format. Please select your bank from the dropdown below, then click Import.');
+            }
+        } catch (e) {
+            setRmMsg('⚠️ Detection failed. Select your bank manually and click Import.');
+        } finally {
+            setDetecting(false);
+        }
+    };
+
+    const runImport = async (file, source) => {
         if (!file) return;
         setRmMsg('Importing…');
         setRmErrors([]);
         try {
             const fd = new FormData();
             fd.append('file', file);
-            const r = await fetch('/api/import/rocketmoney', {
-                method: 'POST',
-                credentials: 'include',
-                body: fd
-            });
+            fd.append('source', source);
+            const r = await fetch('/api/import/csv', { method: 'POST', credentials: 'include', body: fd });
             const data = await r.json().catch(() => ({}));
             if (!r.ok) throw new Error(data?.error || `${r.status} ${r.statusText}`);
             const ins = Number(data.inserted || 0), upd = Number(data.updated || 0), sk = Number(data.skipped || 0);
-            setRmMsg(`✅ Done — inserted ${ins.toLocaleString()}, updated ${upd.toLocaleString()}, skipped ${sk.toLocaleString()}.`);
+            setRmMsg(`✅ Done — ${ins.toLocaleString()} new, ${sk.toLocaleString()} duplicates skipped.`);
+            setPendingFile(null);
             if (Array.isArray(data.errors) && data.errors.length) setRmErrors(data.errors);
             invalidateExpensesCache();
             loadData(true);
@@ -125,11 +174,11 @@ export default function Transactions() {
     const handleDrop = (e) => {
         e.preventDefault();
         setIsDragging(false);
-        if (e.dataTransfer.files && e.dataTransfer.files[0]) importRocketMoney(e.dataTransfer.files[0]);
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) detectAndStage(e.dataTransfer.files[0]);
     };
 
     const handleFileSelect = (e) => {
-        if (e.target.files && e.target.files[0]) importRocketMoney(e.target.files[0]);
+        if (e.target.files && e.target.files[0]) detectAndStage(e.target.files[0]);
     };
 
     const clearFilters = () => {
@@ -301,46 +350,91 @@ export default function Transactions() {
                     zIndex: 9999, padding: '20px'
                 }}>
                     <div className="card" style={{
-                        width: '100%', maxWidth: '520px',
+                        width: '100%', maxWidth: '540px',
                         background: 'linear-gradient(180deg, rgba(15,26,51,0.99), rgba(11,18,32,0.97))',
                         border: '1px solid var(--line)'
                     }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                            <h3 style={{ margin: 0 }}>⬆ Import Rocket Money CSV</h3>
-                            <button className="btn secondary" onClick={() => setShowImport(false)}>Close</button>
+                            <h3 style={{ margin: 0 }}>⬆ Import Bank CSV</h3>
+                            <button className="btn secondary" onClick={() => { setShowImport(false); setPendingFile(null); setRmMsg(''); setRmErrors([]); setDetectedSource(null); }}>Close</button>
                         </div>
 
                         <input ref={fileInputRef} type="file" accept=".csv,text/csv" className="hide" onChange={handleFileSelect} />
 
+                        {/* Step 1 — Drop Zone */}
                         <div
                             className={`dropzone ${isDragging ? 'drag' : ''}`}
-                            onClick={() => fileInputRef.current?.click()}
+                            onClick={() => !pendingFile && fileInputRef.current?.click()}
                             onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
                             onDragLeave={() => setIsDragging(false)}
                             onDrop={handleDrop}
-                            style={{ textAlign: 'center', padding: '30px 20px' }}
+                            style={{ textAlign: 'center', padding: pendingFile ? '16px 20px' : '30px 20px', cursor: pendingFile ? 'default' : 'pointer' }}
                         >
-                            <div style={{ fontSize: '32px', marginBottom: '8px' }}>📂</div>
-                            <div style={{ fontWeight: 800, fontSize: '15px' }}>Drop your CSV file here</div>
-                            <div className="muted" style={{ marginTop: '6px' }}>or click to browse files</div>
+                            {detecting ? (
+                                <><div style={{ fontSize: '28px', marginBottom: '6px' }}>🔍</div>
+                                    <div style={{ fontWeight: 700 }}>Detecting bank format…</div></>
+                            ) : pendingFile ? (
+                                <><div style={{ fontSize: '24px', marginBottom: '4px' }}>📄</div>
+                                    <div style={{ fontWeight: 700, fontSize: '14px' }}>{pendingFile.name}</div>
+                                    <button className="btn secondary" style={{ marginTop: '8px', fontSize: '11px' }} onClick={e => { e.stopPropagation(); setPendingFile(null); setRmMsg(''); setDetectedSource(null); fileInputRef.current.value = ''; }}>✕ Remove</button></>
+                            ) : (
+                                <><div style={{ fontSize: '32px', marginBottom: '8px' }}>📂</div>
+                                    <div style={{ fontWeight: 800, fontSize: '15px' }}>Drop your CSV file here</div>
+                                    <div className="muted" style={{ marginTop: '6px', fontSize: '13px' }}>or click to browse — bank format auto-detected</div></>
+                            )}
                         </div>
 
-                        <div className="muted" style={{ marginTop: '12px', fontSize: '12px', lineHeight: 1.6 }}>
-                            <strong>Tip:</strong> Export your transactions from Rocket Money as a CSV.
-                            Expenses become <span className="mono">positive</span>, income becomes <span className="mono">negative</span>.
-                            Duplicate transactions are automatically skipped.
+                        {/* Step 2 — Bank Selector */}
+                        <div style={{ marginTop: '14px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                                <small className="muted" style={{ whiteSpace: 'nowrap' }}>Bank / Source</small>
+                                {detectedSource && <span className="tag ok" style={{ fontSize: '11px' }}>Auto-detected</span>}
+                            </div>
+                            <select
+                                value={importSource}
+                                onChange={e => setImportSource(e.target.value)}
+                                style={{ width: '100%', fontSize: '13px' }}
+                            >
+                                {BANK_PROFILES.map(p => (
+                                    <option key={p.key} value={p.key}>{p.label}</option>
+                                ))}
+                            </select>
+                            <div className="muted" style={{ marginTop: '6px', fontSize: '11px', lineHeight: 1.5 }}>
+                                {BANK_TIPS[importSource] || 'Select your bank above.'}
+                            </div>
                         </div>
 
+                        {/* Status message */}
                         {rmMsg && (
-                            <div style={{ marginTop: '12px', padding: '10px 14px', borderRadius: '10px', background: rmMsg.startsWith('✅') ? 'rgba(25,195,125,0.1)' : rmMsg.startsWith('❌') ? 'rgba(255,77,77,0.1)' : 'rgba(255,255,255,0.04)', border: `1px solid ${rmMsg.startsWith('✅') ? 'rgba(25,195,125,0.3)' : rmMsg.startsWith('❌') ? 'rgba(255,77,77,0.3)' : 'var(--line)'}`, fontSize: '13px' }}>
+                            <div style={{
+                                marginTop: '12px', padding: '10px 14px', borderRadius: '10px',
+                                background: rmMsg.startsWith('✅') ? 'rgba(25,195,125,0.1)' : rmMsg.startsWith('❌') ? 'rgba(255,77,77,0.1)' : 'rgba(255,255,255,0.04)',
+                                border: `1px solid ${rmMsg.startsWith('✅') ? 'rgba(25,195,125,0.3)' : rmMsg.startsWith('❌') ? 'rgba(255,77,77,0.3)' : 'var(--line)'}`,
+                                fontSize: '13px'
+                            }}>
                                 {rmMsg}
                             </div>
                         )}
 
+                        {/* Import button */}
+                        {pendingFile && !rmMsg.startsWith('✅') && !rmMsg.startsWith('Importing') && (
+                            <button
+                                className="btn"
+                                style={{ width: '100%', marginTop: '14px', fontSize: '14px', padding: '12px' }}
+                                onClick={() => runImport(pendingFile, importSource)}
+                            >
+                                ⬆ Import from {BANK_PROFILES.find(p => p.key === importSource)?.label?.replace(/^.\s/, '') || importSource}
+                            </button>
+                        )}
+
+                        {rmMsg.startsWith('Importing') && (
+                            <div style={{ marginTop: '14px', textAlign: 'center', color: 'var(--muted)', fontSize: '13px' }}>⏳ Importing, please wait…</div>
+                        )}
+
                         {rmErrors.length > 0 && (
-                            <div className="tableWrap" style={{ marginTop: '10px', maxHeight: '200px' }}>
+                            <div className="tableWrap" style={{ marginTop: '10px', maxHeight: '180px' }}>
                                 <table style={{ minWidth: 0 }}>
-                                    <thead><tr><th>Row</th><th>Error</th></tr></thead>
+                                    <thead><tr><th>Row</th><th>Skipped / Error</th></tr></thead>
                                     <tbody>
                                         {rmErrors.slice(0, 50).map((e, i) => (
                                             <tr key={i}><td>{e.row}</td><td>{e.error}</td></tr>
