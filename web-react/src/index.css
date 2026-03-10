@@ -215,7 +215,8 @@ td {
   font-size: 13px;
 }
 
-td:first-child, td.date-col {
+td:first-child,
+td.date-col {
   white-space: nowrap;
   font-size: 12px;
 }
@@ -303,7 +304,7 @@ tr:hover td {
   justify-content: flex-end;
   padding: 0;
   margin: 0;
-  z-index: 1000;
+  z-index: 10000;
 }
 
 .drawer-panel {
