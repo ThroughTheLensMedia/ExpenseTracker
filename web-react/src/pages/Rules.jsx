@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { apiGet, apiPost } from '../api';
+import React, { useState, useEffect, useMemo } from 'react';
+import { apiGet, apiPost, fetchAllExpenses } from '../api';
 import { useModal } from '../components/ModalContext.jsx';
 import CategorySelect from '../components/CategorySelect.jsx';
 
@@ -19,6 +19,20 @@ export default function Rules() {
     const [msg, setMsg] = useState('');
     const [applyMsg, setApplyMsg] = useState('');
     const [applying, setApplying] = useState(false);
+    const [allExpenses, setAllExpenses] = useState([]);
+
+    // Unique, sorted vendor / notes lists for datalist suggestions
+    const vendorOptions = useMemo(() => {
+        const s = new Set();
+        allExpenses.forEach(e => { if (e.vendor) s.add(e.vendor); });
+        return [...s].sort((a, b) => a.localeCompare(b));
+    }, [allExpenses]);
+
+    const notesOptions = useMemo(() => {
+        const s = new Set();
+        allExpenses.forEach(e => { if (e.notes) s.add(e.notes.slice(0, 60)); });
+        return [...s].sort((a, b) => a.localeCompare(b)).slice(0, 200);
+    }, [allExpenses]);
 
     const loadRules = async () => {
         setLoading(true);
@@ -34,6 +48,7 @@ export default function Rules() {
 
     useEffect(() => {
         loadRules();
+        fetchAllExpenses().then(data => setAllExpenses(data || [])).catch(() => { });
     }, []);
 
     const handleCreate = async () => {
@@ -139,8 +154,28 @@ export default function Rules() {
                             </div>
                         </div>
                         <div className="row">
-                            <small className="muted">Match Value (e.g. 'Adobe')</small>
-                            <input value={matchValue} onChange={e => setMatchValue(e.target.value)} placeholder="Text to look for..." />
+                            <small className="muted">
+                                {matchColumn === 'vendor' ? 'Match Value — type or pick a vendor' : 'Match Value — keyword in notes/memo'}
+                            </small>
+                            <input
+                                list={matchColumn === 'vendor' ? 'rule-vendor-list' : 'rule-notes-list'}
+                                value={matchValue}
+                                onChange={e => setMatchValue(e.target.value)}
+                                placeholder={matchColumn === 'vendor' ? 'Type vendor name…' : 'Type keyword…'}
+                                autoComplete="off"
+                                style={{ fontFamily: 'inherit' }}
+                            />
+                            <datalist id="rule-vendor-list">
+                                {vendorOptions.map(v => <option key={v} value={v} />)}
+                            </datalist>
+                            <datalist id="rule-notes-list">
+                                {notesOptions.map(n => <option key={n} value={n} />)}
+                            </datalist>
+                            {matchValue && matchColumn === 'vendor' && (
+                                <small className="muted" style={{ marginTop: '4px', fontSize: '11px' }}>
+                                    {vendorOptions.filter(v => v.toLowerCase().includes(matchValue.toLowerCase())).length} vendor(s) match “{matchValue}” in your data
+                                </small>
+                            )}
                         </div>
                     </div>
 
