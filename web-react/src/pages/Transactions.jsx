@@ -266,7 +266,7 @@ export default function Transactions() {
                                         <td style={{ maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.category || <span className="muted">—</span>}</td>
                                         <td>
                                             {r.tax_bucket
-                                                ? <span className="tag" style={{ fontSize: '11px' }}>{r.tax_bucket}{r.business_use_pct && r.business_use_pct !== 100 ? ` (${r.business_use_pct}%)` : ''}</span>
+                                                ? <span className="tag" style={{ fontSize: '11px' }}>{r.tax_bucket}{r.business_use_pct && r.business_use_pct !== 100 && !String(r.tax_bucket).includes('%') ? ` (${r.business_use_pct}%)` : ''}</span>
                                                 : <span className="muted">—</span>
                                             }
                                         </td>
