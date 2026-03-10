@@ -103,48 +103,109 @@ export default function TransactionDrawer({ transaction, onClose, onSave }) {
                     </div>
                     <div style={{ marginTop: '10px' }}>
                         <small className="muted">Category</small>
-                        <select
-                            value={
-                                ["Photo Income", "Military Retirement", "VA Benefits", "IRS Tax Refund", "Advertising", "Auto & Transport", "Bills & Utilities", "Dining & Drinks", "Gas & Fuel", "Groceries", "Insurance (Business)", "Internal Transfer", "Photography", "Professional Services", "Shopping", "Software & Tech", "Travel & Vacation"].includes(category)
-                                    ? category
-                                    : (category ? "Other" : "")
-                            }
-                            onChange={e => {
-                                if (e.target.value === "Other") setCategory("");
-                                else setCategory(e.target.value);
-                            }}
-                            style={{ width: '100%', padding: '10px' }}
-                        >
-                            <option value="">Select category...</option>
-                            <optgroup label="Income Sources">
-                                <option value="Photo Income">Photo Income</option>
-                                <option value="Military Retirement">Military Retirement</option>
-                                <option value="VA Benefits">VA Benefits</option>
-                                <option value="IRS Tax Refund">IRS Tax Refund</option>
-                            </optgroup>
-                            <optgroup label="Standard Categories">
-                                <option value="Advertising">Advertising</option>
-                                <option value="Auto & Transport">Auto & Transport</option>
-                                <option value="Bills & Utilities">Bills & Utilities</option>
-                                <option value="Dining & Drinks">Dining & Drinks</option>
-                                <option value="Gas & Fuel">Gas & Fuel</option>
-                                <option value="Groceries">Groceries</option>
-                                <option value="Insurance (Business)">Insurance (Business)</option>
-                                <option value="Internal Transfer">Internal Transfer</option>
-                                <option value="Photography">Photography</option>
-                                <option value="Professional Services">Professional Services</option>
-                                <option value="Shopping">Shopping</option>
-                                <option value="Software & Tech">Software & Tech</option>
-                                <option value="Travel & Vacation">Travel & Vacation</option>
-                            </optgroup>
-                            <option value="Other">✚ Custom Category...</option>
-                        </select>
-                        {!["Photo Income", "Military Retirement", "VA Benefits", "IRS Tax Refund", "Advertising", "Auto & Transport", "Bills & Utilities", "Dining & Drinks", "Gas & Fuel", "Groceries", "Insurance (Business)", "Internal Transfer", "Photography", "Professional Services", "Shopping", "Software & Tech", "Travel & Vacation"].includes(category) && category !== "" && (
-                            <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Type custom category..." style={{ marginTop: '8px' }} />
-                        )}
-                        {!["Photo Income", "Military Retirement", "VA Benefits", "IRS Tax Refund", "Advertising", "Auto & Transport", "Bills & Utilities", "Dining & Drinks", "Gas & Fuel", "Groceries", "Insurance (Business)", "Internal Transfer", "Photography", "Professional Services", "Shopping", "Software & Tech", "Travel & Vacation"].includes(category) && category === "" && (
-                            <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Type custom category..." style={{ marginTop: '8px' }} autoFocus />
-                        )}
+                        {(() => {
+                            const KNOWN = [
+                                // Expenses
+                                'Advertising', 'Auto & Transport', 'Bills & Utilities', 'Camera & Equipment',
+                                'Clothing', 'Dining & Drinks', 'Education', 'Entertainment',
+                                'Gas & Fuel', 'Groceries', 'Health & Medical', 'Home & Garden',
+                                'Insurance (Business)', 'Insurance (Personal)', 'Office Supplies',
+                                'Parking & Tolls', 'Personal Care', 'Pets', 'Photography',
+                                'Professional Services', 'Rent / Lease', 'Repairs & Maintenance',
+                                'Shopping', 'Software & Tech', 'Subscriptions', 'Supplies',
+                                'Taxes & Licenses', 'Travel & Vacation',
+                                // Income
+                                'Photo Income', 'Freelance Income', 'Contract Income',
+                                'Military Retirement', 'VA Benefits', 'Rental Income', 'Side Income',
+                                // Misc Income
+                                'IRS Tax Refund', 'State Tax Refund', 'Refund', 'Reimbursement',
+                                'Cashback / Rewards', 'Interest Income', 'Internal Transfer',
+                                'Credit Card Payment', 'Deposit',
+                            ];
+                            const isKnown = KNOWN.includes(category);
+                            const selectVal = isKnown ? category : (category ? '__custom__' : '');
+
+                            return (
+                                <>
+                                    <select
+                                        value={selectVal}
+                                        onChange={e => {
+                                            if (e.target.value === '__custom__') setCategory('');
+                                            else setCategory(e.target.value);
+                                        }}
+                                        style={{ width: '100%', padding: '10px' }}
+                                    >
+                                        <option value="">Select category…</option>
+
+                                        <optgroup label="── Expenses ──────────────────">
+                                            <option value="Advertising">Advertising</option>
+                                            <option value="Auto & Transport">Auto &amp; Transport</option>
+                                            <option value="Bills & Utilities">Bills &amp; Utilities</option>
+                                            <option value="Camera & Equipment">Camera &amp; Equipment</option>
+                                            <option value="Clothing">Clothing</option>
+                                            <option value="Dining & Drinks">Dining &amp; Drinks</option>
+                                            <option value="Education">Education</option>
+                                            <option value="Entertainment">Entertainment</option>
+                                            <option value="Gas & Fuel">Gas &amp; Fuel</option>
+                                            <option value="Groceries">Groceries</option>
+                                            <option value="Health & Medical">Health &amp; Medical</option>
+                                            <option value="Home & Garden">Home &amp; Garden</option>
+                                            <option value="Insurance (Business)">Insurance (Business)</option>
+                                            <option value="Insurance (Personal)">Insurance (Personal)</option>
+                                            <option value="Office Supplies">Office Supplies</option>
+                                            <option value="Parking & Tolls">Parking &amp; Tolls</option>
+                                            <option value="Personal Care">Personal Care</option>
+                                            <option value="Pets">Pets</option>
+                                            <option value="Photography">Photography</option>
+                                            <option value="Professional Services">Professional Services</option>
+                                            <option value="Rent / Lease">Rent / Lease</option>
+                                            <option value="Repairs & Maintenance">Repairs &amp; Maintenance</option>
+                                            <option value="Shopping">Shopping</option>
+                                            <option value="Software & Tech">Software &amp; Tech</option>
+                                            <option value="Subscriptions">Subscriptions</option>
+                                            <option value="Supplies">Supplies</option>
+                                            <option value="Taxes & Licenses">Taxes &amp; Licenses</option>
+                                            <option value="Travel & Vacation">Travel &amp; Vacation</option>
+                                        </optgroup>
+
+                                        <optgroup label="── Income ────────────────────">
+                                            <option value="Photo Income">Photo Income</option>
+                                            <option value="Freelance Income">Freelance Income</option>
+                                            <option value="Contract Income">Contract Income</option>
+                                            <option value="Military Retirement">Military Retirement</option>
+                                            <option value="VA Benefits">VA Benefits</option>
+                                            <option value="Rental Income">Rental Income</option>
+                                            <option value="Side Income">Side Income</option>
+                                        </optgroup>
+
+                                        <optgroup label="── Misc Income (non-taxable) ">
+                                            <option value="IRS Tax Refund">IRS Tax Refund</option>
+                                            <option value="State Tax Refund">State Tax Refund</option>
+                                            <option value="Refund">Refund / Return</option>
+                                            <option value="Reimbursement">Reimbursement</option>
+                                            <option value="Cashback / Rewards">Cashback / Rewards</option>
+                                            <option value="Interest Income">Interest Income</option>
+                                            <option value="Internal Transfer">Internal Transfer</option>
+                                            <option value="Credit Card Payment">Credit Card Payment</option>
+                                            <option value="Deposit">Deposit</option>
+                                        </optgroup>
+
+                                        <option value="__custom__">✚ Custom Category…</option>
+                                    </select>
+
+                                    {/* Show free-text input when custom is chosen OR when current value isn't in known list */}
+                                    {!isKnown && (
+                                        <input
+                                            value={category}
+                                            onChange={e => setCategory(e.target.value)}
+                                            placeholder="Type custom category…"
+                                            style={{ marginTop: '8px' }}
+                                            autoFocus={selectVal === '__custom__'}
+                                        />
+                                    )}
+                                </>
+                            );
+                        })()}
                     </div>
                 </div>
 
