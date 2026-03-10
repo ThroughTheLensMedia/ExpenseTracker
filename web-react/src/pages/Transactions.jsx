@@ -270,24 +270,27 @@ export default function Transactions() {
                     <small className="muted">Notes</small>
                     <input value={searchNotes} onChange={e => setSearchNotes(e.target.value)} placeholder="keyword…" style={{ width: '130px' }} />
                 </div>
-                <label className="tag" style={{ alignSelf: 'flex-end', cursor: 'pointer', borderColor: deductOnly ? 'var(--accent)' : 'var(--line)' }}>
-                    <input
-                        type="checkbox"
-                        checked={deductOnly}
-                        onChange={e => setDeductOnly(e.target.checked)}
-                        style={{ width: 'auto', margin: '0 8px 0 0' }}
-                    />
-                    Deductible only
-                </label>
-                <label className="tag" style={{ alignSelf: 'flex-end', cursor: 'pointer', borderColor: missingReceiptOnly ? '#fbbf24' : 'var(--line)' }}>
-                    <input
-                        type="checkbox"
-                        checked={missingReceiptOnly}
-                        onChange={e => setMissingReceiptOnly(e.target.checked)}
-                        style={{ width: 'auto', margin: '0 8px 0 0' }}
-                    />
-                    ⚠️ Missing Receipts
-                </label>
+
+                <div style={{ display: 'flex', gap: '8px', alignSelf: 'flex-end', marginLeft: 'auto' }}>
+                    <label className="tag" style={{ cursor: 'pointer', borderColor: deductOnly ? 'var(--accent)' : 'var(--line)' }}>
+                        <input
+                            type="checkbox"
+                            checked={deductOnly}
+                            onChange={e => setDeductOnly(e.target.checked)}
+                            style={{ width: 'auto', margin: '0 8px 0 0' }}
+                        />
+                        Deductible only
+                    </label>
+                    <label className="tag" style={{ cursor: 'pointer', borderColor: missingReceiptOnly ? '#fbbf24' : 'var(--line)' }}>
+                        <input
+                            type="checkbox"
+                            checked={missingReceiptOnly}
+                            onChange={e => setMissingReceiptOnly(e.target.checked)}
+                            style={{ width: 'auto', margin: '0 8px 0 0' }}
+                        />
+                        ⚠️ Missing Receipts
+                    </label>
+                </div>
             </div>
 
             {/* ─── Table ─── */}
