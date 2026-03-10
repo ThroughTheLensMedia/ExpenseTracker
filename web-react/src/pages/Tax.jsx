@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { fetchAllExpenses, apiGet, apiPost, apiDelete, formatMoney, fetchAllMileage, invalidateExpensesCache } from '../api';
+import { fetchAllExpenses, apiGet, apiPost, apiPatch, apiDelete, formatMoney, fetchAllMileage, invalidateExpensesCache } from '../api';
 import TransactionDrawer from '../components/TransactionDrawer';
 
 const SCHEDULE_C_MAPPING = {
@@ -39,6 +39,7 @@ export default function Tax() {
     const [auditingBucket, setAuditingBucket] = useState(null);
     const [editingId, setEditingId] = useState(null);
     const [showIncomeAudit, setShowIncomeAudit] = useState(false);
+    const [markingRefundId, setMarkingRefundId] = useState(null);
 
     // Manual 1099 / outside income
     const [manual1099, setManual1099] = useState('');
@@ -674,7 +675,42 @@ export default function Tax() {
                                                     <td><span className="tag ok">{e.category || 'Income'}</span></td>
                                                     <td style={{ textAlign: 'right', fontWeight: 700, color: '#4ade80' }}>{formatMoney(Math.abs(e.amount_cents))}</td>
                                                     <td style={{ maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={e.notes}>{e.notes || <span className="muted">—</span>}</td>
-                                                    <td><button className="btn secondary" style={{ fontSize: '11px', padding: '4px 10px' }} onClick={() => setEditingId(e.id)}>Edit</button></td>
+                                                    <td style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                                        <button
+                                                            className="btn secondary"
+                                                            style={{ fontSize: '11px', padding: '4px 10px' }}
+                                                            onClick={() => setEditingId(e.id)}
+                                                        >Edit</button>
+                                                        <button
+                                                            className="btn"
+                                                            disabled={markingRefundId === e.id}
+                                                            style={{
+                                                                fontSize: '11px', padding: '4px 10px',
+                                                                background: 'rgba(251,191,36,0.15)',
+                                                                border: '1px solid rgba(251,191,36,0.4)',
+                                                                color: '#facc15'
+                                                            }}
+                                                            title="Mark this as a refund or return — removes it from your income total"
+                                                            onClick={async () => {
+                                                                if (!window.confirm(`Mark "${e.vendor}" as a Refund? This removes it from your Line 1 income total. You can undo this any time via Edit.`)) return;
+                                                                setMarkingRefundId(e.id);
+                                                                try {
+                                                                    const updated = await apiPatch(`/expenses/${e.id}`, {
+                                                                        tax_deductible: false,
+                                                                        category: 'Refund'
+                                                                    });
+                                                                    invalidateExpensesCache();
+                                                                    setExpenses(prev => prev.map(x => x.id === updated.id ? updated : x));
+                                                                } catch (err) {
+                                                                    alert('Failed: ' + err.message);
+                                                                } finally {
+                                                                    setMarkingRefundId(null);
+                                                                }
+                                                            }}
+                                                        >
+                                                            {markingRefundId === e.id ? 'Saving…' : '↩ Refund'}
+                                                        </button>
+                                                    </td>
                                                 </tr>
                                             ))}
                                         </tbody>
