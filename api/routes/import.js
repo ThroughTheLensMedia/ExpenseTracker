@@ -94,7 +94,9 @@ router.post("/rocketmoney", upload.single("file"), async (req, res) => {
                 continue;
             }
 
-            let tax_deductible = false;
+            // Read Rocket Money's own "Tax Deductible" column (Yes/No) as the starting default
+            const rmTaxDeductible = pick(o, ["tax deductible"]).toLowerCase() === "yes";
+            let tax_deductible = rmTaxDeductible;
             let tax_bucket = "";
             let business_use_pct = 100;
 

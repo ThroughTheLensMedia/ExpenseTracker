@@ -62,6 +62,24 @@ INSERT INTO mileage_rates (year, rate_per_mile, source) VALUES
   (2025, 0.70, 'IRS IR-2024-312')
 ON CONFLICT (year) DO NOTHING;
 
+-- 5. Equipment Assets Table (for depreciation tracking — Section 179 or straight-line)
+CREATE TABLE IF NOT EXISTS equipment_assets (
+  id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  purchase_date DATE NOT NULL,
+  vendor TEXT NOT NULL DEFAULT '',
+  description TEXT NOT NULL DEFAULT '',
+  category TEXT NOT NULL DEFAULT 'Other',  -- Camera, Lens, Drone, Laptop, Flash, Gimbal, etc.
+  cost_cents BIGINT NOT NULL DEFAULT 0,
+  serial_number TEXT NOT NULL DEFAULT '',
+  receipt_on_file BOOLEAN NOT NULL DEFAULT FALSE,
+  depreciation_method TEXT NOT NULL DEFAULT 'straight_line', -- 'straight_line' | 'section_179'
+  useful_life_years SMALLINT NOT NULL DEFAULT 5,
+  notes TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_assets_date ON equipment_assets(purchase_date);
+
 -- 5. Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(expense_date);
 CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category);
