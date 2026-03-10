@@ -58,7 +58,7 @@ function App() {
             <NavLink to="/" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`} end>Dashboard</NavLink>
             <NavLink to="/transactions" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Transactions</NavLink>
             <NavLink to="/tax" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Tax</NavLink>
-            <NavLink to="/assets" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Equipment</NavLink>
+            <NavLink to="/equipment" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Equipment</NavLink>
             <NavLink to="/rules" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Rules</NavLink>
             <NavLink to="/backup" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Backup</NavLink>
             <NavLink to="/invoice" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Invoice</NavLink>
@@ -70,7 +70,7 @@ function App() {
             <Route path="/" element={<Dashboard apiStatus={apiStatus} />} />
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/tax" element={<Tax />} />
-            <Route path="/assets" element={<Assets />} />
+            <Route path="/equipment" element={<Assets />} />
             <Route path="/rules" element={<Rules />} />
             <Route path="/backup" element={<Backup />} />
             <Route path="/invoice" element={<Invoice />} />
