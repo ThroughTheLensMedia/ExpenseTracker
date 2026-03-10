@@ -237,7 +237,7 @@ export default function Tax() {
                             return unassigned ? (
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <span className="tag warn" style={{ fontSize: '0.8rem' }}>
-                                        ⚠ {unassigned.count} unclassified transactions
+                                        ⚠ {unassigned.count} unclassified in {selectedYear}
                                     </span>
                                     <button
                                         className="btn outline sm"
@@ -365,33 +365,43 @@ export default function Tax() {
                     );
                 })()}
 
-                {/* Audit drill-down */}
+                {/* Audit drill-down Modal */}
                 {auditingBucket && (
-                    <div className="card" style={{ marginTop: '16px', background: 'rgba(255,255,255,0.03)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                            <h3 style={{ margin: 0 }}>📋 Audit: {auditingBucket} ({SCHEDULE_C_MAPPING[auditingBucket]})</h3>
-                            <button className="btn sm outline" onClick={() => setAuditingBucket(null)}>Close</button>
-                        </div>
-                        <div className="tableWrap">
-                            <table className="sm">
-                                <thead>
-                                    <tr><th>Date</th><th>Vendor</th><th>Amount</th><th>Biz %</th><th>Deductible</th></tr>
-                                </thead>
-                                <tbody>
-                                    {filteredAuditing.map(e => (
-                                        <tr key={e.id}>
-                                            <td>{e.expense_date}</td>
-                                            <td>{e.vendor}</td>
-                                            <td>{formatMoney(e.amount_cents)}</td>
-                                            <td>{e.business_use_pct}%</td>
-                                            <td style={{ fontWeight: 'bold', color: '#4ade80' }}>{formatMoney(Math.round(e.amount_cents * (e.business_use_pct / 100)))}</td>
-                                        </tr>
-                                    ))}
-                                    {filteredAuditing.length === 0 && (
-                                        <tr><td colSpan={5} className="muted center">No transactions in this bucket for {selectedYear}</td></tr>
-                                    )}
-                                </tbody>
-                            </table>
+                    <div style={{
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                        background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        zIndex: 9999, padding: '20px'
+                    }}>
+                        <div className="card" style={{
+                            width: '100%', maxWidth: '800px', maxHeight: '80vh',
+                            overflowY: 'auto', background: 'var(--bg-card)'
+                        }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '12px' }}>
+                                <h3 style={{ margin: 0 }}>📋 Audit: {auditingBucket} ({SCHEDULE_C_MAPPING[auditingBucket] || 'Unassigned'})</h3>
+                                <button className="btn sm outline" onClick={() => setAuditingBucket(null)}>Close</button>
+                            </div>
+                            <div className="tableWrap" style={{ maxHeight: 'none' }}>
+                                <table className="sm">
+                                    <thead>
+                                        <tr><th>Date</th><th>Vendor</th><th>Amount</th><th>Biz %</th><th>Deductible</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        {filteredAuditing.map(e => (
+                                            <tr key={e.id}>
+                                                <td>{e.expense_date}</td>
+                                                <td>{e.vendor}</td>
+                                                <td>{formatMoney(e.amount_cents)}</td>
+                                                <td>{e.business_use_pct}%</td>
+                                                <td style={{ fontWeight: 'bold', color: '#4ade80' }}>{formatMoney(Math.round(e.amount_cents * (e.business_use_pct / 100)))}</td>
+                                            </tr>
+                                        ))}
+                                        {filteredAuditing.length === 0 && (
+                                            <tr><td colSpan={5} className="muted center">No transactions in this bucket for {selectedYear}</td></tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 )}
