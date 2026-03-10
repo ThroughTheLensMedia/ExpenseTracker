@@ -40,6 +40,51 @@ function pick(o, keys) {
     return "";
 }
 
+// ── Vendor Normalization ────────────────────────────────────────────────────
+// Each entry: { pattern: RegExp, name: 'Clean Name' }
+// Patterns tested case-insensitively. First match wins.
+// Add new entries here as you discover messy vendor names in your CSV data.
+const VENDOR_NORMALIZE = [
+    { pattern: /amazon|amzn|amazon\.com|amazon mktpl|amazon mktplace/i, name: 'Amazon' },
+    { pattern: /buc-ee|bucees|buc ee/i, name: "Buc-ee's" },
+    { pattern: /t-mobile|tmobile|t mobile/i, name: 'T-Mobile' },
+    { pattern: /walmart|wal-mart|wal mart/i, name: 'Walmart' },
+    { pattern: /target\.com|target #|target store/i, name: 'Target' },
+    { pattern: /starbucks/i, name: 'Starbucks' },
+    { pattern: /apple\.com|apple store|apple inc/i, name: 'Apple' },
+    { pattern: /google pay|google \*/i, name: 'Google' },
+    { pattern: /netflix/i, name: 'Netflix' },
+    { pattern: /spotify/i, name: 'Spotify' },
+    { pattern: /adobe/i, name: 'Adobe' },
+    { pattern: /squarespace/i, name: 'Squarespace' },
+    { pattern: /dropbox/i, name: 'Dropbox' },
+    { pattern: /paypal/i, name: 'PayPal' },
+    { pattern: /venmo/i, name: 'Venmo' },
+    { pattern: /doordash/i, name: 'DoorDash' },
+    { pattern: /uber eats|ubereats/i, name: 'Uber Eats' },
+    { pattern: /booking\.com|booking com/i, name: 'Booking.com' },
+    { pattern: /airbnb/i, name: 'Airbnb' },
+    { pattern: /mapco/i, name: 'MAPCO' },
+    { pattern: /kroger/i, name: 'Kroger' },
+    { pattern: /costco/i, name: 'Costco' },
+    { pattern: /shell service|shell oil|shell #/i, name: 'Shell' },
+    { pattern: /chevron/i, name: 'Chevron' },
+    { pattern: /harvest host/i, name: 'Harvest Host' },
+    { pattern: /the print shop|printshop/i, name: 'The Print Shop' },
+    { pattern: /taxact/i, name: 'TaxAct' },
+    { pattern: /tnsos|tn secretary of state/i, name: 'TNSOS' },
+    { pattern: /iapp press/i, name: 'IAPP Press' },
+    { pattern: /raphael.*coffee/i, name: "Raphael's Coffee Roastery" },
+];
+
+function normalizeVendor(raw) {
+    const s = String(raw || '').trim();
+    for (const { pattern, name } of VENDOR_NORMALIZE) {
+        if (pattern.test(s)) return name;
+    }
+    return s;
+}
+
 router.post("/rocketmoney", upload.single("file"), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: "file required" });
 
@@ -76,8 +121,9 @@ router.post("/rocketmoney", upload.single("file"), async (req, res) => {
             // In Rocket Money: positive = expense (money out), negative = income (money in)
             // Keep as-is — do NOT flip signs.
 
-            let vendor = pick(o, ["name", "custom name", "merchant", "payee", "description"]) || "Unknown";
-            let category = pick(o, ["category", "transaction category"]) || "Uncategorized";
+            let vendor = pick(o, ['name', 'custom name', 'merchant', 'payee', 'description']) || 'Unknown';
+            vendor = normalizeVendor(vendor); // ← Apply clean name normalization
+            let category = pick(o, ['category', 'transaction category']) || 'Uncategorized';
             const rm_id = pick(o, ["id", "transaction id", "transactionid"]) || null;
             const notes = pick(o, ["note", "notes", "memo", "description"]) || "";
 
@@ -216,4 +262,36 @@ router.post("/rocketmoney", upload.single("file"), async (req, res) => {
     }
 });
 
+// POST /import/normalize-vendors
+// Batch-updates all existing transactions with cleaned vendor names
+router.post("/normalize-vendors", async (req, res) => {
+    try {
+        const { data, error } = await supabase.from("expenses").select("id, vendor");
+        if (error) throw error;
+
+        let updated = 0;
+        const batch = [];
+        for (const row of data || []) {
+            const clean = normalizeVendor(row.vendor || '');
+            if (clean !== row.vendor) {
+                batch.push({ id: row.id, vendor: clean });
+            }
+        }
+
+        // Update in chunks of 100
+        for (let i = 0; i < batch.length; i += 100) {
+            const chunk = batch.slice(i, i + 100);
+            for (const item of chunk) {
+                await supabase.from("expenses").update({ vendor: item.vendor }).eq("id", item.id);
+            }
+            updated += chunk.length;
+        }
+
+        res.json({ ok: true, updated, total: (data || []).length });
+    } catch (e) {
+        res.status(500).json({ error: String(e.message || e) });
+    }
+});
+
 module.exports = router;
+

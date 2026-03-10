@@ -25,6 +25,7 @@ export default function Transactions() {
     const [isDragging, setIsDragging] = useState(false);
     const [rmMsg, setRmMsg] = useState('');
     const [rmErrors, setRmErrors] = useState([]);
+    const [normalizing, setNormalizing] = useState(false);
 
     const loadData = async (force = false) => {
         setLoading(true);
@@ -136,6 +137,23 @@ export default function Transactions() {
         setStart(''); setEnd(''); setSearchVendor(''); setSearchCategory(''); setSearchNotes(''); setDeductOnly(false);
     };
 
+    const handleNormalizeVendors = async () => {
+        if (!window.confirm('This will clean up messy vendor names in your database (e.g. "AMAZON MKTPL*XYZ123" → "Amazon"). Continue?')) return;
+        setNormalizing(true);
+        try {
+            const r = await fetch('/api/import/normalize-vendors', { method: 'POST', credentials: 'include' });
+            const data = await r.json();
+            if (!r.ok) throw new Error(data?.error || r.statusText);
+            invalidateExpensesCache();
+            await loadData(true);
+            alert(`✅ Done! Cleaned ${data.updated.toLocaleString()} vendor names out of ${data.total.toLocaleString()} transactions.`);
+        } catch (e) {
+            alert(`❌ Failed: ${e.message}`);
+        } finally {
+            setNormalizing(false);
+        }
+    };
+
     return (
         <section className="card">
             {/* ─── Toolbar ─── */}
@@ -152,6 +170,9 @@ export default function Transactions() {
                     <button className="btn secondary" onClick={clearFilters} style={{ fontSize: '12px' }}>Clear Filters</button>
                     <button className="btn secondary" onClick={exportCsv} style={{ fontSize: '12px' }}>⬇ Export CSV</button>
                     <button className="btn secondary" onClick={() => loadData(true)} disabled={loading} style={{ fontSize: '12px' }}>↺ Reload</button>
+                    <button className="btn secondary" onClick={handleNormalizeVendors} disabled={normalizing} style={{ fontSize: '12px' }} title="Consolidate messy vendor names (Amazon MKTPL* → Amazon)">
+                        {normalizing ? 'Cleaning…' : '✨ Clean Vendors'}
+                    </button>
                     <button className="btn" onClick={() => { setShowImport(true); setRmMsg(''); setRmErrors([]); }} style={{ fontSize: '12px' }}>
                         ⬆ Import CSV
                     </button>
@@ -170,17 +191,31 @@ export default function Transactions() {
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <small className="muted">Vendor</small>
-                    <select value={searchVendor} onChange={e => setSearchVendor(e.target.value)} style={{ width: '180px' }}>
-                        <option value="">All Vendors</option>
-                        {vendorOptions.map(v => <option key={v} value={v}>{v}</option>)}
-                    </select>
+                    <input
+                        list="vendor-options"
+                        value={searchVendor}
+                        onChange={e => setSearchVendor(e.target.value)}
+                        placeholder="Type or pick vendor…"
+                        style={{ width: '200px' }}
+                        autoComplete="off"
+                    />
+                    <datalist id="vendor-options">
+                        {vendorOptions.map(v => <option key={v} value={v} />)}
+                    </datalist>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <small className="muted">Category</small>
-                    <select value={searchCategory} onChange={e => setSearchCategory(e.target.value)} style={{ width: '180px' }}>
-                        <option value="">All Categories</option>
-                        {categoryOptions.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
+                    <input
+                        list="category-filter-options"
+                        value={searchCategory}
+                        onChange={e => setSearchCategory(e.target.value)}
+                        placeholder="Type or pick category…"
+                        style={{ width: '200px' }}
+                        autoComplete="off"
+                    />
+                    <datalist id="category-filter-options">
+                        {categoryOptions.map(c => <option key={c} value={c} />)}
+                    </datalist>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <small className="muted">Notes</small>
