@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { fetchAllExpenses, apiGet, apiPost, apiPatch, apiDelete, formatMoney, fetchAllMileage, invalidateExpensesCache } from '../api';
 import TransactionDrawer from '../components/TransactionDrawer';
 import { useModal } from '../components/ModalContext.jsx';
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
 
 const SCHEDULE_C_MAPPING = {
     'Advertising': 'Line 8',
@@ -212,6 +214,60 @@ export default function Tax() {
 
     const [ratesOpen, setRatesOpen] = useState(false);
 
+    const exportPdf = () => {
+        const doc = new jsPDF();
+        const year = selectedYear;
+
+        // Header
+        doc.setFontSize(22);
+        doc.text(`Tax Report: ${year}`, 14, 22);
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text("Photography Business · Schedule C Summary", 14, 28);
+
+        // Stats
+        const incomeRows = expenses.filter(e => String(e.expense_date || '').startsWith(String(year)) && Number(e.amount_cents || 0) < 0 && e.tax_deductible === true);
+        const transactionIncome = incomeRows.reduce((s, e) => s + Math.abs(Number(e.amount_cents || 0)), 0);
+        const extraIncome = Math.round(parseFloat(manual1099 || 0) * 100);
+        const grossReceipts = transactionIncome + extraIncome;
+        const totalDeductible = summary.reduce((s, r) => s + (r.tax_bucket !== 'Unassigned' ? (r.deductible_cents || 0) : 0), 0);
+        const mileageDeductCents = Math.round(totalMiles * currentRate * 100);
+        const totalExpenses = totalDeductible + mileageDeductCents;
+        const netProfit = grossReceipts - totalExpenses;
+
+        doc.autoTable({
+            startY: 35,
+            head: [['Description', 'Amount']],
+            body: [
+                ['Gross Receipts (Line 1)', formatMoney(grossReceipts)],
+                ['Total Expenses (Line 28)', formatMoney(totalExpenses)],
+                ['Net Profit/Loss (Line 31)', formatMoney(netProfit)]
+            ],
+            theme: 'striped',
+            headStyles: { fillStyle: '#6366f1' }
+        });
+
+        // Detailed Breakdown
+        doc.setFontSize(14);
+        doc.text("Expense Breakdown (Schedule C)", 14, doc.lastAutoTable.finalY + 15);
+
+        const tableBody = Object.entries(SCHEDULE_C_MAPPING).map(([bucket, line]) => {
+            const row = summary.find(r => r.tax_bucket === bucket);
+            const deduct = row?.deductible_cents || 0;
+            return [line, bucket, formatMoney(deduct)];
+        }).filter(r => r[2] !== '$0.00');
+
+        tableBody.push(['Line 9', 'Car & Truck (Mileage)', formatMoney(mileageDeductCents)]);
+
+        doc.autoTable({
+            startY: doc.lastAutoTable.finalY + 20,
+            head: [['Line', 'Category', 'Deductible Amount']],
+            body: tableBody,
+        });
+
+        doc.save(`Tax_Report_${year}.pdf`);
+    };
+
     return (
         <section style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
@@ -229,7 +285,8 @@ export default function Tax() {
                         </select>
                     </div>
                     <button className="btn secondary" onClick={() => { loadData(true); loadSummary(selectedYear); }}>Refresh</button>
-                    <button className="btn secondary" onClick={exportCsv}>Export Line-Item CSV</button>
+                    <button className="btn secondary" onClick={exportCsv}>CSV Export</button>
+                    <button className="btn primary" onClick={exportPdf}>📄 Download PDF Report</button>
                 </div>
             </div>
 
@@ -266,7 +323,8 @@ export default function Tax() {
                                 </div>
                             ) : null;
                         })()}
-                        <button className="btn secondary" onClick={exportCsv}>⬇ Export CSV</button>
+                        <button className="btn secondary" onClick={exportCsv}>CSV</button>
+                        <button className="btn primary" onClick={exportPdf}>📄 PDF Report</button>
                     </div>
                 </div>
 

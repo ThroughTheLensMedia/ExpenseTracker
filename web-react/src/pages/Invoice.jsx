@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
 import { apiGet, apiPost, apiPatch, apiDelete, formatMoney, invalidateExpensesCache } from '../api';
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
 
 export default function Invoice() {
     const [view, setView] = useState('invoices'); // 'invoices' | 'clients'
@@ -62,6 +63,89 @@ export default function Invoice() {
                 return sum + sub;
             }, 0);
     }, [invoices]);
+
+    const handleDownloadPDF = async (invId) => {
+        setMsg('📄 Generating PDF...');
+        try {
+            const inv = await apiGet(`/invoices/${invId}`);
+            const doc = new jsPDF();
+
+            // Logo / Header
+            doc.setFontSize(24);
+            doc.text("INVOICE", 140, 25);
+
+            doc.setFontSize(14);
+            doc.setFont("helvetica", "bold");
+            doc.text("Through The Lens Media", 14, 25);
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.text("Professional Photography Services", 14, 30);
+
+            // Invoice Metadata
+            doc.text(`Invoice #: ${inv.invoice_number}`, 140, 35);
+            doc.text(`Date: ${inv.issue_date}`, 140, 40);
+            if (inv.due_date) doc.text(`Due: ${inv.due_date}`, 140, 45);
+
+            // Client
+            doc.setFont("helvetica", "bold");
+            doc.text("BILL TO:", 14, 55);
+            doc.setFont("helvetica", "normal");
+            doc.text(inv.clients?.name || 'Unknown Client', 14, 60);
+            if (inv.clients?.email) doc.text(inv.clients.email, 14, 65);
+
+            // Items
+            const tableRows = (inv.invoice_items || []).map(it => [
+                it.description,
+                it.quantity,
+                formatMoney(it.unit_price_cents),
+                formatMoney(it.unit_price_cents * it.quantity)
+            ]);
+
+            doc.autoTable({
+                startY: 75,
+                head: [['Description', 'Qty', 'Unit Price', 'Total']],
+                body: tableRows,
+                headStyles: { fillColor: [15, 26, 51] }
+            });
+
+            // Totals
+            const finalY = doc.lastAutoTable.finalY + 10;
+            const subtotal = (inv.invoice_items || []).reduce((s, it) => s + (it.unit_price_cents * it.quantity), 0);
+            const tax = Math.round(subtotal * (inv.tax_percent / 100));
+            const discount = inv.discount_cents || 0;
+            const total = subtotal + tax - discount;
+
+            doc.text(`Subtotal:`, 140, finalY);
+            doc.text(formatMoney(subtotal), 180, finalY, { align: 'right' });
+
+            if (tax > 0) {
+                doc.text(`Tax (${inv.tax_percent}%):`, 140, finalY + 5);
+                doc.text(formatMoney(tax), 180, finalY + 5, { align: 'right' });
+            }
+            if (discount > 0) {
+                doc.text(`Discount:`, 140, finalY + 10);
+                doc.text(`-${formatMoney(discount)}`, 180, finalY + 10, { align: 'right' });
+            }
+
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(12);
+            doc.text(`TOTAL DUE:`, 140, finalY + 18);
+            doc.text(formatMoney(total), 180, finalY + 18, { align: 'right' });
+
+            if (inv.notes) {
+                doc.setFont("helvetica", "italic");
+                doc.setFontSize(9);
+                doc.text("Notes:", 14, finalY + 30);
+                doc.text(inv.notes, 14, finalY + 35);
+            }
+
+            doc.save(`Invoice_${inv.invoice_number}.pdf`);
+            setMsg('✅ PDF Downloaded!');
+            setTimeout(() => setMsg(''), 2000);
+        } catch (e) {
+            setMsg(`❌ PDF Error: ${e.message}`);
+        }
+    };
 
     return (
         <section style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '1200px', margin: '0 auto' }}>
@@ -126,14 +210,21 @@ export default function Invoice() {
                                                     <span className={`tag ${inv.status === 'paid' ? 'ok' : 'warn'}`}>{inv.status}</span>
                                                 </td>
                                                 <td>
-                                                    {inv.status === 'paid' && (
+                                                    <div style={{ display: 'flex', gap: '6px' }}>
                                                         <button
-                                                            className="btn primary sm"
+                                                            className="btn secondary sm"
                                                             style={{ fontSize: '10px', padding: '4px 10px' }}
-                                                            onClick={() => handlePostToIncome(inv)}
-                                                            disabled={syncingId === inv.id}
-                                                        >⚡ Sync Income</button>
-                                                    )}
+                                                            onClick={() => handleDownloadPDF(inv.id)}
+                                                        >📄 PDF</button>
+                                                        {inv.status === 'paid' && (
+                                                            <button
+                                                                className="btn primary sm"
+                                                                style={{ fontSize: '10px', padding: '4px 10px' }}
+                                                                onClick={() => handlePostToIncome(inv)}
+                                                                disabled={syncingId === inv.id}
+                                                            >⚡ Sync Income</button>
+                                                        )}
+                                                    </div>
                                                 </td>
                                             </tr>
                                         );

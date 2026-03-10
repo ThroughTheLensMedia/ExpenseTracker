@@ -300,12 +300,11 @@ export default function Transactions() {
                                 <th onClick={() => handleSort('expense_date')} style={{ cursor: 'pointer' }}>Date<SortIcon col="expense_date" /></th>
                                 <th onClick={() => handleSort('vendor')} style={{ cursor: 'pointer' }}>Vendor<SortIcon col="vendor" /></th>
                                 <th onClick={() => handleSort('category')} style={{ cursor: 'pointer' }}>Category<SortIcon col="category" /></th>
-                                <th onClick={() => handleSort('tax_bucket')} style={{ cursor: 'pointer' }}>Tax Bucket<SortIcon col="tax_bucket" /></th>
                                 <th onClick={() => handleSort('amount_cents')} style={{ cursor: 'pointer' }}>Amount<SortIcon col="amount_cents" /></th>
-                                <th>Receipt</th>
+                                <th onClick={() => handleSort('tax_bucket')} style={{ cursor: 'pointer' }}>Tax Bucket<SortIcon col="tax_bucket" /></th>
+                                <th style={{ textAlign: 'center' }}>Receipt</th>
                                 <th>Type</th>
                                 <th>Ded.</th>
-                                <th>Notes</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -319,6 +318,7 @@ export default function Transactions() {
                                         <td className="date-col" style={{ whiteSpace: 'nowrap' }}>{formatDate(r.expense_date)}</td>
                                         <td style={{ fontWeight: 600, maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.vendor || ''}</td>
                                         <td style={{ maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.category || <span className="muted">—</span>}</td>
+                                        <td style={{ fontWeight: 700, textAlign: 'right' }}>{formatMoney(r.amount_cents)}</td>
                                         <td>
                                             {r.tax_bucket
                                                 ? <span className="tag" style={{ fontSize: '11px' }}>
@@ -330,18 +330,16 @@ export default function Transactions() {
                                                 : <span className="muted">—</span>
                                             }
                                         </td>
-                                        <td style={{ fontWeight: 700, textAlign: 'right' }}>{formatMoney(r.amount_cents)}</td>
-                                        <td>
+                                        <td style={{ textAlign: 'center' }}>
                                             {r.receipt_link
                                                 ? <a className="tag ok" style={{ fontSize: '11px' }} href={r.receipt_link} target="_blank" rel="noreferrer">View</a>
                                                 : (r.tax_deductible)
-                                                    ? <span className="tag warn" style={{ fontSize: '11px', fontWeight: 700 }}>⚠️ Needed</span>
+                                                    ? <span title="Receipt Needed" style={{ fontSize: '16px', cursor: 'help' }}>⚠️</span>
                                                     : <span className="muted">—</span>
                                             }
                                         </td>
                                         <td>{Number(r.amount_cents || 0) < 0 ? <span className="tag ok" style={{ fontSize: '11px' }}>Income</span> : <span className="tag" style={{ fontSize: '11px' }}>Expense</span>}</td>
                                         <td>{r.tax_deductible ? <span className="tag ok" style={{ fontSize: '11px' }}>Yes</span> : <span className="tag" style={{ fontSize: '11px' }}>No</span>}</td>
-                                        <td style={{ maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={r.notes}>{r.notes || <span className="muted">—</span>}</td>
                                     </tr>
                                 );
                             })}
