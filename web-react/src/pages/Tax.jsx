@@ -178,6 +178,23 @@ export default function Tax() {
         }
     };
 
+    const [autoMapping, setAutoMapping] = useState(false);
+
+    const handleAutoMap = async () => {
+        if (!confirm("Auto-map standard Rocket Money categories (like Gas, Utilities, Travel) to Schedule C lines? This only affects unassigned transactions.")) return;
+        setAutoMapping(true);
+        try {
+            await apiPost('/tax/auto-map', {});
+            await loadData();
+            await loadSummary(selectedYear);
+        } catch (e) {
+            console.error(e);
+            alert("Error auto-mapping categories.");
+        } finally {
+            setAutoMapping(false);
+        }
+    };
+
     const exportCsv = () => {
         window.open(`/api/tax/export.csv?year=${encodeURIComponent(selectedYear)}`, "_blank");
     };
@@ -218,9 +235,19 @@ export default function Tax() {
                         {(() => {
                             const unassigned = summary.find(r => r.tax_bucket === 'Unassigned');
                             return unassigned ? (
-                                <span className="tag warn" style={{ fontSize: '0.8rem' }}>
-                                    ⚠ {unassigned.count} unclassified transactions · use Bulk Assign below
-                                </span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span className="tag warn" style={{ fontSize: '0.8rem' }}>
+                                        ⚠ {unassigned.count} unclassified transactions
+                                    </span>
+                                    <button
+                                        className="btn outline sm"
+                                        onClick={handleAutoMap}
+                                        disabled={autoMapping}
+                                        style={{ borderColor: 'var(--blue)', color: 'var(--blue)' }}
+                                    >
+                                        {autoMapping ? 'Mapping…' : '⚡ Auto-Map RM Categories'}
+                                    </button>
+                                </div>
                             ) : null;
                         })()}
                         <button className="btn secondary" onClick={exportCsv}>⬇ Export CSV</button>

@@ -100,6 +100,45 @@ router.post("/assign", async (req, res) => {
   }
 });
 
+// POST /tax/auto-map -- maps Rocket Money categories to Schedule C lines
+router.post("/auto-map", async (req, res) => {
+  try {
+    const RM_MAPPING = [
+      { categories: ['Bills & Utilities'], bucket: 'Utilities', deductible: false, pct: 100 },
+      { categories: ['Auto & Transport', 'Gas & Fuel'], bucket: 'Car and truck', deductible: true, pct: 50 },
+      { categories: ['Travel'], bucket: 'Travel', deductible: true, pct: 100 },
+      { categories: ['Food & Dining', 'Restaurants'], bucket: 'Meals (50%)', deductible: true, pct: 50 },
+      { categories: ['Office Supplies', 'Software', 'Electronics & Software'], bucket: 'Office expense', deductible: true, pct: 100 },
+      { categories: ['Advertising'], bucket: 'Advertising', deductible: true, pct: 100 },
+      { categories: ['Insurance'], bucket: 'Insurance', deductible: true, pct: 100 },
+      { categories: ['Professional Services', 'Legal'], bucket: 'Legal and professional', deductible: true, pct: 100 },
+      { categories: ['Photography', 'Camera & Photo', 'Equipment'], bucket: 'Supplies', deductible: true, pct: 100 }
+    ];
+
+    let totalUpdated = 0;
+
+    for (const mapping of RM_MAPPING) {
+      for (const cat of mapping.categories) {
+        const { error, count } = await supabase
+          .from("expenses")
+          .update({
+            tax_bucket: mapping.bucket,
+            tax_deductible: mapping.deductible,
+            business_use_pct: mapping.pct
+          })
+          .eq("category", cat)
+          .eq("tax_bucket", "") // Only update unassigned items
+        if (!error && count) totalUpdated += count;
+      }
+    }
+
+    res.json({ ok: true, updated: totalUpdated });
+  } catch (e) {
+    console.error("[API] POST /tax/auto-map Error:", e);
+    res.status(500).json({ error: e.message || String(e), code: e.code });
+  }
+});
+
 // GET /tax/export.csv  – full line-item export (CPA-ready)
 router.get("/export.csv", async (req, res) => {
   try {
