@@ -99,16 +99,92 @@ export default function Rules() {
                     </div>
 
                     <div style={{ paddingLeft: '16px', borderLeft: '1px solid var(--line)' }}>
-                        <div className="row two" style={{ marginBottom: '10px' }}>
+                        <div className="row two" style={{ marginBottom: '10px', gap: '12px' }}>
                             <div>
                                 <small className="muted">Assign Category</small>
-                                <input value={category} onChange={e => setCategory(e.target.value)} placeholder="e.g. Software" />
+                                <select value={category} onChange={e => setCategory(e.target.value)} style={{ width: '100%', padding: '8px' }}>
+                                    <option value="">— No change —</option>
+
+                                    <optgroup label="── Expenses ──────────────────">
+                                        <option value="Advertising">Advertising</option>
+                                        <option value="Auto & Transport">Auto &amp; Transport</option>
+                                        <option value="Bills & Utilities">Bills &amp; Utilities</option>
+                                        <option value="Camera & Equipment">Camera &amp; Equipment</option>
+                                        <option value="Clothing">Clothing</option>
+                                        <option value="Dining & Drinks">Dining &amp; Drinks</option>
+                                        <option value="Education">Education</option>
+                                        <option value="Entertainment">Entertainment</option>
+                                        <option value="Gas & Fuel">Gas &amp; Fuel</option>
+                                        <option value="Groceries">Groceries</option>
+                                        <option value="Health & Medical">Health &amp; Medical</option>
+                                        <option value="Home & Garden">Home &amp; Garden</option>
+                                        <option value="Insurance (Business)">Insurance (Business)</option>
+                                        <option value="Insurance (Personal)">Insurance (Personal)</option>
+                                        <option value="Office Supplies">Office Supplies</option>
+                                        <option value="Parking & Tolls">Parking &amp; Tolls</option>
+                                        <option value="Personal Care">Personal Care</option>
+                                        <option value="Pets">Pets</option>
+                                        <option value="Photography">Photography</option>
+                                        <option value="Professional Services">Professional Services</option>
+                                        <option value="Rent / Lease">Rent / Lease</option>
+                                        <option value="Repairs & Maintenance">Repairs &amp; Maintenance</option>
+                                        <option value="Shopping">Shopping</option>
+                                        <option value="Software & Tech">Software &amp; Tech</option>
+                                        <option value="Subscriptions">Subscriptions</option>
+                                        <option value="Supplies">Supplies</option>
+                                        <option value="Taxes & Licenses">Taxes &amp; Licenses</option>
+                                        <option value="Travel & Vacation">Travel &amp; Vacation</option>
+                                    </optgroup>
+
+                                    <optgroup label="── Income ────────────────────">
+                                        <option value="Photo Income">Photo Income</option>
+                                        <option value="Freelance Income">Freelance Income</option>
+                                        <option value="Contract Income">Contract Income</option>
+                                        <option value="Military Retirement">Military Retirement</option>
+                                        <option value="VA Benefits">VA Benefits</option>
+                                        <option value="Rental Income">Rental Income</option>
+                                        <option value="Side Income">Side Income</option>
+                                    </optgroup>
+
+                                    <optgroup label="── Misc Income (non-taxable) ─">
+                                        <option value="IRS Tax Refund">IRS Tax Refund</option>
+                                        <option value="State Tax Refund">State Tax Refund</option>
+                                        <option value="Refund">Refund / Return</option>
+                                        <option value="Reimbursement">Reimbursement</option>
+                                        <option value="Cashback / Rewards">Cashback / Rewards</option>
+                                        <option value="Interest Income">Interest Income</option>
+                                        <option value="Internal Transfer">Internal Transfer</option>
+                                        <option value="Credit Card Payment">Credit Card Payment</option>
+                                        <option value="Deposit">Deposit</option>
+                                    </optgroup>
+                                </select>
                             </div>
                             <div>
                                 <small className="muted">Assign Tax Bucket (Sch. C)</small>
-                                <input value={taxBucket} onChange={e => setTaxBucket(e.target.value)} placeholder="e.g. Office Expense" />
+                                <select value={taxBucket} onChange={e => setTaxBucket(e.target.value)} style={{ width: '100%', padding: '8px' }}>
+                                    <option value="">— No change —</option>
+                                    <option value="Advertising">Line 8 · Advertising</option>
+                                    <option value="Car and truck">Line 9 · Car and truck</option>
+                                    <option value="Commissions and fees">Line 10 · Commissions and fees</option>
+                                    <option value="Contract labor">Line 11 · Contract labor</option>
+                                    <option value="Depreciation">Line 13 · Depreciation</option>
+                                    <option value="Insurance">Line 15 · Insurance</option>
+                                    <option value="Interest">Line 16 · Interest</option>
+                                    <option value="Legal and professional">Line 17 · Legal and professional</option>
+                                    <option value="Office expense">Line 18 · Office expense</option>
+                                    <option value="Rent/lease">Line 20 · Rent/lease</option>
+                                    <option value="Repairs and maintenance">Line 21 · Repairs and maintenance</option>
+                                    <option value="Supplies">Line 22 · Supplies</option>
+                                    <option value="Taxes and licenses">Line 23 · Taxes and licenses</option>
+                                    <option value="Travel">Line 24a · Travel</option>
+                                    <option value="Meals (50%)">Line 24b · Meals (50%)</option>
+                                    <option value="Utilities">Line 25 · Utilities</option>
+                                    <option value="Wages">Line 26 · Wages</option>
+                                    <option value="Other">Line 27a · Other</option>
+                                </select>
                             </div>
                         </div>
+
 
                         <div className="controls" style={{ marginTop: '20px' }}>
                             <label className="tag" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
