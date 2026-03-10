@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { fetchAllExpenses, formatMoney, formatDate } from '../api';
+import { fetchAllExpenses, formatMoney, formatDate, invalidateExpensesCache } from '../api';
 import TransactionDrawer from '../components/TransactionDrawer';
 
 export default function Transactions() {
@@ -25,10 +25,10 @@ export default function Transactions() {
     const [rmMsg, setRmMsg] = useState('');
     const [rmErrors, setRmErrors] = useState([]);
 
-    const loadData = async () => {
+    const loadData = async (force = false) => {
         setLoading(true);
         try {
-            const data = await fetchAllExpenses();
+            const data = await fetchAllExpenses(force);
             setExpenses(data);
         } catch (e) {
             console.error(e);
@@ -101,7 +101,8 @@ export default function Transactions() {
                 setRmErrors(data.errors);
             }
 
-            loadData();
+            invalidateExpensesCache();
+            loadData(true);
         } catch (e) {
             setRmMsg(`Import failed: ${e.message}`);
         }
@@ -163,7 +164,7 @@ export default function Transactions() {
                 <div style={{ alignSelf: 'flex-end', display: 'flex', gap: '8px' }}>
                     <button className="btn secondary" onClick={() => { setStart(''); setEnd(''); setSearchVendor(''); setSearchCategory(''); setSearchNotes(''); setDeductOnly(false); }}>Clear</button>
                     <button className="btn secondary" onClick={exportCsv}>Export CSV</button>
-                    <button className="btn secondary" onClick={loadData} disabled={loading}>Reload</button>
+                    <button className="btn secondary" onClick={() => loadData(true)} disabled={loading}>Reload</button>
                 </div>
             </div>
 
@@ -269,6 +270,7 @@ export default function Transactions() {
                     transaction={expenses.find(x => x.id === editingId)}
                     onClose={() => setEditingId(null)}
                     onSave={(updated) => {
+                        invalidateExpensesCache();
                         setExpenses(prev => prev.map(x => x.id === updated.id ? updated : x));
                     }}
                 />

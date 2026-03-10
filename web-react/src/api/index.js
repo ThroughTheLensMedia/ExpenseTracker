@@ -49,8 +49,16 @@ export async function apiDelete(path) {
     return r.json();
 }
 
+let _expensesCache = null;
+let _expensesAge = 0;
+const CACHE_TTL = 30000; // 30 seconds
+
 // Fetch ALL expenses by paginating in batches of 1000 (Supabase hard-caps at 1000/page)
-export async function fetchAllExpenses() {
+export async function fetchAllExpenses(force = false) {
+    if (!force && _expensesCache && (Date.now() - _expensesAge < CACHE_TTL)) {
+        return [..._expensesCache]; // return copy
+    }
+
     const PAGE = 1000;
     let offset = 0;
     let allRows = [];
@@ -61,7 +69,16 @@ export async function fetchAllExpenses() {
         if (rows.length < PAGE) break; // last page — fewer rows than page size means no more
         offset += PAGE;
     }
-    return allRows;
+
+    _expensesCache = allRows;
+    _expensesAge = Date.now();
+    return [...allRows];
+}
+
+// Helper to invalidate the cache when user edits/adds data
+export function invalidateExpensesCache() {
+    _expensesCache = null;
+    _expensesAge = 0;
 }
 
 // Lightweight: get just the distinct years that have data (for year dropdowns)

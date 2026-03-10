@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { fetchAllExpenses, apiGet, apiPost, apiDelete, formatMoney, fetchAllMileage } from '../api';
+import { fetchAllExpenses, apiGet, apiPost, apiDelete, formatMoney, fetchAllMileage, invalidateExpensesCache } from '../api';
 
 const SCHEDULE_C_MAPPING = {
     'Advertising': 'Line 8',
@@ -44,10 +44,10 @@ export default function Tax() {
     const [bulkPct, setBulkPct] = useState(100);
     const [bulkMsg, setBulkMsg] = useState('');
 
-    const loadData = async () => {
+    const loadData = async (force = false) => {
         try {
             const [exps, miles, rates] = await Promise.all([
-                fetchAllExpenses(),
+                fetchAllExpenses(force),
                 fetchAllMileage(selectedYear),
                 apiGet('/mileage/rates')
             ]);
@@ -108,7 +108,8 @@ export default function Tax() {
                 business_use_pct: Number(bulkPct)
             });
             setBulkMsg(`Updated ${Number(data.updated || 0).toLocaleString()} transactions.`);
-            loadData();
+            invalidateExpensesCache();
+            loadData(true);
             loadSummary(selectedYear);
         } catch (err) {
             setBulkMsg(`Apply failed: ${err.message}`);
@@ -185,7 +186,8 @@ export default function Tax() {
         setAutoMapping(true);
         try {
             await apiPost('/tax/auto-map', {});
-            await loadData();
+            invalidateExpensesCache();
+            await loadData(true);
             await loadSummary(selectedYear);
         } catch (e) {
             console.error(e);
@@ -217,7 +219,7 @@ export default function Tax() {
                             {years.map(y => <option key={y} value={y}>{y}</option>)}
                         </select>
                     </div>
-                    <button className="btn secondary" onClick={() => { loadData(); loadSummary(selectedYear); }}>Refresh</button>
+                    <button className="btn secondary" onClick={() => { loadData(true); loadSummary(selectedYear); }}>Refresh</button>
                     <button className="btn secondary" onClick={exportCsv}>Export Line-Item CSV</button>
                 </div>
             </div>
