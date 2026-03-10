@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { apiGet, apiPost } from '../api';
+import { useModal } from '../components/ModalContext.jsx';
 
 export default function Rules() {
     const [rules, setRules] = useState([]);
     const [loading, setLoading] = useState(true);
+    const modal = useModal();
 
     // New Rule State
     const [matchColumn, setMatchColumn] = useState('vendor');
@@ -54,7 +56,8 @@ export default function Rules() {
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm("Delete this rule?")) return;
+        const ok = await modal.confirm('Delete this rule? This cannot be undone.');
+        if (!ok) return;
         try {
             await fetch(`/api/rules/${id}`, { method: 'DELETE', credentials: 'include' });
             loadRules();

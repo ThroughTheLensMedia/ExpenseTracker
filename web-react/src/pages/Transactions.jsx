@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { fetchAllExpenses, formatMoney, formatDate, invalidateExpensesCache } from '../api';
 import TransactionDrawer from '../components/TransactionDrawer';
+import { useModal } from '../components/ModalContext.jsx';
 
 export default function Transactions() {
     const [expenses, setExpenses] = useState([]);
@@ -18,6 +19,7 @@ export default function Transactions() {
 
     // Editor
     const [editingId, setEditingId] = useState(null);
+    const modal = useModal();
 
     // Import modal
     const fileInputRef = useRef(null);
@@ -139,7 +141,8 @@ export default function Transactions() {
     };
 
     const handleNormalizeVendors = async () => {
-        if (!window.confirm('This will clean up messy vendor names in your database (e.g. "AMAZON MKTPL*XYZ123" → "Amazon"). Continue?')) return;
+        const ok = await modal.confirm('This will clean up messy vendor names in your database (e.g. "AMAZON MKTPL*XYZ123" → "Amazon"). Continue?');
+        if (!ok) return;
         setNormalizing(true);
         try {
             const r = await fetch('/api/import/normalize-vendors', { method: 'POST', credentials: 'include' });

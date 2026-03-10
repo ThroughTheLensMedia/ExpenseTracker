@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { fetchAllExpenses, apiGet, apiPost, apiPatch, apiDelete, formatMoney, fetchAllMileage, invalidateExpensesCache } from '../api';
 import TransactionDrawer from '../components/TransactionDrawer';
+import { useModal } from '../components/ModalContext.jsx';
 
 const SCHEDULE_C_MAPPING = {
     'Advertising': 'Line 8',
@@ -28,6 +29,7 @@ const SCHEDULE_C_MAPPING = {
 export default function Tax() {
     const [expenses, setExpenses] = useState([]);
     const [selectedYear, setSelectedYear] = useState(2025);
+    const modal = useModal();
     const [summary, setSummary] = useState([]);
     const [mileage, setMileage] = useState([]);
     const [mileageRates, setMileageRates] = useState([]);
@@ -198,7 +200,7 @@ export default function Tax() {
             await loadSummary(selectedYear);
         } catch (e) {
             console.error(e);
-            alert("Error auto-mapping categories.");
+            await modal.alert('Error auto-mapping categories. Check the console for details.');
         } finally {
             setAutoMapping(false);
         }
@@ -692,7 +694,8 @@ export default function Tax() {
                                                             }}
                                                             title="Mark this as a refund or return — removes it from your income total"
                                                             onClick={async () => {
-                                                                if (!window.confirm(`Mark "${e.vendor}" as a Refund? This removes it from your Line 1 income total. You can undo this any time via Edit.`)) return;
+                                                                const ok = await modal.confirm(`Mark "${e.vendor}" as a Refund? This removes it from your Line 1 income total. You can undo this any time via Edit.`);
+                                                                if (!ok) return;
                                                                 setMarkingRefundId(e.id);
                                                                 try {
                                                                     const updated = await apiPatch(`/expenses/${e.id}`, {
@@ -702,7 +705,7 @@ export default function Tax() {
                                                                     invalidateExpensesCache();
                                                                     setExpenses(prev => prev.map(x => x.id === updated.id ? updated : x));
                                                                 } catch (err) {
-                                                                    alert('Failed: ' + err.message);
+                                                                    await modal.alert('Failed: ' + err.message);
                                                                 } finally {
                                                                     setMarkingRefundId(null);
                                                                 }
