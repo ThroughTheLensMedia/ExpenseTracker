@@ -35,6 +35,7 @@ export const CATEGORY_GROUPS = [
             'Supplies',
             'Taxes & Licenses',
             'Travel & Vacation',
+            'Personal Expense',
         ],
     },
     {
