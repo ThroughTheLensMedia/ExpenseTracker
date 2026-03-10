@@ -217,15 +217,21 @@ export default function Tax() {
     const exportPdf = () => {
         const doc = new jsPDF();
         const year = selectedYear;
+        const blue = [99, 102, 241];
 
-        // Header
+        // ─── Header ───
         doc.setFontSize(22);
+        doc.setTextColor(30, 41, 59);
         doc.text(`Tax Report: ${year}`, 14, 22);
+
         doc.setFontSize(10);
         doc.setTextColor(100);
-        doc.text("Photography Business · Schedule C Summary", 14, 28);
+        doc.text("Through The Lens Media · Photography Business Summary (Schedule C)", 14, 28);
+        doc.setLineWidth(0.5);
+        doc.setDrawColor(226, 232, 240);
+        doc.line(14, 32, 196, 32);
 
-        // Stats
+        // ─── Financial stats calculation ───
         const incomeRows = expenses.filter(e => String(e.expense_date || '').startsWith(String(year)) && Number(e.amount_cents || 0) < 0 && e.tax_deductible === true);
         const transactionIncome = incomeRows.reduce((s, e) => s + Math.abs(Number(e.amount_cents || 0)), 0);
         const extraIncome = Math.round(parseFloat(manual1099 || 0) * 100);
@@ -235,37 +241,62 @@ export default function Tax() {
         const totalExpenses = totalDeductible + mileageDeductCents;
         const netProfit = grossReceipts - totalExpenses;
 
+        // ─── Executive Summary ───
+        doc.setFontSize(14);
+        doc.setTextColor(30, 41, 59);
+        doc.text("Executive Summary", 14, 45);
+
         doc.autoTable({
-            startY: 35,
-            head: [['Description', 'Amount']],
+            startY: 50,
+            head: [['Line Item', 'Description', 'Value']],
             body: [
-                ['Gross Receipts (Line 1)', formatMoney(grossReceipts)],
-                ['Total Expenses (Line 28)', formatMoney(totalExpenses)],
-                ['Net Profit/Loss (Line 31)', formatMoney(netProfit)]
+                ['Line 7', 'Gross Income (Transactions + Manual)', formatMoney(grossReceipts)],
+                ['Line 28', 'Total Expenses (Deductions + Mileage)', formatMoney(totalExpenses)],
+                ['Line 31', 'Net Profit or Loss', { content: formatMoney(netProfit), styles: { fontStyle: 'bold', textColor: netProfit >= 0 ? [21, 128, 61] : [220, 38, 38] } }]
             ],
-            theme: 'striped',
-            headStyles: { fillStyle: '#6366f1' }
+            theme: 'grid',
+            headStyles: { fillColor: blue, textColor: 255 },
+            columnStyles: {
+                0: { cellWidth: 25 },
+                2: { halign: 'right', fontStyle: 'bold' }
+            }
         });
 
-        // Detailed Breakdown
+        // ─── Detailed Expense Breakdown ───
         doc.setFontSize(14);
-        doc.text("Expense Breakdown (Schedule C)", 14, doc.lastAutoTable.finalY + 15);
+        doc.setTextColor(30, 41, 59);
+        doc.text("Line-Item Detail (Schedule C Form)", 14, doc.lastAutoTable.finalY + 15);
 
         const tableBody = Object.entries(SCHEDULE_C_MAPPING).map(([bucket, line]) => {
             const row = summary.find(r => r.tax_bucket === bucket);
             const deduct = row?.deductible_cents || 0;
             return [line, bucket, formatMoney(deduct)];
-        }).filter(r => r[2] !== '$0.00');
+        }).filter(r => r[2] !== '$0.00' && r[2] !== '-$0.00');
 
-        tableBody.push(['Line 9', 'Car & Truck (Mileage)', formatMoney(mileageDeductCents)]);
+        if (mileageDeductCents > 0) {
+            tableBody.push(['Line 9', `Car & Truck (Mileage: ${totalMiles} mi)`, formatMoney(mileageDeductCents)]);
+        }
 
         doc.autoTable({
             startY: doc.lastAutoTable.finalY + 20,
-            head: [['Line', 'Category', 'Deductible Amount']],
+            head: [['Line', 'IRS Category', 'Deduction Amount']],
             body: tableBody,
+            theme: 'striped',
+            headStyles: { fillColor: [51, 65, 85] },
+            columnStyles: { 2: { halign: 'right', fontStyle: 'bold' } }
         });
 
-        doc.save(`Tax_Report_${year}.pdf`);
+        // ─── Footer / Disclaimer ───
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8);
+            doc.setTextColor(150);
+            doc.text(`Generated on ${new Date().toLocaleDateString()} · Page ${i} of ${pageCount}`, 14, 285);
+            doc.text("Disclaimer: This report is for informational purposes only. Consult with a tax professional for official IRS filing.", 14, 290);
+        }
+
+        doc.save(`ThroughTheLens_TaxReport_${year}.pdf`);
     };
 
     return (
