@@ -147,10 +147,10 @@ export default function Tax() {
 
     const filteredAuditing = useMemo(() => {
         if (!auditingBucket) return [];
-        return expenses.filter(e =>
-            e.tax_bucket === auditingBucket &&
-            String(e.expense_date || '').startsWith(String(selectedYear))
-        );
+        return expenses.filter(e => {
+            const rowBucket = (e.tax_bucket || '').trim() || 'Unassigned';
+            return rowBucket === auditingBucket && String(e.expense_date || '').startsWith(String(selectedYear));
+        });
     }, [expenses, auditingBucket, selectedYear]);
 
     const handleSyncIRS = async () => {
@@ -236,7 +236,12 @@ export default function Tax() {
                             const unassigned = summary.find(r => r.tax_bucket === 'Unassigned');
                             return unassigned ? (
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <span className="tag warn" style={{ fontSize: '0.8rem' }}>
+                                    <span
+                                        className="tag warn"
+                                        style={{ fontSize: '0.8rem', cursor: 'pointer' }}
+                                        onClick={() => setAuditingBucket('Unassigned')}
+                                        title="Click to view all unclassified transactions"
+                                    >
                                         ⚠ {unassigned.count} unclassified in {selectedYear}
                                     </span>
                                     <button
