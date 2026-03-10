@@ -103,7 +103,29 @@ export default function TransactionDrawer({ transaction, onClose, onSave }) {
                     </div>
                     <div style={{ marginTop: '10px' }}>
                         <small className="muted">Category</small>
-                        <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Category" />
+                        <input list="category-options" value={category} onChange={e => setCategory(e.target.value)} placeholder="Category" autocomplete="off" />
+                        <datalist id="category-options">
+                            {/* Custom Income Sources */}
+                            <option value="Photo Income" />
+                            <option value="Military Retirement" />
+                            <option value="VA Benefits" />
+                            <option value="IRS Tax Refund" />
+
+                            {/* Standard RM / Expense Categories */}
+                            <option value="Advertising" />
+                            <option value="Auto & Transport" />
+                            <option value="Bills & Utilities" />
+                            <option value="Dining & Drinks" />
+                            <option value="Gas & Fuel" />
+                            <option value="Groceries" />
+                            <option value="Insurance (Business)" />
+                            <option value="Internal Transfer" />
+                            <option value="Photography" />
+                            <option value="Professional Services" />
+                            <option value="Shopping" />
+                            <option value="Software & Tech" />
+                            <option value="Travel & Vacation" />
+                        </datalist>
                     </div>
                 </div>
 
