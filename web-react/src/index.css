@@ -215,6 +215,11 @@ td {
   font-size: 13px;
 }
 
+td:first-child, td.date-col {
+  white-space: nowrap;
+  font-size: 12px;
+}
+
 th {
   color: var(--muted);
   font-weight: 800;

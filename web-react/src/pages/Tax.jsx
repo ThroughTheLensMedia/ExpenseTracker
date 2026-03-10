@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { fetchAllExpenses, apiGet, apiPost, apiDelete, formatMoney, fetchAllMileage, invalidateExpensesCache } from '../api';
+import TransactionDrawer from '../components/TransactionDrawer';
 
 const SCHEDULE_C_MAPPING = {
     'Advertising': 'Line 8',
@@ -36,6 +37,7 @@ export default function Tax() {
 
     // Auditing
     const [auditingBucket, setAuditingBucket] = useState(null);
+    const [editingId, setEditingId] = useState(null);
 
     // Bulk Assign State
     const [bulkCategory, setBulkCategory] = useState('');
@@ -381,17 +383,18 @@ export default function Tax() {
                         zIndex: 9999, padding: '20px'
                     }}>
                         <div className="card" style={{
-                            width: '100%', maxWidth: '800px', maxHeight: '80vh',
-                            overflowY: 'auto', background: 'var(--bg-card)'
+                            width: '100%', maxWidth: '900px', height: '85vh',
+                            display: 'flex', flexDirection: 'column',
+                            background: 'var(--bg-card)', padding: '0', overflow: 'hidden'
                         }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '12px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
                                 <h3 style={{ margin: 0 }}>📋 Audit: {auditingBucket} ({SCHEDULE_C_MAPPING[auditingBucket] || 'Unassigned'})</h3>
                                 <button className="btn sm outline" onClick={() => setAuditingBucket(null)}>Close</button>
                             </div>
-                            <div className="tableWrap" style={{ maxHeight: 'none' }}>
+                            <div className="tableWrap" style={{ flex: 1, overflowY: 'auto', borderRadius: '0', border: 'none', padding: '0 20px 20px 20px' }}>
                                 <table className="sm">
                                     <thead>
-                                        <tr><th>Date</th><th>Vendor</th><th>Amount</th><th>Biz %</th><th>Deductible</th></tr>
+                                        <tr><th style={{ position: 'sticky', top: 0, background: 'var(--bg)' }}>Date</th><th style={{ position: 'sticky', top: 0, background: 'var(--bg)' }}>Vendor</th><th style={{ position: 'sticky', top: 0, background: 'var(--bg)' }}>Amount</th><th style={{ position: 'sticky', top: 0, background: 'var(--bg)' }}>Biz %</th><th style={{ position: 'sticky', top: 0, background: 'var(--bg)' }}>Deductible</th><th style={{ position: 'sticky', top: 0, background: 'var(--bg)' }}></th></tr>
                                     </thead>
                                     <tbody>
                                         {filteredAuditing.map(e => (
@@ -401,10 +404,11 @@ export default function Tax() {
                                                 <td>{formatMoney(e.amount_cents)}</td>
                                                 <td>{e.business_use_pct}%</td>
                                                 <td style={{ fontWeight: 'bold', color: '#4ade80' }}>{formatMoney(Math.round(e.amount_cents * (e.business_use_pct / 100)))}</td>
+                                                <td><button className="btn sm secondary" onClick={() => setEditingId(e.id)}>Edit</button></td>
                                             </tr>
                                         ))}
                                         {filteredAuditing.length === 0 && (
-                                            <tr><td colSpan={5} className="muted center">No transactions in this bucket for {selectedYear}</td></tr>
+                                            <tr><td colSpan={6} className="muted center">No transactions in this bucket for {selectedYear}</td></tr>
                                         )}
                                     </tbody>
                                 </table>
@@ -548,6 +552,17 @@ export default function Tax() {
                     </div>
                 )}
             </div>
+            {editingId && (
+                <TransactionDrawer
+                    transaction={expenses.find(x => x.id === editingId)}
+                    onClose={() => setEditingId(null)}
+                    onSave={(updated) => {
+                        invalidateExpensesCache();
+                        setExpenses(prev => prev.map(x => x.id === updated.id ? updated : x));
+                        loadSummary(selectedYear); // Re-calculate schedule C totals
+                    }}
+                />
+            )}
         </section>
     );
 }
