@@ -26,6 +26,7 @@ export default function Transactions() {
     const [rmMsg, setRmMsg] = useState('');
     const [rmErrors, setRmErrors] = useState([]);
     const [normalizing, setNormalizing] = useState(false);
+    const [toast, setToast] = useState(null); // { msg, ok }
 
     const loadData = async (force = false) => {
         setLoading(true);
@@ -146,9 +147,11 @@ export default function Transactions() {
             if (!r.ok) throw new Error(data?.error || r.statusText);
             invalidateExpensesCache();
             await loadData(true);
-            alert(`✅ Done! Cleaned ${data.updated.toLocaleString()} vendor names out of ${data.total.toLocaleString()} transactions.`);
+            setToast({ ok: true, msg: `Cleaned ${data.updated.toLocaleString()} vendor names out of ${data.total.toLocaleString()} transactions.` });
+            setTimeout(() => setToast(null), 5000);
         } catch (e) {
-            alert(`❌ Failed: ${e.message}`);
+            setToast({ ok: false, msg: `Failed: ${e.message}` });
+            setTimeout(() => setToast(null), 5000);
         } finally {
             setNormalizing(false);
         }
@@ -233,47 +236,57 @@ export default function Transactions() {
             </div>
 
             {/* ─── Table ─── */}
-            <div style={{ marginTop: '12px' }}>
-                <div className="tableWrap" style={{ maxHeight: 'calc(100vh - 280px)', overflowY: 'auto' }}>
-                    <table>
-                        <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
+            <div style={{ marginTop: '12px', position: 'relative' }}>
+                <div className="tableWrap" style={{ maxHeight: 'calc(100vh - 285px)', overflowY: 'auto', overflowX: 'auto' }}>
+                    <table style={{ fontSize: '12.5px', tableLayout: 'auto', whiteSpace: 'nowrap' }}>
+                        <thead style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg, #0b1220)' }}>
                             <tr>
+                                <th style={{ width: '58px' }}></th>{/* Edit first */}
                                 <th onClick={() => handleSort('expense_date')} style={{ cursor: 'pointer' }}>Date<SortIcon col="expense_date" /></th>
                                 <th onClick={() => handleSort('vendor')} style={{ cursor: 'pointer' }}>Vendor<SortIcon col="vendor" /></th>
                                 <th onClick={() => handleSort('category')} style={{ cursor: 'pointer' }}>Category<SortIcon col="category" /></th>
                                 <th onClick={() => handleSort('tax_bucket')} style={{ cursor: 'pointer' }}>Tax Bucket<SortIcon col="tax_bucket" /></th>
-                                <th>Biz %</th>
                                 <th onClick={() => handleSort('amount_cents')} style={{ cursor: 'pointer' }}>Amount<SortIcon col="amount_cents" /></th>
-                                <th>Type</th>
-                                <th>Deductible</th>
-                                <th>Notes</th>
                                 <th>Receipt</th>
-                                <th></th>
+                                <th>Type</th>
+                                <th>Ded.</th>
+                                <th>Notes</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {filtered.slice(0, 800).map(r => (
-                                <tr key={r.id}>
-                                    <td className="date-col">{formatDate(r.expense_date)}</td>
-                                    <td><strong>{r.vendor || ''}</strong></td>
-                                    <td>{r.category || <span className="muted">—</span>}</td>
-                                    <td>{r.tax_bucket ? <span className="tag">{r.tax_bucket}</span> : <span className="muted">—</span>}</td>
-                                    <td>{r.business_use_pct ?? 100}%</td>
-                                    <td style={{ fontWeight: 'bold' }}>{formatMoney(r.amount_cents)}</td>
-                                    <td>{Number(r.amount_cents || 0) < 0 ? <span className="tag ok">Income</span> : <span className="tag">Expense</span>}</td>
-                                    <td>{r.tax_deductible ? <span className="tag ok">Yes</span> : <span className="tag">No</span>}</td>
-                                    <td style={{ maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={r.notes}>{r.notes || <span className="muted">—</span>}</td>
-                                    <td>
-                                        {r.receipt_link
-                                            ? <a className="tag ok" href={r.receipt_link} target="_blank" rel="noreferrer">View</a>
-                                            : Number(r.amount_cents || 0) > 7500 ? <span className="tag warn">Needed</span> : <span className="tag">—</span>
-                                        }
-                                    </td>
-                                    <td><button className="btn secondary" style={{ fontSize: '11px', padding: '5px 10px' }} onClick={() => setEditingId(r.id)}>Edit</button></td>
-                                </tr>
-                            ))}
+                            {filtered.slice(0, 800).map(r => {
+                                const needsReceipt = !r.receipt_link && Number(r.amount_cents || 0) > 7500;
+                                return (
+                                    <tr key={r.id} style={{ background: needsReceipt ? 'rgba(251,191,36,0.04)' : undefined }}>
+                                        <td style={{ padding: '4px 6px' }}>
+                                            <button className="btn secondary" style={{ fontSize: '11px', padding: '4px 10px' }} onClick={() => setEditingId(r.id)}>Edit</button>
+                                        </td>
+                                        <td className="date-col" style={{ whiteSpace: 'nowrap' }}>{formatDate(r.expense_date)}</td>
+                                        <td style={{ fontWeight: 600, maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.vendor || ''}</td>
+                                        <td style={{ maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.category || <span className="muted">—</span>}</td>
+                                        <td>
+                                            {r.tax_bucket
+                                                ? <span className="tag" style={{ fontSize: '11px' }}>{r.tax_bucket}{r.business_use_pct && r.business_use_pct !== 100 ? ` (${r.business_use_pct}%)` : ''}</span>
+                                                : <span className="muted">—</span>
+                                            }
+                                        </td>
+                                        <td style={{ fontWeight: 700, textAlign: 'right' }}>{formatMoney(r.amount_cents)}</td>
+                                        <td>
+                                            {r.receipt_link
+                                                ? <a className="tag ok" style={{ fontSize: '11px' }} href={r.receipt_link} target="_blank" rel="noreferrer">View</a>
+                                                : needsReceipt
+                                                    ? <span className="tag warn" style={{ fontSize: '11px' }}>Needed</span>
+                                                    : <span className="muted">—</span>
+                                            }
+                                        </td>
+                                        <td>{Number(r.amount_cents || 0) < 0 ? <span className="tag ok" style={{ fontSize: '11px' }}>Income</span> : <span className="tag" style={{ fontSize: '11px' }}>Expense</span>}</td>
+                                        <td>{r.tax_deductible ? <span className="tag ok" style={{ fontSize: '11px' }}>Yes</span> : <span className="tag" style={{ fontSize: '11px' }}>No</span>}</td>
+                                        <td style={{ maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={r.notes}>{r.notes || <span className="muted">—</span>}</td>
+                                    </tr>
+                                );
+                            })}
                             {filtered.length === 0 && !loading && (
-                                <tr><td colSpan={11} className="center muted" style={{ padding: '40px' }}>No transactions found for these filters.</td></tr>
+                                <tr><td colSpan={10} className="center muted" style={{ padding: '40px' }}>No transactions found for these filters.</td></tr>
                             )}
                         </tbody>
                     </table>
@@ -356,6 +369,24 @@ export default function Transactions() {
                         setExpenses(prev => prev.map(x => x.id === updated.id ? updated : x));
                     }}
                 />
+            )}
+            {/* ─── Toast Notification (replaces browser alert) ─── */}
+            {toast && (
+                <div style={{
+                    position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)',
+                    zIndex: 99999, padding: '14px 22px', borderRadius: '14px',
+                    background: 'rgba(15,26,51,0.97)', backdropFilter: 'blur(8px)',
+                    border: `1px solid ${toast.ok ? 'rgba(74,222,128,0.4)' : 'rgba(255,77,77,0.4)'}`,
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+                    display: 'flex', alignItems: 'center', gap: '12px', maxWidth: '500px'
+                }}>
+                    <span style={{ fontSize: '20px' }}>{toast.ok ? '✅' : '❌'}</span>
+                    <div>
+                        <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--muted)', marginBottom: '2px', letterSpacing: '0.08em' }}>EXPENSE TRACKER'S BRAIN SAYS...</div>
+                        <div style={{ fontSize: '13px' }}>{toast.msg}</div>
+                    </div>
+                    <button onClick={() => setToast(null)} style={{ marginLeft: '8px', background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '16px' }}>×</button>
+                </div>
             )}
         </section>
     );
