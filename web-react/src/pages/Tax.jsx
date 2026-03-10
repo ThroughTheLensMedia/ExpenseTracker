@@ -26,6 +26,25 @@ const SCHEDULE_C_MAPPING = {
     'Other': 'Line 27a',
 };
 
+const IRS_GUIDELINES = {
+    'Advertising': 'Includes ad agency fees, business cards, billboards, website hosting, SEO services, and promotional materials.',
+    'Car and truck': 'Covers gas, oil, repairs, insurance, and plates if using actual expenses (note: mileage method usually covers these).',
+    'Commissions and fees': 'Payments to agents, booking fees, or referral fees paid to other photographers.',
+    'Contract labor': 'Payments to 1099 contractors, second shooters, or assistants. (Do not include employees).',
+    'Depreciation': 'Annual deduction for the cost of equipment (Cameras, Lenses, Computers) over its useful life.',
+    'Insurance': 'Professional liability, business property, equipment insurance, and business health insurance.',
+    'Interest': 'Business-related mortgage interest or interest on business loans/credit cards.',
+    'Legal and professional': 'CPA fees, bookkeepers, attorneys, and tax preparation fees for your business.',
+    'Office expense': 'Postage, cloud storage (iCloud/Dropbox for biz), software (Adobe), and stationary.',
+    'Rent/lease': 'Rent for studio space, office space, or equipment rentals.',
+    'Repairs and maintenance': 'Camera servicing, sensor cleanings, or repairs to your studio space.',
+    'Supplies': 'Materials used in photography like props, backdrops, memory cards, and hard drives.',
+    'Taxes and licenses': 'Business licenses, local taxes, annual reports, and copyright registration fees.',
+    'Travel': 'Lodging and transportation (airfare/Uber) for business trips away from your home city.',
+    'Meals (50%)': 'Business-related meals with clients or while traveling. Capped at 50% deduction.',
+    'Utilities': 'Business portion of Internet, Phone, and studio electricity/water.',
+};
+
 // IRS rates are loaded from the DB (mileage_rates table) – no more hardcoding!
 
 export default function Tax() {
@@ -447,9 +466,15 @@ export default function Tax() {
                                                 const spend = row?.spend_cents || 0;
                                                 const deduct = row?.deductible_cents || 0;
                                                 const isEmpty = spend === 0;
+                                                const irsTip = IRS_GUIDELINES[bucket] || "General business expenses.";
                                                 return (
                                                     <tr key={bucket} style={{ opacity: isEmpty ? 0.45 : 1 }}>
-                                                        <td><span className={`tag ${!isEmpty ? 'ok' : ''}`} style={{ fontSize: '0.75rem' }}>{line}</span></td>
+                                                        <td>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                <span className={`tag ${!isEmpty ? 'ok' : ''}`} style={{ fontSize: '0.75rem' }}>{line}</span>
+                                                                <span title={irsTip} style={{ cursor: 'help', fontSize: '10px', opacity: 0.6 }}>ℹ️</span>
+                                                            </div>
+                                                        </td>
                                                         <td style={{ fontWeight: isEmpty ? 400 : 600 }}>{bucket}</td>
                                                         <td style={{ textAlign: 'right' }}>{isEmpty ? '—' : formatMoney(spend)}</td>
                                                         <td style={{ textAlign: 'right', fontWeight: 700, color: deduct > 0 ? '#4ade80' : 'inherit' }}>
@@ -458,8 +483,8 @@ export default function Tax() {
                                                         <td style={{ textAlign: 'center' }}>
                                                             {!isEmpty && (
                                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
-                                                                    <button className="btn sm" onClick={() => setAuditingBucket(bucket === auditingBucket ? null : bucket)}>
-                                                                        {auditingBucket === bucket ? 'Close' : 'Audit'}
+                                                                    <button className="btn sm secondary" onClick={() => setAuditingBucket(bucket === auditingBucket ? null : bucket)} style={{ fontSize: '10px', padding: '4px 8px' }}>
+                                                                        {auditingBucket === bucket ? 'Close' : 'Details'}
                                                                     </button>
                                                                     {bucket === 'Depreciation' && (
                                                                         <span style={{ fontSize: '9px', color: 'var(--blue)', fontWeight: 600 }}>Pulls from Assets ↗</span>
@@ -526,13 +551,20 @@ export default function Tax() {
                             background: 'var(--bg-card)', padding: '0', overflow: 'hidden'
                         }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                                <h3 style={{ margin: 0 }}>📋 Audit: {auditingBucket} ({SCHEDULE_C_MAPPING[auditingBucket] || 'Unassigned'})</h3>
-                                {auditingBucket === 'Depreciation' && (
-                                    <div style={{ marginLeft: '12px', fontSize: '11px', color: 'var(--blue)', fontWeight: 600 }}>
-                                        Note: Total on Tax tab includes depreciation from Equipment assets.
+                                <div style={{ flex: 1 }}>
+                                    <h3 style={{ margin: 0 }}>📊 {SCHEDULE_C_MAPPING[auditingBucket]}: {auditingBucket}</h3>
+                                    <div style={{ marginTop: '8px', padding: '8px 12px', background: 'rgba(99,102,241,0.08)', borderRadius: '8px', borderLeft: '3px solid var(--accent)', fontSize: '12px', color: 'var(--text)' }}>
+                                        <strong>IRS Guidance:</strong> {IRS_GUIDELINES[auditingBucket] || 'Ensure these items directly relate to your photography business operations.'}
                                     </div>
-                                )}
-                                <button className="btn sm outline" onClick={() => setAuditingBucket(null)}>Close</button>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '10px' }}>
+                                    <button className="btn sm secondary" onClick={() => setAuditingBucket(null)}>Close Details</button>
+                                    {auditingBucket === 'Depreciation' && (
+                                        <div style={{ fontSize: '10px', color: 'var(--accent)', fontWeight: 600 }}>
+                                            *Pulls from Equipment assets
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                             <div className="tableWrap" style={{ flex: 1, overflowY: 'auto', borderRadius: '0', border: 'none', padding: '0 20px 20px 20px' }}>
                                 <table className="sm">
