@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { fetchAllExpenses, formatMoney, formatDate, invalidateExpensesCache } from '../api';
 import TransactionDrawer from '../components/TransactionDrawer';
 import { useModal } from '../components/ModalContext.jsx';
+import CategorySelect from '../components/CategorySelect.jsx';
+import { ALL_CATEGORIES } from '../constants/categories.js';
 
 export default function Transactions() {
     const [expenses, setExpenses] = useState([]);
@@ -67,12 +69,6 @@ export default function Transactions() {
     const vendorOptions = useMemo(() => {
         const set = new Set();
         scopedRows.forEach(r => { if (r.vendor) set.add(r.vendor); });
-        return [...set].sort();
-    }, [scopedRows]);
-
-    const categoryOptions = useMemo(() => {
-        const set = new Set();
-        scopedRows.forEach(r => { if (r.category) set.add(r.category); });
         return [...set].sort();
     }, [scopedRows]);
 
@@ -211,17 +207,12 @@ export default function Transactions() {
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <small className="muted">Category</small>
-                    <input
-                        list="category-filter-options"
-                        value={searchCategory}
-                        onChange={e => setSearchCategory(e.target.value)}
-                        placeholder="Type or pick category…"
-                        style={{ width: '200px' }}
-                        autoComplete="off"
+                    <CategorySelect
+                        value={ALL_CATEGORIES.includes(searchCategory) ? searchCategory : ''}
+                        onChange={val => setSearchCategory(val)}
+                        emptyLabel="All Categories"
+                        style={{ width: '200px', padding: '7px 8px' }}
                     />
-                    <datalist id="category-filter-options">
-                        {categoryOptions.map(c => <option key={c} value={c} />)}
-                    </datalist>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <small className="muted">Notes</small>
