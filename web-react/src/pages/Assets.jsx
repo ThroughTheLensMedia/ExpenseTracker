@@ -28,7 +28,7 @@ export default function Assets() {
     const [assets, setAssets] = useState([]);
     const [deprData, setDeprData] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'table'
+    const [viewMode, setViewMode] = useState('table'); // Default changed to 'table'
     const [form, setForm] = useState(BLANK);
     const [editingAsset, setEditingAsset] = useState(null);
     const [saving, setSaving] = useState(false);
@@ -75,13 +75,22 @@ export default function Assets() {
 
     const handleEdit = (asset) => {
         setEditingAsset(asset);
+        // Handle both cost (dollars from depr route) and cost_cents (cents from raw route)
+        let displayCost = '';
+        if (asset.cost !== undefined) displayCost = Number(asset.cost).toFixed(2);
+        else if (asset.cost_cents !== undefined) displayCost = (Number(asset.cost_cents) / 100).toFixed(2);
+
         setForm({
             ...asset,
-            cost_cents: (Number(asset.cost_cents) / 100).toFixed(2),
+            cost_cents: displayCost,
             disposal_value_cents: asset.disposal_value_cents ? (Number(asset.disposal_value_cents) / 100).toFixed(2) : '',
             disposal_date: asset.disposal_date || ''
         });
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        // Scroll to form for visibility
+        setTimeout(() => {
+            const formHeading = document.querySelector('h3');
+            if (formHeading) formHeading.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
     };
 
     const handleDelete = async (id) => {
