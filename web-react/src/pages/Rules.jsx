@@ -321,16 +321,46 @@ export default function Rules() {
                                                         <div style={{ fontSize: '12px' }}>
                                                             <strong style={{ color: rs.preview.matchCount > 0 ? 'var(--green)' : '#f87171' }}>
                                                                 {rs.preview.matchCount === 0
-                                                                    ? '❌ No transactions match this rule — check the match value exactly matches vendor text in your data'
+                                                                    ? '❌ No exact match — your rule value doesn\'t match any vendor text in the database.'
                                                                     : `✅ ${rs.preview.matchCount} transaction(s) will be updated:`
                                                                 }
                                                             </strong>
+
+                                                            {/* Matched rows */}
                                                             {rs.preview.matches?.slice(0, 8).map((m, i) => (
                                                                 <div key={i} style={{ marginTop: '4px', color: 'var(--muted)', paddingLeft: '12px' }}>
                                                                     → <span style={{ color: '#fff' }}>{m.vendor}</span> &nbsp;
                                                                     {m.currentCategory} → <span style={{ color: 'var(--accent)' }}>{m.newCategory || '(unchanged)'}</span>
                                                                 </div>
                                                             ))}
+
+                                                            {/* Near-miss vendors when nothing matched */}
+                                                            {rs.preview.matchCount === 0 && rs.preview.nearMisses?.length > 0 && (
+                                                                <div style={{ marginTop: '8px' }}>
+                                                                    <div style={{ color: '#facc15', marginBottom: '4px' }}>
+                                                                        💡 Did you mean one of these? (actual vendor text in your data)
+                                                                    </div>
+                                                                    {rs.preview.nearMisses.map((v, i) => (
+                                                                        <div
+                                                                            key={i}
+                                                                            style={{ paddingLeft: '12px', color: 'var(--muted)', cursor: 'pointer', marginTop: '2px' }}
+                                                                            title="Click to copy"
+                                                                            onClick={() => navigator.clipboard?.writeText(v)}
+                                                                        >
+                                                                            📋 <span style={{ color: '#fff', fontFamily: 'monospace' }}>{v}</span>
+                                                                        </div>
+                                                                    ))}
+                                                                    <div style={{ color: 'var(--muted)', marginTop: '6px', fontStyle: 'italic' }}>
+                                                                        Click any vendor name above to copy it. Delete this rule and re-create with that exact text (or just the first few unique words).
+                                                                    </div>
+                                                                </div>
+                                                            )}
+
+                                                            {rs.preview.matchCount === 0 && rs.preview.nearMisses?.length === 0 && (
+                                                                <div style={{ color: 'var(--muted)', marginTop: '6px', paddingLeft: '12px' }}>
+                                                                    No vendors found containing any word from your match value. Double-check the spelling or try a shorter keyword.
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     )}
                                                 </td>

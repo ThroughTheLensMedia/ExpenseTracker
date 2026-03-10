@@ -87,11 +87,12 @@ router.get("/:id/preview", async (req, res) => {
         if (eErr) throw eErr;
 
         const matched = [];
+        const val = (rule.match_value || '').toLowerCase().trim();
+
         for (const exp of expenses || []) {
             const text = rule.match_column === 'vendor'
                 ? (exp.vendor || '').toLowerCase()
                 : (exp.notes || '').toLowerCase();
-            const val = (rule.match_value || '').toLowerCase();
             const isMatch = rule.match_type === 'exact' ? text === val : text.includes(val);
             if (isMatch) {
                 matched.push({
@@ -106,7 +107,24 @@ router.get("/:id/preview", async (req, res) => {
                 });
             }
         }
-        return res.json({ rule, matchCount: matched.length, matches: matched.slice(0, 20) });
+
+        // When nothing matched, find near-misses:
+        // vendors/notes containing ANY word from the rule value (min 4 chars)
+        let nearMisses = [];
+        if (matched.length === 0 && rule.match_column === 'vendor') {
+            const words = val.split(/\s+/).filter(w => w.length >= 4);
+            const seen = new Set();
+            for (const exp of expenses || []) {
+                const v = (exp.vendor || '').toLowerCase();
+                if (words.some(w => v.includes(w)) && !seen.has(exp.vendor)) {
+                    seen.add(exp.vendor);
+                    nearMisses.push(exp.vendor);
+                    if (nearMisses.length >= 10) break;
+                }
+            }
+        }
+
+        return res.json({ rule, matchCount: matched.length, matches: matched.slice(0, 20), nearMisses });
     } catch (err) {
         return res.status(500).json({ error: err.message });
     }
