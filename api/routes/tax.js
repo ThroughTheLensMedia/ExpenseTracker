@@ -22,6 +22,38 @@ const TaxAssignSchema = z.object({
   business_use_pct: z.coerce.number().min(0).max(100).optional()
 });
 
+async function fetchDepreciationTotal(year) {
+  try {
+    const { data, error } = await supabase.from("equipment_assets").select("*");
+    if (error || !data) return 0;
+
+    let totalCents = 0;
+    for (const asset of data) {
+      const purchaseYear = Number(String(asset.purchase_date).slice(0, 4));
+      const cost = Number(asset.cost_cents || 0) / 100;
+      const life = Number(asset.useful_life_years || 5);
+      const method = asset.depreciation_method || "straight_line";
+      const yearsSincePurchase = year - purchaseYear;
+
+      if (purchaseYear > year) continue;
+
+      if (method === "section_179") {
+        if (purchaseYear === year) totalCents += (cost * 100);
+      } else {
+        // Straight-line 5-year default
+        const annualDeduction = cost / life;
+        if (yearsSincePurchase >= 0 && yearsSincePurchase < life) {
+          totalCents += Math.round(annualDeduction * 100);
+        }
+      }
+    }
+    return totalCents;
+  } catch (e) {
+    console.error("Depreciation calc failed:", e);
+    return 0;
+  }
+}
+
 // GET /tax/summary
 router.get("/summary", async (req, res) => {
   try {
@@ -57,6 +89,21 @@ router.get("/summary", async (req, res) => {
           const pct = (r.business_use_pct === null || r.business_use_pct === undefined) ? 100 : r.business_use_pct;
           b.deductible_cents += Math.round(amt * (pct / 100.0));
         }
+      }
+    }
+
+    // INJECT DEPRECIATION FROM ASSETS TABLE (Line 13)
+    const assetDeprCents = await fetchDepreciationTotal(year);
+    if (assetDeprCents > 0) {
+      if (!buckets["Depreciation"]) {
+        buckets["Depreciation"] = { tax_bucket: "Depreciation", count: 0, spend_cents: 0, deductible_cents: 0 };
+      }
+      // Note: We "add" it to any existing manual depreciation entries, 
+      // but usually the equipment tab is the primary source.
+      buckets["Depreciation"].deductible_cents += assetDeprCents;
+      // We also add to spend_cents so the row stays solid in UI
+      if (buckets["Depreciation"].spend_cents < buckets["Depreciation"].deductible_cents) {
+        buckets["Depreciation"].spend_cents = buckets["Depreciation"].deductible_cents;
       }
     }
 

@@ -16,6 +16,7 @@ export default function Transactions() {
     const [searchCategory, setSearchCategory] = useState('');
     const [searchNotes, setSearchNotes] = useState('');
     const [deductOnly, setDeductOnly] = useState(false);
+    const [missingReceiptOnly, setMissingReceiptOnly] = useState(false);
     const [sortCol, setSortCol] = useState('expense_date');
     const [sortDir, setSortDir] = useState('desc');
 
@@ -104,6 +105,7 @@ export default function Transactions() {
         if (searchCategory) rows = rows.filter(r => (r.category || '').toLowerCase() === searchCategory.toLowerCase() || (r.category || '').toLowerCase().includes(searchCategory.toLowerCase()));
         if (searchNotes) rows = rows.filter(r => (r.notes || '').toLowerCase().includes(searchNotes.toLowerCase()));
         if (deductOnly) rows = rows.filter(r => r.tax_deductible);
+        if (missingReceiptOnly) rows = rows.filter(r => !r.receipt_link && r.tax_deductible);
         rows.sort((a, b) => {
             let av = a[sortCol] ?? '';
             let bv = b[sortCol] ?? '';
@@ -113,7 +115,7 @@ export default function Transactions() {
             return 0;
         });
         return rows;
-    }, [expenses, start, end, searchVendor, searchCategory, searchNotes, deductOnly, sortCol, sortDir]);
+    }, [expenses, start, end, searchVendor, searchCategory, searchNotes, deductOnly, missingReceiptOnly, sortCol, sortDir]);
 
     const exportCsv = () => {
         const qs = new URLSearchParams();
@@ -182,7 +184,8 @@ export default function Transactions() {
     };
 
     const clearFilters = () => {
-        setStart(''); setEnd(''); setSearchVendor(''); setSearchCategory(''); setSearchNotes(''); setDeductOnly(false);
+        setStart(''); setEnd(''); setSearchVendor(''); setSearchCategory(''); setSearchNotes('');
+        setDeductOnly(false); setMissingReceiptOnly(false);
     };
 
     const handleNormalizeVendors = async () => {
@@ -267,7 +270,7 @@ export default function Transactions() {
                     <small className="muted">Notes</small>
                     <input value={searchNotes} onChange={e => setSearchNotes(e.target.value)} placeholder="keyword…" style={{ width: '130px' }} />
                 </div>
-                <label className="tag" style={{ alignSelf: 'flex-end', cursor: 'pointer' }}>
+                <label className="tag" style={{ alignSelf: 'flex-end', cursor: 'pointer', borderColor: deductOnly ? 'var(--accent)' : 'var(--line)' }}>
                     <input
                         type="checkbox"
                         checked={deductOnly}
@@ -275,6 +278,15 @@ export default function Transactions() {
                         style={{ width: 'auto', margin: '0 8px 0 0' }}
                     />
                     Deductible only
+                </label>
+                <label className="tag" style={{ alignSelf: 'flex-end', cursor: 'pointer', borderColor: missingReceiptOnly ? '#fbbf24' : 'var(--line)' }}>
+                    <input
+                        type="checkbox"
+                        checked={missingReceiptOnly}
+                        onChange={e => setMissingReceiptOnly(e.target.checked)}
+                        style={{ width: 'auto', margin: '0 8px 0 0' }}
+                    />
+                    ⚠️ Missing Receipts
                 </label>
             </div>
 
@@ -309,7 +321,12 @@ export default function Transactions() {
                                         <td style={{ maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.category || <span className="muted">—</span>}</td>
                                         <td>
                                             {r.tax_bucket
-                                                ? <span className="tag" style={{ fontSize: '11px' }}>{r.tax_bucket}{r.business_use_pct && r.business_use_pct !== 100 && !String(r.tax_bucket).includes('%') ? ` (${r.business_use_pct}%)` : ''}</span>
+                                                ? <span className="tag" style={{ fontSize: '11px' }}>
+                                                    {r.tax_bucket}
+                                                    {r.tax_deductible && r.business_use_pct && r.business_use_pct !== 100 && !String(r.tax_bucket).includes('%')
+                                                        ? ` (${r.business_use_pct}%)`
+                                                        : ''}
+                                                </span>
                                                 : <span className="muted">—</span>
                                             }
                                         </td>
@@ -317,8 +334,8 @@ export default function Transactions() {
                                         <td>
                                             {r.receipt_link
                                                 ? <a className="tag ok" style={{ fontSize: '11px' }} href={r.receipt_link} target="_blank" rel="noreferrer">View</a>
-                                                : needsReceipt
-                                                    ? <span className="tag warn" style={{ fontSize: '11px' }}>Needed</span>
+                                                : (r.tax_deductible)
+                                                    ? <span className="tag warn" style={{ fontSize: '11px', fontWeight: 700 }}>⚠️ Needed</span>
                                                     : <span className="muted">—</span>
                                             }
                                         </td>

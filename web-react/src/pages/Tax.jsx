@@ -368,9 +368,14 @@ export default function Tax() {
                                                         </td>
                                                         <td style={{ textAlign: 'center' }}>
                                                             {!isEmpty && (
-                                                                <button className="btn sm" onClick={() => setAuditingBucket(bucket === auditingBucket ? null : bucket)}>
-                                                                    {auditingBucket === bucket ? 'Close' : 'Audit'}
-                                                                </button>
+                                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
+                                                                    <button className="btn sm" onClick={() => setAuditingBucket(bucket === auditingBucket ? null : bucket)}>
+                                                                        {auditingBucket === bucket ? 'Close' : 'Audit'}
+                                                                    </button>
+                                                                    {bucket === 'Depreciation' && (
+                                                                        <span style={{ fontSize: '9px', color: 'var(--blue)', fontWeight: 600 }}>Pulls from Assets ↗</span>
+                                                                    )}
+                                                                </div>
                                                             )}
                                                         </td>
                                                     </tr>
@@ -433,6 +438,11 @@ export default function Tax() {
                         }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
                                 <h3 style={{ margin: 0 }}>📋 Audit: {auditingBucket} ({SCHEDULE_C_MAPPING[auditingBucket] || 'Unassigned'})</h3>
+                                {auditingBucket === 'Depreciation' && (
+                                    <div style={{ marginLeft: '12px', fontSize: '11px', color: 'var(--blue)', fontWeight: 600 }}>
+                                        Note: Total on Tax tab includes depreciation from Equipment assets.
+                                    </div>
+                                )}
                                 <button className="btn sm outline" onClick={() => setAuditingBucket(null)}>Close</button>
                             </div>
                             <div className="tableWrap" style={{ flex: 1, overflowY: 'auto', borderRadius: '0', border: 'none', padding: '0 20px 20px 20px' }}>
