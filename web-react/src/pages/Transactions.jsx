@@ -150,10 +150,7 @@ export default function Transactions() {
                     </div>
 
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                        <button className="btn secondary" style={{ background: 'rgba(56, 189, 248, 0.1)', borderColor: 'rgba(56, 189, 248, 0.4)' }} onClick={() => navigate('/import')}>🏦 Bank Import</button>
-                        <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} className="desktop-only" />
-                        <button className="btn secondary desktop-only" onClick={clearFilters} title="Clear all date/vendor/category filters">Reset Filters</button>
-                        <button className="btn secondary desktop-only" onClick={exportCsv} title="Download current filtered list to CSV">Export CSV</button>
+                        <button className="btn secondary" style={{ background: 'rgba(34, 197, 94, 0.15)', borderColor: 'rgba(34, 197, 94, 0.4)', color: '#4ade80', fontWeight: 900 }} onClick={() => navigate('/import')}>🏦 Bank Import Portal</button>
                     </div>
                 </div>
             </div>
@@ -192,15 +189,22 @@ export default function Transactions() {
                             <small className="muted">Category</small>
                             <CategorySelect value={ALL_CATEGORIES.includes(searchCategory) ? searchCategory : ''} onChange={val => setSearchCategory(val)} emptyLabel="All Categories" style={{ width: '180px', padding: '10px' }} />
                         </div>
-                        <div style={{ display: 'flex', gap: '8px', alignSelf: 'flex-end', marginLeft: 'auto' }}>
-                            <label className="tag" style={{ cursor: 'pointer', borderColor: deductOnly ? 'var(--accent)' : 'var(--line)' }}>
-                                <input type="checkbox" checked={deductOnly} onChange={e => setDeductOnly(e.target.checked)} style={{ width: 'auto', margin: '0 8px 0 0' }} />
-                                Deductible
-                            </label>
-                            <label className="tag" style={{ cursor: 'pointer', borderColor: missingReceiptOnly ? '#fbbf24' : 'var(--line)' }}>
-                                <input type="checkbox" checked={missingReceiptOnly} onChange={e => setMissingReceiptOnly(e.target.checked)} style={{ width: 'auto', margin: '0 8px 0 0' }} />
-                                ⚠️ Missing Receipts
-                            </label>
+                        <div style={{ display: 'flex', gap: '10px', alignSelf: 'flex-end', marginLeft: 'auto', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <button className="btn sm secondary" onClick={clearFilters} style={{ fontSize: '10px', padding: '6px 14px' }}>Reset Filters</button>
+                                <button className="btn sm secondary" onClick={exportCsv} style={{ fontSize: '10px', padding: '6px 14px' }}>Export CSV</button>
+                            </div>
+                            <div style={{ width: '1px', height: '40px', background: 'rgba(255,255,255,0.05)', margin: '0 8px' }} />
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <label className="tag" style={{ cursor: 'pointer', borderColor: deductOnly ? 'var(--accent)' : 'var(--line)', padding: '4px 8px', fontSize: '10px' }}>
+                                    <input type="checkbox" checked={deductOnly} onChange={e => setDeductOnly(e.target.checked)} style={{ width: 'auto', margin: '0 8px 0 0' }} />
+                                    Deductible
+                                </label>
+                                <label className="tag" style={{ cursor: 'pointer', borderColor: missingReceiptOnly ? '#fbbf24' : 'var(--line)', padding: '4px 8px', fontSize: '10px' }}>
+                                    <input type="checkbox" checked={missingReceiptOnly} onChange={e => setMissingReceiptOnly(e.target.checked)} style={{ width: 'auto', margin: '0 8px 0 0' }} />
+                                    ⚠️ Missing Docs
+                                </label>
+                            </div>
                         </div>
                     </div>
                 )}

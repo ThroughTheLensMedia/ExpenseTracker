@@ -53,8 +53,8 @@ export default function Backup() {
             setIsHealthy(hlth.ok);
             setStorageType(hlth.storage || 'unknown');
 
-            // Critical fix: don't overwrite local form state if we're on the profile tab
-            if (activeTab !== 'profile' || !settings.business_name) {
+            // Pause settings update if user is actively in the profile tab to prevent jumpy overwrites
+            if (activeTab !== 'profile') {
                 setSettings(st || {});
             }
 
@@ -74,9 +74,14 @@ export default function Backup() {
 
     useEffect(() => {
         loadData();
-        const timer = setInterval(() => loadData(true), 60000);
+        const timer = setInterval(() => {
+            // Only auto-refresh if we're not on the profile tab (safety lock)
+            if (activeTab !== 'profile') {
+                loadData(true);
+            }
+        }, 60000);
         return () => clearInterval(timer);
-    }, []);
+    }, [activeTab]);
 
     const discoveryVendors = useMemo(() => {
         const counts = {};

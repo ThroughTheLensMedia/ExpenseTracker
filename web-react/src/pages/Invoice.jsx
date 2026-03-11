@@ -215,13 +215,14 @@ export default function Invoice() {
             const settingsData = st || {};
             setSettings(settingsData);
 
-            // Set default notes with safety
+            const signature = `Payment is due within 15 days. Thank you for choosing ${settingsData.business_name || 'Through The Lens Media'}!\n\n${settingsData.contact_name || ''}\n${settingsData.website || ''}\n${settingsData.phone || ''}`;
+
+            // Set default notes if empty and auto-increment invoice number
             setFormData(prev => ({
                 ...prev,
-                notes: prev.notes || `Payment is due within 15 days. Thank you for choosing ${settingsData.business_name || 'Through The Lens Media'}!\n\n${settingsData.contact_name || ''}\n${settingsData.website || ''}\n${settingsData.phone || ''}`
+                notes: prev.notes || signature
             }));
 
-            // Auto-increment invoice number
             if (invs.length > 0) {
                 const last = invs[0].invoice_number;
                 const match = last.match(/\d+/);
@@ -255,7 +256,8 @@ export default function Invoice() {
         if (lead) {
             setFormData(prev => ({
                 ...prev,
-                clientId: lead.id || '',
+                // Do NOT set clientId directly from lead.id as they are separate tables
+                // handleCreateInvoice will handle deduplication or creation
                 clientName: lead.name || '',
                 clientEmail: lead.email || '',
                 clientPhone: lead.phone || '',
@@ -515,10 +517,13 @@ export default function Invoice() {
                             <div>
                                 <small className="muted" style={{ fontWeight: 800 }}>PERSONALIZED SIGNATURE & TERMS</small>
                                 <textarea value={formData.notes || ''} onChange={e => setFormData({ ...formData, notes: e.target.value })} style={{ minHeight: '120px' }} />
+                                <div style={{ height: '100px' }} /> {/* Spacing for fixed footer */}
                             </div>
-
-                            <button type="submit" className="btn glow-blue" style={{ height: '56px', fontSize: '1.2rem', marginTop: '10px' }}>GENERATE INVOICE</button>
                         </form>
+
+                        <div style={{ position: 'sticky', bottom: 0, background: '#121c32', padding: '24px 32px', borderTop: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 -10px 40px rgba(0,0,0,0.3)', zIndex: 10 }}>
+                            <button type="button" onClick={handleCreateInvoice} className="btn glow-blue" style={{ height: '56px', fontSize: '1.2rem', width: '100%' }}>GENERATE INVOICE</button>
+                        </div>
                     </div>
                 </div>
             )}
