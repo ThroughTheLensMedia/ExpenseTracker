@@ -89,12 +89,28 @@ app.use("/receipts", express.static(RECEIPT_DIR));
 const apiRouter = express.Router();
 
 // Health check inside apiRouter for /api/health
-apiRouter.get("/health", (_req, res) => {
+apiRouter.get("/health", async (_req, res) => {
+  const start = Date.now();
   const hasCloud = !!(process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY);
+  let dbOk = false;
+
+  if (hasCloud) {
+    try {
+      // Attempt a lightweight heartbeat check to verify Supabase connectivity
+      const { error } = await supabase.from("settings").select("count").limit(1);
+      dbOk = !error;
+    } catch (e) {
+      console.error("[HEALTH] DB Heartbeat failed:", e.message);
+      dbOk = false;
+    }
+  }
+
   res.json({
     ok: true,
+    db: dbOk,
+    latency: `${Date.now() - start}ms`,
     environment: process.env.VERCEL ? "vercel" : "local",
-    storage: hasCloud ? "supabase" : "local_ephemeral"
+    storage: hasCloud ? (dbOk ? "supabase" : "reconnecting") : "local_ephemeral"
   });
 });
 

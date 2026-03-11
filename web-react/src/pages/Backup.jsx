@@ -55,7 +55,8 @@ export default function Backup() {
 
             setAllExpenses(exps);
             setRules(rls.rules || []);
-            setIsHealthy(hlth.ok);
+            // Dual-heartbeat: Check if API is up AND database is reachable
+            setIsHealthy(hlth.ok && (hlth.db !== false));
             setStorageType(hlth.storage || 'unknown');
 
             // Pause settings update if user is actively in the profile tab to prevent jumpy overwrites
