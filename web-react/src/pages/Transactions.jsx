@@ -236,92 +236,94 @@ export default function Transactions() {
 
                 {/* Action buttons — right side */}
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <button className="btn secondary" onClick={clearFilters} style={{ fontSize: '12px' }}>Clear Filters</button>
-                    <button className="btn secondary" onClick={exportCsv} style={{ fontSize: '12px' }}>⬇ Export CSV</button>
-                    <button className="btn secondary" onClick={() => loadData(true)} disabled={loading} style={{ fontSize: '12px' }}>↺ Reload</button>
-                    <button className="btn secondary" onClick={handleNormalizeVendors} disabled={normalizing} style={{ fontSize: '12px' }} title="Consolidate messy vendor names (Amazon MKTPL* → Amazon)">
+                    <button className="btn secondary desktop-only" onClick={clearFilters} style={{ fontSize: '12px' }}>Clear Filters</button>
+                    <button className="btn secondary desktop-only" onClick={exportCsv} style={{ fontSize: '12px' }}>⬇ Export CSV</button>
+                    <button className="btn secondary desktop-only" onClick={() => loadData(true)} disabled={loading} style={{ fontSize: '12px' }}>↺ Reload</button>
+                    <button className="btn secondary desktop-only" onClick={handleNormalizeVendors} disabled={normalizing} style={{ fontSize: '12px' }} title="Consolidate messy vendor names (Amazon MKTPL* → Amazon)">
                         {normalizing ? 'Cleaning…' : '✨ Clean Vendors'}
                     </button>
                     <button className="btn" onClick={() => { setShowImport(true); setRmMsg(''); setRmErrors([]); }} style={{ fontSize: '12px' }}>
-                        ⬆ Import CSV
+                        ⬆ Import Bank CSV
                     </button>
                 </div>
             </div>
 
-            {/* ─── Filters ─── */}
-            {isAuditMode ? (
-                <div style={{ padding: '16px 20px', background: 'rgba(255, 77, 77, 0.15)', borderRadius: '12px', border: '1px solid rgba(255, 77, 77, 0.4)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '16px 0' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <div style={{ fontSize: '24px' }}>🚨</div>
-                        <div>
-                            <div style={{ fontWeight: 900, color: '#ff4d4d', fontSize: '15px' }}>AUDIT LIABILITY MODE</div>
-                            <div className="muted" style={{ fontSize: '12px' }}>Isolating transactions over $75 with missing receipt documentation.</div>
+            {/* ─── Filters (Desktop Only) ─── */}
+            <div className="desktop-only">
+                {isAuditMode ? (
+                    <div style={{ padding: '16px 20px', background: 'rgba(255, 77, 77, 0.15)', borderRadius: '12px', border: '1px solid rgba(255, 77, 77, 0.4)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '16px 0' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                            <div style={{ fontSize: '24px' }}>🚨</div>
+                            <div>
+                                <div style={{ fontWeight: 900, color: '#ff4d4d', fontSize: '15px' }}>AUDIT LIABILITY MODE</div>
+                                <div className="muted" style={{ fontSize: '12px' }}>Isolating transactions over $75 with missing receipt documentation.</div>
+                            </div>
+                        </div>
+                        <button className="btn secondary" onClick={() => navigate('/transactions')} style={{ borderColor: 'rgba(255, 77, 77, 0.4)', color: '#ff4d4d', fontWeight: 'bold' }}>
+                            CLEAR FILTER ✕
+                        </button>
+                    </div>
+                ) : (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'flex-end', padding: '12px 14px', background: 'rgba(0,0,0,0.15)', borderRadius: '12px', border: '1px solid var(--line)' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <small className="muted">Start Date</small>
+                            <input type="date" value={start} onChange={e => setStart(e.target.value)} style={{ width: '150px' }} />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <small className="muted">End Date</small>
+                            <input type="date" value={end} onChange={e => setEnd(e.target.value)} style={{ width: '150px' }} />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <small className="muted">Vendor</small>
+                            <input
+                                list="vendor-options"
+                                value={searchVendor}
+                                onChange={e => setSearchVendor(e.target.value)}
+                                placeholder="Type or pick vendor…"
+                                style={{ width: '200px' }}
+                                autoComplete="off"
+                            />
+                            <datalist id="vendor-options">
+                                {vendorOptions.map(v => <option key={v} value={v} />)}
+                            </datalist>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <small className="muted">Category</small>
+                            <CategorySelect
+                                value={ALL_CATEGORIES.includes(searchCategory) ? searchCategory : ''}
+                                onChange={val => setSearchCategory(val)}
+                                emptyLabel="All Categories"
+                                style={{ width: '200px', padding: '7px 8px' }}
+                            />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <small className="muted">Notes</small>
+                            <input value={searchNotes} onChange={e => setSearchNotes(e.target.value)} placeholder="keyword…" style={{ width: '130px' }} />
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '8px', alignSelf: 'flex-end', marginLeft: 'auto' }}>
+                            <label className="tag" style={{ cursor: 'pointer', borderColor: deductOnly ? 'var(--accent)' : 'var(--line)' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={deductOnly}
+                                    onChange={e => setDeductOnly(e.target.checked)}
+                                    style={{ width: 'auto', margin: '0 8px 0 0' }}
+                                />
+                                Deductible only
+                            </label>
+                            <label className="tag" style={{ cursor: 'pointer', borderColor: missingReceiptOnly ? '#fbbf24' : 'var(--line)' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={missingReceiptOnly}
+                                    onChange={e => setMissingReceiptOnly(e.target.checked)}
+                                    style={{ width: 'auto', margin: '0 8px 0 0' }}
+                                />
+                                ⚠️ Missing Receipts
+                            </label>
                         </div>
                     </div>
-                    <button className="btn secondary" onClick={() => navigate('/transactions')} style={{ borderColor: 'rgba(255, 77, 77, 0.4)', color: '#ff4d4d', fontWeight: 'bold' }}>
-                        CLEAR FILTER ✕
-                    </button>
-                </div>
-            ) : (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'flex-end', padding: '12px 14px', background: 'rgba(0,0,0,0.15)', borderRadius: '12px', border: '1px solid var(--line)' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <small className="muted">Start Date</small>
-                        <input type="date" value={start} onChange={e => setStart(e.target.value)} style={{ width: '150px' }} />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <small className="muted">End Date</small>
-                        <input type="date" value={end} onChange={e => setEnd(e.target.value)} style={{ width: '150px' }} />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <small className="muted">Vendor</small>
-                        <input
-                            list="vendor-options"
-                            value={searchVendor}
-                            onChange={e => setSearchVendor(e.target.value)}
-                            placeholder="Type or pick vendor…"
-                            style={{ width: '200px' }}
-                            autoComplete="off"
-                        />
-                        <datalist id="vendor-options">
-                            {vendorOptions.map(v => <option key={v} value={v} />)}
-                        </datalist>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <small className="muted">Category</small>
-                        <CategorySelect
-                            value={ALL_CATEGORIES.includes(searchCategory) ? searchCategory : ''}
-                            onChange={val => setSearchCategory(val)}
-                            emptyLabel="All Categories"
-                            style={{ width: '200px', padding: '7px 8px' }}
-                        />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <small className="muted">Notes</small>
-                        <input value={searchNotes} onChange={e => setSearchNotes(e.target.value)} placeholder="keyword…" style={{ width: '130px' }} />
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '8px', alignSelf: 'flex-end', marginLeft: 'auto' }}>
-                        <label className="tag" style={{ cursor: 'pointer', borderColor: deductOnly ? 'var(--accent)' : 'var(--line)' }}>
-                            <input
-                                type="checkbox"
-                                checked={deductOnly}
-                                onChange={e => setDeductOnly(e.target.checked)}
-                                style={{ width: 'auto', margin: '0 8px 0 0' }}
-                            />
-                            Deductible only
-                        </label>
-                        <label className="tag" style={{ cursor: 'pointer', borderColor: missingReceiptOnly ? '#fbbf24' : 'var(--line)' }}>
-                            <input
-                                type="checkbox"
-                                checked={missingReceiptOnly}
-                                onChange={e => setMissingReceiptOnly(e.target.checked)}
-                                style={{ width: 'auto', margin: '0 8px 0 0' }}
-                            />
-                            ⚠️ Missing Receipts
-                        </label>
-                    </div>
-                </div>
-            )}
+                )}
+            </div>
 
             {/* ─── Mobile View (Cards) ─── */}
             <div className="mobile-only" style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
@@ -419,8 +421,7 @@ export default function Transactions() {
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     zIndex: 9999, padding: '20px'
                 }}>
-                    <div className="card" style={{
-                        width: '100%', maxWidth: '540px',
+                    <div className="card modal-card" style={{
                         background: 'linear-gradient(180deg, rgba(15,26,51,0.99), rgba(11,18,32,0.97))',
                         border: '1px solid var(--line)'
                     }}>

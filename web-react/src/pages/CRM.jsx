@@ -157,15 +157,28 @@ export default function CRM() {
 
     return (
         <section className="dashboard">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
+            <div className="mobile-break" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px', gap: '20px' }}>
                 <div>
                     <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 950, letterSpacing: '-0.02em' }}>CRM Console</h1>
                     <div className="muted" style={{ fontWeight: 600 }}>Through The Lens · Studio Pipeline</div>
+
+                    {/* Rolled up Archive Stats - Mobile view gets its own box below title */}
+                    <div className="glass mobile-only" style={{ marginTop: '16px', padding: '12px', borderRadius: '12px', display: 'flex', gap: '16px', fontSize: '11px', justifyContent: 'space-between' }}>
+                        <div onClick={() => setArchiveTarget('Paid')} style={{ flex: 1 }}>
+                            <span className="muted" style={{ fontSize: '9px', textTransform: 'uppercase' }}>Paid 👁️</span>
+                            <div style={{ color: '#4ade80', fontWeight: 900 }}>{archiveStats.Paid.length} Clients</div>
+                        </div>
+                        <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)' }} />
+                        <div onClick={() => setArchiveTarget('Lost')} style={{ flex: 1, textAlign: 'right' }}>
+                            <span className="muted" style={{ fontSize: '9px', textTransform: 'uppercase' }}>Lost 👁️</span>
+                            <div style={{ color: '#ff4d4d', fontWeight: 900 }}>{archiveStats.Lost.length} Rows</div>
+                        </div>
+                    </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                    {/* Rolled up Archive Stats */}
-                    <div className="glass" style={{ padding: '8px 16px', borderRadius: '12px', display: 'flex', gap: '20px', fontSize: '12px' }}>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    {/* Rolled up Archive Stats - Desktop Only */}
+                    <div className="glass desktop-only" style={{ padding: '8px 16px', borderRadius: '12px', display: 'flex', gap: '20px', fontSize: '12px' }}>
                         <div
                             onClick={() => setArchiveTarget('Paid')}
                             style={{ display: 'flex', flexDirection: 'column', cursor: 'pointer', transition: 'opacity 0.2s' }}
@@ -187,11 +200,11 @@ export default function CRM() {
                         </div>
                     </div>
 
-                    <button className="btn" onClick={exportToCSV} style={{ padding: '10px 16px', fontWeight: 700, fontSize: '12px', background: 'rgba(168, 182, 221, 0.1)', color: '#fff', border: '1px solid rgba(168, 182, 221, 0.3)' }}>
-                        📤 Export Newsletter
+                    <button className="btn" onClick={exportToCSV} style={{ flex: 1, whiteSpace: 'nowrap', padding: '10px 16px', fontWeight: 700, fontSize: '12px', background: 'rgba(168, 182, 221, 0.1)', color: '#fff', border: '1px solid rgba(168, 182, 221, 0.3)' }}>
+                        📤 Export
                     </button>
 
-                    <button className="btn glow-blue" onClick={() => openEditor()} style={{ padding: '10px 20px', fontWeight: 900 }}>
+                    <button className="btn glow-blue" onClick={() => openEditor()} style={{ flex: 1, whiteSpace: 'nowrap', padding: '10px 20px', fontWeight: 900 }}>
                         + New Lead
                     </button>
                 </div>
