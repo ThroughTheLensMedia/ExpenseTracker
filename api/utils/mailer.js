@@ -9,14 +9,22 @@
  */
 
 const { Resend } = require('resend');
-const resend = new Resend(process.env.RESEND_API_KEY);
+
+let resendClient = null;
+function getResend() {
+    if (!resendClient && process.env.RESEND_API_KEY) {
+        resendClient = new Resend(process.env.RESEND_API_KEY);
+    }
+    return resendClient;
+}
 
 async function sendInvoiceEmail({ to, subject, body, attachmentUrl }) {
     console.log(`[MAILER] Preparing email to ${to}...`);
     console.log(`[MAILER] Subject: ${subject}`);
 
-    if (!process.env.RESEND_API_KEY) {
-        console.warn("[MAILER] No API key found. Email was NOT sent, only logged to system terminal.");
+    const resend = getResend();
+    if (!resend) {
+        console.warn("[MAILER] Resend client not initialized. Email was NOT sent.");
         return { success: false, error: "Mailer service not configured" };
     }
 
