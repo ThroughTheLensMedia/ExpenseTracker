@@ -56,6 +56,12 @@ function InvoicePreview({ invoice, settings = {}, onClose }) {
         pdf.save(`Invoice_${invoice.number}.pdf`);
     };
 
+    const formatDate = (d) => {
+        if (!d) return '---';
+        const date = new Date(d);
+        return isNaN(date.getTime()) ? d : date.toLocaleDateString();
+    };
+
     return (
         <div className="drawer" style={{ background: 'rgba(0,0,0,0.9)', zIndex: 20000 }}>
             <div className="drawer-panel" style={{ width: 'min(950px, 98%)', background: '#f5f5f5', color: '#1a1a1a', padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
@@ -68,7 +74,7 @@ function InvoicePreview({ invoice, settings = {}, onClose }) {
                 </div>
 
                 <div style={{ flex: 1, overflowY: 'auto', padding: '40px' }}>
-                    <div ref={previewRef} style={{ background: '#fff', width: '210mm', minHeight: '297mm', margin: '0 auto', padding: '60px 80px', boxShadow: '0 0 50px rgba(0,0,0,0.1)', position: 'relative', boxSizing: 'border-box' }}>
+                    <div ref={previewRef} style={{ background: '#fff', width: '210mm', minWidth: '210mm', minHeight: '297mm', margin: '0 auto', padding: '60px 80px', boxShadow: '0 0 50px rgba(0,0,0,0.1)', position: 'relative', boxSizing: 'border-box' }}>
 
                         {/* HEADER - MATCHING TEMPLATE */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '80px' }}>
@@ -106,33 +112,31 @@ function InvoicePreview({ invoice, settings = {}, onClose }) {
                                 <div style={{ fontWeight: 700 }}>Invoice No:</div>
                                 <div style={{ textAlign: 'right' }}>{invoice.number}</div>
                                 <div style={{ fontWeight: 700 }}>Issue Date:</div>
-                                <div style={{ textAlign: 'right' }}>{new Date(invoice.date).toLocaleDateString()}</div>
+                                <div style={{ textAlign: 'right' }}>{formatDate(invoice.date)}</div>
                                 <div style={{ fontWeight: 700 }}>Due Date:</div>
-                                <div style={{ textAlign: 'right' }}>{invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : 'Upon Receipt'}</div>
+                                <div style={{ textAlign: 'right' }}>{invoice.dueDate ? formatDate(invoice.dueDate) : 'Upon Receipt'}</div>
                             </div>
                         </div>
 
-                        {/* LINE ITEMS TABLE */}
-                        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '40px' }}>
-                            <thead>
-                                <tr style={{ background: '#f8f8f8', borderBottom: '1px solid #eee' }}>
-                                    <th style={{ padding: '12px 15px', textAlign: 'left', fontSize: '11px', fontWeight: 900, textTransform: 'uppercase' }}>Description</th>
-                                    <th style={{ padding: '12px 15px', textAlign: 'center', fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', width: '80px' }}>Quantity</th>
-                                    <th style={{ padding: '12px 15px', textAlign: 'right', fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', width: '120px' }}>Unit Price</th>
-                                    <th style={{ padding: '12px 15px', textAlign: 'right', fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', width: '120px' }}>Amount</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {(invoice.items || []).map((it, idx) => (
-                                    <tr key={idx} style={{ borderBottom: '1px solid #eee' }}>
-                                        <td style={{ padding: '15px', fontSize: '13px' }}>{it.description}</td>
-                                        <td style={{ padding: '15px', textAlign: 'center', fontSize: '13px' }}>{it.quantity}</td>
-                                        <td style={{ padding: '15px', textAlign: 'right', fontSize: '13px' }}>{formatMoney(Number(it.unit_price) * 100)}</td>
-                                        <td style={{ padding: '15px', textAlign: 'right', fontSize: '13px', fontWeight: 700 }}>{formatMoney(Number(it.unit_price) * it.quantity * 100)}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                        {/* LINE ITEMS HEADER */}
+                        <div style={{ background: '#f8f8f8', display: 'flex', fontWeight: 900, fontSize: '11px', textTransform: 'uppercase', borderBottom: '1px solid #eee' }}>
+                            <div style={{ flex: 1, padding: '12px 15px' }}>Description</div>
+                            <div style={{ width: '80px', padding: '12px 15px', textAlign: 'center' }}>Quantity</div>
+                            <div style={{ width: '120px', padding: '12px 15px', textAlign: 'right' }}>Unit Price</div>
+                            <div style={{ width: '120px', padding: '12px 15px', textAlign: 'right' }}>Amount</div>
+                        </div>
+
+                        {/* LINE ITEMS LIST */}
+                        <div style={{ marginBottom: '40px' }}>
+                            {(invoice.items || []).map((it, idx) => (
+                                <div key={idx} style={{ display: 'flex', borderBottom: '1px solid #eee', fontSize: '13px', alignItems: 'center' }}>
+                                    <div style={{ flex: 1, padding: '15px' }}>{it.description}</div>
+                                    <div style={{ width: '80px', padding: '15px', textAlign: 'center' }}>{it.quantity}</div>
+                                    <div style={{ width: '120px', padding: '15px', textAlign: 'right' }}>{formatMoney(Number(it.unit_price) * 100)}</div>
+                                    <div style={{ width: '120px', padding: '15px', textAlign: 'right', fontWeight: 700 }}>{formatMoney(Number(it.unit_price) * it.quantity * 100)}</div>
+                                </div>
+                            ))}
+                        </div>
 
                         {/* TOTALS BOX */}
                         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -532,11 +536,11 @@ export default function Invoice() {
                                             <td style={{ textAlign: 'right' }}>
                                                 <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                                                     <button className="btn sm secondary" onClick={() => setPreviewingInvoice(inv)}>Preview</button>
+                                                    {(inv.status === 'draft' || inv.status === 'sent') && (
+                                                        <button className="btn sm secondary" onClick={() => handleEdit(inv)}>Edit</button>
+                                                    )}
                                                     {inv.status === 'draft' && (
-                                                        <>
-                                                            <button className="btn sm secondary" onClick={() => handleEdit(inv)}>Edit</button>
-                                                            <button className="btn sm glow-blue" onClick={() => handleSendEmail(inv)}>Send Email</button>
-                                                        </>
+                                                        <button className="btn sm glow-blue" onClick={() => handleSendEmail(inv)}>Send Email</button>
                                                     )}
                                                     {inv.status === 'sent' && (
                                                         <button className="btn sm primary" onClick={() => handleMarkPaid(inv.id)}>Mark Paid</button>
@@ -624,7 +628,10 @@ export default function Invoice() {
                                 </div>
                                 {formData.items.map((it, idx) => (
                                     <InvoiceItemRow key={idx} item={it} index={idx} onChange={(i, f, v) => {
-                                        const n = [...formData.items]; n[i][f] = v; setFormData({ ...formData, items: n });
+                                        setFormData(prev => ({
+                                            ...prev,
+                                            items: prev.items.map((item, index) => index === i ? { ...item, [f]: v } : item)
+                                        }));
                                     }} onRemove={i => {
                                         if (formData.items.length > 1) setFormData({ ...formData, items: formData.items.filter((_, idx) => idx !== i) });
                                     }} />
