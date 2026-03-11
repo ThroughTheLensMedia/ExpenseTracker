@@ -441,13 +441,19 @@ export default function Backup() {
                         </div>
                         <a href="/api/admin/export-all" download className="btn secondary" style={{ padding: '20px 50px', fontSize: '16px', fontWeight: 900 }}>DOWNLOAD ARCHIVE</a>
                     </div>
+
+                    <div style={{ marginTop: '20px', padding: '30px', display: 'flex', gap: '60px', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <div>
+                            <small className="muted" style={{ fontWeight: 900, display: 'block', marginBottom: '4px', fontSize: '10px' }}>CORE ARCHITECTURE</small>
+                            <span style={{ fontWeight: 950, fontSize: '13px', color: 'var(--accent)', letterSpacing: '0.05em' }}>v3.7-ELITE-SUPABASE</span>
+                        </div>
+                        <div>
+                            <small className="muted" style={{ fontWeight: 900, display: 'block', marginBottom: '4px', fontSize: '10px' }}>LIVE ENDPOINT</small>
+                            <span style={{ fontWeight: 950, fontSize: '13px', letterSpacing: '0.05em' }}>{window.location.hostname}</span>
+                        </div>
+                    </div>
                 </div>
             )}
-
-            <div style={{ marginTop: '50px', padding: '30px 0', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span className="muted small" style={{ fontWeight: 900 }}>ARCHITECTURE: v3.7-ELITE-SUPABASE</span>
-                <span className="muted small" style={{ fontWeight: 900 }}>ENDPOINT: {window.location.hostname}</span>
-            </div>
         </section>
     );
 }
