@@ -184,6 +184,7 @@ export default function Invoice() {
     const [loading, setLoading] = useState(true);
 
     const [isCreatorOpen, setIsCreatorOpen] = useState(false);
+    const [editingId, setEditingId] = useState(null);
     const [previewingInvoice, setPreviewingInvoice] = useState(null);
     const [statusMsg, setStatusMsg] = useState(null); // { type: 'ok'|'bad', text: '' }
 
@@ -276,6 +277,29 @@ export default function Invoice() {
         }
     };
 
+    const handleEdit = (inv) => {
+        setEditingId(inv.id);
+        setFormData({
+            number: inv.invoice_number,
+            date: inv.issue_date,
+            dueDate: inv.due_date || '',
+            clientId: inv.client_id,
+            clientName: inv.clients?.name || '',
+            clientEmail: inv.clients?.email || '',
+            clientPhone: inv.clients?.phone || '',
+            items: (inv.invoice_items || []).map(it => ({
+                description: it.description,
+                quantity: it.quantity,
+                unit_price: (it.unit_price_cents / 100).toFixed(2)
+            })),
+            tax_percent: inv.tax_percent || 0,
+            discount: (inv.discount_cents / 100).toFixed(2),
+            leadId: inv.lead_id || '',
+            notes: inv.notes || ''
+        });
+        setIsCreatorOpen(true);
+    };
+
     const handleCreateInvoice = async (e) => {
         if (e) e.preventDefault();
         setStatusMsg(null);
@@ -313,7 +337,7 @@ export default function Invoice() {
                 invoice_number: formData.number,
                 issue_date: formData.date,
                 due_date: formData.dueDate || null,
-                status: 'sent',
+                status: editingId ? undefined : 'draft', // Preserve status on edit, default to draft on new
                 notes: formData.notes,
                 tax_percent: Number(formData.tax_percent),
                 discount_cents: Math.round(Number(formData.discount) * 100),
@@ -324,8 +348,13 @@ export default function Invoice() {
                 }))
             };
 
-            await apiPost('/invoices', payload);
+            if (editingId) {
+                await apiPatch(`/invoices/${editingId}`, payload);
+            } else {
+                await apiPost('/invoices', payload);
+            }
             setIsCreatorOpen(false);
+            setEditingId(null);
             load();
         } catch (err) {
             let errorText = err.message;
@@ -358,11 +387,28 @@ export default function Invoice() {
                 tax_deductible: true,
                 tax_bucket: 'Gross Receipts'
             });
-            invalidateExpensesCache();
-            // We use standard confirm for success as per other parts of the app, or null but let's at least avoid alert if we can
-            // For now, let's keep it simple as it's outside the creator
+            alert("Income synced to ledger!");
         } catch (err) {
             console.error("Sync failed", err);
+        }
+    };
+
+    const handleSendEmail = async (invoice) => {
+        try {
+            await apiPatch(`/invoices/${invoice.id}`, { status: 'sent' });
+            load();
+            alert(`Draft #${invoice.invoice_number} marked as Sent! (Email logic pending service configuration)`);
+        } catch (err) {
+            alert(err.message);
+        }
+    };
+
+    const handleMarkPaid = async (id) => {
+        try {
+            await apiPatch(`/invoices/${id}`, { status: 'paid' });
+            load();
+        } catch (err) {
+            alert(err.message);
         }
     };
 
@@ -443,23 +489,19 @@ export default function Invoice() {
                                             </td>
                                             <td style={{ textAlign: 'right' }}>
                                                 <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                                                    <button className="btn sm secondary" onClick={() => setPreviewingInvoice({
-                                                        number: inv.invoice_number,
-                                                        date: inv.issue_date,
-                                                        clientName: inv.clients?.name,
-                                                        clientEmail: inv.clients?.email,
-                                                        clientPhone: inv.clients?.phone,
-                                                        items: inv.invoice_items.map(it => ({
-                                                            description: it.description,
-                                                            quantity: it.quantity,
-                                                            unit_price: it.unit_price_cents / 100
-                                                        })),
-                                                        tax_percent: inv.tax_percent,
-                                                        discount: inv.discount_cents / 100,
-                                                        notes: inv.notes
-                                                    })}>Preview</button>
-                                                    {inv.status !== 'paid' && <button className="btn sm primary" onClick={() => apiPatch(`/invoices/${inv.id}`, { status: 'paid' }).then(load)}>Mark Paid</button>}
-                                                    {inv.status === 'paid' && <button className="btn sm glow-blue" onClick={() => handleSyncToExpenses(inv)}>Sync Ledger</button>}
+                                                    <button className="btn sm secondary" onClick={() => setPreviewingInvoice(inv)}>Preview</button>
+                                                    {inv.status === 'draft' && (
+                                                        <>
+                                                            <button className="btn sm secondary" onClick={() => handleEdit(inv)}>Edit</button>
+                                                            <button className="btn sm glow-blue" onClick={() => handleSendEmail(inv)}>Send Email</button>
+                                                        </>
+                                                    )}
+                                                    {inv.status === 'sent' && (
+                                                        <button className="btn sm primary" onClick={() => apiPatch(`/invoices/${inv.id}`, { status: 'paid' }).then(load)}>Mark Paid</button>
+                                                    )}
+                                                    {inv.status === 'paid' && (
+                                                        <button className="btn sm glow-blue" onClick={() => handleSyncToExpenses(inv)}>Sync Ledger</button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
@@ -488,11 +530,11 @@ export default function Invoice() {
 
             {/* CREATOR DRAWER */}
             {isCreatorOpen && (
-                <div className="drawer" onClick={(e) => { if (e.target.className === 'drawer') setIsCreatorOpen(false); }}>
+                <div className="drawer" onClick={(e) => { if (e.target.className === 'drawer') { setIsCreatorOpen(false); setEditingId(null); } }}>
                     <div className="drawer-panel" style={{ width: 'min(700px, 100%)', display: 'flex', flexDirection: 'column', padding: 0 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '24px', borderBottom: '1px solid rgba(255,255,255,0.05)', position: 'sticky', top: 0, background: 'var(--bg)', zIndex: 10 }}>
-                            <h2 style={{ margin: 0, fontSize: '1.4rem' }}>Create Elite Invoice</h2>
-                            <button type="button" className="btn secondary" onClick={() => setIsCreatorOpen(false)}>Cancel</button>
+                            <h2 style={{ margin: 0, fontSize: '1.4rem' }}>{editingId ? 'Edit' : 'Create'} Elite Invoice</h2>
+                            <button type="button" className="btn secondary" onClick={() => { setIsCreatorOpen(false); setEditingId(null); }}>Cancel</button>
                         </div>
 
                         <form onSubmit={handleCreateInvoice} style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '24px', flex: 1, overflowY: 'auto' }}>
@@ -509,13 +551,15 @@ export default function Invoice() {
 
                             <div className="hr"></div>
 
-                            <div>
-                                <small className="muted" style={{ fontWeight: 800 }}>CRM IMPORT (OPTIONAL)</small>
-                                <select onChange={handleLeadSelect} style={{ background: 'rgba(249, 115, 22, 0.1)', borderColor: 'rgba(249, 115, 22, 0.3)' }}>
-                                    <option value="">-- No lead selected --</option>
-                                    {leads.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-                                </select>
-                            </div>
+                            {!editingId && (
+                                <div>
+                                    <small className="muted" style={{ fontWeight: 800 }}>CRM IMPORT (OPTIONAL)</small>
+                                    <select onChange={handleLeadSelect} style={{ background: 'rgba(249, 115, 22, 0.1)', borderColor: 'rgba(249, 115, 22, 0.3)' }}>
+                                        <option value="">-- No lead selected --</option>
+                                        {leads.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                                    </select>
+                                </div>
+                            )}
 
                             <div className="grid two">
                                 <div>
@@ -575,7 +619,7 @@ export default function Invoice() {
                                 className="btn glow-blue"
                                 style={{ height: '56px', fontSize: '1.2rem', width: '100%' }}
                             >
-                                {loading ? '⏳ GENERATING...' : 'GENERATE INVOICE'}
+                                {loading ? '⏳ SAVING...' : (editingId ? 'UPDATE INVOICE' : 'SAVE DRAFT INVOICE')}
                             </button>
                         </div>
                     </div>

@@ -111,15 +111,29 @@ router.post("/", async (req, res) => {
 
 router.patch("/:id", async (req, res) => {
     try {
-        const { status, notes } = req.body;
-        const { data, error } = await supabase
+        const { items, ...invoiceData } = req.body;
+
+        // 1. Update Invoice Metadata
+        const { data: invoice, error: invError } = await supabase
             .from("invoices")
-            .update({ status, notes, updated_at: new Date() })
+            .update({ ...invoiceData, updated_at: new Date() })
             .eq("id", req.params.id)
             .select()
             .single();
-        if (error) throw error;
-        res.json(data);
+
+        if (invError) throw invError;
+
+        // 2. Handle Items if provided (Replace old items with new ones for simplicity in edits)
+        if (items && Array.isArray(items)) {
+            // Delete old items
+            await supabase.from("invoice_items").delete().eq("invoice_id", req.params.id);
+            // Insert new items
+            const itemsWithId = items.map(item => ({ ...item, invoice_id: req.params.id }));
+            const { error: itemsError } = await supabase.from("invoice_items").insert(itemsWithId);
+            if (itemsError) throw itemsError;
+        }
+
+        res.json(invoice);
     } catch (e) {
         res.status(400).json({ error: e.message });
     }
