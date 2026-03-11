@@ -200,6 +200,13 @@ router.post("/auto-map", async (req, res) => {
       .lt("amount_cents", 0);
     if (!incError && incCount) totalUpdated += incCount;
 
+    // Fix: Un-mark expense returns (like Amazon refunds) that were accidentally flagged as Line 1 income
+    const { error: fixError } = await supabase
+      .from("expenses")
+      .update({ tax_deductible: false })
+      .lt("amount_cents", 0)
+      .not("category", "in", `(${INCOME_CATEGORIES.map(c => `'${c}'`).join(',')})`);
+
     // Then: Map the categories for expenses as normal
     for (const mapping of RM_MAPPING) {
       for (const cat of mapping.categories) {

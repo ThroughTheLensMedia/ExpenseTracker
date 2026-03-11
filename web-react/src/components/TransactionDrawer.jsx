@@ -109,7 +109,14 @@ export default function TransactionDrawer({ transaction, onClose, onSave }) {
                             value={ALL_CATEGORIES.includes(category) ? category : (category ? '__custom__' : '')}
                             onChange={val => {
                                 if (val === '__custom__') setCategory('');
-                                else setCategory(val);
+                                else {
+                                    setCategory(val);
+                                    // If income category, auto-check business income (Line 1) logic
+                                    const INCOME_CATS = ['Photo Income', 'Freelance Income', 'Contract Income', 'Side Income'];
+                                    if (INCOME_CATS.includes(val) && Number(amount || 0) < 0) {
+                                        setDeduct(true);
+                                    }
+                                }
                             }}
                             emptyLabel="Select category…"
                             showCustom
