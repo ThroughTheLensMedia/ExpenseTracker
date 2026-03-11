@@ -11,7 +11,7 @@ const cors = require("cors");
 const path = require("path");
 const fs = require("fs");
 
-const { initDb } = require("./db");
+const { initDb, supabase } = require("./db");
 const expenseRouter = require("./routes/expenses");
 const taxRouter = require("./routes/tax");
 const importRouter = require("./routes/import");
@@ -97,7 +97,7 @@ apiRouter.get("/health", async (_req, res) => {
   if (hasCloud) {
     try {
       // Attempt a lightweight heartbeat check to verify Supabase connectivity
-      const { error } = await supabase.from("settings").select("count").limit(1);
+      const { error } = await supabase.from("settings").select("*").limit(1);
       dbOk = !error;
     } catch (e) {
       console.error("[HEALTH] DB Heartbeat failed:", e.message);
