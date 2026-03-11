@@ -13,6 +13,7 @@ export default function CRM() {
     const [leads, setLeads] = useState([]);
     const [loading, setLoading] = useState(true);
     const [editingLead, setEditingLead] = useState(null);
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
     // Form state
     const [formName, setFormName] = useState('');
@@ -56,6 +57,7 @@ export default function CRM() {
                 await apiPost('/leads', payload);
             }
             setEditingLead(null);
+            setIsDrawerOpen(false);
             clearForm();
             loadLeads();
         } catch (err) {
@@ -106,6 +108,12 @@ export default function CRM() {
             setEditingLead(null);
             clearForm();
         }
+        setIsDrawerOpen(true);
+    };
+
+    const closeEditor = () => {
+        setIsDrawerOpen(false);
+        setEditingLead(null);
     };
 
     return (
@@ -121,7 +129,7 @@ export default function CRM() {
             </div>
 
             {/* Kanban Board */}
-            <div style={{ display: 'flex', gap: '16px', overflowX: 'auto', paddingBottom: '20px', alignItems: 'flex-start', minHeight: '65vh' }}>
+            <div style={{ display: 'flex', gap: '16px', overflowX: 'auto', paddingBottom: '20px', alignItems: 'flex-start', minHeight: '65vh', width: '100%', boxSizing: 'border-box' }}>
                 {COLUMNS.map(col => {
                     const columnLeads = leads.filter(l => (l.status || 'New Lead') === col.id);
                     const totalValue = columnLeads.reduce((s, l) => s + (l.quoted_value_cents || 0), 0);
@@ -195,7 +203,7 @@ export default function CRM() {
             </div>
 
             {/* Editor Drawer */}
-            {editingLead !== null && (
+            {isDrawerOpen && (
                 <div style={{
                     position: 'fixed', top: 0, right: 0, bottom: 0, width: '400px',
                     background: 'rgba(15, 26, 51, 0.98)', borderLeft: '1px solid var(--line)',
@@ -237,7 +245,7 @@ export default function CRM() {
                             <textarea value={formNotes} onChange={e => setFormNotes(e.target.value)} style={{ width: '100%', minHeight: '100px', resize: 'vertical' }} placeholder="Discussed sunset vibes..." />
                         </div>
                         <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
-                            <button type="button" className="btn secondary" onClick={() => setEditingLead(null)} style={{ flex: 1 }}>Cancel</button>
+                            <button type="button" className="btn secondary" onClick={closeEditor} style={{ flex: 1 }}>Cancel</button>
                             <button type="submit" className="btn" style={{ flex: 1 }}>Save Lead</button>
                         </div>
                     </form>
@@ -245,8 +253,8 @@ export default function CRM() {
             )}
 
             {/* Editor Backdrop */}
-            {editingLead !== null && (
-                <div onClick={() => setEditingLead(null)} style={{
+            {isDrawerOpen && (
+                <div onClick={closeEditor} style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
                     background: 'rgba(0,0,0,0.5)', zIndex: 9999, backdropFilter: 'blur(3px)'
                 }} />

@@ -59,7 +59,7 @@ function App() {
             <NavLink to="/tax" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Tax</NavLink>
             <NavLink to="/equipment" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Equipment</NavLink>
             <NavLink to="/invoice" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Invoice</NavLink>
-            <NavLink to="/crm" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Leads & CRM</NavLink>
+            <NavLink to="/crm" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>CRM</NavLink>
 
             <NavLink to="/backup" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Studio Control Center</NavLink>
           </div>
