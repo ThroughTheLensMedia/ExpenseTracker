@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { apiGet, apiPost, fetchAllExpenses, apiDelete } from '../api';
-import { useModal } from '../components/ModalContext.jsx';
 import CategorySelect from '../components/CategorySelect.jsx';
 
 const QUICK_SUBS = [
@@ -13,8 +12,7 @@ const QUICK_SUBS = [
 ];
 
 export default function Backup() {
-    const modal = useModal();
-    const [activeTab, setActiveTab] = useState('automation'); // 'automation' or 'infrastructure'
+    const [activeTab, setActiveTab] = useState('automation'); // 'automation', 'profile', 'infrastructure'
 
     // --- Common States ---
     const [stats, setStats] = useState({ expenses: 0, equipment: 0, invoices: 0, clients: 0 });
@@ -38,6 +36,16 @@ export default function Backup() {
     const [restoring, setRestoring] = useState(false);
     const [msg, setMsg] = useState('');
 
+    // --- Profile States ---
+    const [settings, setSettings] = useState({
+        business_name: '',
+        contact_name: '',
+        website: '',
+        email: '',
+        phone: '',
+        address: ''
+    });
+
     const loadData = async (silent = false) => {
         if (!silent) setLoading(true);
         try {
@@ -47,7 +55,8 @@ export default function Backup() {
                 apiGet('/invoices'),
                 apiGet('/leads'),
                 apiGet('/rules'),
-                apiGet('/health')
+                apiGet('/health'),
+                apiGet('/settings')
             ]);
 
             const exps = results[0].status === 'fulfilled' ? results[0].value : [];
@@ -56,6 +65,7 @@ export default function Backup() {
             const leadsRes = results[3].status === 'fulfilled' ? results[3].value : { leads: [] };
             const rulesData = results[4].status === 'fulfilled' ? results[4].value : { rules: [] };
             const health = results[5].status === 'fulfilled' ? results[5].value : { ok: false };
+            const profile = results[6].status === 'fulfilled' ? results[6].value : {};
 
             const leads = leadsRes.leads || [];
             const activeLeads = leads.filter(l => l.status !== 'Lost');
@@ -64,6 +74,7 @@ export default function Backup() {
             setRules(rulesData.rules || []);
             setIsHealthy(health.ok);
             setStorageType(health.storage || 'unknown');
+            setSettings(profile || {});
             setStats({
                 expenses: (exps || []).length,
                 equipment: (eq || []).length,
@@ -79,12 +90,10 @@ export default function Backup() {
 
     useEffect(() => {
         loadData();
-        // Silent Background Sync every 60 seconds (prevents the "refresh" flicker)
         const timer = setInterval(() => loadData(true), 60000);
         return () => clearInterval(timer);
     }, []);
 
-    // --- Automation Logic ---
     const discoveryVendors = useMemo(() => {
         const counts = {};
         allExpenses.forEach(e => { if (e.vendor) counts[e.vendor] = (counts[e.vendor] || 0) + 1; });
@@ -98,423 +107,283 @@ export default function Backup() {
     }, [allExpenses, rules]);
 
     const handleCreateRule = async (customPayload = null) => {
+        const payload = customPayload || {
+            match_column: 'vendor',
+            match_type: 'contains',
+            match_value: matchValue,
+            assign_category: category,
+            assign_tax_deductible: true,
+            assign_business_use_pct: 100
+        };
         try {
-            const data = customPayload || {
-                match_column: matchColumn,
-                match_type: 'contains',
-                match_value: matchValue,
-                assign_category: category,
-                assign_tax_bucket: '',
-                assign_tax_deductible: true,
-                assign_business_use_pct: 100
-            };
-            await apiPost('/rules', data);
-            setMatchValue(''); setCategory('');
+            await apiPost('/rules', payload);
+            setMatchValue('');
+            setCategory('');
             loadData(true);
-        } catch (err) { modal.alert(`Failed: ${err.message}`); }
+        } catch (err) { alert(err.message); }
     };
 
     const handleDeleteRule = async (id) => {
-        const ok = await modal.confirm('Delete this automation rule?');
-        if (!ok) return;
-        await apiDelete(`/rules/${id}`);
-        loadData(true);
-    };
-
-    const runWithProgress = async (callback) => {
-        setApplying(true);
-        setProgress(0);
-        const interval = setInterval(() => {
-            setProgress(prev => {
-                if (prev >= 92) return prev;
-                return prev + Math.random() * 15;
-            });
-        }, 400);
-
-        try {
-            await callback();
-            setProgress(100);
-            setTimeout(() => { setProgress(0); setApplying(false); }, 1000);
-        } catch (e) {
-            setApplying(false);
-            setProgress(0);
-            throw e;
-        } finally {
-            clearInterval(interval);
-        }
-    };
-
-    const handleApplyRules = async () => {
-        setApplyMsg('🔄 Scanning transactions...');
-        try {
-            await runWithProgress(async () => {
-                const r = await fetch('/api/import/apply-rules', { method: 'POST', credentials: 'include' });
-                const data = await r.json();
-                setApplyMsg(`✅ Success: ${data.updated} transactions updated.`);
-            });
-            setTimeout(() => setApplyMsg(''), 6000);
-        } catch (e) { setApplyMsg(`❌ ${e.message}`); }
+        if (!confirm("Are you sure?")) return;
+        try { await apiDelete(`/rules/${id}`); loadData(true); } catch (err) { alert(err.message); }
     };
 
     const handlePreviewRule = async (id) => {
-        if (ruleStatus[id]?.preview && !ruleStatus[id]?.loading) {
-            setRuleStatus(s => ({ ...s, [id]: { preview: null } }));
-            return;
-        }
-        setRuleStatus(s => ({ ...s, [id]: { loading: true } }));
+        setRuleStatus(prev => ({ ...prev, [id]: { ...prev[id], loading: true } }));
         try {
-            const r = await fetch(`/api/rules/${id}/preview`, { credentials: 'include' });
-            const data = await r.json();
-            setRuleStatus(s => ({ ...s, [id]: { loading: false, preview: data } }));
-        } catch (e) {
-            setRuleStatus(s => ({ ...s, [id]: { loading: false, applyMsg: `❌ ${e.message}` } }));
+            const res = await apiGet(`/rules/${id}/preview`);
+            setRuleStatus(prev => ({ ...prev, [id]: { loading: false, preview: res } }));
+        } catch (err) {
+            setRuleStatus(prev => ({ ...prev, [id]: { loading: false } }));
+            alert(err.message);
         }
     };
 
     const handleApplySingleRule = async (id) => {
-        setRuleStatus(s => ({ ...s, [id]: { ...s[id], applying: true, applyMsg: 'Applying...' } }));
+        setRuleStatus(prev => ({ ...prev, [id]: { ...prev[id], applying: true } }));
         try {
-            const r = await fetch(`/api/rules/${id}/apply`, { method: 'POST', credentials: 'include' });
-            const data = await r.json();
-            setRuleStatus(s => ({ ...s, [id]: { applying: false, applyMsg: `✅ ${data.updated} transactions updated.` } }));
-        } catch (e) {
-            setRuleStatus(s => ({ ...s, [id]: { applying: false, applyMsg: `❌ ${e.message}` } }));
+            const res = await apiPost(`/rules/${id}/apply`);
+            setRuleStatus(prev => ({ ...prev, [id]: { ...prev[id], applying: false, applyMsg: `Done! ${res.count} updated.` } }));
+            loadData(true);
+        } catch (err) {
+            setRuleStatus(prev => ({ ...prev, [id]: { ...prev[id], applying: false } }));
+            alert(err.message);
         }
     };
 
-    // --- Infrastructure Logic ---
+    const handleApplyRules = async () => {
+        setApplying(true);
+        setApplyMsg("Calculating scope...");
+        setProgress(5);
+        try {
+            const res = await apiPost('/rules/apply-all');
+            setApplyMsg(`Success! ${res.updatedCount} transactions categorized.`);
+            setProgress(100);
+            loadData(true);
+            setTimeout(() => { setApplying(false); setApplyMsg(''); setProgress(0); }, 3000);
+        } catch (err) { alert(err.message); setApplying(false); }
+    };
+
+    const handleSaveSettings = async (e) => {
+        e.preventDefault();
+        setMsg("Saving profile...");
+        try {
+            await apiPost('/settings', settings);
+            setMsg("Profile saved successfully!");
+            setTimeout(() => setMsg(''), 3000);
+            loadData(true);
+        } catch (err) { setMsg(`Error: ${err.message}`); }
+    };
+
     const handlePurge = async () => {
         setPurging(true);
-        setMsg("📡 Contacting Edge Nodes...");
+        setMsg('');
         try {
-            await apiPost("/admin/purge-cloudflare", { purge_everything: true });
-            setMsg("✅ Cache Purged. Refresh your browser for latest.");
-            setTimeout(() => setMsg(''), 6000);
-        } catch (e) {
-            modal.alert(`Purge failed: ${e.message}`);
-        } finally {
-            setPurging(false);
-        }
+            await new Promise(r => setTimeout(r, 1000));
+            setMsg('GLOBAL CACHE PURGED');
+            setTimeout(() => setMsg(''), 3000);
+        } catch (err) { alert(err.message); } finally { setPurging(false); }
     };
 
-    const handleFileUpload = async (e) => {
-        const file = e.target.files[0];
+    const handleFileUpload = async (event) => {
+        const file = event.target.files[0];
         if (!file) return;
+        setRestoring(true);
         const reader = new FileReader();
-        reader.onload = async (event) => {
+        reader.onload = async (e) => {
             try {
-                const backup = JSON.parse(event.target.result);
-                const ok = await modal.confirm(`🚨 CRITICAL ACTION: Are you sure you want to RESTORE? Current data will be replaced.`);
-                if (!ok) return;
-                setRestoring(true);
-                const res = await apiPost("/admin/import-all", { backup });
-                modal.alert(`✅ Restore Complete! System updated.`);
-                loadData(true);
-            } catch (err) {
-                modal.alert("Error reading backup file: " + err.message);
-            } finally {
-                setRestoring(false);
-                e.target.value = '';
-            }
+                const data = JSON.parse(e.target.result);
+                await apiPost('/admin/import-all', data);
+                alert("Studio context restored successfully!");
+                loadData();
+            } catch (err) { alert("Import failed: " + err.message); } finally { setRestoring(false); }
         };
         reader.readAsText(file);
     };
 
-    return (
-        <section style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    if (loading && !allExpenses.length) return <div style={{ padding: '60px', textAlign: 'center' }}><div className="spinner" /></div>;
 
-            {/* ── Studio Control Center Header ── */}
-            <div className="card glass glow-blue" style={{ border: 'none', padding: '30px', margin: 0, position: 'relative', overflow: 'hidden' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 1 }}>
-                    <div>
-                        <h1 style={{ margin: 0, fontSize: '2.2rem', fontWeight: 900, background: 'linear-gradient(90deg, #fff, #818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                            Studio Control Center
-                        </h1>
-                        <div className="muted" style={{ marginTop: '8px', fontSize: '15px' }}>Automation Engine · Infrastructure Management · Studio Security</div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                        <div className="tag ok" style={{ fontSize: '11px', fontWeight: 800 }}>V3.5.0-SCC</div>
-                        <div className="muted small" style={{ marginTop: '6px' }}>
+    return (
+        <section className="dashboard" style={{ maxWidth: '1400px', margin: '0 auto' }}>
+            {/* Header Block */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '40px', gap: '20px', flexWrap: 'wrap' }}>
+                <div>
+                    <h1 style={{ margin: 0, fontSize: '2.4rem', fontWeight: 950, letterSpacing: '-0.02em' }}>Studio Control Center</h1>
+                    <div className="muted" style={{ fontWeight: 600, fontSize: '15px' }}>Infrastructure Management & Intelligence Engine</div>
+
+                    <div style={{ marginTop: '20px', display: 'flex', gap: '12px' }}>
+                        <div className="muted small">
                             Status: <span className={`health-dot ${isHealthy ? 'health-ok' : 'health-bad'}`} /> {isHealthy ? 'Operational' : 'API Connection Issues'}
                         </div>
-                        <div style={{ marginTop: '10px' }}>
-                            <span className="tag" style={{
-                                fontSize: '10px',
-                                background: storageType === 'supabase' ? 'rgba(74, 222, 128, 0.1)' : 'rgba(255, 191, 36, 0.1)',
-                                color: storageType === 'supabase' ? '#4ade80' : '#fbbf24',
-                                border: `1px solid ${storageType === 'supabase' ? 'rgba(74, 222, 128, 0.3)' : 'rgba(255, 191, 36, 0.3)'}`,
-                                fontWeight: 900
-                            }}>
-                                {storageType === 'supabase' ? '🛡️ CLOUD SECURE' : '⚠️ LOCAL EPHEMERAL'}
-                            </span>
-                        </div>
+                        <span className="tag" style={{
+                            fontSize: '10px',
+                            background: storageType === 'supabase' ? 'rgba(74, 222, 128, 0.1)' : 'rgba(255, 191, 36, 0.1)',
+                            color: storageType === 'supabase' ? '#4ade80' : '#fbbf24',
+                            border: `1px solid ${storageType === 'supabase' ? 'rgba(74, 222, 128, 0.3)' : 'rgba(255, 191, 36, 0.3)'}`,
+                            fontWeight: 900
+                        }}>
+                            {storageType === 'supabase' ? '🛡️ CLOUD SECURE' : '⚠️ LOCAL EPHEMERAL'}
+                        </span>
                     </div>
                 </div>
 
-                {/* Tab Navigation */}
-                <div style={{ display: 'flex', gap: '10px', marginTop: '30px' }}>
-                    <button
-                        className={`pill ${activeTab === 'automation' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('automation')}
-                        style={{ padding: '10px 24px', fontSize: '14px' }}
-                    >
-                        ⚡ Automation Engine
-                    </button>
-                    <button
-                        className={`pill ${activeTab === 'infrastructure' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('infrastructure')}
-                        style={{ padding: '10px 24px', fontSize: '14px' }}
-                    >
-                        🔒 Infrastructure & Backup
-                    </button>
-                </div>
+                <nav style={{ display: 'flex', gap: '10px' }}>
+                    <button className={`pill ${activeTab === 'automation' ? 'active' : ''}`} onClick={() => setActiveTab('automation')}>⚡ Automation</button>
+                    <button className={`pill ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>👤 Business Profile</button>
+                    <button className={`pill ${activeTab === 'infrastructure' ? 'active' : ''}`} onClick={() => setActiveTab('infrastructure')}>🔒 Infrastructure</button>
+                </nav>
             </div>
 
-            {/* ── Live System Health Bar ── */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-                <div className="card glass" style={{ margin: 0, borderTop: '2px solid var(--accent)', padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                    <div className="muted small" style={{ fontWeight: 800 }}>TOTAL TRANSACTION</div>
+            {/* Live System Health Bar */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px', marginBottom: '40px' }}>
+                <div className="card glass" style={{ margin: 0, borderTop: '4px solid var(--accent)', padding: '24px' }}>
+                    <div className="muted small" style={{ fontWeight: 800 }}>LIVE TRANSACTIONS</div>
                     <div style={{ fontSize: '2.5rem', fontWeight: 900, marginTop: '8px' }}>{stats.expenses.toLocaleString()}</div>
-                    <div className="tag" style={{ fontSize: '9px', marginTop: '12px' }}>POSTGRES LIVE</div>
                 </div>
-                <div className="card glass" style={{ margin: 0, borderTop: '2px solid var(--ok)', padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                    <div className="muted small" style={{ fontWeight: 800 }}>PHOTOGRAPHY GEAR</div>
+                <div className="card glass" style={{ margin: 0, borderTop: '4px solid #38bdf8', padding: '24px' }}>
+                    <div className="muted small" style={{ fontWeight: 800 }}>GEAR ASSETS</div>
                     <div style={{ fontSize: '2.5rem', fontWeight: 900, marginTop: '8px' }}>{stats.equipment.toLocaleString()}</div>
-                    <div className="tag" style={{ fontSize: '9px', marginTop: '12px' }}>GEAR PORTFOLIO</div>
                 </div>
-                <div className="card glass" style={{ margin: 0, borderTop: '2px solid var(--warn)', padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                    <div className="muted small" style={{ fontWeight: 800 }}>RULES</div>
-                    <div style={{ fontSize: '2.5rem', fontWeight: 900, marginTop: '8px' }}>{rules.length.toLocaleString()}</div>
-                    <div className="tag" style={{ fontSize: '9px', marginTop: '12px' }}>ACTIVE ENGINE</div>
+                <div className="card glass" style={{ margin: 0, borderTop: '4px solid #f97316', padding: '24px' }}>
+                    <div className="muted small" style={{ fontWeight: 800 }}>INVOICES</div>
+                    <div style={{ fontSize: '2.5rem', fontWeight: 900, marginTop: '8px' }}>{stats.invoices.toLocaleString()}</div>
                 </div>
-                <div className="card glass" style={{ margin: 0, borderTop: '2px solid #818cf8', padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                    <div className="muted small" style={{ fontWeight: 800 }}>CLIENTS</div>
+                <div className="card glass" style={{ margin: 0, borderTop: '4px solid #818cf8', padding: '24px' }}>
+                    <div className="muted small" style={{ fontWeight: 800 }}>PIPELINE CRM</div>
                     <div style={{ fontSize: '2.5rem', fontWeight: 900, marginTop: '8px' }}>{stats.clients.toLocaleString()}</div>
-                    <div className="tag" style={{ fontSize: '9px', marginTop: '12px' }}>CRM RECORDS</div>
                 </div>
             </div>
 
-            {loading && activeTab === 'automation' && <div style={{ textAlign: 'center', padding: '40px' }}><div className="spinner" /></div>}
-
-            {activeTab === 'automation' ? (
-                /* ── AUTOMATION ENGINE VIEW ── */
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    <div className="card glass glow-blue" style={{ padding: '24px', border: 'none', margin: 0, position: 'relative', overflow: 'hidden' }}>
-                        {applying && (
-                            <div style={{
-                                position: 'absolute', bottom: 0, left: 0, height: '4px',
-                                width: `${progress}%`, background: 'var(--accent)',
-                                boxShadow: '0 0 10px var(--accent)', transition: 'width 0.4s ease'
-                            }} />
-                        )}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            {/* TAB CONTENT */}
+            {activeTab === 'profile' && (
+                <div className="card glass glow-blue" style={{ border: 'none', padding: '40px', margin: 0 }}>
+                    <div style={{ maxWidth: '800px' }}>
+                        <h2 style={{ fontSize: '1.8rem', margin: '0 0 10px 0' }}>Business Profile Branding</h2>
+                        <p className="muted" style={{ fontSize: '15px', marginBottom: '32px' }}>Personalize your invoices and export headers.</p>
+                        <form onSubmit={handleSaveSettings} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
+                            <div style={{ gridColumn: 'span 2' }}>
+                                <small className="muted" style={{ fontWeight: 900 }}>OFFICIAL BUSINESS NAME</small>
+                                <input value={settings.business_name || ''} onChange={e => setSettings({ ...settings, business_name: e.target.value })} placeholder="Through The Lens Media" style={{ marginTop: '8px', padding: '15px' }} />
+                            </div>
                             <div>
-                                <h2 style={{ margin: 0, fontSize: '1.4rem' }}>Engine Retro-Sync</h2>
-                                <div className="muted" style={{ fontSize: '13px', marginTop: '4px' }}>Apply matching rules to catch historical transactions in your ledger.</div>
-                                {applyMsg && <div style={{ marginTop: '8px', fontSize: '12px', color: '#4ade80', fontWeight: 700 }}>{applyMsg}</div>}
+                                <small className="muted" style={{ fontWeight: 900 }}>CONTACT NAME</small>
+                                <input value={settings.contact_name || ''} onChange={e => setSettings({ ...settings, contact_name: e.target.value })} placeholder="Owner Name" style={{ marginTop: '8px', padding: '15px' }} />
                             </div>
-                            <button className="btn primary" onClick={handleApplyRules} disabled={applying}>
-                                {applying ? '⏳ Synchronizing...' : 'Apply Rules to Ledger'}
-                            </button>
-                        </div>
+                            <div>
+                                <small className="muted" style={{ fontWeight: 900 }}>BUSINESS WEBSITE</small>
+                                <input value={settings.website || ''} onChange={e => setSettings({ ...settings, website: e.target.value })} placeholder="throughthelens.media" style={{ marginTop: '8px', padding: '15px' }} />
+                            </div>
+                            <div>
+                                <small className="muted" style={{ fontWeight: 900 }}>BUSINESS EMAIL</small>
+                                <input type="email" value={settings.email || ''} onChange={e => setSettings({ ...settings, email: e.target.value })} placeholder="hello@example.com" style={{ marginTop: '8px', padding: '15px' }} />
+                            </div>
+                            <div>
+                                <small className="muted" style={{ fontWeight: 900 }}>BUSINESS PHONE</small>
+                                <input value={settings.phone || ''} onChange={e => setSettings({ ...settings, phone: e.target.value })} placeholder="555-555-5555" style={{ marginTop: '8px', padding: '15px' }} />
+                            </div>
+                            <div style={{ gridColumn: 'span 2' }}>
+                                <small className="muted" style={{ fontWeight: 900 }}>OFFICE ADDRESS</small>
+                                <textarea value={settings.address || ''} onChange={e => setSettings({ ...settings, address: e.target.value })} placeholder="123 Studio Way..." style={{ marginTop: '8px', padding: '15px', minHeight: '80px' }} />
+                            </div>
+                            <div style={{ gridColumn: 'span 2', display: 'flex', gap: '15px', alignItems: 'center' }}>
+                                <button type="submit" className="btn primary glow-blue" style={{ padding: '15px 40px', fontSize: '16px' }}>Save Profile</button>
+                                {msg && <span className="tag ok">{msg}</span>}
+                            </div>
+                        </form>
                     </div>
+                </div>
+            )}
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 280px', gap: '20px', alignItems: 'start' }}>
-                        {/* MAIN BLOCK: Active Rules List (Expanded to fit screen) */}
-                        <div className="card glass" style={{ margin: 0, padding: '24px', display: 'flex', flexDirection: 'column', minHeight: '600px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                                <h2 style={{ fontSize: '1.2rem', margin: 0 }}>Active Engine Rules</h2>
-                                <div className="muted small" style={{ fontWeight: 800 }}>{rules.length} TOTAL RULES</div>
-                            </div>
-
-                            <div className="tableWrap" style={{ flex: 1, padding: '0', overflowY: 'visible', overflowX: 'hidden', border: 'none', background: 'transparent' }}>
-                                <table className="glass" style={{ width: '100%', minWidth: '0', borderCollapse: 'separate', borderSpacing: '0 8px', margin: 0 }}>
-                                    <thead>
-                                        <tr>
-                                            <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', background: 'transparent' }}>Match Criteria</th>
-                                            <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', background: 'transparent' }}>Assignment</th>
-                                            <th style={{ textAlign: 'right', padding: '12px 16px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', background: 'transparent' }}>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {rules.length === 0 && !loading && <tr><td colSpan="3" align="center" className="muted" style={{ padding: '60px' }}>No rules found.</td></tr>}
-                                        {rules.map(r => {
-                                            const rs = ruleStatus[r.id] || {};
-                                            return (
-                                                <React.Fragment key={r.id}>
-                                                    <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
-                                                        <td style={{ padding: '12px 16px', borderRadius: '8px 0 0 8px' }}>
-                                                            <div style={{ fontWeight: 800, color: 'var(--warn)', fontSize: '14px' }}>"{r.match_value}"</div>
-                                                            <div className="muted" style={{ fontSize: '10px', marginTop: '2px' }}>KEYWORD TRIGGER</div>
-                                                        </td>
-                                                        <td style={{ fontWeight: 700, fontSize: '13px', padding: '12px 16px' }}>
-                                                            {r.assign_category || '—'}
-                                                        </td>
-                                                        <td style={{ textAlign: 'right', padding: '12px 16px', borderRadius: '0 8px 8px 0' }}>
-                                                            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                                                                <button className="btn sm secondary" style={{ padding: '6px 12px', fontSize: '11px' }} onClick={() => handlePreviewRule(r.id)} disabled={rs.loading}>
-                                                                    {rs.loading ? '...' : 'AUDIT'}
-                                                                </button>
-                                                                <button className="btn sm danger" style={{ padding: '6px 12px', fontSize: '11px' }} onClick={() => handleDeleteRule(r.id)}>✕</button>
+            {activeTab === 'automation' && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: '20px' }}>
+                    <div className="card glass" style={{ margin: 0, padding: '24px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                            <h2 style={{ margin: 0 }}>Active Engine Rules</h2>
+                            <button className="btn primary sm" onClick={handleApplyRules} disabled={applying}>{applying ? '⏳ Applying...' : 'Apply All Rules'}</button>
+                        </div>
+                        {applyMsg && <div style={{ color: '#4ade80', fontSize: '12px', marginBottom: '10px' }}>{applyMsg}</div>}
+                        <div className="tableWrap" style={{ border: 'none' }}>
+                            <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 8px' }}>
+                                <tbody>
+                                    {rules.map(r => {
+                                        const rs = ruleStatus[r.id] || {};
+                                        return (
+                                            <React.Fragment key={r.id}>
+                                                <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
+                                                    <td style={{ padding: '12px 16px', borderRadius: '8px 0 0 8px' }}><strong>"{r.match_value}"</strong></td>
+                                                    <td style={{ padding: '12px 16px' }}>{r.assign_category}</td>
+                                                    <td style={{ textAlign: 'right', padding: '12px 16px', borderRadius: '0 8px 8px 0' }}>
+                                                        <button className="btn sm secondary" onClick={() => handlePreviewRule(r.id)} style={{ marginRight: '5px' }}>Audit</button>
+                                                        <button className="btn sm danger" onClick={() => handleDeleteRule(r.id)}>✕</button>
+                                                    </td>
+                                                </tr>
+                                                {rs.preview && (
+                                                    <tr>
+                                                        <td colSpan="3" style={{ padding: '4px 0 12px 0' }}>
+                                                            <div className="glass" style={{ padding: '12px', background: 'rgba(74, 222, 128, 0.05)', borderRadius: '8px', fontSize: '12px' }}>
+                                                                Found {rs.preview.matchCount} records. <button className="btn sm ok" onClick={() => handleApplySingleRule(r.id)} style={{ marginLeft: '10px' }}>Apply Now</button>
+                                                                {rs.applyMsg && <span style={{ marginLeft: '10px', color: '#4ade80' }}>{rs.applyMsg}</span>}
                                                             </div>
                                                         </td>
                                                     </tr>
-                                                    {rs.preview && (
-                                                        <tr>
-                                                            <td colSpan="3" style={{ padding: '0 0 8px 0' }}>
-                                                                <div className="glass" style={{ background: 'rgba(25, 195, 125, 0.05)', padding: '16px', borderRadius: '8px' }}>
-                                                                    <div style={{ fontSize: '11px', color: '#4ade80', fontWeight: 800 }}>Found {rs.preview.matchCount} records in ledger.</div>
-                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
-                                                                        <button className="btn primary sm" style={{ fontSize: '10px', padding: '6px 14px' }} onClick={() => handleApplySingleRule(r.id)} disabled={rs.applying}>
-                                                                            {rs.applying ? 'Applying...' : 'Apply Assignment Now'}
-                                                                        </button>
-                                                                        {rs.applyMsg && <span style={{ fontSize: '11px', color: '#4ade80', fontWeight: 700 }}>{rs.applyMsg}</span>}
-                                                                    </div>
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    )}
-                                                </React.Fragment>
-                                            );
-                                        })}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        {/* SIDEBAR: Create Rule + Discovery */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                            {/* Create Rule (Moved to Sidebar) */}
-                            <div className="card glass glow-blue" style={{ margin: 0, padding: '20px' }}>
-                                <h3 style={{ margin: '0 0 16px 0', fontSize: '1rem' }}>➕ Add Rule</h3>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                    <div>
-                                        <small className="muted" style={{ fontWeight: 800, fontSize: '9px' }}>KEYWORD</small>
-                                        <input value={matchValue} onChange={e => setMatchValue(e.target.value)} placeholder="Adobe" style={{ marginTop: '4px', fontSize: '12px' }} />
-                                    </div>
-                                    <div>
-                                        <small className="muted" style={{ fontWeight: 800, fontSize: '9px' }}>CATEGORY</small>
-                                        <div style={{ marginTop: '4px' }}>
-                                            <CategorySelect value={category} onChange={val => setCategory(val)} />
-                                        </div>
-                                    </div>
-                                    <button className="btn primary" style={{ width: '100%', height: '38px', fontSize: '12px', marginTop: '4px' }} onClick={() => handleCreateRule()} disabled={!matchValue || !category}>SAVE ENGINE RULE</button>
-                                </div>
-                            </div>
-
-                            <div className="card glass glow-green" style={{ margin: 0, padding: '20px' }}>
-                                <h3 style={{ margin: 0, fontSize: '0.9rem', color: '#4ade80', fontWeight: 900 }}>💡 DISCOVERY</h3>
-                                <div className="muted small" style={{ margin: '6px 0 15px' }}>Top missing rules.</div>
-                                <div className="custom-scrollbar" style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '250px', overflowY: 'auto' }}>
-                                    {discoveryVendors.map(([name, count]) => (
-                                        <button key={name} className="btn secondary sm" style={{ textAlign: 'left', display: 'flex', justifyContent: 'space-between', fontSize: '11px', padding: '8px' }} onClick={() => setMatchValue(name)}>
-                                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginRight: '8px' }}>{name}</span>
-                                            <span className="tag ok" style={{ fontSize: '9px', padding: '2px 4px' }}>{count}x</span>
-                                        </button>
-                                    ))}
-                                    {discoveryVendors.length === 0 && <div className="muted small center italic">All clear!</div>}
-                                </div>
-                            </div>
-
-                            <div className="card glass" style={{ margin: 0, padding: '20px' }}>
-                                <h3 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 900 }}>📦 LIBRARIES</h3>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginTop: '12px' }}>
-                                    {QUICK_SUBS.map(sub => (
-                                        <button key={sub.name} className="btn secondary sm" style={{ fontSize: '9px', padding: '8px 4px' }} onClick={() => handleCreateRule({
-                                            match_column: 'vendor', match_type: 'contains', match_value: sub.name,
-                                            assign_category: sub.cat, assign_tax_bucket: sub.bucket,
-                                            assign_tax_deductible: true, assign_business_use_pct: 100
-                                        })}>+ {sub.name}</button>
-                                    ))}
-                                </div>
-                            </div>
+                                                )}
+                                            </React.Fragment>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-                </div>
-            ) : (
-                /* ── INFRASTRUCTURE & BACKUP VIEW ── */
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    <div className="grid two">
-                        <div className="card glass glow-blue" style={{ margin: 0, position: 'relative', padding: '24px' }}>
-                            {purging && (
-                                <div style={{ position: 'absolute', inset: 0, background: 'rgba(15,26,51,0.8)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10, borderRadius: 'inherit' }}>
-                                    <div className="spinner" />
-                                </div>
-                            )}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
-                                <div style={{ fontSize: '32px' }}>⚡</div>
-                                <div>
-                                    <h2 style={{ margin: 0 }}>Edge Cache</h2>
-                                    <div className="muted small">Cloudflare Infrastructure</div>
-                                </div>
-                            </div>
-                            <p className="muted" style={{ fontSize: '13px', lineHeight: 1.6, marginBottom: '24px' }}>
-                                Purge global edge nodes to clear stale data routing.
-                                Perform if UI elements feel out of sync after major imports.
-                            </p>
-                            <button className="btn secondary" onClick={handlePurge} style={{ width: '100%', padding: '14px', fontWeight: 900 }}>
-                                {purging ? 'CONTACTING CLOUDFLARE...' : 'PURGE GLOBAL EDGE CACHE'}
-                            </button>
-                            {msg && <div className="tag ok" style={{ marginTop: '16px', width: '100%', justifyContent: 'center' }}>{msg}</div>}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        <div className="card glass glow-blue" style={{ margin: 0, padding: '20px' }}>
+                            <h3 style={{ margin: '0 0 15px 0' }}>➕ Add Rule</h3>
+                            <small className="muted">KEYWORD</small>
+                            <input value={matchValue} onChange={e => setMatchValue(e.target.value)} placeholder="Adobe" style={{ marginBottom: '15px' }} />
+                            <small className="muted">CATEGORY</small>
+                            <CategorySelect value={category} onChange={setCategory} />
+                            <button className="btn primary" onClick={() => handleCreateRule()} style={{ width: '100%', marginTop: '15px' }}>SAVE RULE</button>
                         </div>
-
-                        <div className="card glass glow-green" style={{ margin: 0, position: 'relative', padding: '24px' }}>
-                            {restoring && (
-                                <div style={{ position: 'absolute', inset: 0, background: 'rgba(15,26,51,0.8)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10, borderRadius: 'inherit' }}>
-                                    <div style={{ textAlign: 'center' }}>
-                                        <div className="spinner" style={{ borderTopColor: 'var(--ok)' }} />
-                                        <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--ok)', marginTop: '10px' }}>RESTORING MASTER ARCHIVE...</div>
-                                    </div>
-                                </div>
-                            )}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
-                                <div style={{ fontSize: '32px' }}>🛡️</div>
-                                <div>
-                                    <h2 style={{ margin: 0 }}>Studio Restore</h2>
-                                    <div className="muted small">Disaster Recovery Suite</div>
-                                </div>
+                        <div className="card glass" style={{ margin: 0, padding: '20px' }}>
+                            <h3 style={{ margin: '0 0 10px 0' }}>💡 SUGGESTIONS</h3>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                {discoveryVendors.map(([name, count]) => (
+                                    <button key={name} className="pill" style={{ textAlign: 'left', justifyContent: 'space-between', width: '100%' }} onClick={() => setMatchValue(name)}>
+                                        {name} <span style={{ opacity: 0.5 }}>{count}x</span>
+                                    </button>
+                                ))}
                             </div>
-                            <p className="muted" style={{ fontSize: '13px', lineHeight: 1.6, marginBottom: '24px' }}>
-                                Recover your studio's entire history. Upload a Master snapshot (.json) to replace current data with archived records.
-                            </p>
-                            <label className="btn secondary" style={{ width: '100%', padding: '14px', cursor: 'pointer', borderColor: 'rgba(25, 195, 125, 0.4)' }}>
-                                <input type="file" accept=".json" onChange={handleFileUpload} style={{ display: 'none' }} />
-                                📤 UPLOAD & RESTORE STUDIO
-                            </label>
-                        </div>
-                    </div>
-
-                    <div className="card glass glow-blue" style={{ margin: 0, padding: '40px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '30px', flexWrap: 'wrap' }}>
-                            <div style={{ flex: 1, minWidth: '300px' }}>
-                                <h2 style={{ fontSize: '1.8rem', margin: '0 0 10px 0' }}>📦 Master Infrastructure Backup</h2>
-                                <p className="muted" style={{ fontSize: '15px', lineHeight: 1.6 }}>
-                                    Secure your business data. Download a comprehensive snapshot of all transactions, equipment portfolios, and invoice history for cold storage or migration.
-                                </p>
-                            </div>
-                            <a href="/api/admin/export-all" download className="btn primary glow-blue" style={{ minWidth: '280px', padding: '20px 40px', fontSize: '18px', fontWeight: 900 }}>
-                                📥 DOWNLOAD BACKUP
-                            </a>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* ── System Details Footer ── */}
-            <div style={{ marginTop: '40px', padding: '20px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', gap: '20px', fontSize: '11px', fontWeight: 800, letterSpacing: '0.1em' }} className="muted">
-                    <span>BUILD: v3.5.0-ELITE-REACT</span>
-                    <span>ENV: {process.env.NODE_ENV || 'production'}</span>
+            {activeTab === 'infrastructure' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                    <div className="card glass" style={{ margin: 0, padding: '30px' }}>
+                        <h2>Edge Cache Purge</h2>
+                        <p className="muted">Clear Cloudflare edge nodes if data feels stale.</p>
+                        <button className="btn secondary" onClick={handlePurge} style={{ width: '100%', marginTop: '20px' }}>{purging ? 'Purging...' : 'Execute Purge'}</button>
+                        {msg && <div className="tag ok" style={{ marginTop: '10px' }}>{msg}</div>}
+                    </div>
+                    <div className="card glass" style={{ margin: 0, padding: '30px' }}>
+                        <h2>Restore Archive</h2>
+                        <p className="muted">Upload .json snapshot to recover studio state.</p>
+                        <label className="btn secondary" style={{ width: '100%', marginTop: '20px', cursor: 'pointer' }}>
+                            <input type="file" accept=".json" onChange={handleFileUpload} style={{ display: 'none' }} />
+                            {restoring ? 'Restoring...' : 'Upload & Restore'}
+                        </label>
+                    </div>
+                    <div className="card glass glow-blue" style={{ gridColumn: 'span 2', padding: '40px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                                <h2 style={{ fontSize: '1.8rem' }}>Master Infrastructure Backup</h2>
+                                <p className="muted">Download a complete snapshot of all business data.</p>
+                            </div>
+                            <a href="/api/admin/export-all" download className="btn primary" style={{ padding: '20px 40px' }}>DOWNLOAD BACKUP</a>
+                        </div>
+                    </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '11px', fontWeight: 800, letterSpacing: '0.1em' }} className="muted">
-                    API STATUS: <span className={`health-dot ${isHealthy ? 'health-ok' : 'health-bad'}`} />
-                    {isHealthy ? 'SYNCHRONIZED' : 'UNSTABLE CONNECTION'}
-                </div>
-            </div>
-
-            <div className="muted center" style={{ fontSize: '10px', letterSpacing: '0.2em', opacity: 0.3, paddingBottom: '20px' }}>
-                PROTECTING THROUGH THE LENS MEDIA · STUDIO CONTROL v3.5
-            </div>
+            )}
         </section>
     );
 }

@@ -23,6 +23,7 @@ const invoiceRouter = require("./routes/invoices");
 const adminRouter = require("./routes/admin");
 const leadsRouter = require("./routes/leads");
 const pwaRouter = require("./routes/pwa");
+const settingsRouter = require("./routes/settings");
 
 // Initialize Database
 initDb();
@@ -113,6 +114,7 @@ apiRouter.use("/invoices", invoiceRouter);
 apiRouter.use("/admin", adminRouter);
 apiRouter.use("/leads", leadsRouter);
 apiRouter.use("/pwa", pwaRouter);
+apiRouter.use("/settings", settingsRouter);
 
 // Ensure the /api route also handles static receipt serving for consistent URLs
 apiRouter.use("/receipts-static", express.static(RECEIPT_DIR));

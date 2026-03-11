@@ -6,7 +6,7 @@ const router = express.Router();
 
 const ClientSchema = z.object({
     name: z.string().trim().min(1),
-    email: z.string().email().optional().nullable(),
+    email: z.string().optional().nullable(),
     phone: z.string().optional().nullable(),
     address: z.string().optional().nullable(),
     notes: z.string().optional().nullable(),
