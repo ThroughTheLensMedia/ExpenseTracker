@@ -144,42 +144,58 @@ function PipelineView() {
         document.body.removeChild(link);
     };
 
-    return (
-        <>
-            <div className="mobile-break" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px', gap: '20px' }}>
-                <div>
-                    <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 950, letterSpacing: '-0.02em' }}>CRM Console</h1>
-                    <div className="muted" style={{ fontWeight: 600 }}>Through The Lens · Studio Pipeline</div>
+    const pipelineStats = useMemo(() => {
+        const activeLeads = leads.filter(l => !['Paid', 'Lost'].includes(l.status));
+        const potential = activeLeads.reduce((s, l) => s + (l.quoted_value_cents || 0), 0);
+        const bookedCount = leads.filter(l => l.status === 'Booked').length;
+        return { potential, bookedCount };
+    }, [leads]);
 
-                    <div className="glass mobile-only" style={{ marginTop: '16px', padding: '12px', borderRadius: '12px', display: 'flex', gap: '16px', fontSize: '11px', justifyContent: 'space-between' }}>
-                        <div onClick={() => setArchiveTarget('Paid')} style={{ flex: 1 }}>
-                            <span className="muted" style={{ fontSize: '9px', textTransform: 'uppercase' }}>Paid 👁️</span>
-                            <div style={{ color: '#4ade80', fontWeight: 900 }}>{archiveStats.Paid.length} Clients</div>
-                        </div>
-                        <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)' }} />
-                        <div onClick={() => setArchiveTarget('Lost')} style={{ flex: 1, textAlign: 'right' }}>
-                            <span className="muted" style={{ fontSize: '9px', textTransform: 'uppercase' }}>Lost 👁️</span>
-                            <div style={{ color: '#ff4d4d', fontWeight: 900 }}>{archiveStats.Lost.length} Rows</div>
-                        </div>
+    const activeDraftCount = useMemo(() => leads.filter(l => l.status === 'New Lead' || !l.status).length, [leads]);
+
+    return (
+        <section style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Pipeline Dashboard Card */}
+            <div className="card glass glow-blue" style={{ border: 'none', padding: '30px', margin: 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
+                    <div>
+                        <h1 style={{ margin: 0, fontSize: '2rem', fontWeight: 950, letterSpacing: '-0.02em' }}>Executive Pipeline</h1>
+                        <div className="muted" style={{ marginTop: '4px', fontSize: '15px' }}>Through The Lens · Studio Leads & Sales Funnel</div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                        <button className="btn secondary sm" onClick={exportToCSV}>📤 Export CSV</button>
+                        <button className="btn glow-blue" onClick={() => openEditor()} style={{ padding: '10px 24px', fontWeight: 900 }}>+ New Project</button>
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-                    <div className="glass desktop-only" style={{ padding: '8px 16px', borderRadius: '12px', display: 'flex', gap: '20px', fontSize: '12px' }}>
-                        <div onClick={() => setArchiveTarget('Paid')} style={{ display: 'flex', flexDirection: 'column', cursor: 'pointer' }}>
-                            <span className="muted" style={{ fontSize: '10px', textTransform: 'uppercase' }}>Success (Paid) 👁️</span>
-                            <span style={{ color: '#4ade80', fontWeight: 900 }}>{archiveStats.Paid.length} Clients</span>
-                        </div>
-                        <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)' }} />
-                        <div onClick={() => setArchiveTarget('Lost')} style={{ display: 'flex', flexDirection: 'column', cursor: 'pointer' }}>
-                            <span className="muted" style={{ fontSize: '10px', textTransform: 'uppercase' }}>Lost Archive 👁️</span>
-                            <span style={{ color: '#ff4d4d', fontWeight: 900 }}>{archiveStats.Lost.length} Rows</span>
-                        </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginTop: '30px' }}>
+                    <div className="stat glass" style={{ borderTop: '4px solid #38bdf8' }}>
+                        <div className="muted small" style={{ fontWeight: 800 }}>PIPELINE VALUE</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 950, color: '#38bdf8', marginTop: '8px' }}>{formatMoney(pipelineStats.potential)}</div>
                     </div>
-                    <button className="btn" onClick={exportToCSV} style={{ padding: '10px 16px', fontSize: '12px' }}>📤 Export</button>
-                    <button className="btn glow-blue" onClick={() => openEditor()} style={{ padding: '10px 20px', fontWeight: 900 }}>+ New Lead</button>
+                    <div className="stat glass" style={{ borderTop: '4px solid #a8b6dd' }}>
+                        <div className="muted small" style={{ fontWeight: 800 }}>NEW INTEREST</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 950, marginTop: '8px' }}>{activeDraftCount} Leads</div>
+                    </div>
+                    <div className="stat glass" style={{ borderTop: '4px solid #fbbf24' }}>
+                        <div className="muted small" style={{ fontWeight: 800 }}>BOOKED RATIO</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 950, color: '#fbbf24', marginTop: '8px' }}>{pipelineStats.bookedCount} Projects</div>
+                    </div>
+                    <div className="stat glass" style={{ borderTop: '4px solid #4ade80', cursor: 'pointer' }} onClick={() => setArchiveTarget('Paid')}>
+                        <div className="muted small" style={{ fontWeight: 800 }}>CONVERTED / PAID 👁️</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 950, color: '#4ade80', marginTop: '8px' }}>{archiveStats.Paid.length} Clients</div>
+                    </div>
                 </div>
             </div>
+
+            {/* Archive Notification Bar (Subtle) */}
+            {archiveStats.Lost.length > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                    <div onClick={() => setArchiveTarget('Lost')} className="tag" style={{ cursor: 'pointer', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,100,100,0.2)', color: 'rgba(255,255,255,0.5)', fontSize: '10px' }}>
+                        VIEW LOST ARCHIVE ({archiveStats.Lost.length})
+                    </div>
+                </div>
+            )}
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', minHeight: '65vh' }}>
                 {ACTIVE_COLUMNS.map(col => {

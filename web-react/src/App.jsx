@@ -57,7 +57,6 @@ function App() {
             <NavLink to="/tax" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Tax</NavLink>
             <NavLink to="/equipment" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Equipment</NavLink>
             <NavLink to="/crm" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>CRM</NavLink>
-            <NavLink to="/crm/invoices" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Invoices</NavLink>
             <NavLink to="/backup" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>SCC Console</NavLink>
           </div>
         </header>
