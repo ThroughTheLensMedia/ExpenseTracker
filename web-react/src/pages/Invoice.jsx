@@ -418,9 +418,10 @@ export default function Invoice() {
                 tax_deductible: true,
                 tax_bucket: 'Gross Receipts'
             });
-            alert("Income synced to ledger!");
+            setStatusMsg({ type: 'ok', text: "Income synced to ledger!" });
         } catch (err) {
             console.error("Sync failed", err);
+            setStatusMsg({ type: 'bad', text: "Sync failed. Check console." });
         }
     };
 
@@ -428,9 +429,9 @@ export default function Invoice() {
         try {
             await apiPatch(`/invoices/${invoice.id}`, { status: 'sent' });
             load();
-            alert(`Invoice #${invoice.invoice_number} dispatched to client successfully!`);
+            setStatusMsg({ type: 'ok', text: `Invoice #${invoice.invoice_number} dispatched to client successfully!` });
         } catch (err) {
-            alert(err.message);
+            setStatusMsg({ type: 'bad', text: err.message });
         }
     };
 
@@ -438,8 +439,20 @@ export default function Invoice() {
         try {
             await apiPatch(`/invoices/${id}`, { status: 'paid' });
             load();
+            setStatusMsg({ type: 'ok', text: "Invoice marked as Paid!" });
         } catch (err) {
-            alert(err.message);
+            setStatusMsg({ type: 'bad', text: err.message });
+        }
+    };
+
+    const handleDeleteInvoice = async (id) => {
+        if (!confirm("Are you sure you want to permanently delete this invoice?")) return;
+        try {
+            await apiDelete(`/invoices/${id}`);
+            load();
+            setStatusMsg({ type: 'ok', text: "Invoice deleted successfully." });
+        } catch (err) {
+            setStatusMsg({ type: 'bad', text: err.message });
         }
     };
 
@@ -495,6 +508,11 @@ export default function Invoice() {
             </div>
 
             <div className="card glass" style={{ padding: '24px', margin: 0 }}>
+                {statusMsg && !isCreatorOpen && (
+                    <div className={`tag ${statusMsg.type === 'ok' ? 'ok' : 'bad'}`} style={{ marginBottom: '16px', justifyContent: 'center', width: '100%', padding: '12px' }}>
+                        {statusMsg.text}
+                    </div>
+                )}
                 {view === 'invoices' ? (
                     <div className="tableWrap">
                         <table style={{ width: '100%' }}>
@@ -536,11 +554,12 @@ export default function Invoice() {
                                                         </>
                                                     )}
                                                     {inv.status === 'sent' && (
-                                                        <button className="btn sm primary" onClick={() => apiPatch(`/invoices/${inv.id}`, { status: 'paid' }).then(load)}>Mark Paid</button>
+                                                        <button className="btn sm primary" onClick={() => handleMarkPaid(inv.id)}>Mark Paid</button>
                                                     )}
                                                     {inv.status === 'paid' && (
                                                         <button className="btn sm glow-blue" onClick={() => handleSyncToExpenses(inv)}>Sync Ledger</button>
                                                     )}
+                                                    <button className="btn sm sm-icon" onClick={() => handleDeleteInvoice(inv.id)} style={{ padding: '0 8px', color: '#ff4d4d' }}>✕</button>
                                                 </div>
                                             </td>
                                         </tr>
