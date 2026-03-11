@@ -32,7 +32,8 @@ export default function Backup() {
         website: '',
         email: '',
         phone: '',
-        address: ''
+        address: '',
+        default_terms: ''
     });
 
     const loadData = async (silent = false) => {
@@ -270,6 +271,11 @@ export default function Backup() {
                             <div style={{ gridColumn: 'span 2' }}>
                                 <small className="muted" style={{ fontWeight: 900 }}>OFFICE ADDRESS</small>
                                 <textarea value={settings.address || ''} onChange={e => setSettings({ ...settings, address: e.target.value })} placeholder="Studio Address..." style={{ marginTop: '8px', padding: '15px', minHeight: '80px' }} />
+                            </div>
+                            <div style={{ gridColumn: 'span 2' }}>
+                                <small className="muted" style={{ fontWeight: 900 }}>STANDARD INVOICE TERMS & SIGNATURE</small>
+                                <textarea value={settings.default_terms || ''} onChange={e => setSettings({ ...settings, default_terms: e.target.value })} placeholder="Default payment terms, signature, social links, etc." style={{ marginTop: '8px', padding: '15px', minHeight: '120px' }} />
+                                <div className="muted small" style={{ marginTop: '8px' }}>This text will automatically populate the 'Notes' field on all new invoices.</div>
                             </div>
                             <div style={{ gridColumn: 'span 2', display: 'flex', gap: '20px', alignItems: 'center', marginTop: '10px' }}>
                                 <button type="submit" className="btn primary glow-blue" style={{ padding: '15px 45px', fontSize: '16px' }}>Save Global Identity</button>

@@ -197,6 +197,7 @@ export default function Invoice() {
         items: [{ description: '', quantity: 1, unit_price: '' }],
         tax_percent: 0,
         discount: 0,
+        leadId: '',
         notes: ''
     });
 
@@ -215,7 +216,7 @@ export default function Invoice() {
             const settingsData = st || {};
             setSettings(settingsData);
 
-            const signature = `Payment is due within 15 days. Thank you for choosing ${settingsData.business_name || 'Through The Lens Media'}!\n\n${settingsData.contact_name || ''}\n${settingsData.website || ''}\n${settingsData.phone || ''}`;
+            const signature = settingsData.default_terms || `Payment is due within 15 days. Thank you for choosing ${settingsData.business_name || 'Through The Lens Media'}!\n\n${settingsData.contact_name || ''}\n${settingsData.website || ''}\n${settingsData.phone || ''}`;
 
             // Set default notes if empty and auto-increment invoice number
             setFormData(prev => ({
@@ -259,6 +260,7 @@ export default function Invoice() {
 
             setFormData(prev => ({
                 ...prev,
+                leadId: lead.id || '',
                 clientId: existingClient ? existingClient.id : '',
                 clientName: lead.name || '',
                 clientEmail: lead.email || '',
@@ -283,6 +285,7 @@ export default function Invoice() {
 
             const payload = {
                 client_id: finalClientId,
+                lead_id: formData.leadId || null,
                 invoice_number: formData.number,
                 issue_date: formData.date,
                 due_date: formData.dueDate || null,

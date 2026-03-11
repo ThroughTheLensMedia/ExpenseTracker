@@ -27,6 +27,7 @@ const InvoiceSchema = z.object({
     notes: z.string().optional().nullable(),
     tax_percent: z.number().min(0).max(100).default(0),
     discount_cents: z.number().int().default(0),
+    lead_id: z.coerce.number().int().optional().nullable(),
     items: z.array(InvoiceItemSchema).min(1),
 });
 
