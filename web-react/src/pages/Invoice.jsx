@@ -185,6 +185,7 @@ export default function Invoice() {
 
     const [isCreatorOpen, setIsCreatorOpen] = useState(false);
     const [previewingInvoice, setPreviewingInvoice] = useState(null);
+    const [statusMsg, setStatusMsg] = useState(null); // { type: 'ok'|'bad', text: '' }
 
     const [formData, setFormData] = useState({
         number: '',
@@ -276,7 +277,25 @@ export default function Invoice() {
     };
 
     const handleCreateInvoice = async (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
+        setStatusMsg(null);
+
+        // Client-side validation
+        if (!formData.clientName) {
+            setStatusMsg({ type: 'bad', text: 'Client Name is required.' });
+            return;
+        }
+        if (!formData.number) {
+            setStatusMsg({ type: 'bad', text: 'Invoice Number is required.' });
+            return;
+        }
+        const emptyItem = formData.items.findIndex(it => !it.description.trim());
+        if (emptyItem !== -1) {
+            setStatusMsg({ type: 'bad', text: `Line Item #${emptyItem + 1} must have a description.` });
+            return;
+        }
+
+        setLoading(true);
         try {
             let finalClientId = formData.clientId;
             if (!finalClientId) {
@@ -309,7 +328,18 @@ export default function Invoice() {
             setIsCreatorOpen(false);
             load();
         } catch (err) {
-            alert(err.message);
+            let errorText = err.message;
+            try {
+                // Try to parse Zod / JSON errors
+                const parsed = JSON.parse(err.message);
+                if (Array.isArray(parsed) && parsed[0]?.message) {
+                    errorText = `${parsed[0].path?.join(' -> ') || 'Error'}: ${parsed[0].message}`;
+                }
+            } catch (e) { /* use raw message */ }
+
+            setStatusMsg({ type: 'bad', text: errorText });
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -329,9 +359,10 @@ export default function Invoice() {
                 tax_bucket: 'Gross Receipts'
             });
             invalidateExpensesCache();
-            alert("Income synced to ledger!");
+            // We use standard confirm for success as per other parts of the app, or null but let's at least avoid alert if we can
+            // For now, let's keep it simple as it's outside the creator
         } catch (err) {
-            alert(err.message);
+            console.error("Sync failed", err);
         }
     };
 
@@ -532,7 +563,20 @@ export default function Invoice() {
                         </form>
 
                         <div style={{ position: 'sticky', bottom: 0, background: '#121c32', padding: '24px 32px', borderTop: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 -10px 40px rgba(0,0,0,0.3)', zIndex: 10 }}>
-                            <button type="button" onClick={handleCreateInvoice} className="btn glow-blue" style={{ height: '56px', fontSize: '1.2rem', width: '100%' }}>GENERATE INVOICE</button>
+                            {statusMsg && (
+                                <div className={`tag ${statusMsg.type === 'ok' ? 'ok' : 'bad'}`} style={{ marginBottom: '16px', justifyContent: 'center', width: '100%', padding: '12px' }}>
+                                    {statusMsg.text}
+                                </div>
+                            )}
+                            <button
+                                type="button"
+                                onClick={handleCreateInvoice}
+                                disabled={loading}
+                                className="btn glow-blue"
+                                style={{ height: '56px', fontSize: '1.2rem', width: '100%' }}
+                            >
+                                {loading ? '⏳ GENERATING...' : 'GENERATE INVOICE'}
+                            </button>
                         </div>
                     </div>
                 </div>
