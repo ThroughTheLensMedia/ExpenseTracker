@@ -5,21 +5,27 @@ import {
     CategoryScale,
     LinearScale,
     BarElement,
+    PointElement,
+    LineElement,
     Title,
     Tooltip,
     Legend,
     ArcElement,
+    Filler
 } from 'chart.js';
-import { Bar, Doughnut } from 'react-chartjs-2';
+import { Bar, Doughnut, Line } from 'react-chartjs-2';
 
 ChartJS.register(
     CategoryScale,
     LinearScale,
     BarElement,
+    PointElement,
+    LineElement,
     ArcElement,
     Title,
     Tooltip,
-    Legend
+    Legend,
+    Filler
 );
 
 export default function Dashboard({ apiStatus }) {
@@ -89,6 +95,112 @@ export default function Dashboard({ apiStatus }) {
         return { income, spend, net: income - spend, missing, topCats: [...byCat.entries()].sort((a, b) => b[1].cents - a[1].cents).slice(0, 10), monthlyData };
     }, [filtered]);
 
+    // Trendline & Projection Calculation
+    const trendStats = useMemo(() => {
+        if (!expenses.length) return null;
+
+        const monthlyMap = new Map();
+        for (const r of expenses) {
+            if (!r.expense_date) continue;
+            const monthKey = String(r.expense_date).slice(0, 7);
+            const cents = Number(r.amount_cents || 0);
+
+            if (!monthlyMap.has(monthKey)) monthlyMap.set(monthKey, { income: 0, spend: 0, net: 0, month: monthKey });
+
+            const st = monthlyMap.get(monthKey);
+            if (cents < 0) st.income += Math.abs(cents); else st.spend += cents;
+            st.net = st.income - st.spend;
+        }
+
+        const sortedMonths = [...monthlyMap.keys()].sort();
+        if (sortedMonths.length === 0) return null;
+
+        const last6 = sortedMonths.slice(-6);
+        const dataActual = last6.map(m => monthlyMap.get(m));
+
+        // Naive Projection based on 3-month rolling average
+        const projBase = dataActual.slice(-3);
+        const avgIncome = projBase.reduce((s, d) => s + d.income, 0) / (projBase.length || 1);
+        const avgSpend = projBase.reduce((s, d) => s + d.spend, 0) / (projBase.length || 1);
+        const avgNet = avgIncome - avgSpend;
+
+        let lastMonthStr = last6[last6.length - 1];
+        let [ly, lm] = lastMonthStr.split('-').map(Number);
+        const projected = [];
+        for (let i = 0; i < 3; i++) {
+            lm++;
+            if (lm > 12) { lm = 1; ly++; }
+            const nextM = `${ly}-${String(lm).padStart(2, '0')}`;
+            projected.push({ month: nextM, income: avgIncome, spend: avgSpend, net: avgNet });
+        }
+
+        return { actual: dataActual, projected };
+    }, [expenses]);
+
+    // YoY and MoM Variance Calculation
+    const variances = useMemo(() => {
+        if (!expenses.length) return { yoyIncome: 0, yoySpend: 0, momIncome: 0, momSpend: 0 };
+
+        const py = selectedYear - 1;
+        let pyInc = 0, pySpnd = 0;
+        let maxStr = '0000-00';
+
+        for (let r of expenses) {
+            if (!r.expense_date) continue;
+            const ym = r.expense_date.slice(0, 7);
+            if (ym > maxStr) maxStr = ym;
+
+            if (r.expense_date.startsWith(String(py))) {
+                const c = Number(r.amount_cents || 0);
+                if (c < 0) pyInc += Math.abs(c); else pySpnd += c;
+            }
+        }
+
+        let cmInc = 0, cmSpnd = 0;
+        let pmInc = 0, pmSpnd = 0;
+        let [ly, lm] = maxStr.split('-').map(Number);
+
+        if (!isNaN(ly) && !isNaN(lm)) {
+            let prevLm = lm - 1;
+            let prevLy = ly;
+            if (prevLm === 0) { prevLm = 12; prevLy--; }
+            const prevMStr = `${prevLy}-${String(prevLm).padStart(2, '0')}`;
+
+            for (let r of expenses) {
+                if (!r.expense_date) continue;
+                const ym = r.expense_date.slice(0, 7);
+                const c = Number(r.amount_cents || 0);
+                if (ym === maxStr) {
+                    if (c < 0) cmInc += Math.abs(c); else cmSpnd += c;
+                } else if (ym === prevMStr) {
+                    if (c < 0) pmInc += Math.abs(c); else pmSpnd += c;
+                }
+            }
+        }
+
+        const calc = (cur, prv) => prv ? (((cur - prv) / prv) * 100).toFixed(1) : 0;
+
+        return {
+            yoyIncome: calc(stats.income, pyInc),
+            yoySpend: calc(stats.spend, pySpnd),
+            yoyNet: calc(stats.net, pyInc - pySpnd),
+            momIncome: calc(cmInc, pmInc),
+            momSpend: calc(cmSpnd, pmSpnd)
+        };
+    }, [expenses, selectedYear, stats]);
+
+    const renderVariance = (val, type, label) => {
+        const num = Number(val);
+        if (!num) return null;
+        const isGood = type === 'income' ? num > 0 : num < 0;
+        const color = isGood ? '#4ade80' : '#ff4d4d';
+        return (
+            <span style={{ fontSize: '10px', fontWeight: 900, color, marginLeft: '8px', background: `${color}15`, padding: '2px 6px', borderRadius: '4px' }}>
+                {label} {num > 0 ? '+' : ''}{num}%
+            </span>
+        );
+    };
+
     const profitMargin = stats.income > 0 ? ((stats.net / stats.income) * 100).toFixed(1) : 0;
     const avgBurn = stats.spend / 12;
 
@@ -99,6 +211,47 @@ export default function Dashboard({ apiStatus }) {
             { label: 'COGS & Opex', data: stats.monthlyData.map(d => d.expense / 100), backgroundColor: 'rgba(255, 77, 77, 0.8)', borderRadius: 4, barPercentage: 0.6 }
         ],
     };
+
+    const trendChartData = useMemo(() => {
+        if (!trendStats) return null;
+        const labels = [...trendStats.actual.map(d => d.month), ...trendStats.projected.map(d => '*' + d.month)];
+
+        const actualNet = trendStats.actual.map(d => d.net / 100);
+        const lastActualIdx = trendStats.actual.length - 1;
+        const projNet = Array(labels.length).fill(null);
+
+        if (lastActualIdx >= 0) projNet[lastActualIdx] = actualNet[lastActualIdx];
+        trendStats.projected.forEach((d, i) => projNet[lastActualIdx + 1 + i] = d.net / 100);
+
+        return {
+            labels,
+            datasets: [
+                {
+                    label: 'Actual Net Income',
+                    data: actualNet,
+                    borderColor: '#2f6bff',
+                    backgroundColor: 'rgba(47, 107, 255, 0.15)',
+                    fill: true,
+                    tension: 0.4,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#2f6bff',
+                    pointRadius: 4,
+                },
+                {
+                    label: 'Projected Net Income (+3 Mo)',
+                    data: projNet,
+                    borderColor: '#f7b955',
+                    borderDash: [6, 6],
+                    fill: false,
+                    tension: 0.4,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#f7b955',
+                    pointRadius: 5,
+                    pointStyle: 'rectRot'
+                }
+            ]
+        };
+    }, [trendStats]);
 
     // Expanded color palette for Top 10 categories
     const chartColors = ['#2f6bff', '#4ade80', '#f7b955', '#ff4d4d', '#9333ea', '#06b6d4', '#ec4899', '#f97316', '#8b5cf6', '#14b8a6'];
@@ -131,15 +284,26 @@ export default function Dashboard({ apiStatus }) {
             {/* ── Key Performance Indicators (KPIs) ── */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
                 <div className="card glass" style={{ margin: 0, padding: '24px', borderTop: '3px solid #4ade80', borderRadius: '16px' }}>
-                    <div className="muted small" style={{ fontWeight: 800, letterSpacing: '0.05em', fontSize: '10px' }}>GROSS REVENUE</div>
+                    <div className="muted small" style={{ fontWeight: 800, letterSpacing: '0.05em', fontSize: '10px' }}>
+                        GROSS REVENUE
+                        {renderVariance(variances.yoyIncome, 'income', 'YoY')}
+                        {renderVariance(variances.momIncome, 'income', 'MoM')}
+                    </div>
                     <div style={{ fontSize: '2rem', fontWeight: 900, color: '#4ade80', marginTop: '4px' }}>{formatMoney(stats.income)}</div>
                 </div>
                 <div className="card glass" style={{ margin: 0, padding: '24px', borderTop: '3px solid #ff4d4d', borderRadius: '16px' }}>
-                    <div className="muted small" style={{ fontWeight: 800, letterSpacing: '0.05em', fontSize: '10px' }}>OPERATING EXPENSES</div>
+                    <div className="muted small" style={{ fontWeight: 800, letterSpacing: '0.05em', fontSize: '10px' }}>
+                        OPERATING EXPENSES
+                        {renderVariance(variances.yoySpend, 'spend', 'YoY')}
+                        {renderVariance(variances.momSpend, 'spend', 'MoM')}
+                    </div>
                     <div style={{ fontSize: '2rem', fontWeight: 900, color: '#ff4d4d', marginTop: '4px' }}>{formatMoney(stats.spend)}</div>
                 </div>
                 <div className="card glass" style={{ margin: 0, padding: '24px', borderTop: '3px solid #2f6bff', borderRadius: '16px', background: 'linear-gradient(180deg, rgba(47, 107, 255, 0.05), transparent)' }}>
-                    <div className="muted small" style={{ fontWeight: 800, letterSpacing: '0.05em', fontSize: '10px' }}>NET INCOME (EBITDA)</div>
+                    <div className="muted small" style={{ fontWeight: 800, letterSpacing: '0.05em', fontSize: '10px' }}>
+                        NET INCOME (EBITDA)
+                        {renderVariance(variances.yoyNet, 'income', 'YoY')}
+                    </div>
                     <div style={{ fontSize: '2rem', fontWeight: 900, color: stats.net >= 0 ? '#fff' : '#ff4d4d', marginTop: '4px' }}>{formatMoney(stats.net)}</div>
                 </div>
                 <div className="card glass" style={{ margin: 0, padding: '24px', borderTop: '3px solid #f7b955', borderRadius: '16px' }}>
@@ -155,28 +319,56 @@ export default function Dashboard({ apiStatus }) {
             {/* ── Advanced Analytics Charts ── */}
             <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', gap: '20px', alignItems: 'start' }}>
 
-                {/* Cash Flow Velocity Chart */}
-                <div className="card glass" style={{ margin: 0, padding: '24px', height: '620px', display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                        <div>
-                            <h2 style={{ fontSize: '1.2rem', margin: 0 }}>Cash Flow Velocity</h2>
-                            <div className="muted" style={{ fontSize: '11px', marginTop: '4px' }}>MoM Revenue vs COGS Analysis</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    {/* Cash Flow Velocity Chart */}
+                    <div className="card glass" style={{ margin: 0, padding: '24px', height: '420px', display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                            <div>
+                                <h2 style={{ fontSize: '1.2rem', margin: 0 }}>Cash Flow Velocity</h2>
+                                <div className="muted" style={{ fontSize: '11px', marginTop: '4px' }}>MoM Revenue vs COGS Analysis</div>
+                            </div>
+                        </div>
+                        <div style={{ flex: 1, position: 'relative', minHeight: '0' }}>
+                            <Bar data={barChartData} options={{
+                                responsive: true, maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { position: 'top', align: 'end', labels: { color: '#a8b6dd', font: { size: 11, weight: 'bold' }, boxWidth: 12, usePointStyle: true } },
+                                    tooltip: { mode: 'index', intersect: false, backgroundColor: 'rgba(15,26,51,0.95)', titleColor: '#fff', bodyColor: '#a8b6dd', bodyFont: { size: 13, weight: 'bold' }, borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, padding: 12, cornerRadius: 8 }
+                                },
+                                scales: {
+                                    x: { grid: { display: false }, ticks: { color: '#a8b6dd', font: { size: 11 } } },
+                                    y: { grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false }, ticks: { color: '#a8b6dd', font: { size: 11 }, callback: v => '$' + (v >= 1000 ? (v / 1000) + 'k' : v) } }
+                                },
+                                interaction: { mode: 'nearest', axis: 'x', intersect: false }
+                            }} />
                         </div>
                     </div>
-                    <div style={{ flex: 1, position: 'relative', minHeight: '0' }}>
-                        <Bar data={barChartData} options={{
-                            responsive: true, maintainAspectRatio: false,
-                            plugins: {
-                                legend: { position: 'top', align: 'end', labels: { color: '#a8b6dd', font: { size: 11, weight: 'bold' }, boxWidth: 12, usePointStyle: true } },
-                                tooltip: { mode: 'index', intersect: false, backgroundColor: 'rgba(15,26,51,0.95)', titleColor: '#fff', bodyColor: '#a8b6dd', bodyFont: { size: 13, weight: 'bold' }, borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, padding: 12, cornerRadius: 8 }
-                            },
-                            scales: {
-                                x: { grid: { display: false }, ticks: { color: '#a8b6dd', font: { size: 11 } } },
-                                y: { grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false }, ticks: { color: '#a8b6dd', font: { size: 11 }, callback: v => '$' + (v >= 1000 ? (v / 1000) + 'k' : v) } }
-                            },
-                            interaction: { mode: 'nearest', axis: 'x', intersect: false }
-                        }} />
-                    </div>
+
+                    {/* Financial Projections Chart */}
+                    {trendChartData && (
+                        <div className="card glass glow-green" style={{ margin: 0, padding: '24px', height: '380px', display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                <div>
+                                    <h2 style={{ fontSize: '1.2rem', margin: 0, color: '#f7b955' }}>Trajectory & Machine Projections</h2>
+                                    <div className="muted" style={{ fontSize: '11px', marginTop: '4px' }}>6-Month Actuals vs 3-Month Algorithmic Forecast</div>
+                                </div>
+                            </div>
+                            <div style={{ flex: 1, position: 'relative', minHeight: '0' }}>
+                                <Line data={trendChartData} options={{
+                                    responsive: true, maintainAspectRatio: false,
+                                    plugins: {
+                                        legend: { position: 'top', align: 'end', labels: { color: '#a8b6dd', font: { size: 11, weight: 'bold' }, boxWidth: 12, usePointStyle: true } },
+                                        tooltip: { mode: 'index', intersect: false, backgroundColor: 'rgba(15,26,51,0.95)', titleColor: '#fff', bodyColor: '#a8b6dd', bodyFont: { size: 13, weight: 'bold' }, borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, padding: 12, cornerRadius: 8 }
+                                    },
+                                    scales: {
+                                        x: { grid: { display: false }, ticks: { color: '#a8b6dd', font: { size: 11 } } },
+                                        y: { grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false }, ticks: { color: '#a8b6dd', font: { size: 11 }, callback: v => '$' + (v >= 1000 ? (v / 1000) + 'k' : v) } }
+                                    },
+                                    interaction: { mode: 'nearest', axis: 'x', intersect: false }
+                                }} />
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Capital Allocation & Intelligence Sidebar */}
