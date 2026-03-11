@@ -23,13 +23,11 @@ export default function Backup() {
 
     // --- Automation States ---
     const [rules, setRules] = useState([]);
-    const [matchColumn, setMatchColumn] = useState('vendor');
     const [matchValue, setMatchValue] = useState('');
     const [category, setCategory] = useState('');
     const [ruleStatus, setRuleStatus] = useState({});
     const [applying, setApplying] = useState(false);
     const [applyMsg, setApplyMsg] = useState('');
-    const [progress, setProgress] = useState(0);
 
     // --- Infrastructure States ---
     const [purging, setPurging] = useState(false);
@@ -49,40 +47,31 @@ export default function Backup() {
     const loadData = async (silent = false) => {
         if (!silent) setLoading(true);
         try {
-            const results = await Promise.allSettled([
-                fetchAllExpenses(),
-                apiGet('/assets'),
-                apiGet('/invoices'),
-                apiGet('/leads'),
-                apiGet('/rules'),
-                apiGet('/health'),
-                apiGet('/settings')
+            const [exps, eq, inv, lds, rls, hlth, st] = await Promise.all([
+                fetchAllExpenses().catch(() => []),
+                apiGet('/assets').catch(() => []),
+                apiGet('/invoices').catch(() => []),
+                apiGet('/leads').catch(() => ({ leads: [] })),
+                apiGet('/rules').catch(() => ({ rules: [] })),
+                apiGet('/health').catch(() => ({ ok: false })),
+                apiGet('/settings').catch(() => ({}))
             ]);
 
-            const exps = results[0].status === 'fulfilled' ? results[0].value : [];
-            const eq = results[1].status === 'fulfilled' ? results[1].value : [];
-            const inv = results[2].status === 'fulfilled' ? results[2].value : [];
-            const leadsRes = results[3].status === 'fulfilled' ? results[3].value : { leads: [] };
-            const rulesData = results[4].status === 'fulfilled' ? results[4].value : { rules: [] };
-            const health = results[5].status === 'fulfilled' ? results[5].value : { ok: false };
-            const profile = results[6].status === 'fulfilled' ? results[6].value : {};
+            setAllExpenses(exps);
+            setRules(rls.rules || []);
+            setIsHealthy(hlth.ok);
+            setStorageType(hlth.storage || 'unknown');
+            setSettings(st || {});
 
-            const leads = leadsRes.leads || [];
-            const activeLeads = leads.filter(l => l.status !== 'Lost');
-
-            setAllExpenses(exps || []);
-            setRules(rulesData.rules || []);
-            setIsHealthy(health.ok);
-            setStorageType(health.storage || 'unknown');
-            setSettings(profile || {});
+            const activeLeads = (lds.leads || []).filter(l => l.status !== 'Lost');
             setStats({
-                expenses: (exps || []).length,
-                equipment: (eq || []).length,
-                invoices: (inv || []).length,
+                expenses: exps.length,
+                equipment: eq.length,
+                invoices: inv.length,
                 clients: activeLeads.length
             });
         } catch (e) {
-            console.error("Data load failed critically", e);
+            console.error("Master load failed", e);
         } finally {
             if (!silent) setLoading(false);
         }
@@ -103,7 +92,7 @@ export default function Backup() {
                 return !hasRule && count >= 2;
             })
             .sort((a, b) => b[1] - a[1])
-            .slice(0, 12);
+            .slice(0, 10);
     }, [allExpenses, rules]);
 
     const handleCreateRule = async (customPayload = null) => {
@@ -143,7 +132,7 @@ export default function Backup() {
         setRuleStatus(prev => ({ ...prev, [id]: { ...prev[id], applying: true } }));
         try {
             const res = await apiPost(`/rules/${id}/apply`);
-            setRuleStatus(prev => ({ ...prev, [id]: { ...prev[id], applying: false, applyMsg: `Done! ${res.count} updated.` } }));
+            setRuleStatus(prev => ({ ...prev, [id]: { ...prev[id], applying: false, applyMsg: `Fixed ${res.count} items` } }));
             loadData(true);
         } catch (err) {
             setRuleStatus(prev => ({ ...prev, [id]: { ...prev[id], applying: false } }));
@@ -153,14 +142,12 @@ export default function Backup() {
 
     const handleApplyRules = async () => {
         setApplying(true);
-        setApplyMsg("Calculating scope...");
-        setProgress(5);
+        setApplyMsg("Scanning engine...");
         try {
             const res = await apiPost('/rules/apply-all');
-            setApplyMsg(`Success! ${res.updatedCount} transactions categorized.`);
-            setProgress(100);
+            setApplyMsg(`Success! Built ${res.updatedCount} connections.`);
             loadData(true);
-            setTimeout(() => { setApplying(false); setApplyMsg(''); setProgress(0); }, 3000);
+            setTimeout(() => { setApplying(false); setApplyMsg(''); }, 3000);
         } catch (err) { alert(err.message); setApplying(false); }
     };
 
@@ -168,7 +155,16 @@ export default function Backup() {
         e.preventDefault();
         setMsg("Saving profile...");
         try {
-            await apiPost('/settings', settings);
+            // Basic validation to prevent null crashes
+            const cleanSettings = {
+                business_name: settings.business_name || '',
+                contact_name: settings.contact_name || '',
+                website: settings.website || '',
+                email: settings.email || '',
+                phone: settings.phone || '',
+                address: settings.address || ''
+            };
+            await apiPost('/settings', cleanSettings);
             setMsg("Profile saved successfully!");
             setTimeout(() => setMsg(''), 3000);
             loadData(true);
@@ -185,46 +181,15 @@ export default function Backup() {
         } catch (err) { alert(err.message); } finally { setPurging(false); }
     };
 
-    const handleFileUpload = async (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-        setRestoring(true);
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            try {
-                const data = JSON.parse(e.target.result);
-                await apiPost('/admin/import-all', data);
-                alert("Studio context restored successfully!");
-                loadData();
-            } catch (err) { alert("Import failed: " + err.message); } finally { setRestoring(false); }
-        };
-        reader.readAsText(file);
-    };
-
     if (loading && !allExpenses.length) return <div style={{ padding: '60px', textAlign: 'center' }}><div className="spinner" /></div>;
 
     return (
-        <section className="dashboard" style={{ maxWidth: '1400px', margin: '0 auto' }}>
+        <section className="dashboard" style={{ maxWidth: '1400px', margin: '0 auto', paddingBottom: '100px' }}>
             {/* Header Block */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '40px', gap: '20px', flexWrap: 'wrap' }}>
                 <div>
-                    <h1 style={{ margin: 0, fontSize: '2.4rem', fontWeight: 950, letterSpacing: '-0.02em' }}>Studio Control Center</h1>
+                    <h1 style={{ margin: 0, fontSize: '2.4rem', fontWeight: 950, letterSpacing: '-0.02em', color: 'var(--accent)' }}>Studio Control Center</h1>
                     <div className="muted" style={{ fontWeight: 600, fontSize: '15px' }}>Infrastructure Management & Intelligence Engine</div>
-
-                    <div style={{ marginTop: '20px', display: 'flex', gap: '12px' }}>
-                        <div className="muted small">
-                            Status: <span className={`health-dot ${isHealthy ? 'health-ok' : 'health-bad'}`} /> {isHealthy ? 'Operational' : 'API Connection Issues'}
-                        </div>
-                        <span className="tag" style={{
-                            fontSize: '10px',
-                            background: storageType === 'supabase' ? 'rgba(74, 222, 128, 0.1)' : 'rgba(255, 191, 36, 0.1)',
-                            color: storageType === 'supabase' ? '#4ade80' : '#fbbf24',
-                            border: `1px solid ${storageType === 'supabase' ? 'rgba(74, 222, 128, 0.3)' : 'rgba(255, 191, 36, 0.3)'}`,
-                            fontWeight: 900
-                        }}>
-                            {storageType === 'supabase' ? '🛡️ CLOUD SECURE' : '⚠️ LOCAL EPHEMERAL'}
-                        </span>
-                    </div>
                 </div>
 
                 <nav style={{ display: 'flex', gap: '10px' }}>
@@ -234,11 +199,15 @@ export default function Backup() {
                 </nav>
             </div>
 
-            {/* Live System Health Bar */}
+            {/* System Health Stats */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px', marginBottom: '40px' }}>
                 <div className="card glass" style={{ margin: 0, borderTop: '4px solid var(--accent)', padding: '24px' }}>
                     <div className="muted small" style={{ fontWeight: 800 }}>LIVE TRANSACTIONS</div>
                     <div style={{ fontSize: '2.5rem', fontWeight: 900, marginTop: '8px' }}>{stats.expenses.toLocaleString()}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '12px' }}>
+                        <span className={`health-dot ${isHealthy ? 'health-ok' : 'health-bad'}`} />
+                        <span className="muted small" style={{ fontWeight: 900 }}>{isHealthy ? 'SYNCHRONIZED' : 'CONNECTION LAG'}</span>
+                    </div>
                 </div>
                 <div className="card glass" style={{ margin: 0, borderTop: '4px solid #38bdf8', padding: '24px' }}>
                     <div className="muted small" style={{ fontWeight: 800 }}>GEAR ASSETS</div>
@@ -254,12 +223,14 @@ export default function Backup() {
                 </div>
             </div>
 
-            {/* TAB CONTENT */}
+            {/* TAB CONTENT: BUSINESS PROFILE */}
             {activeTab === 'profile' && (
                 <div className="card glass glow-blue" style={{ border: 'none', padding: '40px', margin: 0 }}>
-                    <div style={{ maxWidth: '800px' }}>
+                    <div style={{ maxWidth: '850px' }}>
                         <h2 style={{ fontSize: '1.8rem', margin: '0 0 10px 0' }}>Business Profile Branding</h2>
-                        <p className="muted" style={{ fontSize: '15px', marginBottom: '32px' }}>Personalize your invoices and export headers.</p>
+                        <p className="muted" style={{ fontSize: '15px', marginBottom: '32px' }}>
+                            Update your studio identity. These details personalize your invoices and global reporting headers.
+                        </p>
                         <form onSubmit={handleSaveSettings} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
                             <div style={{ gridColumn: 'span 2' }}>
                                 <small className="muted" style={{ fontWeight: 900 }}>OFFICIAL BUSINESS NAME</small>
@@ -267,7 +238,7 @@ export default function Backup() {
                             </div>
                             <div>
                                 <small className="muted" style={{ fontWeight: 900 }}>CONTACT NAME</small>
-                                <input value={settings.contact_name || ''} onChange={e => setSettings({ ...settings, contact_name: e.target.value })} placeholder="Owner Name" style={{ marginTop: '8px', padding: '15px' }} />
+                                <input value={settings.contact_name || ''} onChange={e => setSettings({ ...settings, contact_name: e.target.value })} placeholder="Joshua Dewey" style={{ marginTop: '8px', padding: '15px' }} />
                             </div>
                             <div>
                                 <small className="muted" style={{ fontWeight: 900 }}>BUSINESS WEBSITE</small>
@@ -283,46 +254,93 @@ export default function Backup() {
                             </div>
                             <div style={{ gridColumn: 'span 2' }}>
                                 <small className="muted" style={{ fontWeight: 900 }}>OFFICE ADDRESS</small>
-                                <textarea value={settings.address || ''} onChange={e => setSettings({ ...settings, address: e.target.value })} placeholder="123 Studio Way..." style={{ marginTop: '8px', padding: '15px', minHeight: '80px' }} />
+                                <textarea value={settings.address || ''} onChange={e => setSettings({ ...settings, address: e.target.value })} placeholder="Studio Address..." style={{ marginTop: '8px', padding: '15px', minHeight: '80px' }} />
                             </div>
-                            <div style={{ gridColumn: 'span 2', display: 'flex', gap: '15px', alignItems: 'center' }}>
-                                <button type="submit" className="btn primary glow-blue" style={{ padding: '15px 40px', fontSize: '16px' }}>Save Profile</button>
-                                {msg && <span className="tag ok">{msg}</span>}
+                            <div style={{ gridColumn: 'span 2', display: 'flex', gap: '20px', alignItems: 'center', marginTop: '10px' }}>
+                                <button type="submit" className="btn primary glow-blue" style={{ padding: '15px 45px', fontSize: '16px' }}>Save Global Identity</button>
+                                {msg && <span className="tag ok" style={{ fontWeight: 900 }}>{msg}</span>}
                             </div>
                         </form>
                     </div>
                 </div>
             )}
 
+            {/* TAB CONTENT: AUTOMATION ENGINE */}
             {activeTab === 'automation' && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: '20px' }}>
-                    <div className="card glass" style={{ margin: 0, padding: '24px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                            <h2 style={{ margin: 0 }}>Active Engine Rules</h2>
-                            <button className="btn primary sm" onClick={handleApplyRules} disabled={applying}>{applying ? '⏳ Applying...' : 'Apply All Rules'}</button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+
+                    {/* Compact Rule Creator (Horizontal) */}
+                    <div className="card glass glow-blue" style={{ border: 'none', padding: '30px', margin: 0, display: 'flex', alignItems: 'flex-end', gap: '20px', flexWrap: 'wrap' }}>
+                        <div style={{ flex: 1, minWidth: '200px' }}>
+                            <small className="muted" style={{ fontWeight: 900, marginBottom: '8px', display: 'block' }}>VENDOR KEYWORD</small>
+                            <input value={matchValue} onChange={e => setMatchValue(e.target.value)} placeholder="e.g. Adobe, Starlink..." style={{ padding: '12px' }} />
                         </div>
-                        {applyMsg && <div style={{ color: '#4ade80', fontSize: '12px', marginBottom: '10px' }}>{applyMsg}</div>}
+                        <div style={{ flex: 1, minWidth: '200px' }}>
+                            <small className="muted" style={{ fontWeight: 900, marginBottom: '8px', display: 'block' }}>ASSIGN CATEGORY</small>
+                            <CategorySelect value={category} onChange={setCategory} />
+                        </div>
+                        <button className="btn primary" onClick={() => handleCreateRule()} disabled={!matchValue || !category} style={{ height: '48px', padding: '0 30px' }}>SAVE RULE</button>
+                        <button className="btn glow-green" onClick={handleApplyRules} disabled={applying} style={{ height: '48px', padding: '0 30px' }}>
+                            {applying ? '⏳ SYNCING...' : 'RUN ENGINE NOW'}
+                        </button>
+                    </div>
+
+                    {applyMsg && <div className="tag ok" style={{ alignSelf: 'center', padding: '12px 30px' }}>{applyMsg}</div>}
+
+                    {/* Discovery Pills */}
+                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+                        <span className="muted small" style={{ fontWeight: 900 }}>💡 SUGGESTIONS:</span>
+                        {discoveryVendors.map(([name, count]) => (
+                            <button key={name} className="pill" style={{ fontSize: '11px', cursor: 'pointer' }} onClick={() => setMatchValue(name)}>
+                                {name} <span style={{ opacity: 0.5, marginLeft: '4px' }}>{count}x</span>
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Wide Table View (No Scroll) */}
+                    <div className="card glass" style={{ padding: '0', margin: 0, border: 'none', overflow: 'hidden' }}>
                         <div className="tableWrap" style={{ border: 'none' }}>
-                            <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 8px' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead>
+                                    <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
+                                        <th style={{ textAlign: 'left', padding: '20px' }}>Rule Criterion</th>
+                                        <th style={{ textAlign: 'left', padding: '20px' }}>Target Assignment</th>
+                                        <th style={{ textAlign: 'center', padding: '20px' }}>Optimization</th>
+                                        <th style={{ textAlign: 'right', padding: '20px' }}>Actions</th>
+                                    </tr>
+                                </thead>
                                 <tbody>
                                     {rules.map(r => {
                                         const rs = ruleStatus[r.id] || {};
                                         return (
                                             <React.Fragment key={r.id}>
-                                                <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
-                                                    <td style={{ padding: '12px 16px', borderRadius: '8px 0 0 8px' }}><strong>"{r.match_value}"</strong></td>
-                                                    <td style={{ padding: '12px 16px' }}>{r.assign_category}</td>
-                                                    <td style={{ textAlign: 'right', padding: '12px 16px', borderRadius: '0 8px 8px 0' }}>
-                                                        <button className="btn sm secondary" onClick={() => handlePreviewRule(r.id)} style={{ marginRight: '5px' }}>Audit</button>
+                                                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                                    <td style={{ padding: '16px 20px' }}>
+                                                        <span style={{ fontWeight: 800, color: '#f97316' }}>"{r.match_value}"</span>
+                                                    </td>
+                                                    <td style={{ padding: '16px 20px' }}>
+                                                        <span className="tag secondary">{r.assign_category}</span>
+                                                    </td>
+                                                    <td style={{ textAlign: 'center', padding: '16px 20px' }}>
+                                                        <button className="btn sm secondary" onClick={() => handlePreviewRule(r.id)} disabled={rs.loading}>
+                                                            {rs.loading ? 'Scanning...' : 'Audit Impact'}
+                                                        </button>
+                                                    </td>
+                                                    <td style={{ textAlign: 'right', padding: '16px 20px' }}>
                                                         <button className="btn sm danger" onClick={() => handleDeleteRule(r.id)}>✕</button>
                                                     </td>
                                                 </tr>
                                                 {rs.preview && (
                                                     <tr>
-                                                        <td colSpan="3" style={{ padding: '4px 0 12px 0' }}>
-                                                            <div className="glass" style={{ padding: '12px', background: 'rgba(74, 222, 128, 0.05)', borderRadius: '8px', fontSize: '12px' }}>
-                                                                Found {rs.preview.matchCount} records. <button className="btn sm ok" onClick={() => handleApplySingleRule(r.id)} style={{ marginLeft: '10px' }}>Apply Now</button>
-                                                                {rs.applyMsg && <span style={{ marginLeft: '10px', color: '#4ade80' }}>{rs.applyMsg}</span>}
+                                                        <td colSpan="4" style={{ padding: '0 20px 10px' }}>
+                                                            <div className="card glass" style={{ margin: 0, padding: '12px 20px', background: 'rgba(74, 222, 128, 0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                <span style={{ fontSize: '13px', fontWeight: 800 }}>Found {rs.preview.matchCount} historical matches.</span>
+                                                                <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                                                                    {rs.applyMsg && <span style={{ color: '#4ade80', fontWeight: 900 }}>{rs.applyMsg}</span>}
+                                                                    <button className="btn primary sm" onClick={() => handleApplySingleRule(r.id)} disabled={rs.applying}>
+                                                                        {rs.applying ? 'Applying...' : 'Apply Correction Now'}
+                                                                    </button>
+                                                                </div>
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -334,56 +352,47 @@ export default function Backup() {
                             </table>
                         </div>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        <div className="card glass glow-blue" style={{ margin: 0, padding: '20px' }}>
-                            <h3 style={{ margin: '0 0 15px 0' }}>➕ Add Rule</h3>
-                            <small className="muted">KEYWORD</small>
-                            <input value={matchValue} onChange={e => setMatchValue(e.target.value)} placeholder="Adobe" style={{ marginBottom: '15px' }} />
-                            <small className="muted">CATEGORY</small>
-                            <CategorySelect value={category} onChange={setCategory} />
-                            <button className="btn primary" onClick={() => handleCreateRule()} style={{ width: '100%', marginTop: '15px' }}>SAVE RULE</button>
-                        </div>
-                        <div className="card glass" style={{ margin: 0, padding: '20px' }}>
-                            <h3 style={{ margin: '0 0 10px 0' }}>💡 SUGGESTIONS</h3>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                {discoveryVendors.map(([name, count]) => (
-                                    <button key={name} className="pill" style={{ textAlign: 'left', justifyContent: 'space-between', width: '100%' }} onClick={() => setMatchValue(name)}>
-                                        {name} <span style={{ opacity: 0.5 }}>{count}x</span>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
                 </div>
             )}
 
             {activeTab === 'infrastructure' && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                    <div className="card glass" style={{ margin: 0, padding: '30px' }}>
-                        <h2>Edge Cache Purge</h2>
-                        <p className="muted">Clear Cloudflare edge nodes if data feels stale.</p>
-                        <button className="btn secondary" onClick={handlePurge} style={{ width: '100%', marginTop: '20px' }}>{purging ? 'Purging...' : 'Execute Purge'}</button>
-                        {msg && <div className="tag ok" style={{ marginTop: '10px' }}>{msg}</div>}
-                    </div>
-                    <div className="card glass" style={{ margin: 0, padding: '30px' }}>
-                        <h2>Restore Archive</h2>
-                        <p className="muted">Upload .json snapshot to recover studio state.</p>
-                        <label className="btn secondary" style={{ width: '100%', marginTop: '20px', cursor: 'pointer' }}>
-                            <input type="file" accept=".json" onChange={handleFileUpload} style={{ display: 'none' }} />
-                            {restoring ? 'Restoring...' : 'Upload & Restore'}
-                        </label>
-                    </div>
-                    <div className="card glass glow-blue" style={{ gridColumn: 'span 2', padding: '40px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div>
-                                <h2 style={{ fontSize: '1.8rem' }}>Master Infrastructure Backup</h2>
-                                <p className="muted">Download a complete snapshot of all business data.</p>
-                            </div>
-                            <a href="/api/admin/export-all" download className="btn primary" style={{ padding: '20px 40px' }}>DOWNLOAD BACKUP</a>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+                    <div className="grid two">
+                        <div className="card glass" style={{ margin: 0, padding: '30px' }}>
+                            <h2>Edge Network Purge</h2>
+                            <p className="muted">Force-clear stagnant cache on global edge nodes. Useful if UI data feels delayed.</p>
+                            <button className="btn secondary" onClick={handlePurge} style={{ width: '100%', marginTop: '20px', height: '50px' }}>{purging ? 'Purging Nodes...' : 'Execute Purge'}</button>
+                            {msg && <div className="tag ok" style={{ marginTop: '15px', width: '100%', justifyContent: 'center' }}>{msg}</div>}
                         </div>
+                        <div className="card glass" style={{ margin: 0, padding: '30px' }}>
+                            <h2>Restore Hub</h2>
+                            <p className="muted">Upload your studio archive (.json) to restore historical system state.</p>
+                            <label className="btn secondary" style={{ width: '100%', marginTop: '20px', cursor: 'pointer', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <input type="file" accept=".json" onChange={async (e) => {
+                                    const file = e.target.files[0]; if (!file) return; setRestoring(true);
+                                    const reader = new FileReader(); reader.onload = async (ev) => {
+                                        try { const data = JSON.parse(ev.target.result); await apiPost('/admin/import-all', data); alert("Studio state restored!"); loadData(); }
+                                        catch (err) { alert(err.message); } finally { setRestoring(false); }
+                                    }; reader.readAsText(file);
+                                }} style={{ display: 'none' }} />
+                                {restoring ? 'Restoring Archive...' : 'Upload & Restore Snapshot'}
+                            </label>
+                        </div>
+                    </div>
+                    <div className="card glass glow-blue" style={{ border: 'none', padding: '50px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '30px' }}>
+                        <div style={{ flex: 1, minWidth: '300px' }}>
+                            <h2 style={{ fontSize: '2rem', margin: 0 }}>Master Business Download</h2>
+                            <p className="muted" style={{ fontSize: '16px', marginTop: '10px' }}>Download your entire studio ecosystem (transactions, gear, CRM) for archival purposes.</p>
+                        </div>
+                        <a href="/api/admin/export-all" download className="btn primary" style={{ padding: '20px 50px', fontSize: '18px', fontWeight: 900 }}>DOWNLOAD ENTIRE REPOSITORY</a>
                     </div>
                 </div>
             )}
+
+            <div style={{ marginTop: '50px', padding: '30px 0', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span className="muted small" style={{ fontWeight: 900 }}>ARCHITECTURE: v3.5-ELITE-SUPABASE</span>
+                <span className="muted small" style={{ fontWeight: 900 }}>CLOUD PROVIDER: {storageType.toUpperCase()}</span>
+            </div>
         </section>
     );
 }

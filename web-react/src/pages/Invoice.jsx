@@ -11,30 +11,30 @@ function InvoiceItemRow({ item, index, onChange, onRemove }) {
         <div key={index} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 80px 120px 40px', gap: '12px', alignItems: 'center', marginBottom: '12px' }}>
             <input
                 placeholder="Description"
-                value={item.description}
+                value={item.description || ''}
                 onChange={e => onChange(index, 'description', e.target.value)}
                 style={{ background: 'rgba(255,255,255,0.05)', fontSize: '13px' }}
             />
             <input
                 type="number"
                 placeholder="Qty"
-                value={item.quantity}
+                value={item.quantity || ''}
                 onChange={e => onChange(index, 'quantity', Number(e.target.value))}
                 style={{ background: 'rgba(255,255,255,0.05)', fontSize: '13px', textAlign: 'center' }}
             />
             <input
                 type="number"
                 placeholder="Price"
-                value={item.unit_price}
+                value={item.unit_price || ''}
                 onChange={e => onChange(index, 'unit_price', e.target.value)}
                 style={{ background: 'rgba(255,255,255,0.05)', fontSize: '13px', textAlign: 'right' }}
             />
-            <button className="btn sm danger" onClick={() => onRemove(index)} style={{ padding: '8px' }}>✕</button>
+            <button type="button" className="btn sm danger" onClick={() => onRemove(index)} style={{ padding: '8px' }}>✕</button>
         </div>
     );
 }
 
-function InvoicePreview({ invoice, settings, onClose }) {
+function InvoicePreview({ invoice, settings = {}, onClose }) {
     const previewRef = useRef();
 
     const subtotal = (invoice.items || []).reduce((s, it) => s + (Number(it.unit_price || 0) * (it.quantity || 1)), 0);
@@ -71,10 +71,10 @@ function InvoicePreview({ invoice, settings, onClose }) {
                             <div>
                                 <img src="/logo.png" alt="Logo" style={{ height: '100px', objectFit: 'contain' }} />
                                 <div style={{ marginTop: '20px', fontSize: '14px', lineHeight: '1.6' }}>
-                                    <div style={{ fontWeight: 900, textTransform: 'uppercase' }}>{settings.business_name || 'STUDIO OWNER'}</div>
-                                    <div style={{ color: '#666' }}>{settings.contact_name}</div>
-                                    <div style={{ color: BRAND_ORANGE, fontWeight: 700 }}>{settings.website}</div>
-                                    <div style={{ color: '#666' }}>{settings.phone}</div>
+                                    <div style={{ fontWeight: 900, textTransform: 'uppercase' }}>{settings?.business_name || 'STUDIO OWNER'}</div>
+                                    <div style={{ color: '#666' }}>{settings?.contact_name || ''}</div>
+                                    <div style={{ color: BRAND_ORANGE, fontWeight: 700 }}>{settings?.website || ''}</div>
+                                    <div style={{ color: '#666' }}>{settings?.phone || ''}</div>
                                 </div>
                             </div>
                             <div style={{ textAlign: 'right' }}>
@@ -197,20 +197,19 @@ export default function Invoice() {
                 apiGet('/invoices'),
                 apiGet('/invoices/clients'),
                 apiGet('/leads'),
-                apiGet('/settings')
+                apiGet('/settings').catch(() => ({}))
             ]);
             setInvoices(invs);
             setClients(cls);
             setLeads(lds.leads || []);
-            setSettings(st || {});
+            const settingsData = st || {};
+            setSettings(settingsData);
 
-            // Set default notes if empty
-            if (!formData.notes) {
-                setFormData(prev => ({
-                    ...prev,
-                    notes: `Payment is due within 15 days. Thank you for choosing ${st.business_name || 'Through The Lens Media'}!\n\n${st.contact_name}\n${st.website}\n${st.phone}`
-                }));
-            }
+            // Set default notes with safety
+            setFormData(prev => ({
+                ...prev,
+                notes: prev.notes || `Payment is due within 15 days. Thank you for choosing ${settingsData.business_name || 'Through The Lens Media'}!\n\n${settingsData.contact_name || ''}\n${settingsData.website || ''}\n${settingsData.phone || ''}`
+            }));
 
             // Auto-increment invoice number
             if (invs.length > 0) {
@@ -223,8 +222,11 @@ export default function Invoice() {
             } else {
                 setFormData(prev => ({ ...prev, number: 'INV-1001' }));
             }
-        } catch (e) { console.error(e); }
-        finally { setLoading(false); }
+        } catch (e) {
+            console.error("Invoice load error:", e);
+        } finally {
+            setLoading(false);
+        }
     };
 
     useEffect(() => { load(); }, []);
@@ -237,9 +239,9 @@ export default function Invoice() {
             setFormData(prev => ({
                 ...prev,
                 clientId: lead.client_id || '',
-                clientName: lead.name,
-                clientEmail: lead.email,
-                clientPhone: lead.phone,
+                clientName: lead.name || '',
+                clientEmail: lead.email || '',
+                clientPhone: lead.phone || '',
                 discount: 0
             }));
         }
@@ -340,7 +342,7 @@ export default function Invoice() {
                         <div className="muted small" style={{ fontWeight: 800 }}>TOTAL INVOICED</div>
                         <div style={{ fontSize: '2rem', fontWeight: 950, marginTop: '8px' }}>{invoices.length}</div>
                     </div>
-                    <div className="stat glass" style={{ borderTop: `4px solid ${BRAND_ORANGE}` }}>
+                    <div className="stat glass" style={{ borderTop: `2px solid ${BRAND_ORANGE}` }}>
                         <div className="muted small" style={{ fontWeight: 800 }}>CLIENT BASE</div>
                         <div style={{ fontSize: '2rem', fontWeight: 950, marginTop: '8px' }}>{clients.length}</div>
                     </div>
@@ -416,7 +418,7 @@ export default function Invoice() {
                                 <div className="hr" style={{ margin: '15px 0' }}></div>
                                 <button className="btn sm primary" style={{ width: '100%' }} onClick={() => {
                                     setIsCreatorOpen(true);
-                                    setFormData(prev => ({ ...prev, clientName: c.name, clientEmail: c.email || '', clientPhone: c.phone || '', clientId: c.id }));
+                                    setFormData(prev => ({ ...prev, clientName: c.name || '', clientEmail: c.email || '', clientPhone: c.phone || '', clientId: c.id }));
                                 }}>New Invoice</button>
                             </div>
                         ))}
@@ -430,18 +432,18 @@ export default function Invoice() {
                     <div className="drawer-panel" style={{ width: 'min(700px, 100%)', display: 'flex', flexDirection: 'column', padding: 0 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '24px', borderBottom: '1px solid rgba(255,255,255,0.05)', position: 'sticky', top: 0, background: 'var(--bg)', zIndex: 10 }}>
                             <h2 style={{ margin: 0, fontSize: '1.4rem' }}>Create Elite Invoice</h2>
-                            <button className="btn secondary" onClick={() => setIsCreatorOpen(false)}>Cancel</button>
+                            <button type="button" className="btn secondary" onClick={() => setIsCreatorOpen(false)}>Cancel</button>
                         </div>
 
                         <form onSubmit={handleCreateInvoice} style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '24px', flex: 1, overflowY: 'auto' }}>
                             <div className="grid two">
                                 <div>
                                     <small className="muted" style={{ fontWeight: 800 }}>INVOICE NUMBER</small>
-                                    <input value={formData.number} onChange={e => setFormData({ ...formData, number: e.target.value })} />
+                                    <input value={formData.number || ''} onChange={e => setFormData({ ...formData, number: e.target.value })} />
                                 </div>
                                 <div>
                                     <small className="muted" style={{ fontWeight: 800 }}>ISSUE DATE</small>
-                                    <input type="date" value={formData.date} onChange={e => setFormData({ ...formData, date: e.target.value })} />
+                                    <input type="date" value={formData.date || ''} onChange={e => setFormData({ ...formData, date: e.target.value })} />
                                 </div>
                             </div>
 
@@ -458,11 +460,11 @@ export default function Invoice() {
                             <div className="grid two">
                                 <div>
                                     <small className="muted" style={{ fontWeight: 800 }}>CLIENT NAME</small>
-                                    <input required value={formData.clientName} onChange={e => setFormData({ ...formData, clientName: e.target.value })} />
+                                    <input required value={formData.clientName || ''} onChange={e => setFormData({ ...formData, clientName: e.target.value })} />
                                 </div>
                                 <div>
                                     <small className="muted" style={{ fontWeight: 800 }}>CLIENT EMAIL</small>
-                                    <input value={formData.clientEmail} onChange={e => setFormData({ ...formData, clientEmail: e.target.value })} />
+                                    <input value={formData.clientEmail || ''} onChange={e => setFormData({ ...formData, clientEmail: e.target.value })} />
                                 </div>
                             </div>
 
@@ -485,17 +487,17 @@ export default function Invoice() {
                             <div className="grid two">
                                 <div>
                                     <small className="muted" style={{ fontWeight: 800 }}>TAX RATE (%)</small>
-                                    <input type="number" value={formData.tax_percent} onChange={e => setFormData({ ...formData, tax_percent: e.target.value })} />
+                                    <input type="number" value={formData.tax_percent || 0} onChange={e => setFormData({ ...formData, tax_percent: e.target.value })} />
                                 </div>
                                 <div>
                                     <small className="muted" style={{ fontWeight: 800 }}>DISCOUNT ($)</small>
-                                    <input type="number" value={formData.discount} onChange={e => setFormData({ ...formData, discount: e.target.value })} />
+                                    <input type="number" value={formData.discount || 0} onChange={e => setFormData({ ...formData, discount: e.target.value })} />
                                 </div>
                             </div>
 
                             <div>
                                 <small className="muted" style={{ fontWeight: 800 }}>PERSONALIZED SIGNATURE & TERMS</small>
-                                <textarea value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} style={{ minHeight: '120px' }} />
+                                <textarea value={formData.notes || ''} onChange={e => setFormData({ ...formData, notes: e.target.value })} style={{ minHeight: '120px' }} />
                             </div>
 
                             <button type="submit" className="btn glow-blue" style={{ height: '56px', fontSize: '1.2rem', marginTop: '10px' }}>GENERATE INVOICE</button>
