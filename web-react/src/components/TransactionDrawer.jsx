@@ -158,7 +158,7 @@ export default function TransactionDrawer({ transaction, onClose, onSave }) {
                 <div className="row" style={{ marginTop: '10px' }}>
                     <label className="tag" style={{ display: 'flex', gap: '10px', alignItems: 'center', width: 'max-content' }}>
                         <input type="checkbox" checked={deduct} onChange={e => setDeduct(e.target.checked)} style={{ width: 'auto', margin: 0 }} />
-                        Tax deductible
+                        {Number(amount || 0) < 0 ? 'Business Income (Schedule C Line 1)' : 'Tax deductible business expense'}
                     </label>
                 </div>
 

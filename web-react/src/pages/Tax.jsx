@@ -583,7 +583,14 @@ export default function Tax() {
                             <div className="tableWrap" style={{ flex: 1, overflowY: 'auto', borderRadius: '0', border: 'none', padding: '0 20px 20px 20px' }}>
                                 <table className="sm">
                                     <thead>
-                                        <tr><th style={{ position: 'sticky', top: 0, background: 'var(--bg)' }}>Date</th><th style={{ position: 'sticky', top: 0, background: 'var(--bg)' }}>Vendor</th><th style={{ position: 'sticky', top: 0, background: 'var(--bg)' }}>Amount</th><th style={{ position: 'sticky', top: 0, background: 'var(--bg)' }}>Biz %</th><th style={{ position: 'sticky', top: 0, background: 'var(--bg)' }}>Deductible</th><th style={{ position: 'sticky', top: 0, background: 'var(--bg)' }}></th></tr>
+                                        <tr>
+                                            <th style={{ position: 'sticky', top: 0, background: 'var(--bg)' }}>Date</th>
+                                            <th style={{ position: 'sticky', top: 0, background: 'var(--bg)' }}>Vendor</th>
+                                            <th style={{ position: 'sticky', top: 0, background: 'var(--bg)' }}>Gross Amount</th>
+                                            <th style={{ position: 'sticky', top: 0, background: 'var(--bg)' }}>Biz %</th>
+                                            <th style={{ position: 'sticky', top: 0, background: 'var(--bg)' }}>{auditingBucket === 'Unassigned' ? 'Deduct/Income' : 'Deductible'}</th>
+                                            <th style={{ position: 'sticky', top: 0, background: 'var(--bg)' }}></th>
+                                        </tr>
                                     </thead>
                                     <tbody>
                                         {filteredAuditing.map(e => (
@@ -592,8 +599,29 @@ export default function Tax() {
                                                 <td>{e.vendor}</td>
                                                 <td>{formatMoney(e.amount_cents)}</td>
                                                 <td>{e.business_use_pct}%</td>
-                                                <td style={{ fontWeight: 'bold', color: '#4ade80' }}>{formatMoney(Math.round(e.amount_cents * (e.business_use_pct / 100)))}</td>
-                                                <td><button className="btn sm secondary" onClick={() => setEditingId(e.id)}>Edit</button></td>
+                                                <td style={{ fontWeight: 'bold', color: e.amount_cents < 0 ? '#4ade80' : 'var(--text)' }}>
+                                                    {formatMoney(Math.abs(Math.round(e.amount_cents * (e.business_use_pct / 100))))}
+                                                </td>
+                                                <td style={{ whiteSpace: 'nowrap' }}>
+                                                    <div style={{ display: 'flex', gap: '6px' }}>
+                                                        <button className="btn sm secondary" onClick={() => setEditingId(e.id)}>Edit</button>
+                                                        {auditingBucket === 'Unassigned' && e.amount_cents < 0 && !e.tax_deductible && (
+                                                            <button
+                                                                className="btn sm primary glow-green"
+                                                                style={{ fontSize: '9px', padding: '4px 8px' }}
+                                                                onClick={async () => {
+                                                                    try {
+                                                                        await apiPatch(`/expenses/${e.id}`, { tax_deductible: true });
+                                                                        loadData(true);
+                                                                        loadSummary(selectedYear);
+                                                                    } catch (err) { console.error(err); }
+                                                                }}
+                                                            >
+                                                                ✓ Include as Income
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </td>
                                             </tr>
                                         ))}
                                         {filteredAuditing.length === 0 && (

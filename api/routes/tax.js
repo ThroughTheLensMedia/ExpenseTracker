@@ -191,7 +191,16 @@ router.post("/auto-map", async (req, res) => {
       if (!error && count) totalUpdated += count;
     }
 
-    // Then: Map the categories as normal
+    // New: Auto-mark specific INCOME categories as business income (Line 1)
+    const INCOME_CATEGORIES = ['Photo Income', 'Freelance Income', 'Contract Income', 'Side Income'];
+    const { error: incError, count: incCount } = await supabase
+      .from("expenses")
+      .update({ tax_deductible: true })
+      .in("category", INCOME_CATEGORIES)
+      .lt("amount_cents", 0);
+    if (!incError && incCount) totalUpdated += incCount;
+
+    // Then: Map the categories for expenses as normal
     for (const mapping of RM_MAPPING) {
       for (const cat of mapping.categories) {
         const { error, count } = await supabase
