@@ -132,8 +132,16 @@ function InvoicePreview({ invoice, settings = {}, onClose }) {
                         </table>
 
                         {/* TOTALS */}
-                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                            <div style={{ width: '300px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '40px' }}>
+                            <div style={{ flex: 1 }}>
+                                {settings?.tax_id && (
+                                    <div style={{ marginTop: '20px' }}>
+                                        <div style={{ color: '#999', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>Studio Tax ID</div>
+                                        <div style={{ fontSize: '13px', fontWeight: 700, color: '#444' }}>{settings.tax_id}</div>
+                                    </div>
+                                )}
+                            </div>
+                            <div style={{ width: '320px' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', fontSize: '15px' }}>
                                     <div style={{ color: '#666' }}>Subtotal</div>
                                     <div style={{ fontWeight: 700 }}>{formatMoney(subtotal * 100)}</div>
@@ -150,23 +158,53 @@ function InvoicePreview({ invoice, settings = {}, onClose }) {
                                         <div style={{ fontWeight: 700, color: '#ff4d4d' }}>-{formatMoney(Number(invoice.discount) * 100)}</div>
                                     </div>
                                 )}
-                                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '20px 0', borderTop: '1px solid #eee', marginTop: '12px' }}>
-                                    <div style={{ fontSize: '18px', fontWeight: 900, color: BRAND_ORANGE }}>Total Due</div>
-                                    <div style={{ fontSize: '24px', fontWeight: 950 }}>{formatMoney(total * 100)}</div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '20px 0', borderTop: '2px solid #000', marginTop: '12px' }}>
+                                    <div style={{ fontSize: '18px', fontWeight: 950, color: BRAND_ORANGE, textTransform: 'uppercase', letterSpacing: '1px' }}>Total Due</div>
+                                    <div style={{ fontSize: '28px', fontWeight: 950, color: '#000' }}>{formatMoney(total * 100)}</div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* NOTES */}
-                        {invoice.notes && (
-                            <div style={{ marginTop: '80px', paddingTop: '40px', borderTop: '1px solid #eee' }}>
-                                <div style={{ color: '#666', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Notes & Terms</div>
-                                <div style={{ fontSize: '13px', color: '#444', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>{invoice.notes}</div>
+                        {/* ELITE MODULAR FOOTER */}
+                        <div style={{ marginTop: '80px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '60px', paddingTop: '40px', borderTop: '1px solid #eee' }}>
+                            <div>
+                                {settings?.payment_methods && (
+                                    <div style={{ marginBottom: '32px' }}>
+                                        <div style={{ color: BRAND_ORANGE, fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '12px' }}>Methods of Payment</div>
+                                        <div style={{ fontSize: '13px', color: '#444', lineHeight: '1.6', whiteSpace: 'pre-wrap', background: '#f9f9f9', padding: '16px', borderRadius: '8px' }}>
+                                            {settings.payment_methods}
+                                        </div>
+                                    </div>
+                                )}
+                                {settings?.standard_terms && (
+                                    <div>
+                                        <div style={{ color: '#999', fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '12px' }}>Standard Terms</div>
+                                        <div style={{ fontSize: '12px', color: '#666', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
+                                            {settings.standard_terms}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                        )}
+                            <div>
+                                {invoice.notes && (
+                                    <div style={{ marginBottom: '32px' }}>
+                                        <div style={{ color: BRAND_ORANGE, fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '12px' }}>Invoice Notes</div>
+                                        <div style={{ fontSize: '14px', color: '#000', lineHeight: '1.6', whiteSpace: 'pre-wrap', fontWeight: 500 }}>
+                                            {invoice.notes}
+                                        </div>
+                                    </div>
+                                )}
+                                {settings?.signature_text && (
+                                    <div style={{ marginTop: '40px', borderTop: '1px solid #eee', paddingTop: '20px' }}>
+                                        <div style={{ fontSize: '14px', fontWeight: 800, color: BRAND_ORANGE }}>{settings.contact_name}</div>
+                                        <div style={{ fontSize: '12px', color: '#666', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>{settings.signature_text}</div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
 
-                        <div style={{ marginTop: '120px', textAlign: 'center', color: '#ccc', fontSize: '11px', letterSpacing: '1px' }}>
-                            THANK YOU FOR YOUR BUSINESS
+                        <div style={{ marginTop: '100px', textAlign: 'center', color: '#eee', fontSize: '10px', letterSpacing: '4px', fontWeight: 900 }}>
+                            STUDIO PROPERTY OF {settings?.business_name?.toUpperCase() || 'THROUGH THE LENS MEDIA'}
                         </div>
                     </div>
                 </div>
@@ -218,17 +256,10 @@ export default function Invoice() {
             const settingsData = st || {};
             setSettings(settingsData);
 
-            const signature = [
-                settingsData.invoice_notes,
-                settingsData.standard_terms,
-                settingsData.payment_methods,
-                settingsData.signature_text || `${settingsData.contact_name || ''}\n${settingsData.website || ''}\n${settingsData.phone || ''}`
-            ].filter(Boolean).join('\n\n---\n');
-
             // Set default notes if empty and auto-increment invoice number
             setFormData(prev => ({
                 ...prev,
-                notes: prev.notes || signature
+                notes: prev.notes || settingsData.invoice_notes || ''
             }));
 
             if (invs.length > 0) {
@@ -422,6 +453,10 @@ export default function Invoice() {
             }, 0);
     }, [invoices]);
 
+    const draftCount = useMemo(() => {
+        return invoices.filter(inv => inv.status === 'draft').length;
+    }, [invoices]);
+
     return (
         <section style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
@@ -447,6 +482,10 @@ export default function Invoice() {
                     <div className="stat glass" style={{ borderTop: '4px solid #38bdf8' }}>
                         <div className="muted small" style={{ fontWeight: 800 }}>TOTAL INVOICED</div>
                         <div style={{ fontSize: '2rem', fontWeight: 950, marginTop: '8px' }}>{invoices.length}</div>
+                    </div>
+                    <div className="stat glass" style={{ borderTop: '4px solid #fbbf24' }}>
+                        <div className="muted small" style={{ fontWeight: 800 }}>REVIEW QUEUE</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 950, color: '#fbbf24', marginTop: '8px' }}>{draftCount} Drafts</div>
                     </div>
                     <div className="stat glass" style={{ borderTop: `2px solid ${BRAND_ORANGE}` }}>
                         <div className="muted small" style={{ fontWeight: 800 }}>CLIENT BASE</div>
