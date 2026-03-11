@@ -30,6 +30,7 @@ export default function Rules() {
     const [applying, setApplying] = useState(false);
     const [allExpenses, setAllExpenses] = useState([]);
     const [ruleStatus, setRuleStatus] = useState({});
+    const [progress, setProgress] = useState(0);
 
     const loadRules = async () => {
         setLoading(true);
@@ -85,15 +86,39 @@ export default function Rules() {
         await apiDelete(`/rules/${id}`); loadRules();
     };
 
-    const handleApplyRules = async () => {
-        setApplying(true); setApplyMsg('Applying...');
+    const runWithProgress = async (callback) => {
+        setApplying(true);
+        setProgress(0);
+        const interval = setInterval(() => {
+            setProgress(prev => {
+                if (prev >= 92) return prev; // stay at 92 until done
+                return prev + Math.random() * 15;
+            });
+        }, 400);
+
         try {
-            const r = await fetch('/api/import/apply-rules', { method: 'POST', credentials: 'include' });
-            const data = await r.json();
-            setApplyMsg(`✅ Updated ${data.updated} rows.`);
-            setTimeout(() => setApplyMsg(''), 5000);
+            await callback();
+            setProgress(100);
+            setTimeout(() => { setProgress(0); setApplying(false); }, 1000);
+        } catch (e) {
+            setApplying(false);
+            setProgress(0);
+            throw e;
+        } finally {
+            clearInterval(interval);
+        }
+    };
+
+    const handleApplyRules = async () => {
+        setApplyMsg('🔄 Scanning transactions...');
+        try {
+            await runWithProgress(async () => {
+                const r = await fetch('/api/import/apply-rules', { method: 'POST', credentials: 'include' });
+                const data = await r.json();
+                setApplyMsg(`✅ Success: ${data.updated} transactions updated.`);
+            });
+            setTimeout(() => setApplyMsg(''), 6000);
         } catch (e) { setApplyMsg(`❌ ${e.message}`); }
-        finally { setApplying(false); }
     };
 
     const handlePreviewRule = async (id) => {
@@ -114,7 +139,7 @@ export default function Rules() {
     };
 
     const handleApplySingleRule = async (id) => {
-        setRuleStatus(s => ({ ...s, [id]: { ...s[id], applying: true, applyMsg: '' } }));
+        setRuleStatus(s => ({ ...s, [id]: { ...s[id], applying: true, applyMsg: 'Applying...' } }));
         try {
             const r = await fetch(`/api/rules/${id}/apply`, { method: 'POST', credentials: 'include' });
             const data = await r.json();
@@ -128,14 +153,37 @@ export default function Rules() {
         <section style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '1200px', margin: '0 auto' }}>
 
             {/* Elite Rule Header */}
-            <div className="card glass glow-blue" style={{ padding: '24px', border: 'none', margin: 0 }}>
+            <div className="card glass glow-blue" style={{ padding: '24px', border: 'none', margin: 0, position: 'relative', overflow: 'hidden' }}>
+                {/* Progress Bar Overlay */}
+                {applying && (
+                    <div style={{
+                        position: 'absolute', bottom: 0, left: 0, height: '4px',
+                        width: `${progress}%`, background: 'var(--accent)',
+                        boxShadow: '0 0 10px var(--accent)', transition: 'width 0.4s ease'
+                    }} />
+                )}
+
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
                         <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 900 }}>⚡ Automation Engine</h2>
                         <div className="muted" style={{ fontSize: '13px' }}>Classify any incoming transaction automatically via keyword matching.</div>
+                        {applyMsg && (
+                            <div style={{
+                                marginTop: '8px',
+                                fontSize: '12px',
+                                color: applyMsg.includes('❌') ? '#f87171' : '#4ade80',
+                                fontWeight: 700,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px'
+                            }}>
+                                {applying && <span className="spinner-sm" style={{ width: '12px', height: '12px', border: '2px solid rgba(255,255,255,0.2)', borderTopColor: 'var(--accent)' }} />}
+                                {applyMsg}
+                            </div>
+                        )}
                     </div>
                     <button className="btn primary" onClick={handleApplyRules} disabled={applying}>
-                        {applying ? '⏳ Syncing...' : 'Apply Rules to Ledger'}
+                        {applying ? '⏳ Processing...' : 'Apply Rules to Ledger'}
                     </button>
                 </div>
             </div>
@@ -223,9 +271,21 @@ export default function Rules() {
                                                             <div style={{ fontSize: '12px', color: '#4ade80', fontWeight: 700 }}>
                                                                 {rs.preview.matchCount} matches in your database.
                                                             </div>
-                                                            <button className="btn primary sm" style={{ marginTop: '8px', fontSize: '11px' }} onClick={() => handleApplySingleRule(r.id)}>
-                                                                Apply Changes Now
-                                                            </button>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
+                                                                <button
+                                                                    className="btn primary sm"
+                                                                    style={{ fontSize: '11px' }}
+                                                                    onClick={() => handleApplySingleRule(r.id)}
+                                                                    disabled={rs.applying}
+                                                                >
+                                                                    {rs.applying ? '⏳ Applying...' : 'Apply Changes Now'}
+                                                                </button>
+                                                                {rs.applyMsg && (
+                                                                    <span style={{ fontSize: '11px', color: rs.applyMsg.includes('❌') ? '#f87171' : '#4ade80', fontWeight: 700 }}>
+                                                                        {rs.applyMsg}
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         </td>
                                                     </tr>
                                                 )}
