@@ -49,17 +49,25 @@ export default function Dashboard({ apiStatus }) {
         loadData();
     }, []);
 
+    const operationalExpenses = useMemo(() => {
+        const ignore = ['internal transfer', 'credit card payment', 'funds transfer'];
+        return expenses.filter(r => {
+            const cat = String(r.category || '').toLowerCase();
+            return !ignore.some(i => cat.includes(i));
+        });
+    }, [expenses]);
+
     const years = useMemo(() => {
         const set = new Set(availableYears);
-        for (const r of expenses) {
+        for (const r of operationalExpenses) {
             const y = Number(String(r.expense_date || '').slice(0, 4));
             if (y) set.add(y);
         }
         return [...set].sort((a, b) => b - a);
-    }, [expenses, availableYears]);
+    }, [operationalExpenses, availableYears]);
 
     const filtered = useMemo(() => {
-        let rows = expenses.filter(r => String(r.expense_date || '').startsWith(String(selectedYear)));
+        let rows = operationalExpenses.filter(r => String(r.expense_date || '').startsWith(String(selectedYear)));
         if (search) {
             const q = search.toLowerCase();
             rows = rows.filter(r => `${r.vendor} ${r.category} ${r.notes}`.toLowerCase().includes(q));
@@ -97,10 +105,10 @@ export default function Dashboard({ apiStatus }) {
 
     // Trendline & Projection Calculation
     const trendStats = useMemo(() => {
-        if (!expenses.length) return null;
+        if (!operationalExpenses.length) return null;
 
         const monthlyMap = new Map();
-        for (const r of expenses) {
+        for (const r of operationalExpenses) {
             if (!r.expense_date) continue;
             const monthKey = String(r.expense_date).slice(0, 7);
             const cents = Number(r.amount_cents || 0);
@@ -135,17 +143,17 @@ export default function Dashboard({ apiStatus }) {
         }
 
         return { actual: dataActual, projected };
-    }, [expenses]);
+    }, [operationalExpenses]);
 
     // YoY and MoM Variance Calculation
     const variances = useMemo(() => {
-        if (!expenses.length) return { yoyIncome: 0, yoySpend: 0, momIncome: 0, momSpend: 0 };
+        if (!operationalExpenses.length) return { yoyIncome: 0, yoySpend: 0, momIncome: 0, momSpend: 0 };
 
         const py = selectedYear - 1;
         let pyInc = 0, pySpnd = 0;
         let maxStr = '0000-00';
 
-        for (let r of expenses) {
+        for (let r of operationalExpenses) {
             if (!r.expense_date) continue;
             const ym = r.expense_date.slice(0, 7);
             if (ym > maxStr) maxStr = ym;
@@ -166,7 +174,7 @@ export default function Dashboard({ apiStatus }) {
             if (prevLm === 0) { prevLm = 12; prevLy--; }
             const prevMStr = `${prevLy}-${String(prevLm).padStart(2, '0')}`;
 
-            for (let r of expenses) {
+            for (let r of operationalExpenses) {
                 if (!r.expense_date) continue;
                 const ym = r.expense_date.slice(0, 7);
                 const c = Number(r.amount_cents || 0);
@@ -187,7 +195,7 @@ export default function Dashboard({ apiStatus }) {
             momIncome: calc(cmInc, pmInc),
             momSpend: calc(cmSpnd, pmSpnd)
         };
-    }, [expenses, selectedYear, stats]);
+    }, [operationalExpenses, selectedYear, stats]);
 
     const renderVariance = (val, type, label) => {
         const num = Number(val);
@@ -487,29 +495,29 @@ export default function Dashboard({ apiStatus }) {
                             })}
                         </div>
                     </div>
-
-                    {/* Actionable Intelligence / Liability Risk */}
-                    <div className="card glass" style={{ margin: 0, padding: '24px', borderTop: stats.missing > 0 ? '3px solid #ff4d4d' : '3px solid #4ade80' }}>
-                        <h3 style={{ fontSize: '1.1rem', margin: '0 0 4px 0', color: stats.missing > 0 ? '#ff4d4d' : '#4ade80' }}>Actionable Intelligence</h3>
-                        <div className="muted" style={{ fontSize: '11px', marginBottom: '16px' }}>Compliance & Operations</div>
-
-                        {stats.missing > 0 ? (
-                            <div style={{ background: 'rgba(255, 77, 77, 0.1)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255, 77, 77, 0.2)' }}>
-                                <div style={{ fontWeight: 900, color: '#ff4d4d', fontSize: '14px', marginBottom: '8px' }}>🚨 Audit Liability Detected</div>
-                                <div style={{ fontSize: '12px', color: '#ffd0d0', lineHeight: 1.5 }}>
-                                    <strong>{stats.missing}</strong> high-value transactions ({'>'}$75) are currently unverified. Attach receipts immediately to prevent IRS audit exposure.
-                                </div>
-                            </div>
-                        ) : (
-                            <div style={{ background: 'rgba(25, 195, 125, 0.1)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(25, 195, 125, 0.2)' }}>
-                                <div style={{ fontWeight: 900, color: '#4ade80', fontSize: '14px', marginBottom: '8px' }}>✅ Books Reconciled</div>
-                                <div style={{ fontSize: '12px', color: '#baf6db', lineHeight: 1.5 }}>
-                                    All high-value transactions contain verified documentation. Zero audit liabilities detected for {selectedYear}.
-                                </div>
-                            </div>
-                        )}
-                    </div>
                 </div>
+            </div>
+
+            {/* Actionable Intelligence / Liability Risk (Full Width Span) */}
+            <div className="card glass" style={{ margin: 0, padding: '24px', borderTop: stats.missing > 0 ? '3px solid #ff4d4d' : '3px solid #4ade80' }}>
+                <h3 style={{ fontSize: '1.1rem', margin: '0 0 4px 0', color: stats.missing > 0 ? '#ff4d4d' : '#4ade80' }}>Actionable Intelligence</h3>
+                <div className="muted" style={{ fontSize: '11px', marginBottom: '16px' }}>Compliance & Operations</div>
+
+                {stats.missing > 0 ? (
+                    <div style={{ background: 'rgba(255, 77, 77, 0.1)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255, 77, 77, 0.2)' }}>
+                        <div style={{ fontWeight: 900, color: '#ff4d4d', fontSize: '14px', marginBottom: '8px' }}>🚨 Audit Liability Detected</div>
+                        <div style={{ fontSize: '12px', color: '#ffd0d0', lineHeight: 1.5 }}>
+                            <strong>{stats.missing}</strong> high-value transactions ({'>'}$75) are currently unverified. Attach receipts immediately to prevent IRS audit exposure.
+                        </div>
+                    </div>
+                ) : (
+                    <div style={{ background: 'rgba(25, 195, 125, 0.1)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(25, 195, 125, 0.2)' }}>
+                        <div style={{ fontWeight: 900, color: '#4ade80', fontSize: '14px', marginBottom: '8px' }}>✅ Books Reconciled</div>
+                        <div style={{ fontSize: '12px', color: '#baf6db', lineHeight: 1.5 }}>
+                            All high-value transactions contain verified documentation. Zero audit liabilities detected for {selectedYear}.
+                        </div>
+                    </div>
+                )}
             </div>
         </section>
     );
