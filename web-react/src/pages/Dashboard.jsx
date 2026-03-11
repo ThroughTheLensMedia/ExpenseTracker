@@ -217,20 +217,79 @@ export default function Dashboard({ apiStatus }) {
         const labels = [...trendStats.actual.map(d => d.month), ...trendStats.projected.map(d => '*' + d.month)];
 
         const actualNet = trendStats.actual.map(d => d.net / 100);
-        const lastActualIdx = trendStats.actual.length - 1;
-        const projNet = Array(labels.length).fill(null);
+        const actualIncome = trendStats.actual.map(d => d.income / 100);
+        const actualSpend = trendStats.actual.map(d => d.spend / 100);
 
-        if (lastActualIdx >= 0) projNet[lastActualIdx] = actualNet[lastActualIdx];
-        trendStats.projected.forEach((d, i) => projNet[lastActualIdx + 1 + i] = d.net / 100);
+        const lastActualIdx = trendStats.actual.length - 1;
+
+        const projNet = Array(labels.length).fill(null);
+        const projIncome = Array(labels.length).fill(null);
+        const projSpend = Array(labels.length).fill(null);
+
+        if (lastActualIdx >= 0) {
+            projNet[lastActualIdx] = actualNet[lastActualIdx];
+            projIncome[lastActualIdx] = actualIncome[lastActualIdx];
+            projSpend[lastActualIdx] = actualSpend[lastActualIdx];
+        }
+
+        trendStats.projected.forEach((d, i) => {
+            projNet[lastActualIdx + 1 + i] = d.net / 100;
+            projIncome[lastActualIdx + 1 + i] = d.income / 100;
+            projSpend[lastActualIdx + 1 + i] = d.spend / 100;
+        });
 
         return {
             labels,
             datasets: [
                 {
+                    label: 'Actual Revenue',
+                    data: actualIncome,
+                    borderColor: '#4ade80',
+                    fill: false,
+                    tension: 0.4,
+                    borderWidth: 2,
+                    pointBackgroundColor: '#4ade80',
+                    pointRadius: 4,
+                },
+                {
+                    label: 'Proj. Revenue',
+                    data: projIncome,
+                    borderColor: '#4ade80',
+                    borderDash: [4, 4],
+                    fill: false,
+                    tension: 0.4,
+                    borderWidth: 2,
+                    pointBackgroundColor: '#4ade80',
+                    pointRadius: 4,
+                    pointStyle: 'rectRot'
+                },
+                {
+                    label: 'Actual Opex',
+                    data: actualSpend,
+                    borderColor: '#ff4d4d',
+                    fill: false,
+                    tension: 0.4,
+                    borderWidth: 2,
+                    pointBackgroundColor: '#ff4d4d',
+                    pointRadius: 4,
+                },
+                {
+                    label: 'Proj. Opex',
+                    data: projSpend,
+                    borderColor: '#ff4d4d',
+                    borderDash: [4, 4],
+                    fill: false,
+                    tension: 0.4,
+                    borderWidth: 2,
+                    pointBackgroundColor: '#ff4d4d',
+                    pointRadius: 4,
+                    pointStyle: 'rectRot'
+                },
+                {
                     label: 'Actual Net Income',
                     data: actualNet,
                     borderColor: '#2f6bff',
-                    backgroundColor: 'rgba(47, 107, 255, 0.15)',
+                    backgroundColor: 'rgba(47, 107, 255, 0.1)',
                     fill: true,
                     tension: 0.4,
                     borderWidth: 3,
@@ -238,7 +297,7 @@ export default function Dashboard({ apiStatus }) {
                     pointRadius: 4,
                 },
                 {
-                    label: 'Projected Net Income (+3 Mo)',
+                    label: 'Proj. Net (+3Mo)',
                     data: projNet,
                     borderColor: '#f7b955',
                     borderDash: [6, 6],
