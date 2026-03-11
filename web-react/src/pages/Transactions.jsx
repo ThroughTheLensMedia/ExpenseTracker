@@ -113,6 +113,8 @@ export default function Transactions() {
     const clearFilters = () => {
         setStart(''); setEnd(''); setSearchVendor(''); setSearchCategory(''); setSearchNotes('');
         setDeductOnly(false); setMissingReceiptOnly(false);
+        setToast({ ok: true, msg: 'All filters cleared. Showing full ledger.' });
+        setTimeout(() => setToast(null), 3000);
     };
 
     const handleNormalizeVendors = async () => {
@@ -148,8 +150,10 @@ export default function Transactions() {
                     </div>
 
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                        <button className="btn secondary desktop-only" onClick={clearFilters}>Reset</button>
-                        <button className="btn secondary desktop-only" onClick={exportCsv}>Export</button>
+                        <button className="btn secondary" style={{ background: 'rgba(56, 189, 248, 0.1)', borderColor: 'rgba(56, 189, 248, 0.4)' }} onClick={() => navigate('/import')}>🏦 Bank Import</button>
+                        <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} className="desktop-only" />
+                        <button className="btn secondary desktop-only" onClick={clearFilters} title="Clear all date/vendor/category filters">Reset Filters</button>
+                        <button className="btn secondary desktop-only" onClick={exportCsv} title="Download current filtered list to CSV">Export CSV</button>
                     </div>
                 </div>
             </div>

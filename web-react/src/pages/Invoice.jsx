@@ -74,7 +74,11 @@ function InvoicePreview({ invoice, settings = {}, onClose }) {
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '60px' }}>
                             <div>
                                 <div style={{ marginBottom: '10px' }}>
-                                    <img src="/logo.png" alt="Logo" style={{ height: '80px', objectFit: 'contain', display: 'block' }} />
+                                    {settings?.logo_url ? (
+                                        <img src={settings.logo_url} alt="Logo" style={{ height: '80px', objectFit: 'contain', display: 'block' }} />
+                                    ) : (
+                                        <img src="/logo.png" alt="Logo" style={{ height: '80px', objectFit: 'contain', display: 'block' }} />
+                                    )}
                                 </div>
                                 <div style={{ marginTop: '10px', fontSize: '14px', lineHeight: '1.6' }}>
                                     <div style={{ fontWeight: 950, fontSize: '18px', color: BRAND_ORANGE, textTransform: 'uppercase' }}>{settings?.business_name || 'Through The Lens Media'}</div>
@@ -236,6 +240,13 @@ export default function Invoice() {
     };
 
     useEffect(() => { load(); }, []);
+
+    const addItem = () => {
+        setFormData(prev => ({
+            ...prev,
+            items: [...prev.items, { description: '', quantity: 1, unit_price: '' }]
+        }));
+    };
 
     const handleLeadSelect = (val) => {
         const leadId = typeof val === 'object' ? val.target.value : val;

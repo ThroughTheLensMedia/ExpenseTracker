@@ -21,8 +21,11 @@ router.post("/", async (req, res) => {
         let result;
         const payload = { ...req.body };
 
+        // Remove ID from payload to prevent "column id can only be updated to DEFAULT" errors
+        delete payload.id;
+        delete payload.created_at; // Also strip timestamps if present
+
         if (existing && existing.id) {
-            // Update existing row
             result = await supabase
                 .from("settings")
                 .update(payload)
@@ -30,7 +33,6 @@ router.post("/", async (req, res) => {
                 .select()
                 .single();
         } else {
-            // Insert new row
             result = await supabase
                 .from("settings")
                 .insert([payload])

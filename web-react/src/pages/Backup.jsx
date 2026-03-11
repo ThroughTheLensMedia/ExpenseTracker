@@ -146,6 +146,16 @@ export default function Backup() {
         } catch (err) { alert(err.message); setApplying(false); }
     };
 
+    const handleLogoUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            setSettings(prev => ({ ...prev, logo_url: ev.target.result }));
+        };
+        reader.readAsDataURL(file);
+    };
+
     const handleSaveSettings = async (e) => {
         e.preventDefault();
         setMsg("Saving profile...");
@@ -218,6 +228,20 @@ export default function Backup() {
                             Update your studio identity. These details personalize your invoices and global reporting headers.
                         </p>
                         <form onSubmit={handleSaveSettings} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
+                            <div style={{ gridColumn: 'span 2', display: 'flex', gap: '30px', alignItems: 'center', marginBottom: '10px' }}>
+                                <div style={{ flex: 1 }}>
+                                    <small className="muted" style={{ fontWeight: 900 }}>STUDIO LOGO</small>
+                                    <label className="btn secondary" style={{ display: 'block', marginTop: '8px', cursor: 'pointer', textAlign: 'center' }}>
+                                        <input type="file" accept="image/*" onChange={handleLogoUpload} style={{ display: 'none' }} />
+                                        {settings.logo_url ? 'Change Studio Logo' : 'Upload Studio Logo'}
+                                    </label>
+                                </div>
+                                {settings.logo_url && (
+                                    <div style={{ width: '120px', height: '80px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                        <img src={settings.logo_url} alt="Preview" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                                    </div>
+                                )}
+                            </div>
                             <div style={{ gridColumn: 'span 2' }}>
                                 <small className="muted" style={{ fontWeight: 900 }}>OFFICIAL BUSINESS NAME</small>
                                 <input value={settings.business_name || ''} onChange={e => setSettings({ ...settings, business_name: e.target.value })} placeholder="Through The Lens Media" style={{ marginTop: '8px', padding: '15px' }} />
@@ -244,7 +268,7 @@ export default function Backup() {
                             </div>
                             <div style={{ gridColumn: 'span 2', display: 'flex', gap: '20px', alignItems: 'center', marginTop: '10px' }}>
                                 <button type="submit" className="btn primary glow-blue" style={{ padding: '15px 45px', fontSize: '16px' }}>Save Global Identity</button>
-                                {msg && <span className="tag ok" style={{ fontWeight: 900 }}>{msg}</span>}
+                                {msg && <span className={`${msg.includes('Error') ? 'tag bad' : 'tag ok'}`} style={{ fontWeight: 900 }}>{msg}</span>}
                             </div>
                         </form>
                     </div>
