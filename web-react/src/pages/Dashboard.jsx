@@ -86,7 +86,7 @@ export default function Dashboard({ apiStatus }) {
                 byCat.set(c, cPrev);
             }
         }
-        return { income, spend, net: income - spend, missing, topCats: [...byCat.entries()].sort((a, b) => b[1].cents - a[1].cents).slice(0, 5), monthlyData };
+        return { income, spend, net: income - spend, missing, topCats: [...byCat.entries()].sort((a, b) => b[1].cents - a[1].cents).slice(0, 10), monthlyData };
     }, [filtered]);
 
     const profitMargin = stats.income > 0 ? ((stats.net / stats.income) * 100).toFixed(1) : 0;
@@ -99,6 +99,9 @@ export default function Dashboard({ apiStatus }) {
             { label: 'COGS & Opex', data: stats.monthlyData.map(d => d.expense / 100), backgroundColor: 'rgba(255, 77, 77, 0.8)', borderRadius: 4, barPercentage: 0.6 }
         ],
     };
+
+    // Expanded color palette for Top 10 categories
+    const chartColors = ['#2f6bff', '#4ade80', '#f7b955', '#ff4d4d', '#9333ea', '#06b6d4', '#ec4899', '#f97316', '#8b5cf6', '#14b8a6'];
 
     return (
         <section style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '1400px', margin: '0 auto', paddingBottom: '40px' }}>
@@ -153,7 +156,7 @@ export default function Dashboard({ apiStatus }) {
             <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', gap: '20px', alignItems: 'start' }}>
 
                 {/* Cash Flow Velocity Chart */}
-                <div className="card glass" style={{ margin: 0, padding: '24px', height: '460px', display: 'flex', flexDirection: 'column' }}>
+                <div className="card glass" style={{ margin: 0, padding: '24px', height: '620px', display: 'flex', flexDirection: 'column' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                         <div>
                             <h2 style={{ fontSize: '1.2rem', margin: 0 }}>Cash Flow Velocity</h2>
@@ -182,7 +185,7 @@ export default function Dashboard({ apiStatus }) {
                     {/* Allocation Doughnut */}
                     <div className="card glass" style={{ margin: 0, padding: '24px' }}>
                         <h2 style={{ fontSize: '1.2rem', marginBottom: '4px' }}>Capital Allocation</h2>
-                        <div className="muted" style={{ fontSize: '11px', marginBottom: '24px' }}>Top Expense Categories</div>
+                        <div className="muted" style={{ fontSize: '11px', marginBottom: '24px' }}>Top 10 Expense Categories</div>
 
                         <div style={{ height: '220px', position: 'relative' }}>
                             {stats.topCats.length > 0 ? (
@@ -190,7 +193,7 @@ export default function Dashboard({ apiStatus }) {
                                     labels: stats.topCats.map(c => c[0]),
                                     datasets: [{
                                         data: stats.topCats.map(c => c[1].cents / 100),
-                                        backgroundColor: ['#2f6bff', '#4ade80', '#f7b955', '#ff4d4d', '#9333ea'],
+                                        backgroundColor: chartColors.slice(0, stats.topCats.length),
                                         borderWidth: 0,
                                         hoverOffset: 6
                                     }]
@@ -215,18 +218,18 @@ export default function Dashboard({ apiStatus }) {
                         </div>
 
                         {/* Top Cats Legend */}
-                        <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             {stats.topCats.map(([cat, meta], i) => {
-                                const colors = ['#2f6bff', '#4ade80', '#f7b955', '#ff4d4d', '#9333ea'];
+                                const color = chartColors[i % chartColors.length];
                                 return (
-                                    <div key={cat} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
+                                    <div key={cat} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', background: 'rgba(255,255,255,0.02)', padding: '6px 10px', borderRadius: '8px' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                            <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: colors[i] }} />
-                                            <span style={{ fontWeight: 800, color: '#a8b6dd', textTransform: 'uppercase', letterSpacing: '0.02em', fontSize: '10px' }}>{cat}</span>
+                                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: color }} />
+                                            <span style={{ fontWeight: 800, color: '#a8b6dd', textTransform: 'uppercase', letterSpacing: '0.02em', fontSize: '9px', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat}</span>
                                         </div>
                                         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                                             <span style={{ fontWeight: 700, color: '#fff', fontSize: '11px' }}>{formatMoney(meta.cents)}</span>
-                                            <span style={{ fontWeight: 900, color: colors[i], minWidth: '40px', textAlign: 'right' }}>{((meta.cents / stats.spend) * 100).toFixed(1)}%</span>
+                                            <span style={{ fontWeight: 900, color: color, minWidth: '35px', textAlign: 'right', fontSize: '10px' }}>{((meta.cents / stats.spend) * 100).toFixed(1)}%</span>
                                         </div>
                                     </div>
                                 );
