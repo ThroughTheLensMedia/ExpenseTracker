@@ -7,6 +7,7 @@ import Backup from './pages/Backup';
 import Invoice from './pages/Invoice';
 import Assets from './pages/Assets';
 import CRM from './pages/CRM';
+import Import from './pages/Import';
 
 function App() {
   const [apiStatus, setApiStatus] = useState('Checking...');
@@ -60,6 +61,7 @@ function App() {
             <NavLink to="/equipment" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Equipment</NavLink>
             <NavLink to="/invoice" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Invoice</NavLink>
             <NavLink to="/crm" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>CRM</NavLink>
+            <NavLink to="/import" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Bank Import</NavLink>
 
             <NavLink to="/backup" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Studio Control Center</NavLink>
           </div>
@@ -79,6 +81,7 @@ function App() {
             <Route path="/backup" element={<Backup />} />
             <Route path="/invoice" element={<Invoice />} />
             <Route path="/crm" element={<CRM />} />
+            <Route path="/import" element={<Import />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </main>
@@ -91,7 +94,11 @@ function App() {
           </NavLink>
           <NavLink to="/transactions" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
             <span className="bottom-nav-icon">💸</span>
-            <span>Expenses</span>
+            <span>Ledger</span>
+          </NavLink>
+          <NavLink to="/import" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+            <span className="bottom-nav-icon">🏦</span>
+            <span>Import</span>
           </NavLink>
           <NavLink to="/crm" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
             <span className="bottom-nav-icon">👥</span>

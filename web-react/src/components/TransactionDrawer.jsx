@@ -44,9 +44,20 @@ export default function TransactionDrawer({ transaction, onClose, onSave }) {
                 notes,
                 receipt_link: receiptLink || null,
             };
-            const updated = await apiPatch(`/expenses/${transaction.id}`, payload);
+
+            let updated;
+            if (transaction.id) {
+                updated = await apiPatch(`/expenses/${transaction.id}`, payload);
+            } else {
+                updated = await apiPost('/expenses', payload);
+            }
+
             setMsg("Saved.");
             if (onSave) onSave(updated);
+            if (!transaction.id) {
+                // For new transactions, close after a brief delay so user sees "Saved"
+                setTimeout(onClose, 800);
+            }
         } catch (err) {
             setMsg(`Save failed: ${err.message}`);
         }
