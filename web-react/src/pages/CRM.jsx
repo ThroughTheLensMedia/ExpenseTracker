@@ -108,6 +108,7 @@ export default function CRM() {
             setEditingLead(null);
             clearForm();
         }
+        console.log("Opening editor for lead:", lead);
         setIsDrawerOpen(true);
     };
 
@@ -118,34 +119,45 @@ export default function CRM() {
 
     return (
         <section className="dashboard">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            {/* Dashboard header with explicit z-index to ensure it is above anything but the drawer */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', position: 'relative', zIndex: 10 }}>
                 <div>
-                    <h1 style={{ margin: 0, fontSize: '1.4rem' }}>Lead & Client CRM</h1>
+                    <h1 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 900 }}>Lead CRM Console</h1>
                     <div className="muted" style={{ fontSize: '12px' }}>Studio Pipeline Management</div>
                 </div>
-                <button className="btn" onClick={() => openEditor()} style={{ background: 'rgba(56, 189, 248, 0.1)', color: '#38bdf8', borderColor: 'rgba(56, 189, 248, 0.3)' }}>
+                <button className="btn glow-blue" onClick={() => { console.log("Button clicked"); openEditor(); }} style={{ padding: '10px 20px' }}>
                     + New Lead
                 </button>
             </div>
 
-            {/* Kanban Board */}
-            <div style={{ display: 'flex', gap: '16px', overflowX: 'auto', paddingBottom: '20px', alignItems: 'flex-start', minHeight: '65vh', width: '100%', boxSizing: 'border-box' }}>
+            {/* Kanban Board Container - Forced Scrollability and Max Reach */}
+            <div style={{
+                display: 'flex',
+                gap: '20px',
+                overflowX: 'auto',
+                paddingBottom: '24px',
+                alignItems: 'flex-start',
+                minHeight: '70vh',
+                width: '100%',
+                scrollBehavior: 'smooth',
+                WebkitOverflowScrolling: 'touch'
+            }}>
                 {COLUMNS.map(col => {
                     const columnLeads = leads.filter(l => (l.status || 'New Lead') === col.id);
                     const totalValue = columnLeads.reduce((s, l) => s + (l.quoted_value_cents || 0), 0);
 
                     return (
                         <div key={col.id} style={{
-                            flex: '1 1 300px',
-                            minWidth: '280px',
-                            background: 'rgba(15, 26, 51, 0.5)',
-                            borderTop: `3px solid ${col.color}`,
-                            borderRadius: '12px',
-                            padding: '16px',
+                            flex: '0 0 280px',
+                            background: 'rgba(15, 26, 51, 0.7)',
+                            borderTop: `4px solid ${col.color}`,
+                            borderRadius: '20px',
+                            padding: '20px',
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: '12px',
-                            boxShadow: `0 0 15px ${col.glow}`
+                            gap: '16px',
+                            boxShadow: `0 10px 30px rgba(0,0,0,0.3), 0 0 20px ${col.glow}`,
+                            border: '1px solid rgba(255,255,255,0.05)'
                         }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div style={{ fontWeight: 800, color: col.color, textTransform: 'uppercase', fontSize: '12px', letterSpacing: '0.05em' }}>
