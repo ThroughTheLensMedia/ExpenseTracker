@@ -22,6 +22,7 @@ const assetsRouter = require("./routes/assets");
 const invoiceRouter = require("./routes/invoices");
 const adminRouter = require("./routes/admin");
 const leadsRouter = require("./routes/leads");
+const pwaRouter = require("./routes/pwa");
 
 // Initialize Database
 initDb();
@@ -100,6 +101,7 @@ apiRouter.use("/assets", assetsRouter);
 apiRouter.use("/invoices", invoiceRouter);
 apiRouter.use("/admin", adminRouter);
 apiRouter.use("/leads", leadsRouter);
+apiRouter.use("/pwa", pwaRouter);
 
 // Mount all API routes under /api
 app.use("/api", apiRouter);
