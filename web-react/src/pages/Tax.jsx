@@ -3,7 +3,7 @@ import { fetchAllExpenses, apiGet, apiPost, apiPatch, apiDelete, formatMoney, fe
 import TransactionDrawer from '../components/TransactionDrawer';
 import { useModal } from '../components/ModalContext.jsx';
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 const SCHEDULE_C_MAPPING = {
     'Advertising': 'Line 8',
@@ -283,7 +283,7 @@ export default function Tax() {
             doc.setTextColor(30, 41, 59);
             doc.text("Executive Summary", 14, 45);
 
-            doc.autoTable({
+            autoTable(doc, {
                 startY: 50,
                 head: [['Line Item', 'Description', 'Value']],
                 body: [
@@ -314,7 +314,7 @@ export default function Tax() {
                 tableBody.push(['Line 9', `Car & Truck (Mileage: ${totalMiles} mi)`, formatMoney(mileageDeductCents)]);
             }
 
-            doc.autoTable({
+            autoTable(doc, {
                 startY: doc.lastAutoTable.finalY + 20,
                 head: [['Line', 'IRS Category', 'Deduction Amount']],
                 body: tableBody,
