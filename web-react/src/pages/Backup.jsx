@@ -306,33 +306,33 @@ export default function Backup() {
                     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: '20px', alignItems: 'start' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                             {/* Create Rule */}
-                            <div className="card glass" style={{ margin: 0, padding: '24px' }}>
-                                <h2 style={{ margin: '0 0 20px 0', fontSize: '1.2rem' }}>➕ New Keyword Rule</h2>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 160px', gap: '12px', alignItems: 'flex-end' }}>
+                            <div className="card glass" style={{ margin: 0, padding: '20px' }}>
+                                <h2 style={{ margin: '0 0 16px 0', fontSize: '1.1rem' }}>➕ New Keyword Rule</h2>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 140px', gap: '8px', alignItems: 'flex-end' }}>
                                     <div>
-                                        <small className="muted" style={{ fontWeight: 800, fontSize: '10px' }}>TARGET KEYWORD</small>
-                                        <input value={matchValue} onChange={e => setMatchValue(e.target.value)} placeholder="e.g. Amazon" style={{ marginTop: '4px' }} />
+                                        <small className="muted" style={{ fontWeight: 800, fontSize: '9px', letterSpacing: '0.05em' }}>TARGET KEYWORD</small>
+                                        <input value={matchValue} onChange={e => setMatchValue(e.target.value)} placeholder="e.g. Adobe" style={{ marginTop: '4px', fontSize: '12px' }} />
                                     </div>
                                     <div>
-                                        <small className="muted" style={{ fontWeight: 800, fontSize: '10px' }}>STUDIO CATEGORY</small>
+                                        <small className="muted" style={{ fontWeight: 800, fontSize: '9px', letterSpacing: '0.05em' }}>STUDIO CATEGORY</small>
                                         <div style={{ marginTop: '4px' }}>
                                             <CategorySelect value={category} onChange={val => setCategory(val)} />
                                         </div>
                                     </div>
-                                    <button className="btn primary" style={{ height: '42px' }} onClick={() => handleCreateRule()} disabled={!matchValue || !category}>Save Engine Rule</button>
+                                    <button className="btn primary" style={{ height: '38px', fontSize: '12px' }} onClick={() => handleCreateRule()} disabled={!matchValue || !category}>Save Rule</button>
                                 </div>
                             </div>
 
                             {/* Active Rules List */}
                             <div className="card glass" style={{ margin: 0, padding: '20px' }}>
                                 <h2 style={{ fontSize: '1.2rem', marginBottom: '16px' }}>Active Engine Rules</h2>
-                                <div className="tableWrap" style={{ maxHeight: '600px' }}>
-                                    <table className="glass">
+                                <div className="tableWrap" style={{ maxHeight: '600px', padding: '0 4px' }}>
+                                    <table className="glass" style={{ tableLayout: 'fixed', width: '100%' }}>
                                         <thead>
                                             <tr>
-                                                <th>Match String</th>
-                                                <th>Assignment</th>
-                                                <th style={{ textAlign: 'right' }}>Actions</th>
+                                                <th style={{ width: '45%', padding: '10px 8px' }}>Match Criteria</th>
+                                                <th style={{ width: '30%', padding: '10px 8px' }}>Assignment</th>
+                                                <th style={{ width: '25%', textAlign: 'right', padding: '10px 8px' }}>Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -342,29 +342,31 @@ export default function Backup() {
                                                 return (
                                                     <React.Fragment key={r.id}>
                                                         <tr>
-                                                            <td>
-                                                                <div style={{ fontWeight: 800, color: 'var(--warn)' }}>"{r.match_value}"</div>
-                                                                <div className="muted small">contains match</div>
+                                                            <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '8px' }}>
+                                                                <div style={{ fontWeight: 800, color: 'var(--warn)', fontSize: '12px' }}>"{r.match_value}"</div>
+                                                                <div className="muted" style={{ fontSize: '9px' }}>keyword match</div>
                                                             </td>
-                                                            <td style={{ fontWeight: 700 }}>{r.assign_category || '—'}</td>
-                                                            <td style={{ textAlign: 'right' }}>
-                                                                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                                                                    <button className="btn sm secondary" onClick={() => handlePreviewRule(r.id)} disabled={rs.loading}>
+                                                            <td style={{ fontWeight: 700, fontSize: '11px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '8px' }}>
+                                                                {r.assign_category || '—'}
+                                                            </td>
+                                                            <td style={{ textAlign: 'right', padding: '8px' }}>
+                                                                <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
+                                                                    <button className="btn sm secondary" style={{ padding: '4px 6px', fontSize: '9px', minWidth: '45px' }} onClick={() => handlePreviewRule(r.id)} disabled={rs.loading}>
                                                                         {rs.loading ? '...' : 'Audit'}
                                                                     </button>
-                                                                    <button className="btn sm danger" onClick={() => handleDeleteRule(r.id)}>×</button>
+                                                                    <button className="btn sm danger" style={{ padding: '4px 6px', fontSize: '9px' }} onClick={() => handleDeleteRule(r.id)}>×</button>
                                                                 </div>
                                                             </td>
                                                         </tr>
                                                         {rs.preview && (
                                                             <tr>
-                                                                <td colSpan="3" className="glass" style={{ background: 'rgba(25, 195, 125, 0.05)', padding: '15px' }}>
-                                                                    <div style={{ fontSize: '12px', color: '#4ade80', fontWeight: 800 }}>Found {rs.preview.matchCount} records in ledger.</div>
-                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}>
-                                                                        <button className="btn primary sm" onClick={() => handleApplySingleRule(r.id)} disabled={rs.applying}>
-                                                                            {rs.applying ? 'Applying...' : 'Apply Assignment Now'}
+                                                                <td colSpan="3" className="glass" style={{ background: 'rgba(25, 195, 125, 0.05)', padding: '12px' }}>
+                                                                    <div style={{ fontSize: '11px', color: '#4ade80', fontWeight: 800 }}>Found {rs.preview.matchCount} records.</div>
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+                                                                        <button className="btn primary sm" style={{ fontSize: '10px', padding: '6px 12px' }} onClick={() => handleApplySingleRule(r.id)} disabled={rs.applying}>
+                                                                            {rs.applying ? 'Applying...' : 'Apply Now'}
                                                                         </button>
-                                                                        {rs.applyMsg && <span className="small ok" style={{ fontWeight: 700 }}>{rs.applyMsg}</span>}
+                                                                        {rs.applyMsg && <span style={{ fontSize: '10px', color: '#4ade80', fontWeight: 700 }}>{rs.applyMsg}</span>}
                                                                     </div>
                                                                 </td>
                                                             </tr>
