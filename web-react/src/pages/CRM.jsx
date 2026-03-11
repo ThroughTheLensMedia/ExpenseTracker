@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { apiGet, apiPost, apiPatch, apiDelete, formatMoney } from '../api';
+import React, { useState, useEffect, useMemo } from 'react';
+import { apiGet, apiPost, apiPatch, formatMoney } from '../api';
 
-const COLUMNS = [
+const ACTIVE_COLUMNS = [
     { id: 'New Lead', label: 'New Lead', color: '#a8b6dd', glow: 'rgba(168, 182, 221, 0.2)' },
     { id: 'Quoted', label: 'Quoted', color: '#fbbf24', glow: 'rgba(251, 191, 36, 0.2)' },
-    { id: 'Booked', label: 'Booked', color: '#38bdf8', glow: 'rgba(56, 189, 248, 0.2)' },
-    { id: 'Paid', label: 'Paid', color: '#4ade80', glow: 'rgba(74, 222, 128, 0.2)' },
-    { id: 'Lost', label: 'Lost', color: '#ff4d4d', glow: 'rgba(255, 77, 77, 0.2)' }
+    { id: 'Booked', label: 'Booked', color: '#38bdf8', glow: 'rgba(56, 189, 248, 0.2)' }
 ];
+
+const ARCHIVE_IDS = ['Paid', 'Lost'];
 
 export default function CRM() {
     const [leads, setLeads] = useState([]);
@@ -39,6 +39,13 @@ export default function CRM() {
         loadLeads();
     }, []);
 
+    const archiveStats = useMemo(() => {
+        return {
+            Paid: leads.filter(l => l.status === 'Paid'),
+            Lost: leads.filter(l => l.status === 'Lost')
+        };
+    }, [leads]);
+
     const handleSave = async (e) => {
         e.preventDefault();
         const payload = {
@@ -56,8 +63,8 @@ export default function CRM() {
             } else {
                 await apiPost('/leads', payload);
             }
-            setEditingLead(null);
             setIsDrawerOpen(false);
+            setEditingLead(null);
             clearForm();
             loadLeads();
         } catch (err) {
@@ -72,16 +79,6 @@ export default function CRM() {
             await apiPatch(`/leads/${lead.id}`, { status: newStatus });
         } catch (err) {
             loadLeads(); // revert
-            alert(err.message);
-        }
-    };
-
-    const handleDelete = async (id) => {
-        if (!window.confirm("Delete this lead permanently?")) return;
-        try {
-            await apiDelete(`/leads/${id}`);
-            setLeads(prev => prev.filter(l => l.id !== id));
-        } catch (err) {
             alert(err.message);
         }
     };
@@ -108,7 +105,6 @@ export default function CRM() {
             setEditingLead(null);
             clearForm();
         }
-        console.log("Opening editor for lead:", lead);
         setIsDrawerOpen(true);
     };
 
@@ -117,98 +113,137 @@ export default function CRM() {
         setEditingLead(null);
     };
 
+    const exportToCSV = () => {
+        if (leads.length === 0) return;
+
+        const headers = ["Name", "Email", "Phone", "Status", "Project Type", "Quoted Value ($)", "Created At"];
+        const rows = leads.map(l => [
+            `"${l.name}"`,
+            `"${l.email}"`,
+            `"${l.phone}"`,
+            `"${l.status}"`,
+            `"${l.project_type}"`,
+            (l.quoted_value_cents / 100).toFixed(2),
+            l.created_at
+        ]);
+
+        const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `TTL_CRM_Export_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     return (
         <section className="dashboard">
-            {/* Dashboard header with explicit z-index to ensure it is above anything but the drawer */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', position: 'relative', zIndex: 10 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
                 <div>
-                    <h1 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 900 }}>Lead CRM Console</h1>
-                    <div className="muted" style={{ fontSize: '12px' }}>Studio Pipeline Management</div>
+                    <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 950, letterSpacing: '-0.02em' }}>CRM Console</h1>
+                    <div className="muted" style={{ fontWeight: 600 }}>Through The Lens · Studio Pipeline</div>
                 </div>
-                <button className="btn glow-blue" onClick={() => { console.log("Button clicked"); openEditor(); }} style={{ padding: '10px 20px' }}>
-                    + New Lead
-                </button>
+
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    {/* Rolled up Archive Stats */}
+                    <div className="glass" style={{ padding: '8px 16px', borderRadius: '12px', display: 'flex', gap: '20px', fontSize: '12px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span className="muted" style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Success (Paid)</span>
+                            <span style={{ color: '#4ade80', fontWeight: 900 }}>{archiveStats.Paid.length} Clients ({formatMoney(archiveStats.Paid.reduce((s, l) => s + l.quoted_value_cents, 0))})</span>
+                        </div>
+                        <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)' }} />
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span className="muted" style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lost Archive</span>
+                            <span style={{ color: '#ff4d4d', fontWeight: 900 }}>{archiveStats.Lost.length} Rows</span>
+                        </div>
+                    </div>
+
+                    <button className="btn" onClick={exportToCSV} style={{ padding: '10px 16px', fontWeight: 700, fontSize: '12px', background: 'rgba(168, 182, 221, 0.1)', color: '#fff', border: '1px solid rgba(168, 182, 221, 0.3)' }}>
+                        📤 Export Newsletter
+                    </button>
+
+                    <button className="btn glow-blue" onClick={() => openEditor()} style={{ padding: '10px 20px', fontWeight: 900 }}>
+                        + New Lead
+                    </button>
+                </div>
             </div>
 
-            {/* Kanban Board Container - Forced Scrollability and Max Reach */}
+            {/* Kanban Board - Active Stages Only */}
             <div style={{
-                display: 'flex',
-                gap: '20px',
-                overflowX: 'auto',
-                paddingBottom: '24px',
-                alignItems: 'flex-start',
-                minHeight: '70vh',
-                width: '100%',
-                scrollBehavior: 'smooth',
-                WebkitOverflowScrolling: 'touch'
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: '24px',
+                minHeight: '65vh',
+                width: '100%'
             }}>
-                {COLUMNS.map(col => {
+                {ACTIVE_COLUMNS.map(col => {
                     const columnLeads = leads.filter(l => (l.status || 'New Lead') === col.id);
                     const totalValue = columnLeads.reduce((s, l) => s + (l.quoted_value_cents || 0), 0);
 
                     return (
                         <div key={col.id} style={{
-                            flex: '0 0 280px',
-                            background: 'rgba(15, 26, 51, 0.7)',
+                            background: 'rgba(15, 26, 51, 0.4)',
                             borderTop: `4px solid ${col.color}`,
-                            borderRadius: '20px',
+                            borderRadius: '24px',
                             padding: '20px',
                             display: 'flex',
                             flexDirection: 'column',
                             gap: '16px',
-                            boxShadow: `0 10px 30px rgba(0,0,0,0.3), 0 0 20px ${col.glow}`,
-                            border: '1px solid rgba(255,255,255,0.05)'
+                            boxShadow: `0 15px 35px rgba(0,0,0,0.2), 0 0 20px ${col.glow}`,
+                            border: '1px solid rgba(255,255,255,0.03)'
                         }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ fontWeight: 800, color: col.color, textTransform: 'uppercase', fontSize: '12px', letterSpacing: '0.05em' }}>
-                                    {col.label} <span style={{ opacity: 0.6 }}>({columnLeads.length})</span>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                <div style={{ fontWeight: 900, color: col.color, textTransform: 'uppercase', fontSize: '13px', letterSpacing: '0.1em' }}>
+                                    {col.label} <span style={{ opacity: 0.5 }}>{columnLeads.length}</span>
                                 </div>
-                                <div style={{ fontSize: '11px', color: '#a8b6dd', fontWeight: 'bold' }}>
+                                <div style={{ fontSize: '12px', color: '#fff', fontWeight: 900, background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '6px' }}>
                                     {formatMoney(totalValue)}
                                 </div>
                             </div>
 
-                            {columnLeads.length === 0 ? (
-                                <div className="muted" style={{ fontSize: '11px', textAlign: 'center', margin: '20px 0', borderStyle: 'dashed', borderWidth: '1px', borderColor: 'rgba(255,255,255,0.1)', padding: '20px', borderRadius: '8px' }}>
-                                    Drop area empty
-                                </div>
-                            ) : (
-                                columnLeads.map(lead => (
-                                    <div key={lead.id} className="card glass" style={{ margin: 0, padding: '12px', cursor: 'grab', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                            <div style={{ fontWeight: 800, fontSize: '14px', color: '#fff' }}>{lead.name}</div>
-                                            <div style={{ fontWeight: 900, fontSize: '13px', color: col.color }}>{formatMoney(lead.quoted_value_cents)}</div>
-                                        </div>
-
-                                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                                            <span style={{ fontSize: '10px', background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '4px', color: '#a8b6dd' }}>{lead.project_type}</span>
-                                        </div>
-
-                                        {(lead.email || lead.phone) && (
-                                            <div style={{ fontSize: '11px', color: '#a8b6dd', lineHeight: 1.4, marginTop: '4px' }}>
-                                                {lead.email && <div>✉️ {lead.email}</div>}
-                                                {lead.phone && <div>📞 {lead.phone}</div>}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                {columnLeads.length === 0 ? (
+                                    <div className="muted" style={{ padding: '40px 20px', textAlign: 'center', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '16px', fontSize: '11px' }}>
+                                        No active {col.label.toLowerCase()}s
+                                    </div>
+                                ) : (
+                                    columnLeads.map(lead => (
+                                        <div key={lead.id} className="card glass" style={{ margin: 0, padding: '16px', borderRadius: '16px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                                                <div style={{ fontWeight: 900, fontSize: '15px', color: '#fff' }}>{lead.name}</div>
+                                                <div style={{ fontWeight: 900, fontFamily: 'var(--mono)', fontSize: '14px', color: col.color }}>{formatMoney(lead.quoted_value_cents)}</div>
                                             </div>
-                                        )}
 
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                            <div style={{ marginBottom: '12px' }}>
+                                                <span style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 800, background: 'rgba(56, 189, 248, 0.1)', color: '#38bdf8', padding: '2px 8px', borderRadius: '4px' }}>{lead.project_type}</span>
+                                            </div>
+
+                                            {(lead.email || lead.phone) && (
+                                                <div style={{ fontSize: '11px', color: 'var(--muted)', lineHeight: 1.6, background: 'rgba(0,0,0,0.2)', padding: '8px', borderRadius: '8px', marginBottom: '12px' }}>
+                                                    {lead.email && <div style={{ textOverflow: 'ellipsis', overflow: 'hidden' }}>✉️ {lead.email}</div>}
+                                                    {lead.phone && <div>📞 {lead.phone}</div>}
+                                                </div>
+                                            )}
+
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                                                 <select
                                                     value={lead.status}
                                                     onChange={(e) => handleMove(lead, e.target.value)}
-                                                    style={{ fontSize: '11px', padding: '2px 4px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--line)', color: '#fff', borderRadius: '4px' }}
+                                                    style={{ width: 'auto', fontSize: '11px', fontWeight: 800, padding: '4px 8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px' }}
                                                 >
-                                                    {COLUMNS.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                                                    {[...ACTIVE_COLUMNS, { id: 'Paid', label: 'Mark as Paid' }, { id: 'Lost', label: 'Archived / Lost' }].map(c => (
+                                                        <option key={c.id} value={c.id}>{c.label}</option>
+                                                    ))}
                                                 </select>
-                                            </div>
-                                            <div style={{ display: 'flex', gap: '8px' }}>
-                                                <button onClick={() => openEditor(lead)} style={{ background: 'none', border: 'none', color: '#38bdf8', cursor: 'pointer', fontSize: '11px' }}>Edit</button>
-                                                <button onClick={() => handleDelete(lead.id)} style={{ background: 'none', border: 'none', color: '#ff4d4d', cursor: 'pointer', fontSize: '11px' }}>Drop</button>
+                                                <button onClick={() => openEditor(lead)} style={{ background: 'none', border: 'none', color: '#38bdf8', cursor: 'pointer', fontSize: '11px', fontWeight: 800 }}>Edit</button>
                                             </div>
                                         </div>
-                                    </div>
-                                ))
-                            )}
+                                    ))
+                                )}
+                            </div>
                         </div>
                     );
                 })}
@@ -217,25 +252,25 @@ export default function CRM() {
             {/* Editor Drawer */}
             {isDrawerOpen && (
                 <div style={{
-                    position: 'fixed', top: 0, right: 0, bottom: 0, width: '400px',
+                    position: 'fixed', top: 0, right: 0, bottom: 0, width: '420px',
                     background: 'rgba(15, 26, 51, 0.98)', borderLeft: '1px solid var(--line)',
-                    padding: '24px', zIndex: 10000, boxShadow: '-5px 0 30px rgba(0,0,0,0.5)',
-                    overflowY: 'auto'
+                    padding: '32px', zIndex: 10000, boxShadow: '-10px 0 40px rgba(0,0,0,0.5)',
+                    overflowY: 'auto', backdropFilter: 'blur(20px)'
                 }}>
-                    <h2 style={{ marginTop: 0, color: '#fff' }}>{formName ? 'Edit Lead' : 'New Lead'}</h2>
-                    <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '20px' }}>
+                    <h2 style={{ marginTop: 0, color: '#fff', fontSize: '1.5rem', fontWeight: 900 }}>{editingLead ? 'Edit Project' : 'New Project'}</h2>
+                    <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '24px' }}>
                         <div>
-                            <label className="muted" style={{ display: 'block', fontSize: '11px', marginBottom: '4px' }}>Client / Project Name</label>
-                            <input required value={formName} onChange={e => setFormName(e.target.value)} style={{ width: '100%' }} placeholder="e.g. Smith Wedding" />
+                            <label className="muted" style={{ display: 'block', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', marginBottom: '8px' }}>Client / Project Name</label>
+                            <input required value={formName} onChange={e => setFormName(e.target.value)} style={{ padding: '12px' }} placeholder="e.g. Smith Wedding" />
                         </div>
-                        <div style={{ display: 'flex', gap: '12px' }}>
+                        <div style={{ display: 'flex', gap: '16px' }}>
                             <div style={{ flex: 1 }}>
-                                <label className="muted" style={{ display: 'block', fontSize: '11px', marginBottom: '4px' }}>Value ($)</label>
-                                <input required type="number" step="0.01" value={formValue} onChange={e => setFormValue(e.target.value)} style={{ width: '100%' }} placeholder="2500.00" />
+                                <label className="muted" style={{ display: 'block', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', marginBottom: '8px' }}>Value ($)</label>
+                                <input required type="number" step="0.01" value={formValue} onChange={e => setFormValue(e.target.value)} style={{ padding: '12px' }} placeholder="2500.00" />
                             </div>
                             <div style={{ flex: 1 }}>
-                                <label className="muted" style={{ display: 'block', fontSize: '11px', marginBottom: '4px' }}>Project Type</label>
-                                <select value={formType} onChange={e => setFormType(e.target.value)} style={{ width: '100%' }}>
+                                <label className="muted" style={{ display: 'block', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', marginBottom: '8px' }}>Type</label>
+                                <select value={formType} onChange={e => setFormType(e.target.value)} style={{ padding: '12px' }}>
                                     <option value="Wedding">Wedding</option>
                                     <option value="Videography">Videography</option>
                                     <option value="Portrait">Portrait</option>
@@ -245,20 +280,20 @@ export default function CRM() {
                             </div>
                         </div>
                         <div>
-                            <label className="muted" style={{ display: 'block', fontSize: '11px', marginBottom: '4px' }}>Email</label>
-                            <input type="email" value={formEmail} onChange={e => setFormEmail(e.target.value)} style={{ width: '100%' }} placeholder="client@example.com" />
+                            <label className="muted" style={{ display: 'block', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', marginBottom: '8px' }}>Email</label>
+                            <input type="email" value={formEmail} onChange={e => setFormEmail(e.target.value)} style={{ padding: '12px' }} placeholder="client@example.com" />
                         </div>
                         <div>
-                            <label className="muted" style={{ display: 'block', fontSize: '11px', marginBottom: '4px' }}>Phone</label>
-                            <input type="tel" value={formPhone} onChange={e => setFormPhone(e.target.value)} style={{ width: '100%' }} placeholder="(555) 555-5555" />
+                            <label className="muted" style={{ display: 'block', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', marginBottom: '8px' }}>Phone</label>
+                            <input type="tel" value={formPhone} onChange={e => setFormPhone(e.target.value)} style={{ padding: '12px' }} placeholder="(555) 555-5555" />
                         </div>
                         <div>
-                            <label className="muted" style={{ display: 'block', fontSize: '11px', marginBottom: '4px' }}>Notes & Concept</label>
-                            <textarea value={formNotes} onChange={e => setFormNotes(e.target.value)} style={{ width: '100%', minHeight: '100px', resize: 'vertical' }} placeholder="Discussed sunset vibes..." />
+                            <label className="muted" style={{ display: 'block', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', marginBottom: '8px' }}>Project Notes</label>
+                            <textarea value={formNotes} onChange={e => setFormNotes(e.target.value)} style={{ minHeight: '120px', padding: '12px' }} placeholder="Scope details, concept, etc..." />
                         </div>
-                        <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
+                        <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
                             <button type="button" className="btn secondary" onClick={closeEditor} style={{ flex: 1 }}>Cancel</button>
-                            <button type="submit" className="btn" style={{ flex: 1 }}>Save Lead</button>
+                            <button type="submit" className="btn glow-blue" style={{ flex: 2 }}>Save Details</button>
                         </div>
                     </form>
                 </div>
@@ -268,7 +303,7 @@ export default function CRM() {
             {isDrawerOpen && (
                 <div onClick={closeEditor} style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'rgba(0,0,0,0.5)', zIndex: 9999, backdropFilter: 'blur(3px)'
+                    background: 'rgba(0,0,0,0.4)', zIndex: 9999, backdropFilter: 'blur(5px)'
                 }} />
             )}
         </section>
