@@ -572,7 +572,7 @@ export default function Invoice() {
                 <div className="drawer" onClick={(e) => { if (e.target.className === 'drawer') { setIsCreatorOpen(false); setEditingId(null); } }}>
                     <div className="drawer-panel" style={{ width: 'min(700px, 100%)', display: 'flex', flexDirection: 'column', padding: 0 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '24px', borderBottom: '1px solid rgba(255,255,255,0.05)', position: 'sticky', top: 0, background: 'var(--bg)', zIndex: 10 }}>
-                            <h2 style={{ margin: 0, fontSize: '1.4rem' }}>{editingId ? 'Edit' : 'Create'} Elite Invoice</h2>
+                            <h2 style={{ margin: 0, fontSize: '1.4rem' }}>{editingId ? 'Edit' : 'Create'} Invoice</h2>
                             <button type="button" className="btn secondary" onClick={() => { setIsCreatorOpen(false); setEditingId(null); }}>Cancel</button>
                         </div>
 

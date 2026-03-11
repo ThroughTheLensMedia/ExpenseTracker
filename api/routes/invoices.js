@@ -98,15 +98,21 @@ router.post("/", async (req, res) => {
 
         if (invError) throw invError;
 
+        if (!invoice) throw new Error("Database failed to return the new invoice record.");
+
         // 2. Insert Items
         const itemsWithId = items.map(item => ({ ...item, invoice_id: invoice.id }));
         const { error: itemsError } = await supabase.from("invoice_items").insert(itemsWithId);
 
-        if (itemsError) throw itemsError;
+        if (itemsError) {
+            console.error("Item insertion error:", itemsError);
+            throw itemsError;
+        }
 
         res.json(invoice);
     } catch (e) {
-        res.status(400).json({ error: e.message });
+        console.error("CREATE INVOICE ERROR:", e);
+        res.status(400).json({ error: e.message || "Unknown error creating invoice" });
     }
 });
 
