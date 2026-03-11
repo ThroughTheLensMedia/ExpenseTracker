@@ -384,7 +384,7 @@ export default function Dashboard({ apiStatus }) {
             </div>
 
             {/* Mobile-Only Quick Snap Action */}
-            <div className="pwa-snap-bar" style={{ display: 'flex', gap: '12px', marginBottom: '10px' }}>
+            <div className="pwa-snap-bar mobile-only" style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
                 <input
                     type="file"
                     accept="image/*"
@@ -396,10 +396,17 @@ export default function Dashboard({ apiStatus }) {
                 <button
                     onClick={() => fileInputRef.current.click()}
                     className={`btn ${snapSuccess ? 'ok' : 'glow-blue'}`}
-                    style={{ flex: 1, padding: '20px', borderRadius: '20px', fontSize: '16px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}
+                    style={{ flex: 2, padding: '16px', borderRadius: '16px', fontSize: '14px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                     disabled={snapLoading}
                 >
-                    {snapLoading ? "📤 UPLOADING..." : snapSuccess ? "✅ SNAP SAVED!" : "📷 QUICK SNAP RECEIPT"}
+                    {snapLoading ? "📤 ..." : snapSuccess ? "✅ SAVED" : "📷 QUICK SNAP"}
+                </button>
+                <button
+                    onClick={() => navigate('/crm?new=true')}
+                    className="btn secondary"
+                    style={{ flex: 1, padding: '16px', borderRadius: '16px', fontSize: '14px', fontWeight: 900, borderColor: 'rgba(56, 189, 248, 0.4)' }}
+                >
+                    + LEAD
                 </button>
             </div>
 
@@ -430,8 +437,8 @@ export default function Dashboard({ apiStatus }) {
                 </div>
             </div>
 
-            {/* ── Advanced Analytics Charts ── */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', alignItems: 'start' }}>
+            {/* ── Advanced Analytics Charts (Desktop) ── */}
+            <div className="desktop-only" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', alignItems: 'start' }}>
 
                 {/* Cash Flow Velocity Chart */}
                 <div className="card glass" style={{ margin: 0, padding: '24px', height: '420px', display: 'flex', flexDirection: 'column' }}>

@@ -51,7 +51,7 @@ function App() {
   return (
     <Router>
       <div className="wrap">
-        <header className="glass" style={{ border: 'none' }}>
+        <header className="glass desktop-only" style={{ border: 'none' }}>
           <div className="title">Expense Tracker</div>
           <div className="nav">
             <NavLink to="/" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`} end>Dashboard</NavLink>
@@ -63,6 +63,11 @@ function App() {
 
             <NavLink to="/backup" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Studio Control Center</NavLink>
           </div>
+        </header>
+
+        {/* Mobile Minimal Header */}
+        <header className="glass mobile-only" style={{ border: 'none', justifyContent: 'center' }}>
+          <div className="title">ThroughTheLens PWA</div>
         </header>
 
         <main style={{ marginTop: '16px', minHeight: 'calc(100vh - 160px)' }}>
@@ -77,6 +82,22 @@ function App() {
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </main>
+
+        {/* PWA Bottom Navigation Bar */}
+        <nav className="bottom-nav mobile-only">
+          <NavLink to="/" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`} end>
+            <span className="bottom-nav-icon">📊</span>
+            <span>Home</span>
+          </NavLink>
+          <NavLink to="/transactions" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+            <span className="bottom-nav-icon">💸</span>
+            <span>Expenses</span>
+          </NavLink>
+          <NavLink to="/crm" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+            <span className="bottom-nav-icon">👥</span>
+            <span>CRM</span>
+          </NavLink>
+        </nav>
 
       </div>
     </Router>

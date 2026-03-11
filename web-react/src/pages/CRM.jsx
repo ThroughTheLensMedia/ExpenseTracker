@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { apiGet, apiPost, apiPatch, formatMoney } from '../api';
 
 const ACTIVE_COLUMNS = [
@@ -8,6 +9,7 @@ const ACTIVE_COLUMNS = [
 ];
 
 export default function CRM() {
+    const [searchParams, setSearchParams] = useSearchParams();
     const [leads, setLeads] = useState([]);
     const [loading, setLoading] = useState(true);
     const [editingLead, setEditingLead] = useState(null);
@@ -39,6 +41,11 @@ export default function CRM() {
 
     useEffect(() => {
         loadLeads();
+        if (searchParams.get('new') === 'true') {
+            openEditor();
+            // Clear the param so it doesn't re-open on refresh
+            setSearchParams({});
+        }
     }, []);
 
     const archiveStats = useMemo(() => {
@@ -193,7 +200,7 @@ export default function CRM() {
             {/* Kanban Board - Active Stages Only */}
             <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(3, 1fr)',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
                 gap: '24px',
                 minHeight: '65vh',
                 width: '100%'
@@ -213,7 +220,7 @@ export default function CRM() {
                             gap: '16px',
                             boxShadow: `0 15px 35px rgba(0,0,0,0.2), 0 0 20px ${col.glow}`,
                             border: '1px solid rgba(255,255,255,0.03)'
-                        }}>
+                        }} className="crm-column">
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                                 <div style={{ fontWeight: 900, color: col.color, textTransform: 'uppercase', fontSize: '13px', letterSpacing: '0.1em' }}>
                                     {col.label} <span style={{ opacity: 0.5 }}>{columnLeads.length}</span>
@@ -271,9 +278,9 @@ export default function CRM() {
             {/* Editor Drawer */}
             {isDrawerOpen && (
                 <div style={{
-                    position: 'fixed', top: 0, right: 0, bottom: 0, width: '420px',
+                    position: 'fixed', top: 0, right: 0, bottom: 0, width: 'min(420px, 100%)',
                     background: 'rgba(15, 26, 51, 0.98)', borderLeft: '1px solid var(--line)',
-                    padding: '32px', zIndex: 11000, boxShadow: '-10px 0 40px rgba(0,0,0,0.5)',
+                    padding: '24px', zIndex: 11000, boxShadow: '-10px 0 40px rgba(0,0,0,0.5)',
                     overflowY: 'auto', backdropFilter: 'blur(20px)'
                 }}>
                     <h2 style={{ marginTop: 0, color: '#fff', fontSize: '1.5rem', fontWeight: 900 }}>{editingLead ? 'Edit Project' : 'New Project'}</h2>

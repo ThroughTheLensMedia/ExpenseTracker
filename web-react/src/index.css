@@ -523,3 +523,97 @@ footer {
   display: flex;
   gap: 8px;
 }
+
+/* --- MOBILE PWA OPTIMIZATIONS --- */
+@media (max-width: 768px) {
+  .desktop-only {
+    display: none !important;
+  }
+
+  header {
+    padding: 10px;
+    margin-top: 0;
+    top: 0;
+    border-radius: 0 0 16px 16px;
+    border-top: none;
+  }
+
+  .nav {
+    display: none !important;
+    /* Hide standard nav on mobile */
+  }
+
+  .wrap {
+    padding: 0 12px 100px 12px;
+    /* Extra bottom padding for mobile bar */
+  }
+
+  .card {
+    padding: 16px;
+    border-radius: 12px;
+  }
+
+  h1 {
+    font-size: 1.5rem !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-only {
+    display: none !important;
+  }
+}
+
+/* PWA Bottom Navigation Bar */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 72px;
+  background: rgba(15, 26, 51, 0.9);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 10000;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 10px;
+  font-weight: 800;
+  flex: 1;
+  transition: all 0.2s ease;
+}
+
+.bottom-nav-item.active {
+  color: var(--accent);
+}
+
+.bottom-nav-icon {
+  font-size: 20px;
+}
+
+.quick-action-fab {
+  width: 56px;
+  height: 56px;
+  background: var(--accent);
+  border-radius: 50%;
+  border: none;
+  color: white;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 16px rgba(47, 107, 255, 0.4);
+  transform: translateY(-20px);
+}

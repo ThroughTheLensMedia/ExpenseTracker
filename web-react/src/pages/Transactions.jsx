@@ -323,8 +323,31 @@ export default function Transactions() {
                 </div>
             )}
 
-            {/* ─── Table ─── */}
-            <div style={{ marginTop: '12px', position: 'relative' }}>
+            {/* ─── Mobile View (Cards) ─── */}
+            <div className="mobile-only" style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
+                <button className="btn glow-blue" onClick={() => setEditingId('new')} style={{ padding: '16px', fontSize: '15px', fontWeight: 900, marginBottom: '8px' }}>
+                    + Add Manual Expense
+                </button>
+                {filtered.map(r => (
+                    <div key={r.id} className="card glass" style={{ margin: 0, padding: '16px' }} onClick={() => setEditingId(r.id)}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div>
+                                <div style={{ fontWeight: 950, fontSize: '16px' }}>{r.vendor || 'Unknown Vendor'}</div>
+                                <div className="muted" style={{ fontSize: '11px', marginTop: '4px' }}>{formatDate(r.expense_date)} • {r.category}</div>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                                <div style={{ fontWeight: 950, fontSize: '18px', color: Number(r.amount_cents) < 0 ? '#4ade80' : '#fff' }}>{formatMoney(r.amount_cents)}</div>
+                                <div style={{ marginTop: '6px' }}>
+                                    {r.receipt_link ? <span className="tag ok" style={{ fontSize: '9px' }}>DOC SAVED</span> : r.tax_deductible ? <span className="tag bad" style={{ fontSize: '9px' }}>MISSING DOC</span> : null}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* ─── Table (Desktop Only) ─── */}
+            <div className="desktop-only" style={{ marginTop: '12px', position: 'relative' }}>
                 <div className="tableWrap" style={{ maxHeight: 'calc(100vh - 285px)', overflowY: 'auto', overflowX: 'auto' }}>
                     <table style={{ fontSize: '12.5px', tableLayout: 'auto', whiteSpace: 'nowrap' }}>
                         <thead style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg, #0b1220)' }}>
