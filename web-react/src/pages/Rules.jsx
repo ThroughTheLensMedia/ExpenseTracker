@@ -96,6 +96,12 @@ export default function Rules() {
     };
 
     const handlePreviewRule = async (id) => {
+        // If already showing preview, toggle it OFF
+        if (ruleStatus[id]?.preview && !ruleStatus[id]?.loading) {
+            setRuleStatus(s => ({ ...s, [id]: { preview: null } }));
+            return;
+        }
+
         setRuleStatus(s => ({ ...s, [id]: { loading: true } }));
         try {
             const r = await fetch(`/api/rules/${id}/preview`, { credentials: 'include' });
@@ -135,8 +141,37 @@ export default function Rules() {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '16px', alignItems: 'start' }}>
 
-                {/* Rule List Area */}
+                {/* Main Content Area */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+                    {/* Manual Form (Moved to top of main area) */}
+                    <div className="card glass glow-blue" style={{ margin: 0, padding: '20px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                            <h2 style={{ margin: 0, fontSize: '1.2rem' }}>➕ Create Custom Rule</h2>
+                            {msg && <div className="tag ok" style={{ fontSize: '11px' }}>{msg}</div>}
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 200px', gap: '12px', alignItems: 'flex-end' }}>
+                            <div>
+                                <small className="muted" style={{ fontSize: '11px', fontWeight: 600 }}>Match Vendor / Keyword</small>
+                                <input
+                                    value={matchValue}
+                                    onChange={e => setMatchValue(e.target.value)}
+                                    placeholder="e.g. Vensure"
+                                    style={{ fontSize: '13px', marginTop: '4px' }}
+                                />
+                            </div>
+                            <div>
+                                <small className="muted" style={{ fontSize: '11px', fontWeight: 600 }}>Assign Category</small>
+                                <div style={{ marginTop: '4px' }}>
+                                    <CategorySelect value={category} onChange={val => setCategory(val)} />
+                                </div>
+                            </div>
+                            <button className="btn primary" style={{ height: '42px', fontWeight: 900 }} onClick={() => handleCreate()} disabled={!matchValue}>
+                                Save Rule
+                            </button>
+                        </div>
+                    </div>
+
                     <div className="card glass" style={{ margin: 0, padding: '20px' }}>
                         <h2 style={{ fontSize: '1.2rem', marginBottom: '16px' }}>Active Matching Rules</h2>
                         <div className="tableWrap" style={{ maxHeight: '700px' }}>
@@ -166,7 +201,17 @@ export default function Rules() {
                                                     <td className="muted small">{r.assign_tax_bucket || '—'}</td>
                                                     <td>
                                                         <div style={{ display: 'flex', gap: '6px' }}>
-                                                            <button className="btn sm secondary" style={{ padding: '4px 8px' }} onClick={() => handlePreviewRule(r.id)}>Test</button>
+                                                            <button
+                                                                className={`btn sm ${rs.loading ? 'primary' : 'secondary'}`}
+                                                                style={{ padding: '4px 12px', minWidth: '60px' }}
+                                                                onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    handlePreviewRule(r.id);
+                                                                }}
+                                                                disabled={rs.loading}
+                                                            >
+                                                                {rs.loading ? '...' : 'Test'}
+                                                            </button>
                                                             <button className="btn sm danger" style={{ padding: '4px 8px' }} onClick={() => handleDelete(r.id)}>×</button>
                                                         </div>
                                                     </td>
@@ -196,35 +241,35 @@ export default function Rules() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
                     {/* Discovery Wizard */}
-                    <div className="card glass glow-green" style={{ margin: 0, padding: '16px' }}>
+                    <div className="card glass glow-green" style={{ margin: 0, padding: '16px', maxHeight: '350px', display: 'flex', flexDirection: 'column' }}>
                         <h3 style={{ margin: 0, fontSize: '0.9rem', color: '#4ade80' }}>💡 SMART DISCOVERY</h3>
-                        <div className="muted small" style={{ margin: '4px 0 12px' }}>Frequent vendors missing a rule.</div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div className="muted small" style={{ margin: '4px 0 10px' }}>Frequent missing rules.</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', overflowY: 'auto' }}>
                             {discoveryVendors.map(([name, count]) => (
                                 <button
                                     key={name}
                                     className="btn secondary sm"
-                                    style={{ textAlign: 'left', display: 'flex', justifyContent: 'space-between', padding: '8px 12px', fontSize: '11px' }}
+                                    style={{ textAlign: 'left', display: 'flex', justifyContent: 'space-between', padding: '6px 10px', fontSize: '11px', background: 'rgba(255,255,255,0.02)' }}
                                     onClick={() => { setMatchColumn('vendor'); setMatchValue(name); }}
                                 >
-                                    <span>{name}</span>
-                                    <span className="muted">{count}x</span>
+                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+                                    <span className="tag ok" style={{ fontSize: '9px', padding: '2px 4px' }}>{count}x</span>
                                 </button>
                             ))}
-                            {!discoveryVendors.length && <div className="muted small italic">All frequent vendors classified.</div>}
+                            {!discoveryVendors.length && <div className="muted small italic">All clear!</div>}
                         </div>
                     </div>
 
                     {/* Quick Lib */}
-                    <div className="card glass" style={{ margin: 0, padding: '16px' }}>
-                        <h3 style={{ margin: 0, fontSize: '0.9rem' }}>📦 PHOTO SUB LIBRARY</h3>
-                        <div className="muted small" style={{ margin: '4px 0 12px' }}>One-click rules for common bills.</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <div className="card glass" style={{ margin: 0, padding: '16px', maxHeight: '300px', display: 'flex', flexDirection: 'column' }}>
+                        <h3 style={{ margin: 0, fontSize: '0.9rem' }}>📦 PHOTO LIBRARY</h3>
+                        <div className="muted small" style={{ margin: '4px 0 10px' }}>Common photography software.</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', overflowY: 'auto' }}>
                             {QUICK_SUBS.map(sub => (
                                 <button
                                     key={sub.name}
                                     className="btn secondary sm"
-                                    style={{ fontSize: '10px' }}
+                                    style={{ fontSize: '10px', padding: '6px 4px' }}
                                     onClick={() => handleCreate({
                                         match_column: 'vendor', match_type: 'contains', match_value: sub.name,
                                         assign_category: sub.cat, assign_tax_bucket: sub.bucket,
@@ -235,27 +280,6 @@ export default function Rules() {
                         </div>
                     </div>
 
-                    {/* Manual Form */}
-                    <div className="card glass" style={{ margin: 0, padding: '16px' }}>
-                        <h3 style={{ margin: 0, fontSize: '0.9rem' }}>➕ CUSTOM RULE</h3>
-                        <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                            <div>
-                                <small className="muted" style={{ fontSize: '10px' }}>Match Keyword</small>
-                                <input
-                                    value={matchValue}
-                                    onChange={e => setMatchValue(e.target.value)}
-                                    placeholder="e.g. Vensure"
-                                    style={{ fontSize: '12px', padding: '8px' }}
-                                />
-                            </div>
-                            <div>
-                                <small className="muted" style={{ fontSize: '10px' }}>Category</small>
-                                <CategorySelect value={category} onChange={val => setCategory(val)} />
-                            </div>
-                            <button className="btn primary" style={{ marginTop: '4px' }} onClick={() => handleCreate()} disabled={!matchValue}>Save Rule</button>
-                        </div>
-                        {msg && <div className="muted" style={{ marginTop: '8px', fontSize: '11px', textAlign: 'center' }}>{msg}</div>}
-                    </div>
 
                 </div>
 
