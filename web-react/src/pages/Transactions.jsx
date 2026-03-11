@@ -150,9 +150,6 @@ export default function Transactions() {
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                         <button className="btn secondary desktop-only" onClick={clearFilters}>Reset</button>
                         <button className="btn secondary desktop-only" onClick={exportCsv}>Export</button>
-                        <button className="btn glow-blue" onClick={() => setEditingId('new')} style={{ padding: '10px 20px', fontWeight: 900 }}>
-                            + New Item
-                        </button>
                     </div>
                 </div>
             </div>
