@@ -88,7 +88,14 @@ app.use("/receipts", express.static(RECEIPT_DIR));
 const apiRouter = express.Router();
 
 // Health check inside apiRouter for /api/health
-apiRouter.get("/health", (_req, res) => res.json({ ok: true, environment: process.env.VERCEL ? "vercel" : "local" }));
+apiRouter.get("/health", (_req, res) => {
+  const hasCloud = !!(process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY);
+  res.json({
+    ok: true,
+    environment: process.env.VERCEL ? "vercel" : "local",
+    storage: hasCloud ? "supabase" : "local_ephemeral"
+  });
+});
 
 // Standard routes
 apiRouter.use("/expenses", expenseRouter);
@@ -96,7 +103,8 @@ apiRouter.use("/tax", taxRouter);
 apiRouter.use("/import", importRouter);
 
 // Pass-through static serving for receipts, then the upload router
-apiRouter.use("/receipts", express.static(RECEIPT_DIR), receiptsRouter);
+apiRouter.use("/receipts", express.static(RECEIPT_DIR));
+apiRouter.use("/receipts", receiptsRouter);
 
 apiRouter.use("/rules", rulesRouter);
 apiRouter.use("/mileage", mileageRouter);

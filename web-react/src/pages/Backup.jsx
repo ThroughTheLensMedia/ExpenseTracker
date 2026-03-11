@@ -21,6 +21,7 @@ export default function Backup() {
     const [allExpenses, setAllExpenses] = useState([]);
     const [loading, setLoading] = useState(false);
     const [isHealthy, setIsHealthy] = useState(true);
+    const [storageType, setStorageType] = useState('unknown');
 
     // --- Automation States ---
     const [rules, setRules] = useState([]);
@@ -62,6 +63,7 @@ export default function Backup() {
             setAllExpenses(exps || []);
             setRules(rulesData.rules || []);
             setIsHealthy(health.ok);
+            setStorageType(health.storage || 'unknown');
             setStats({
                 expenses: (exps || []).length,
                 equipment: (eq || []).length,
@@ -234,6 +236,17 @@ export default function Backup() {
                         <div className="tag ok" style={{ fontSize: '11px', fontWeight: 800 }}>V3.5.0-SCC</div>
                         <div className="muted small" style={{ marginTop: '6px' }}>
                             Status: <span className={`health-dot ${isHealthy ? 'health-ok' : 'health-bad'}`} /> {isHealthy ? 'Operational' : 'API Connection Issues'}
+                        </div>
+                        <div style={{ marginTop: '10px' }}>
+                            <span className="tag" style={{
+                                fontSize: '10px',
+                                background: storageType === 'supabase' ? 'rgba(74, 222, 128, 0.1)' : 'rgba(255, 191, 36, 0.1)',
+                                color: storageType === 'supabase' ? '#4ade80' : '#fbbf24',
+                                border: `1px solid ${storageType === 'supabase' ? 'rgba(74, 222, 128, 0.3)' : 'rgba(255, 191, 36, 0.3)'}`,
+                                fontWeight: 900
+                            }}>
+                                {storageType === 'supabase' ? '🛡️ CLOUD SECURE' : '⚠️ LOCAL EPHEMERAL'}
+                            </span>
                         </div>
                     </div>
                 </div>

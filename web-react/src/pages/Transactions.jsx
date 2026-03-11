@@ -231,16 +231,16 @@ export default function Transactions() {
             {/* ─── Table (Desktop Only) ─── */}
             <div className="card glass desktop-only" style={{ margin: 0, padding: '10px', overflow: 'hidden' }}>
                 <div className="tableWrap" style={{ maxHeight: 'calc(100vh - 350px)', overflowY: 'auto', overflowX: 'hidden' }}>
-                    <table style={{ fontSize: '12.5px', tableLayout: 'fixed', width: '100%' }}>
+                    <table style={{ fontSize: '12.5px', tableLayout: 'fixed', width: '100%', minWidth: '100%' }}>
                         <thead style={{ position: 'sticky', top: 0, zIndex: 10, background: '#0b1220' }}>
                             <tr>
-                                <th style={{ width: '60px' }}></th>
-                                <th onClick={() => handleSort('expense_date')} style={{ cursor: 'pointer', width: '90px' }}>Date<SortIcon col="expense_date" /></th>
-                                <th onClick={() => handleSort('vendor')} style={{ cursor: 'pointer', minWidth: '150px' }}>Vendor<SortIcon col="vendor" /></th>
-                                <th onClick={() => handleSort('category')} style={{ cursor: 'pointer', width: '150px' }}>Category<SortIcon col="category" /></th>
-                                <th onClick={() => handleSort('amount_cents')} style={{ cursor: 'pointer', width: '100px', textAlign: 'right' }}>Amount<SortIcon col="amount_cents" /></th>
-                                <th style={{ textAlign: 'center', width: '70px' }}>Doc</th>
-                                <th style={{ width: '80px' }}>Type</th>
+                                <th style={{ width: '45px' }}></th>
+                                <th onClick={() => handleSort('expense_date')} style={{ cursor: 'pointer', width: '10%' }}>Date<SortIcon col="expense_date" /></th>
+                                <th onClick={() => handleSort('vendor')} style={{ cursor: 'pointer', width: '32%' }}>Vendor<SortIcon col="vendor" /></th>
+                                <th onClick={() => handleSort('category')} style={{ cursor: 'pointer', width: '22%' }}>Category<SortIcon col="category" /></th>
+                                <th onClick={() => handleSort('amount_cents')} style={{ cursor: 'pointer', width: '14%', textAlign: 'right' }}>Amount<SortIcon col="amount_cents" /></th>
+                                <th style={{ textAlign: 'center', width: '8%' }}>Doc</th>
+                                <th style={{ width: '10%' }}>Type</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -251,12 +251,20 @@ export default function Transactions() {
                                         <td><button className="btn secondary" style={{ fontSize: '11px', padding: '4px 8px' }} onClick={() => setEditingId(r.id)}>Edit</button></td>
                                         <td style={{ opacity: 0.8 }}>{formatDate(r.expense_date)}</td>
                                         <td style={{ fontWeight: 600 }} className="text-truncate" title={r.vendor}>{r.vendor}</td>
-                                        <td className="text-truncate" style={{ opacity: 0.9 }}>{r.category || <span className="muted">—</span>}</td>
+                                        <td className="text-truncate" style={{ opacity: 0.9 }} title={r.category}>{r.category || <span className="muted">—</span>}</td>
                                         <td style={{ fontWeight: 700, textAlign: 'right' }}>{formatMoney(r.amount_cents)}</td>
                                         <td style={{ textAlign: 'center' }}>
-                                            {r.receipt_link ? <a className="tag ok" style={{ fontSize: '10px', padding: '2px 8px' }} href={receiptUrl} target="_blank" rel="noreferrer">View</a> : <span className="muted">—</span>}
+                                            {r.receipt_link ? (
+                                                <a className="tag ok" style={{ fontSize: '10px', padding: '2px 8px' }} href={receiptUrl} target="_blank" rel="noreferrer">View</a>
+                                            ) : (
+                                                <span className="muted">—</span>
+                                            )}
                                         </td>
-                                        <td><span className="tag" style={{ fontSize: '10px', padding: '1px 6px' }}>{Number(r.amount_cents || 0) < 0 ? 'Inc' : 'Exp'}</span></td>
+                                        <td>
+                                            <span className="tag" style={{ fontSize: '9px', padding: '1px 4px', opacity: 0.8 }}>
+                                                {Number(r.amount_cents || 0) < 0 ? 'Income' : 'Expense'}
+                                            </span>
+                                        </td>
                                     </tr>
                                 );
                             })}
