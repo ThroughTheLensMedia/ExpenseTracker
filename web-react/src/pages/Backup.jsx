@@ -311,13 +311,13 @@ export default function Backup() {
                                 <div className="muted small" style={{ fontWeight: 800 }}>{rules.length} TOTAL RULES</div>
                             </div>
 
-                            <div className="tableWrap" style={{ flex: 1, padding: '0', overflowY: 'visible' }}>
-                                <table className="glass" style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 8px', marginTop: '-8px' }}>
+                            <div className="tableWrap" style={{ flex: 1, padding: '0', overflowY: 'visible', overflowX: 'hidden', border: 'none', background: 'transparent' }}>
+                                <table className="glass" style={{ width: '100%', minWidth: '0', borderCollapse: 'separate', borderSpacing: '0 8px', margin: 0 }}>
                                     <thead>
                                         <tr>
-                                            <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Match Criteria</th>
-                                            <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Assignment</th>
-                                            <th style={{ textAlign: 'right', padding: '12px 16px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actions</th>
+                                            <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', background: 'transparent' }}>Match Criteria</th>
+                                            <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', background: 'transparent' }}>Assignment</th>
+                                            <th style={{ textAlign: 'right', padding: '12px 16px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', background: 'transparent' }}>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
