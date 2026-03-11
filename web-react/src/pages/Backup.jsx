@@ -52,7 +52,11 @@ export default function Backup() {
             setRules(rls.rules || []);
             setIsHealthy(hlth.ok);
             setStorageType(hlth.storage || 'unknown');
-            setSettings(st || {});
+
+            // Critical fix: don't overwrite local form state if we're on the profile tab
+            if (activeTab !== 'profile' || !settings.business_name) {
+                setSettings(st || {});
+            }
 
             const activeLeads = (lds.leads || []).filter(l => l.status !== 'Lost');
             setStats({
@@ -183,28 +187,25 @@ export default function Backup() {
 
             {/* System Health Stats (Elite Centered Aesthetic) */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px', marginBottom: '40px' }}>
-                <div className="card glass" style={{ margin: 0, borderTop: '4px solid var(--accent)', padding: '40px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+                <div className="card glass" style={{ margin: 0, borderTop: `4px solid var(--accent)`, padding: '50px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', minHeight: '220px' }}>
                     <div className="muted small" style={{ fontWeight: 800 }}>LIVE TRANSACTIONS</div>
-                    <div style={{ fontSize: '3.5rem', fontWeight: 950, marginTop: '8px' }}>{stats.expenses.toLocaleString()}</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '16px' }}>
+                    <div style={{ fontSize: '3.5rem', fontWeight: 950, marginTop: '8px', lineHeight: 1 }}>{stats.expenses.toLocaleString()}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '20px' }}>
                         <span className={`health-dot ${isHealthy ? 'health-ok' : 'health-bad'}`} />
-                        <span className="muted small" style={{ fontWeight: 900 }}>{isHealthy ? 'SYNCHRONIZED' : 'CONNECTION LAG'}</span>
+                        <span className="muted small" style={{ fontWeight: 900, fontSize: '10px' }}>{isHealthy ? 'SYNCHRONIZED' : 'CONNECTION LAG'}</span>
                     </div>
                 </div>
-                <div className="card glass" style={{ margin: 0, borderTop: '4px solid #38bdf8', padding: '40px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+                <div className="card glass" style={{ margin: 0, borderTop: '4px solid #38bdf8', padding: '50px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', minHeight: '220px' }}>
                     <div className="muted small" style={{ fontWeight: 800 }}>GEAR ASSETS</div>
-                    <div style={{ fontSize: '3.5rem', fontWeight: 950, marginTop: '8px' }}>{stats.equipment.toLocaleString()}</div>
-                    <div style={{ visibility: 'hidden', marginTop: '16px' }} className="muted small">.</div>
+                    <div style={{ fontSize: '3.5rem', fontWeight: 950, marginTop: '8px', lineHeight: 1 }}>{stats.equipment.toLocaleString()}</div>
                 </div>
-                <div className="card glass" style={{ margin: 0, borderTop: '4px solid #f97316', padding: '40px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+                <div className="card glass" style={{ margin: 0, borderTop: '4px solid #f97316', padding: '50px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', minHeight: '220px' }}>
                     <div className="muted small" style={{ fontWeight: 800 }}>INVOICES</div>
-                    <div style={{ fontSize: '3.5rem', fontWeight: 950, marginTop: '8px' }}>{stats.invoices.toLocaleString()}</div>
-                    <div style={{ visibility: 'hidden', marginTop: '16px' }} className="muted small">.</div>
+                    <div style={{ fontSize: '3.5rem', fontWeight: 950, marginTop: '8px', lineHeight: 1 }}>{stats.invoices.toLocaleString()}</div>
                 </div>
-                <div className="card glass" style={{ margin: 0, borderTop: '4px solid #818cf8', padding: '40px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+                <div className="card glass" style={{ margin: 0, borderTop: '4px solid #818cf8', padding: '50px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', minHeight: '220px' }}>
                     <div className="muted small" style={{ fontWeight: 800 }}>PIPELINE CRM</div>
-                    <div style={{ fontSize: '3.5rem', fontWeight: 950, marginTop: '8px' }}>{stats.clients.toLocaleString()}</div>
-                    <div style={{ visibility: 'hidden', marginTop: '16px' }} className="muted small">.</div>
+                    <div style={{ fontSize: '3.5rem', fontWeight: 950, marginTop: '8px', lineHeight: 1 }}>{stats.clients.toLocaleString()}</div>
                 </div>
             </div>
 

@@ -57,8 +57,9 @@ function App() {
             <NavLink to="/tax" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Tax</NavLink>
             <NavLink to="/equipment" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Equipment</NavLink>
             <NavLink to="/crm" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>CRM</NavLink>
+            <NavLink to="/crm/invoices" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Invoices</NavLink>
             <NavLink to="/import" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Bank Import</NavLink>
-            <NavLink to="/backup" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Studio Control Center</NavLink>
+            <NavLink to="/backup" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>SCC Console</NavLink>
           </div>
         </header>
 
@@ -94,9 +95,13 @@ function App() {
             <span className="bottom-nav-icon">🏦</span>
             <span>Import</span>
           </NavLink>
-          <NavLink to="/crm" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+          <NavLink to="/crm" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`} end>
             <span className="bottom-nav-icon">👥</span>
             <span>CRM</span>
+          </NavLink>
+          <NavLink to="/crm/invoices" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+            <span className="bottom-nav-icon">🧾</span>
+            <span>Invoices</span>
           </NavLink>
         </nav>
       </div>

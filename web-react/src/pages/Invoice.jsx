@@ -37,9 +37,13 @@ function InvoiceItemRow({ item, index, onChange, onRemove }) {
 function InvoicePreview({ invoice, settings = {}, onClose }) {
     const previewRef = useRef();
 
-    const subtotal = (invoice.items || []).reduce((s, it) => s + (Number(it.unit_price || 0) * (it.quantity || 1)), 0);
-    const tax = Math.round(subtotal * (invoice.tax_percent / 100));
-    const total = subtotal + tax - (Number(invoice.discount) || 0);
+    const subtotal = (invoice.items || []).reduce((s, it) => {
+        const p = parseFloat(it.unit_price) || 0;
+        const q = parseFloat(it.quantity) || 0;
+        return s + (p * q);
+    }, 0);
+    const tax = Math.round(subtotal * ((invoice.tax_percent || 0) / 100));
+    const total = subtotal + tax - (parseFloat(invoice.discount) || 0);
 
     const handleDownloadPDF = async () => {
         const element = previewRef.current;
@@ -69,11 +73,13 @@ function InvoicePreview({ invoice, settings = {}, onClose }) {
                         {/* INVOICE HEADER */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '60px' }}>
                             <div>
-                                <img src="/logo.png" alt="Logo" style={{ height: '100px', objectFit: 'contain' }} />
-                                <div style={{ marginTop: '20px', fontSize: '14px', lineHeight: '1.6' }}>
-                                    <div style={{ fontWeight: 900, textTransform: 'uppercase' }}>{settings?.business_name || 'STUDIO OWNER'}</div>
-                                    <div style={{ color: '#666' }}>{settings?.contact_name || ''}</div>
-                                    <div style={{ color: BRAND_ORANGE, fontWeight: 700 }}>{settings?.website || ''}</div>
+                                <div style={{ marginBottom: '10px' }}>
+                                    <img src="/logo.png" alt="Logo" style={{ height: '80px', objectFit: 'contain', display: 'block' }} />
+                                </div>
+                                <div style={{ marginTop: '10px', fontSize: '14px', lineHeight: '1.6' }}>
+                                    <div style={{ fontWeight: 950, fontSize: '18px', color: BRAND_ORANGE, textTransform: 'uppercase' }}>{settings?.business_name || 'Through The Lens Media'}</div>
+                                    <div style={{ color: '#444', fontWeight: 700 }}>{settings?.contact_name || ''}</div>
+                                    <div style={{ color: '#666' }}>{settings?.website || ''}</div>
                                     <div style={{ color: '#666' }}>{settings?.phone || ''}</div>
                                 </div>
                             </div>
@@ -231,14 +237,14 @@ export default function Invoice() {
 
     useEffect(() => { load(); }, []);
 
-    const handleLeadSelect = (e) => {
-        const leadId = e.target.value;
+    const handleLeadSelect = (val) => {
+        const leadId = typeof val === 'object' ? val.target.value : val;
         if (!leadId) return;
         const lead = leads.find(l => String(l.id) === leadId);
         if (lead) {
             setFormData(prev => ({
                 ...prev,
-                clientId: lead.client_id || '',
+                clientId: lead.id || '',
                 clientName: lead.name || '',
                 clientEmail: lead.email || '',
                 clientPhone: lead.phone || '',
