@@ -75,13 +75,6 @@ function App() {
           </Routes>
         </main>
 
-        <footer>
-          <div>v2.0.0-react</div>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            API Status
-            <span className={`health-dot ${isHealthy ? 'health-ok' : 'health-bad'}`}></span>
-          </div>
-        </footer>
       </div>
     </Router>
   );

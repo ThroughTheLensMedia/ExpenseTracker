@@ -20,6 +20,7 @@ export default function Backup() {
     const [stats, setStats] = useState({ expenses: 0, equipment: 0, invoices: 0, clients: 0 });
     const [allExpenses, setAllExpenses] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [isHealthy, setIsHealthy] = useState(true);
 
     // --- Automation States ---
     const [rules, setRules] = useState([]);
@@ -39,15 +40,26 @@ export default function Backup() {
     const loadData = async () => {
         setLoading(true);
         try {
-            const [exps, eq, inv, cli, rulesData] = await Promise.all([
+            // Using individual try/catch or allSettled to ensure one 404 doesn't kill the whole page
+            const results = await Promise.allSettled([
                 fetchAllExpenses(),
-                apiGet('/equipment'),
+                apiGet('/assets'),
                 apiGet('/invoices'),
-                apiGet('/clients'),
-                apiGet('/rules')
+                apiGet('/invoices/clients'),
+                apiGet('/rules'),
+                apiGet('/health')
             ]);
+
+            const exps = results[0].status === 'fulfilled' ? results[0].value : [];
+            const eq = results[1].status === 'fulfilled' ? results[1].value : [];
+            const inv = results[2].status === 'fulfilled' ? results[2].value : [];
+            const cli = results[3].status === 'fulfilled' ? results[3].value : [];
+            const rulesData = results[4].status === 'fulfilled' ? results[4].value : { rules: [] };
+            const health = results[5].status === 'fulfilled' ? results[5].value : { ok: false };
+
             setAllExpenses(exps || []);
             setRules(rulesData.rules || []);
+            setIsHealthy(health.ok);
             setStats({
                 expenses: (exps || []).length,
                 equipment: (eq || []).length,
@@ -55,7 +67,7 @@ export default function Backup() {
                 clients: (cli || []).length
             });
         } catch (e) {
-            console.error("Data load failed", e);
+            console.error("Data load failed critically", e);
         } finally {
             setLoading(false);
         }
@@ -63,7 +75,6 @@ export default function Backup() {
 
     useEffect(() => {
         loadData();
-        // Refresh stats every 30 seconds for "Live" effect
         const timer = setInterval(loadData, 30000);
         return () => clearInterval(timer);
     }, []);
@@ -188,7 +199,7 @@ export default function Backup() {
         reader.onload = async (event) => {
             try {
                 const backup = JSON.parse(event.target.result);
-                const ok = await modal.confirm(`🚨 CRITICAL ACTION: Are you sure you want to RESTORE from this backup? This will replace all existing studio data.`);
+                const ok = await modal.confirm(`🚨 CRITICAL ACTION: Are you sure you want to RESTORE? Current data will be replaced.`);
                 if (!ok) return;
                 setRestoring(true);
                 const res = await apiPost("/admin/import-all", { backup });
@@ -217,8 +228,10 @@ export default function Backup() {
                         <div className="muted" style={{ marginTop: '8px', fontSize: '15px' }}>Automation Engine · Infrastructure Management · Studio Security</div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                        <div className="tag ok" style={{ fontSize: '11px', fontWeight: 800 }}>V2.4.0-ELITE</div>
-                        <div className="muted small" style={{ marginTop: '6px' }}>Status: <span className="health-dot health-ok" /> Live Connection</div>
+                        <div className="tag ok" style={{ fontSize: '11px', fontWeight: 800 }}>V3.2.0-SCC</div>
+                        <div className="muted small" style={{ marginTop: '6px' }}>
+                            Status: <span className={`health-dot ${isHealthy ? 'health-ok' : 'health-bad'}`} /> {isHealthy ? 'Operational' : 'API Connection Issues'}
+                        </div>
                     </div>
                 </div>
 
@@ -259,9 +272,9 @@ export default function Backup() {
                     <div className="tag" style={{ fontSize: '9px', marginTop: '8px' }}>ACTIVE ENGINE</div>
                 </div>
                 <div className="card glass" style={{ margin: 0, borderTop: '2px solid #818cf8', padding: '20px' }}>
-                    <div className="muted small" style={{ fontWeight: 800 }}>MASTER ARCHIVE</div>
-                    <div style={{ fontSize: '2rem', fontWeight: 900, marginTop: '4px' }}>{(stats.expenses + stats.equipment + stats.invoices).toLocaleString()}</div>
-                    <div className="tag" style={{ fontSize: '9px', marginTop: '8px' }}>RECORDS SECURED</div>
+                    <div className="muted small" style={{ fontWeight: 800 }}>CLIENTS</div>
+                    <div style={{ fontSize: '2rem', fontWeight: 900, marginTop: '4px' }}>{stats.clients.toLocaleString()}</div>
+                    <div className="tag" style={{ fontSize: '9px', marginTop: '8px' }}>CRM RECORDS</div>
                 </div>
             </div>
 
@@ -323,7 +336,7 @@ export default function Backup() {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {rules.length === 0 && !loading && <tr><td colSpan="3" align="center" className="muted" style={{ padding: '40px' }}>No rules configured.</td></tr>}
+                                            {rules.length === 0 && !loading && <tr><td colSpan="3" align="center" className="muted" style={{ padding: '40px' }}>No rules found.</td></tr>}
                                             {rules.map(r => {
                                                 const rs = ruleStatus[r.id] || {};
                                                 return (
@@ -465,8 +478,20 @@ export default function Backup() {
                 </div>
             )}
 
-            <div className="muted center" style={{ marginTop: '20px', fontSize: '11px', letterSpacing: '0.1em', opacity: 0.5 }}>
-                SECURED ACCESS · THROUGH THE LENS MEDIA · STUDIO CONTROL v2.4
+            {/* ── System Details Footer (Migrated from App.jsx) ── */}
+            <div style={{ marginTop: '40px', padding: '20px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '20px', fontSize: '11px', fontWeight: 800, letterSpacing: '0.1em' }} className="muted">
+                    <span>BUILD: v3.2.0-ELITE-REACT</span>
+                    <span>ENV: {process.env.NODE_ENV || 'production'}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '11px', fontWeight: 800, letterSpacing: '0.1em' }} className="muted">
+                    API STATUS: <span className={`health-dot ${isHealthy ? 'health-ok' : 'health-bad'}`} />
+                    {isHealthy ? 'SYNCHRONIZED' : 'UNSTABLE CONNECTION'}
+                </div>
+            </div>
+
+            <div className="muted center" style={{ fontSize: '10px', letterSpacing: '0.2em', opacity: 0.3, paddingBottom: '20px' }}>
+                PROTECTING THROUGH THE LENS MEDIA · SECURED INFRASTRUCTURE
             </div>
         </section>
     );
