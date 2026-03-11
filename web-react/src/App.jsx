@@ -6,6 +6,7 @@ import Tax from './pages/Tax';
 import Backup from './pages/Backup';
 import Invoice from './pages/Invoice';
 import Assets from './pages/Assets';
+import CRM from './pages/CRM';
 
 function App() {
   const [apiStatus, setApiStatus] = useState('Checking...');
@@ -58,6 +59,7 @@ function App() {
             <NavLink to="/tax" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Tax</NavLink>
             <NavLink to="/equipment" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Equipment</NavLink>
             <NavLink to="/invoice" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Invoice</NavLink>
+            <NavLink to="/crm" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Leads & CRM</NavLink>
 
             <NavLink to="/backup" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Studio Control Center</NavLink>
           </div>
@@ -71,6 +73,7 @@ function App() {
             <Route path="/equipment" element={<Assets />} />
             <Route path="/backup" element={<Backup />} />
             <Route path="/invoice" element={<Invoice />} />
+            <Route path="/crm" element={<CRM />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </main>
