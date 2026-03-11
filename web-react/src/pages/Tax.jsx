@@ -216,7 +216,8 @@ export default function Tax() {
     const [autoMapping, setAutoMapping] = useState(false);
 
     const handleAutoMap = async () => {
-        if (!confirm("Auto-map standard Rocket Money categories (like Gas, Utilities, Travel) to Schedule C lines? \n\nThis will also sweep in Income categories (Freelance, Photo, etc.) to Line 1. \n\nThis only affects unassigned transactions.")) return;
+        const ok = await modal.confirm("Auto-map standard Rocket Money categories (like Gas, Utilities, Travel) to Schedule C lines? \n\nThis will also sweep in Income categories (Freelance, Photo, etc.) to Line 1. \n\nThis only affects unassigned transactions.");
+        if (!ok) return;
         setAutoMapping(true);
         try {
             await apiPost('/tax/auto-map', {});

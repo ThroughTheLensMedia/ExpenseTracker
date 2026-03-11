@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { apiGet, apiPost, apiPatch, apiDelete, formatMoney, fetchExpenseYears } from '../api';
+import { useModal } from '../components/ModalContext.jsx';
 
 const CATEGORIES = [
     { name: 'Camera', icon: '📷' },
@@ -25,6 +26,7 @@ const BLANK = {
 };
 
 export default function Assets() {
+    const modal = useModal();
     const [assets, setAssets] = useState([]);
     const [deprData, setDeprData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -94,7 +96,8 @@ export default function Assets() {
     };
 
     const handleDelete = async (id) => {
-        if (!confirm('Delete asset?')) return;
+        const ok = await modal.confirm('Delete this equipment asset?');
+        if (!ok) return;
         await apiDelete(`/assets/${id}`); load();
     };
 

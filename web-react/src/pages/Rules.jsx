@@ -80,7 +80,8 @@ export default function Rules() {
     };
 
     const handleDelete = async (id) => {
-        if (!confirm('Delete rule?')) return;
+        const ok = await modal.confirm('Delete this automation rule?');
+        if (!ok) return;
         await apiDelete(`/rules/${id}`); loadRules();
     };
 
