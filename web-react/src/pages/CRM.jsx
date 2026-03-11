@@ -154,81 +154,83 @@ function PipelineView() {
     const activeDraftCount = useMemo(() => leads.filter(l => l.status === 'New Lead' || !l.status).length, [leads]);
 
     return (
-        <section style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* Pipeline Dashboard Card */}
-            <div className="card glass glow-blue" style={{ border: 'none', padding: '30px', margin: 0 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
-                    <div>
-                        <h1 style={{ margin: 0, fontSize: '2rem', fontWeight: 950, letterSpacing: '-0.02em' }}>Executive Pipeline</h1>
-                        <div className="muted" style={{ marginTop: '4px', fontSize: '15px' }}>Through The Lens · Studio Leads & Sales Funnel</div>
-                    </div>
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                        <button className="btn secondary sm" onClick={exportToCSV}>📤 Export CSV</button>
-                        <button className="btn glow-blue" onClick={() => openEditor()} style={{ padding: '10px 24px', fontWeight: 900 }}>+ New Project</button>
-                    </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginTop: '30px' }}>
-                    <div className="stat glass" style={{ borderTop: '4px solid #38bdf8' }}>
-                        <div className="muted small" style={{ fontWeight: 800 }}>PIPELINE VALUE</div>
-                        <div style={{ fontSize: '2rem', fontWeight: 950, color: '#38bdf8', marginTop: '8px' }}>{formatMoney(pipelineStats.potential)}</div>
-                    </div>
-                    <div className="stat glass" style={{ borderTop: '4px solid #a8b6dd' }}>
-                        <div className="muted small" style={{ fontWeight: 800 }}>NEW INTEREST</div>
-                        <div style={{ fontSize: '2rem', fontWeight: 950, marginTop: '8px' }}>{activeDraftCount} Leads</div>
-                    </div>
-                    <div className="stat glass" style={{ borderTop: '4px solid #fbbf24' }}>
-                        <div className="muted small" style={{ fontWeight: 800 }}>BOOKED RATIO</div>
-                        <div style={{ fontSize: '2rem', fontWeight: 950, color: '#fbbf24', marginTop: '8px' }}>{pipelineStats.bookedCount} Projects</div>
-                    </div>
-                    <div className="stat glass" style={{ borderTop: '4px solid #4ade80', cursor: 'pointer' }} onClick={() => setArchiveTarget('Paid')}>
-                        <div className="muted small" style={{ fontWeight: 800 }}>CONVERTED / PAID 👁️</div>
-                        <div style={{ fontSize: '2rem', fontWeight: 950, color: '#4ade80', marginTop: '8px' }}>{archiveStats.Paid.length} Clients</div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Archive Notification Bar (Subtle) */}
-            {archiveStats.Lost.length > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                    <div onClick={() => setArchiveTarget('Lost')} className="tag" style={{ cursor: 'pointer', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,100,100,0.2)', color: 'rgba(255,255,255,0.5)', fontSize: '10px' }}>
-                        VIEW LOST ARCHIVE ({archiveStats.Lost.length})
-                    </div>
-                </div>
-            )}
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', minHeight: '65vh' }}>
-                {ACTIVE_COLUMNS.map(col => {
-                    const columnLeads = leads.filter(l => (l.status || 'New Lead') === col.id);
-                    const totalValue = columnLeads.reduce((s, l) => s + (l.quoted_value_cents || 0), 0);
-                    return (
-                        <div key={col.id} className="crm-column" style={{ background: 'rgba(15, 26, 51, 0.4)', borderTop: `4px solid ${col.color}`, borderRadius: '24px', padding: '20px', boxShadow: `0 15px 35px rgba(0,0,0,0.2), 0 0 20px ${col.glow}` }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                <div style={{ fontWeight: 900, color: col.color, textTransform: 'uppercase', fontSize: '13px' }}>{col.label} <span style={{ opacity: 0.5 }}>{columnLeads.length}</span></div>
-                                <div style={{ fontSize: '12px', fontWeight: 900, background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '6px' }}>{formatMoney(totalValue)}</div>
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                {columnLeads.length === 0 ? <div className="muted" style={{ padding: '40px 20px', textAlign: 'center' }}>No active {col.label.toLowerCase()}s</div> :
-                                    columnLeads.map(lead => (
-                                        <div key={lead.id} className="card glass" style={{ margin: 0, padding: '16px' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                                <div style={{ fontWeight: 900 }}>{lead.name}</div>
-                                                <div style={{ color: col.color }}>{formatMoney(lead.quoted_value_cents)}</div>
-                                            </div>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                                                <select value={lead.status} onChange={(e) => handleMove(lead, e.target.value)} style={{ fontSize: '11px', background: 'rgba(0,0,0,0.3)' }}>
-                                                    {[...ACTIVE_COLUMNS, { id: 'Paid', label: 'Mark as Paid' }, { id: 'Lost', label: 'Archived / Lost' }].map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
-                                                </select>
-                                                <button onClick={() => openEditor(lead)} className="btn sm secondary" style={{ fontSize: '10px' }}>Edit</button>
-                                            </div>
-                                        </div>
-                                    ))
-                                }
-                            </div>
+        <>
+            <section style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {/* Pipeline Dashboard Card */}
+                <div className="card glass glow-blue" style={{ border: 'none', padding: '30px', margin: 0 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
+                        <div>
+                            <h1 style={{ margin: 0, fontSize: '2rem', fontWeight: 950, letterSpacing: '-0.02em' }}>Executive Pipeline</h1>
+                            <div className="muted" style={{ marginTop: '4px', fontSize: '15px' }}>Through The Lens · Studio Leads & Sales Funnel</div>
                         </div>
-                    );
-                })}
-            </div>
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                            <button className="btn secondary sm" onClick={exportToCSV}>📤 Export CSV</button>
+                            <button className="btn glow-blue" onClick={() => openEditor()} style={{ padding: '10px 24px', fontWeight: 900 }}>+ New Project</button>
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginTop: '30px' }}>
+                        <div className="stat glass" style={{ borderTop: '4px solid #38bdf8' }}>
+                            <div className="muted small" style={{ fontWeight: 800 }}>PIPELINE VALUE</div>
+                            <div style={{ fontSize: '2rem', fontWeight: 950, color: '#38bdf8', marginTop: '8px' }}>{formatMoney(pipelineStats.potential)}</div>
+                        </div>
+                        <div className="stat glass" style={{ borderTop: '4px solid #a8b6dd' }}>
+                            <div className="muted small" style={{ fontWeight: 800 }}>NEW INTEREST</div>
+                            <div style={{ fontSize: '2rem', fontWeight: 950, marginTop: '8px' }}>{activeDraftCount} Leads</div>
+                        </div>
+                        <div className="stat glass" style={{ borderTop: '4px solid #fbbf24' }}>
+                            <div className="muted small" style={{ fontWeight: 800 }}>BOOKED RATIO</div>
+                            <div style={{ fontSize: '2rem', fontWeight: 950, color: '#fbbf24', marginTop: '8px' }}>{pipelineStats.bookedCount} Projects</div>
+                        </div>
+                        <div className="stat glass" style={{ borderTop: '4px solid #4ade80', cursor: 'pointer' }} onClick={() => setArchiveTarget('Paid')}>
+                            <div className="muted small" style={{ fontWeight: 800 }}>CONVERTED / PAID 👁️</div>
+                            <div style={{ fontSize: '2rem', fontWeight: 950, color: '#4ade80', marginTop: '8px' }}>{archiveStats.Paid.length} Clients</div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Archive Notification Bar (Subtle) */}
+                {archiveStats.Lost.length > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                        <div onClick={() => setArchiveTarget('Lost')} className="tag" style={{ cursor: 'pointer', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,100,100,0.2)', color: 'rgba(255,255,255,0.5)', fontSize: '10px' }}>
+                            VIEW LOST ARCHIVE ({archiveStats.Lost.length})
+                        </div>
+                    </div>
+                )}
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', minHeight: '65vh' }}>
+                    {ACTIVE_COLUMNS.map(col => {
+                        const columnLeads = leads.filter(l => (l.status || 'New Lead') === col.id);
+                        const totalValue = columnLeads.reduce((s, l) => s + (l.quoted_value_cents || 0), 0);
+                        return (
+                            <div key={col.id} className="crm-column" style={{ background: 'rgba(15, 26, 51, 0.4)', borderTop: `4px solid ${col.color}`, borderRadius: '24px', padding: '20px', boxShadow: `0 15px 35px rgba(0,0,0,0.2), 0 0 20px ${col.glow}` }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                    <div style={{ fontWeight: 900, color: col.color, textTransform: 'uppercase', fontSize: '13px' }}>{col.label} <span style={{ opacity: 0.5 }}>{columnLeads.length}</span></div>
+                                    <div style={{ fontSize: '12px', fontWeight: 900, background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '6px' }}>{formatMoney(totalValue)}</div>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    {columnLeads.length === 0 ? <div className="muted" style={{ padding: '40px 20px', textAlign: 'center' }}>No active {col.label.toLowerCase()}s</div> :
+                                        columnLeads.map(lead => (
+                                            <div key={lead.id} className="card glass" style={{ margin: 0, padding: '16px' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                                    <div style={{ fontWeight: 900 }}>{lead.name}</div>
+                                                    <div style={{ color: col.color }}>{formatMoney(lead.quoted_value_cents)}</div>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                                    <select value={lead.status} onChange={(e) => handleMove(lead, e.target.value)} style={{ fontSize: '11px', background: 'rgba(0,0,0,0.3)' }}>
+                                                        {[...ACTIVE_COLUMNS, { id: 'Paid', label: 'Mark as Paid' }, { id: 'Lost', label: 'Archived / Lost' }].map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                                                    </select>
+                                                    <button onClick={() => openEditor(lead)} className="btn sm secondary" style={{ fontSize: '10px' }}>Edit</button>
+                                                </div>
+                                            </div>
+                                        ))
+                                    }
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </section>
 
             {isDrawerOpen && (
                 <div className="drawer" onClick={(e) => { if (e.target.className === 'drawer') closeEditor(); }}>
@@ -342,14 +344,14 @@ export default function CRM() {
                 <NavLink to="/crm" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`} end>
                     Pipeline
                 </NavLink>
-                <NavLink to="/crm/invoices" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>
-                    Invoices
+                <NavLink to="/crm/financials" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>
+                    Financials
                 </NavLink>
             </div>
 
             <Routes>
                 <Route index element={<PipelineView />} />
-                <Route path="invoices" element={<Invoice />} />
+                <Route path="financials" element={<Invoice />} />
             </Routes>
         </section>
     );
