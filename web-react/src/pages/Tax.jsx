@@ -239,328 +239,339 @@ export default function Tax() {
     const [ratesOpen, setRatesOpen] = useState(false);
 
     const exportPdf = () => {
-        const doc = new jsPDF();
-        const year = selectedYear;
-        const blue = [99, 102, 241];
+        console.log("[Tax] Commencing PDF Report Generation...");
+        try {
+            const doc = new jsPDF();
+            const year = selectedYear;
+            const blue = [99, 102, 241];
 
-        // ─── Header ───
-        doc.setFontSize(22);
-        doc.setTextColor(30, 41, 59);
-        doc.text(`Tax Report: ${year}`, 14, 22);
+            // ─── Header ───
+            doc.setFontSize(22);
+            doc.setTextColor(30, 41, 59);
+            doc.text(`Tax Report: ${year}`, 14, 22);
 
-        doc.setFontSize(10);
-        doc.setTextColor(100);
-        doc.text("Through The Lens Media · Photography Business Summary (Schedule C)", 14, 28);
-        doc.setLineWidth(0.5);
-        doc.setDrawColor(226, 232, 240);
-        doc.line(14, 32, 196, 32);
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text("Through The Lens Media · Photography Business Summary (Schedule C)", 14, 28);
+            doc.setLineWidth(0.5);
+            doc.setDrawColor(226, 232, 240);
+            doc.line(14, 32, 196, 32);
 
-        // ─── Financial stats calculation ───
-        const INCOME_CATS = ['photo income', 'freelance income', 'contract income', 'side income', 'photography income'];
-        const incomeRows = expenses.filter(e => {
-            if (!String(e.expense_date || '').startsWith(String(year))) return false;
-            if (Number(e.amount_cents || 0) >= 0) return false;
-            if (!e.tax_deductible) return false;
-            const c = (e.category || '').toLowerCase();
-            return INCOME_CATS.some(kw => c.includes(kw));
-        });
-        const transactionIncome = incomeRows.reduce((s, e) => s + Math.abs(Number(e.amount_cents || 0)), 0);
-        const extraIncome = Math.round(parseFloat(manual1099 || 0) * 100);
-        const grossReceipts = transactionIncome + extraIncome;
-        const totalDeductible = summary.reduce((s, r) => {
-            const line = SCHEDULE_C_MAPPING[r.tax_bucket];
-            const isLineItem = line && line.startsWith('Line');
-            return s + (isLineItem ? (r.deductible_cents || 0) : 0);
-        }, 0);
-        const mileageDeductCents = Math.round(totalMiles * currentRate * 100);
-        const totalExpenses = totalDeductible + mileageDeductCents;
-        const netProfit = grossReceipts - totalExpenses;
+            // ─── Financial stats calculation ───
+            const INCOME_CATS = ['photo income', 'freelance income', 'contract income', 'side income', 'photography income'];
+            const incomeRows = expenses.filter(e => {
+                if (!String(e.expense_date || '').startsWith(String(year))) return false;
+                if (Number(e.amount_cents || 0) >= 0) return false;
+                if (!e.tax_deductible) return false;
+                const c = (e.category || '').toLowerCase();
+                return INCOME_CATS.some(kw => c.includes(kw));
+            });
+            const transactionIncome = incomeRows.reduce((s, e) => s + Math.abs(Number(e.amount_cents || 0)), 0);
+            const extraIncome = Math.round(parseFloat(manual1099 || 0) * 100);
+            const grossReceipts = transactionIncome + extraIncome;
+            const totalDeductible = summary.reduce((s, r) => {
+                const line = SCHEDULE_C_MAPPING[r.tax_bucket];
+                const isLineItem = line && line.startsWith('Line');
+                return s + (isLineItem ? (r.deductible_cents || 0) : 0);
+            }, 0);
+            const mileageDeductCents = Math.round(totalMiles * currentRate * 100);
+            const totalExpenses = totalDeductible + mileageDeductCents;
+            const netProfit = grossReceipts - totalExpenses;
 
-        // ─── Executive Summary ───
-        doc.setFontSize(14);
-        doc.setTextColor(30, 41, 59);
-        doc.text("Executive Summary", 14, 45);
+            // ─── Executive Summary ───
+            doc.setFontSize(14);
+            doc.setTextColor(30, 41, 59);
+            doc.text("Executive Summary", 14, 45);
 
-        doc.autoTable({
-            startY: 50,
-            head: [['Line Item', 'Description', 'Value']],
-            body: [
-                ['Line 7', 'Gross Income (Transactions + Manual)', formatMoney(grossReceipts)],
-                ['Line 28', 'Total Expenses (Deductions + Mileage)', formatMoney(totalExpenses)],
-                ['Line 31', 'Net Profit or Loss', { content: formatMoney(netProfit), styles: { fontStyle: 'bold', textColor: netProfit >= 0 ? [21, 128, 61] : [220, 38, 38] } }]
-            ],
-            theme: 'grid',
-            headStyles: { fillColor: blue, textColor: 255 },
-            columnStyles: {
-                0: { cellWidth: 25 },
-                2: { halign: 'right', fontStyle: 'bold' }
+            doc.autoTable({
+                startY: 50,
+                head: [['Line Item', 'Description', 'Value']],
+                body: [
+                    ['Line 7', 'Gross Income (Transactions + Manual)', formatMoney(grossReceipts)],
+                    ['Line 28', 'Total Expenses (Deductions + Mileage)', formatMoney(totalExpenses)],
+                    ['Line 31', 'Net Profit or Loss', { content: formatMoney(netProfit), styles: { fontStyle: 'bold', textColor: netProfit >= 0 ? [21, 128, 61] : [220, 38, 38] } }]
+                ],
+                theme: 'grid',
+                headStyles: { fillColor: blue, textColor: 255 },
+                columnStyles: {
+                    0: { cellWidth: 25 },
+                    2: { halign: 'right', fontStyle: 'bold' }
+                }
+            });
+
+            // ─── Detailed Expense Breakdown ───
+            doc.setFontSize(14);
+            doc.setTextColor(30, 41, 59);
+            doc.text("Line-Item Detail (Schedule C Form)", 14, doc.lastAutoTable.finalY + 15);
+
+            const tableBody = Object.entries(SCHEDULE_C_MAPPING).map(([bucket, line]) => {
+                const row = summary.find(r => r.tax_bucket === bucket);
+                const deduct = row?.deductible_cents || 0;
+                return [line, bucket, formatMoney(deduct)];
+            }).filter(r => r[2] !== '$0.00' && r[2] !== '-$0.00');
+
+            if (mileageDeductCents > 0) {
+                tableBody.push(['Line 9', `Car & Truck (Mileage: ${totalMiles} mi)`, formatMoney(mileageDeductCents)]);
             }
-        });
 
-        // ─── Detailed Expense Breakdown ───
-        doc.setFontSize(14);
-        doc.setTextColor(30, 41, 59);
-        doc.text("Line-Item Detail (Schedule C Form)", 14, doc.lastAutoTable.finalY + 15);
+            doc.autoTable({
+                startY: doc.lastAutoTable.finalY + 20,
+                head: [['Line', 'IRS Category', 'Deduction Amount']],
+                body: tableBody,
+                theme: 'striped',
+                headStyles: { fillColor: [51, 65, 85] },
+                columnStyles: { 2: { halign: 'right', fontStyle: 'bold' } }
+            });
 
-        const tableBody = Object.entries(SCHEDULE_C_MAPPING).map(([bucket, line]) => {
-            const row = summary.find(r => r.tax_bucket === bucket);
-            const deduct = row?.deductible_cents || 0;
-            return [line, bucket, formatMoney(deduct)];
-        }).filter(r => r[2] !== '$0.00' && r[2] !== '-$0.00');
+            // ─── Footer / Disclaimer ───
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(150);
+                doc.text(`Generated on ${new Date().toLocaleDateString()} · Page ${i} of ${pageCount}`, 14, 285);
+                doc.text("Disclaimer: This report is for informational purposes only. Consult with a tax professional for official IRS filing.", 14, 290);
+            }
 
-        if (mileageDeductCents > 0) {
-            tableBody.push(['Line 9', `Car & Truck (Mileage: ${totalMiles} mi)`, formatMoney(mileageDeductCents)]);
+            doc.save(`ThroughTheLens_TaxReport_${year}.pdf`);
+            console.log("[Tax] PDF Saved Successfully.");
+        } catch (err) {
+            console.error("[Tax] PDF Generation Failed:", err);
+            modal.alert("Could not generate PDF Report. Error: " + err.message);
         }
-
-        doc.autoTable({
-            startY: doc.lastAutoTable.finalY + 20,
-            head: [['Line', 'IRS Category', 'Deduction Amount']],
-            body: tableBody,
-            theme: 'striped',
-            headStyles: { fillColor: [51, 65, 85] },
-            columnStyles: { 2: { halign: 'right', fontStyle: 'bold' } }
-        });
-
-        // ─── Footer / Disclaimer ───
-        const pageCount = doc.internal.getNumberOfPages();
-        for (let i = 1; i <= pageCount; i++) {
-            doc.setPage(i);
-            doc.setFontSize(8);
-            doc.setTextColor(150);
-            doc.text(`Generated on ${new Date().toLocaleDateString()} · Page ${i} of ${pageCount}`, 14, 285);
-            doc.text("Disclaimer: This report is for informational purposes only. Consult with a tax professional for official IRS filing.", 14, 290);
-        }
-
-        doc.save(`ThroughTheLens_TaxReport_${year}.pdf`);
     };
 
     return (
         <section style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
-            {/* ── Header / Year / Export ── */}
-            <div className="card">
-                <h2>Tax Reporting (1040 Schedule C)</h2>
-                <div className="muted" style={{ marginBottom: '12px' }}>
-                    Tax-ready workflow — assign deductible + Schedule C bucket + business-use %, then export line-item CSV for your CPA.
-                </div>
-                <div className="controls">
-                    <div className="grow">
-                        <small className="muted">Year</small>
-                        <select value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))}>
-                            {years.map(y => <option key={y} value={y}>{y}</option>)}
-                        </select>
-                    </div>
-                    <button className="btn secondary" onClick={() => { loadData(true); loadSummary(selectedYear); }}>Refresh</button>
-                    <button className="btn secondary" onClick={exportCsv}>CSV Export</button>
-                    <button className="btn primary" onClick={exportPdf}>📄 Download PDF Report</button>
-                </div>
-            </div>
-
-            {/* ── Schedule C — IRS Form Layout ── */}
-            <div className="card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+            {/* ── Schedule C — Form Card ── */}
+            <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
+                {/* Clean Integrated Header */}
+                <div style={{
+                    padding: '24px',
+                    borderBottom: '1px solid rgba(255,255,255,0.08)',
+                    background: 'rgba(0,0,0,0.1)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '16px'
+                }}>
                     <div>
-                        <h2 style={{ margin: 0 }}>Schedule C — Profit or Loss from Business ({selectedYear})</h2>
-                        <div className="muted small" style={{ marginTop: '4px' }}>
-                            Sole Proprietorship · Photography Business · Principal business code: 711510
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <h2 style={{ margin: 0, fontSize: '1.4rem' }}>Schedule C Business Summary</h2>
+                            <select
+                                value={selectedYear}
+                                onChange={e => setSelectedYear(Number(e.target.value))}
+                                style={{
+                                    background: 'rgba(99,102,241,0.1)',
+                                    border: '1px solid rgba(99,102,241,0.3)',
+                                    borderRadius: '8px',
+                                    padding: '4px 10px',
+                                    color: '#818cf8',
+                                    fontWeight: '800',
+                                    fontSize: '1.1rem',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                {years.map(y => <option key={y} value={y}>{y}</option>)}
+                            </select>
                         </div>
+                        <div className="muted small" style={{ marginTop: '4px' }}>Photography Studio · Sole Proprietorship · Business Code 711510</div>
                     </div>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                         {(() => {
                             const unassigned = summary.find(r => r.tax_bucket === 'Unassigned');
-                            return unassigned ? (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <span
-                                        className="tag warn"
-                                        style={{ fontSize: '0.8rem', cursor: 'pointer' }}
-                                        onClick={() => setAuditingBucket('Unassigned')}
-                                        title="Click to view all unclassified transactions"
-                                    >
-                                        ⚠ {unassigned.count} unclassified in {selectedYear}
+                            const uCount = unassigned ? unassigned.count : 0;
+                            return uCount > 0 ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <span className="tag warn" onClick={() => setAuditingBucket('Unassigned')} style={{ cursor: 'pointer', padding: '6px 10px' }}>
+                                        ⚠️ {uCount} unclassified
                                     </span>
-                                    <button
-                                        className="btn outline sm"
-                                        onClick={handleAutoMap}
-                                        disabled={autoMapping}
-                                        style={{ borderColor: 'var(--blue)', color: 'var(--blue)' }}
-                                    >
-                                        {autoMapping ? 'Mapping…' : '⚡ Auto-Map RM Categories'}
+                                    <button className="btn outline sm" onClick={handleAutoMap} disabled={autoMapping} style={{ borderColor: '#818cf8', color: '#818cf8' }}>
+                                        {autoMapping ? 'Mapping…' : '⚡ Auto-Map'}
                                     </button>
                                 </div>
                             ) : null;
                         })()}
-                        <button className="btn secondary" onClick={exportCsv}>CSV</button>
-                        <button className="btn primary" onClick={exportPdf}>📄 PDF Report</button>
+
+                        <div style={{ width: '1px', height: '30px', background: 'rgba(255,255,255,0.1)', margin: '0 8px' }} />
+
+                        <button className="btn secondary sm" onClick={() => { loadData(true); loadSummary(selectedYear); }}>Refresh</button>
+                        <button className="btn secondary sm" onClick={exportCsv}>CSV</button>
+                        <button className="btn primary sm" onClick={exportPdf}>📄 Download PDF Report</button>
                     </div>
                 </div>
 
-                {/* Part I — Gross Income */}
-                {(() => {
-                    const INCOME_CATS = ['photo income', 'freelance income', 'contract income', 'side income', 'photography income'];
-                    const incomeRows = expenses.filter(e => {
-                        if (!String(e.expense_date || '').startsWith(String(selectedYear))) return false;
-                        if (Number(e.amount_cents || 0) >= 0) return false;
-                        if (!e.tax_deductible) return false;
-                        const c = (e.category || '').toLowerCase();
-                        return INCOME_CATS.some(kw => c.includes(kw));
-                    });
-                    const transactionIncome = incomeRows.reduce((s, e) => s + Math.abs(Number(e.amount_cents || 0)), 0);
-                    const extraIncome = Math.round(parseFloat(manual1099 || 0) * 100);
-                    const grossReceipts = transactionIncome + extraIncome;
-                    const totalDeductible = summary.reduce((s, r) => {
-                        const line = SCHEDULE_C_MAPPING[r.tax_bucket];
-                        const isLineItem = line && line.startsWith('Line');
-                        return s + (isLineItem ? (r.deductible_cents || 0) : 0);
-                    }, 0);
-                    const mileageDeductCents = Math.round(totalMiles * currentRate * 100);
-                    const totalExpenses = totalDeductible + mileageDeductCents;
-                    const netProfit = grossReceipts - totalExpenses;
+                <div style={{ padding: '24px' }}>
+                    {(() => {
+                        const INCOME_CATS = ['photo income', 'freelance income', 'contract income', 'side income', 'photography income'];
+                        const incomeRows = expenses.filter(e => {
+                            if (!String(e.expense_date || '').startsWith(String(selectedYear))) return false;
+                            if (Number(e.amount_cents || 0) >= 0) return false;
+                            if (!e.tax_deductible) return false;
+                            const cat = (e.category || '').toLowerCase();
+                            return INCOME_CATS.some(kw => cat.includes(kw));
+                        });
+                        const transactionIncome = incomeRows.reduce((s, e) => s + Math.abs(Number(e.amount_cents || 0)), 0);
+                        const extraIncome = Math.round(parseFloat(manual1099 || 0) * 100);
+                        const grossReceipts = transactionIncome + extraIncome;
+                        const totalDeductible = summary.reduce((s, r) => {
+                            const line = SCHEDULE_C_MAPPING[r.tax_bucket];
+                            const isLineItem = line && line.startsWith('Line');
+                            return s + (isLineItem ? (r.deductible_cents || 0) : 0);
+                        }, 0);
+                        const mileageDeductCents = Math.round(totalMiles * currentRate * 100);
+                        const totalExpenses = totalDeductible + mileageDeductCents;
+                        const netProfit = grossReceipts - totalExpenses;
 
-                    return (
-                        <>
-                            {/* Part I */}
-                            <div style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
-                                <div style={{ fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.1em', color: 'var(--accent, #6366f1)', marginBottom: '12px' }}>
-                                    PART I — INCOME
-                                </div>
+                        return (
+                            <>
+                                {/* Part I */}
+                                <div style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
+                                    <div style={{ fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.1em', color: 'var(--accent, #6366f1)', marginBottom: '12px' }}>
+                                        PART I — INCOME
+                                    </div>
 
-                                {/* Line 1 — clickable to audit */}
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                                    <span><strong>Line 1</strong> · Gross receipts or sales</span>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                        <button
-                                            className="btn sm"
-                                            onClick={() => setShowIncomeAudit(true)}
-                                            title={`${incomeRows.length} transaction(s) from Rocket Money`}
-                                        >
-                                            Audit ({incomeRows.length} txns)
-                                        </button>
-                                        <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>{formatMoney(grossReceipts)}</span>
+                                    {/* Line 1 — clickable to audit */}
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                                        <span><strong>Line 1</strong> · Gross receipts or sales</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <button
+                                                className="btn sm"
+                                                onClick={() => setShowIncomeAudit(true)}
+                                                title={`${incomeRows.length} transaction(s) from Rocket Money`}
+                                            >
+                                                Audit ({incomeRows.length} txns)
+                                            </button>
+                                            <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>{formatMoney(grossReceipts)}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Manual 1099 income entry */}
+                                    <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                                        <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--muted)', marginBottom: '8px', letterSpacing: '0.05em' }}>+ ADD 1099 / OUTSIDE INCOME (not in Rocket Money)</div>
+                                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                step="0.01"
+                                                value={manual1099}
+                                                onChange={e => setManual1099(e.target.value)}
+                                                placeholder="e.g. 4250.00"
+                                                style={{ width: '160px', fontSize: '13px' }}
+                                            />
+                                            <span className="muted" style={{ fontSize: '12px' }}>
+                                                e.g. your 1099 total, cash payments, Wise transfers not synced to RM
+                                            </span>
+                                            {extraIncome > 0 && (
+                                                <span className="tag ok" style={{ fontSize: '12px' }}>+{formatMoney(extraIncome)} added</span>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', marginTop: '8px' }}>
+                                        <span className="muted small">Line 7 · Gross income (Line 1 minus returns)</span>
+                                        <span style={{ fontWeight: 700 }}>{formatMoney(grossReceipts)}</span>
                                     </div>
                                 </div>
 
-                                {/* Manual 1099 income entry */}
-                                <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                                    <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--muted)', marginBottom: '8px', letterSpacing: '0.05em' }}>+ ADD 1099 / OUTSIDE INCOME (not in Rocket Money)</div>
-                                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
-                                            value={manual1099}
-                                            onChange={e => setManual1099(e.target.value)}
-                                            placeholder="e.g. 4250.00"
-                                            style={{ width: '160px', fontSize: '13px' }}
-                                        />
-                                        <span className="muted" style={{ fontSize: '12px' }}>
-                                            e.g. your 1099 total, cash payments, Wise transfers not synced to RM
-                                        </span>
-                                        {extraIncome > 0 && (
-                                            <span className="tag ok" style={{ fontSize: '12px' }}>+{formatMoney(extraIncome)} added</span>
-                                        )}
+                                {/* Part II — Expenses */}
+                                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
+                                    <div style={{ fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.1em', color: 'var(--accent, #6366f1)', marginBottom: '12px' }}>
+                                        PART II — EXPENSES
                                     </div>
-                                </div>
-
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', marginTop: '8px' }}>
-                                    <span className="muted small">Line 7 · Gross income (Line 1 minus returns)</span>
-                                    <span style={{ fontWeight: 700 }}>{formatMoney(grossReceipts)}</span>
-                                </div>
-                            </div>
-
-                            {/* Part II — Expenses */}
-                            <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
-                                <div style={{ fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.1em', color: 'var(--accent, #6366f1)', marginBottom: '12px' }}>
-                                    PART II — EXPENSES
-                                </div>
-                                <div className="tableWrap" style={{ maxHeight: 'none' }}>
-                                    <table>
-                                        <thead>
-                                            <tr>
-                                                <th style={{ width: '80px' }}>Line</th>
-                                                <th>Expense Category</th>
-                                                <th style={{ textAlign: 'right' }}>Total Spend</th>
-                                                <th style={{ textAlign: 'right' }}>Deductible Amount</th>
-                                                <th style={{ width: '80px' }}></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {Object.entries(SCHEDULE_C_MAPPING).map(([bucket, line]) => {
-                                                const row = summary.find(r => r.tax_bucket === bucket);
-                                                const spend = row?.spend_cents || 0;
-                                                const deduct = row?.deductible_cents || 0;
-                                                const isEmpty = spend === 0;
-                                                const irsTip = IRS_GUIDELINES[bucket] || "General business expenses.";
-                                                return (
-                                                    <tr key={bucket} style={{ opacity: isEmpty ? 0.45 : 1 }}>
-                                                        <td>
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                                <span className={`tag ${!isEmpty ? 'ok' : ''}`} style={{ fontSize: '0.75rem' }}>{line}</span>
-                                                                <span title={irsTip} style={{ cursor: 'help', fontSize: '10px', opacity: 0.6 }}>ℹ️</span>
-                                                            </div>
-                                                        </td>
-                                                        <td style={{ fontWeight: isEmpty ? 400 : 600 }}>
-                                                            {bucket}
-                                                            {bucket === 'Depreciation' && (
-                                                                <div style={{ fontSize: '9px', color: 'var(--accent)', fontWeight: 600, marginTop: '2px', opacity: 0.8 }}>Pulls from Assets ↗</div>
-                                                            )}
-                                                        </td>
-                                                        <td style={{ textAlign: 'right' }}>{isEmpty ? '—' : formatMoney(spend)}</td>
-                                                        <td style={{ textAlign: 'right', fontWeight: 700, color: deduct > 0 ? '#4ade80' : 'inherit' }}>
-                                                            {isEmpty ? '—' : formatMoney(deduct)}
-                                                        </td>
-                                                        <td style={{ textAlign: 'center' }}>
-                                                            {!isEmpty && (
-                                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
-                                                                    <button className="btn sm secondary" onClick={() => setAuditingBucket(bucket === auditingBucket ? null : bucket)} style={{ fontSize: '10px', padding: '4px 8px' }}>
-                                                                        {auditingBucket === bucket ? 'Close' : 'Details'}
-                                                                    </button>
+                                    <div className="tableWrap" style={{ maxHeight: 'none' }}>
+                                        <table>
+                                            <thead>
+                                                <tr>
+                                                    <th style={{ width: '80px' }}>Line</th>
+                                                    <th>Expense Category</th>
+                                                    <th style={{ textAlign: 'right' }}>Total Spend</th>
+                                                    <th style={{ textAlign: 'right' }}>Deductible Amount</th>
+                                                    <th style={{ width: '80px' }}></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {Object.entries(SCHEDULE_C_MAPPING).map(([bucket, line]) => {
+                                                    const row = summary.find(r => r.tax_bucket === bucket);
+                                                    const spend = row?.spend_cents || 0;
+                                                    const deduct = row?.deductible_cents || 0;
+                                                    const isEmpty = spend === 0;
+                                                    const irsTip = IRS_GUIDELINES[bucket] || "General business expenses.";
+                                                    return (
+                                                        <tr key={bucket} style={{ opacity: isEmpty ? 0.45 : 1 }}>
+                                                            <td>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                    <span className={`tag ${!isEmpty ? 'ok' : ''}`} style={{ fontSize: '0.75rem' }}>{line}</span>
+                                                                    <span title={irsTip} style={{ cursor: 'help', fontSize: '10px', opacity: 0.6 }}>ℹ️</span>
                                                                 </div>
-                                                            )}
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
-                                            {/* Mileage line */}
-                                            <tr style={{ borderTop: '2px solid rgba(99,102,241,0.3)' }}>
-                                                <td><span className="tag ok" style={{ fontSize: '0.75rem' }}>Line 9</span></td>
-                                                <td style={{ fontWeight: 600 }}>Car & Truck — Standard Mileage ({totalMiles.toLocaleString()} mi @ ${currentRate.toFixed(2)})</td>
-                                                <td style={{ textAlign: 'right' }}>{formatMoney(mileageDeductCents)}</td>
-                                                <td style={{ textAlign: 'right', fontWeight: 700, color: '#4ade80' }}>{formatMoney(mileageDeductCents)}</td>
-                                                <td></td>
-                                            </tr>
-                                        </tbody>
-                                        <tfoot>
-                                            <tr style={{ borderTop: '2px solid rgba(255,255,255,0.15)', background: 'rgba(0,0,0,0.2)' }}>
-                                                <td colSpan={2} style={{ fontWeight: 700, padding: '10px 8px' }}>Line 28 · Total Expenses</td>
-                                                <td style={{ textAlign: 'right', fontWeight: 700 }}></td>
-                                                <td style={{ textAlign: 'right', fontWeight: 800, fontSize: '1.05rem' }}>{formatMoney(totalExpenses)}</td>
-                                                <td></td>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
-                                </div>
-                            </div>
-
-                            {/* Net Profit */}
-                            <div style={{
-                                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                background: netProfit >= 0 ? 'rgba(74,222,128,0.08)' : 'rgba(248,113,113,0.08)',
-                                border: `1px solid ${netProfit >= 0 ? 'rgba(74,222,128,0.3)' : 'rgba(248,113,113,0.3)'}`,
-                                borderRadius: '10px', padding: '16px 20px'
-                            }}>
-                                <div>
-                                    <div style={{ fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.1em', color: netProfit >= 0 ? '#4ade80' : '#f87171' }}>
-                                        LINE 31 — NET {netProfit >= 0 ? 'PROFIT' : 'LOSS'}
+                                                            </td>
+                                                            <td style={{ fontWeight: isEmpty ? 400 : 600 }}>
+                                                                {bucket}
+                                                                {bucket === 'Depreciation' && (
+                                                                    <div style={{ fontSize: '9px', color: 'var(--accent)', fontWeight: 600, marginTop: '2px', opacity: 0.8 }}>Pulls from Assets ↗</div>
+                                                                )}
+                                                            </td>
+                                                            <td style={{ textAlign: 'right' }}>{isEmpty ? '—' : formatMoney(spend)}</td>
+                                                            <td style={{ textAlign: 'right', fontWeight: 700, color: deduct > 0 ? '#4ade80' : 'inherit' }}>
+                                                                {isEmpty ? '—' : formatMoney(deduct)}
+                                                            </td>
+                                                            <td style={{ textAlign: 'center' }}>
+                                                                {!isEmpty && (
+                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
+                                                                        <button className="btn sm secondary" onClick={() => setAuditingBucket(bucket === auditingBucket ? null : bucket)} style={{ fontSize: '10px', padding: '4px 8px' }}>
+                                                                            {auditingBucket === bucket ? 'Close' : 'Details'}
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                                {/* Mileage line */}
+                                                <tr style={{ borderTop: '2px solid rgba(99,102,241,0.3)' }}>
+                                                    <td><span className="tag ok" style={{ fontSize: '0.75rem' }}>Line 9</span></td>
+                                                    <td style={{ fontWeight: 600 }}>Car & Truck — Standard Mileage ({totalMiles.toLocaleString()} mi @ ${currentRate.toFixed(2)})</td>
+                                                    <td style={{ textAlign: 'right' }}>{formatMoney(mileageDeductCents)}</td>
+                                                    <td style={{ textAlign: 'right', fontWeight: 700, color: '#4ade80' }}>{formatMoney(mileageDeductCents)}</td>
+                                                    <td></td>
+                                                </tr>
+                                            </tbody>
+                                            <tfoot>
+                                                <tr style={{ borderTop: '2px solid rgba(255,255,255,0.15)', background: 'rgba(0,0,0,0.2)' }}>
+                                                    <td colSpan={2} style={{ fontWeight: 700, padding: '10px 8px' }}>Line 28 · Total Expenses</td>
+                                                    <td style={{ textAlign: 'right', fontWeight: 700 }}></td>
+                                                    <td style={{ textAlign: 'right', fontWeight: 800, fontSize: '1.05rem' }}>{formatMoney(totalExpenses)}</td>
+                                                    <td></td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
                                     </div>
-                                    <div className="muted small">Gross Income − Total Expenses · Transfers to Schedule SE</div>
                                 </div>
-                                <div style={{ fontSize: '1.8rem', fontWeight: 900, color: netProfit >= 0 ? '#4ade80' : '#f87171' }}>
-                                    {formatMoney(Math.abs(netProfit))}
+
+                                {/* Net Profit */}
+                                <div style={{
+                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                    background: netProfit >= 0 ? 'rgba(74,222,128,0.08)' : 'rgba(248,113,113,0.08)',
+                                    border: `1px solid ${netProfit >= 0 ? 'rgba(74,222,128,0.3)' : 'rgba(248,113,113,0.3)'}`,
+                                    borderRadius: '10px', padding: '16px 20px'
+                                }}>
+                                    <div>
+                                        <div style={{ fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.1em', color: netProfit >= 0 ? '#4ade80' : '#f87171' }}>
+                                            LINE 31 — NET {netProfit >= 0 ? 'PROFIT' : 'LOSS'}
+                                        </div>
+                                        <div className="muted small">Gross Income − Total Expenses · Transfers to Schedule SE</div>
+                                    </div>
+                                    <div style={{ fontSize: '1.8rem', fontWeight: 900, color: netProfit >= 0 ? '#4ade80' : '#f87171' }}>
+                                        {formatMoney(Math.abs(netProfit))}
+                                    </div>
                                 </div>
-                            </div>
-                        </>
-                    );
-                })()}
+                            </>
+                        );
+                    })()}
+                </div>
 
                 {/* Audit drill-down Modal */}
                 {auditingBucket && (
