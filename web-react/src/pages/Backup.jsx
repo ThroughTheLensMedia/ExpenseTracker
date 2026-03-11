@@ -74,11 +74,11 @@ export default function Backup() {
 
     useEffect(() => {
         loadData();
+        // Safety Lock: Do not start the background sync timer if we are in the Business Profile tab
+        if (activeTab === 'profile') return;
+
         const timer = setInterval(() => {
-            // Only auto-refresh if we're not on the profile tab (safety lock)
-            if (activeTab !== 'profile') {
-                loadData(true);
-            }
+            loadData(true);
         }, 60000);
         return () => clearInterval(timer);
     }, [activeTab]);

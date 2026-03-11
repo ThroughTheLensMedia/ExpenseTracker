@@ -21,9 +21,9 @@ router.post("/", async (req, res) => {
         let result;
         const payload = { ...req.body };
 
-        // Remove ID from payload to prevent "column id can only be updated to DEFAULT" errors
-        delete payload.id;
-        delete payload.created_at; // Also strip timestamps if present
+        // Aggressively strip system columns that Postgres forbids from being manually updated via identity constraints
+        const protectedFields = ['id', 'created_at', 'updated_at'];
+        protectedFields.forEach(f => delete payload[f]);
 
         if (existing && existing.id) {
             result = await supabase

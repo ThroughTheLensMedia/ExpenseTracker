@@ -254,10 +254,12 @@ export default function Invoice() {
         if (!leadId) return;
         const lead = leads.find(l => String(l.id) === leadId);
         if (lead) {
+            // Smart link: check if we already have a client with this email
+            const existingClient = clients.find(c => c.email?.toLowerCase() === lead.email?.toLowerCase());
+
             setFormData(prev => ({
                 ...prev,
-                // Do NOT set clientId directly from lead.id as they are separate tables
-                // handleCreateInvoice will handle deduplication or creation
+                clientId: existingClient ? existingClient.id : '',
                 clientName: lead.name || '',
                 clientEmail: lead.email || '',
                 clientPhone: lead.phone || '',
