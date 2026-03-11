@@ -7,13 +7,15 @@ const ACTIVE_COLUMNS = [
     { id: 'Booked', label: 'Booked', color: '#38bdf8', glow: 'rgba(56, 189, 248, 0.2)' }
 ];
 
-const ARCHIVE_IDS = ['Paid', 'Lost'];
-
 export default function CRM() {
     const [leads, setLeads] = useState([]);
     const [loading, setLoading] = useState(true);
     const [editingLead, setEditingLead] = useState(null);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+    // Archive View State
+    const [archiveTarget, setArchiveTarget] = useState(null); // 'Paid' or 'Lost'
+    const [archiveSearch, setArchiveSearch] = useState('');
 
     // Form state
     const [formName, setFormName] = useState('');
@@ -46,6 +48,14 @@ export default function CRM() {
         };
     }, [leads]);
 
+    const activeArchiveLeads = useMemo(() => {
+        if (!archiveTarget) return [];
+        return archiveStats[archiveTarget].filter(l =>
+            l.name.toLowerCase().includes(archiveSearch.toLowerCase()) ||
+            (l.email && l.email.toLowerCase().includes(archiveSearch.toLowerCase()))
+        );
+    }, [archiveTarget, archiveStats, archiveSearch]);
+
     const handleSave = async (e) => {
         e.preventDefault();
         const payload = {
@@ -74,11 +84,10 @@ export default function CRM() {
 
     const handleMove = async (lead, newStatus) => {
         try {
-            // Optimistic update
             setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, status: newStatus } : l));
             await apiPatch(`/leads/${lead.id}`, { status: newStatus });
         } catch (err) {
-            loadLeads(); // revert
+            loadLeads();
             alert(err.message);
         }
     };
@@ -150,13 +159,23 @@ export default function CRM() {
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                     {/* Rolled up Archive Stats */}
                     <div className="glass" style={{ padding: '8px 16px', borderRadius: '12px', display: 'flex', gap: '20px', fontSize: '12px' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            <span className="muted" style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Success (Paid)</span>
+                        <div
+                            onClick={() => setArchiveTarget('Paid')}
+                            style={{ display: 'flex', flexDirection: 'column', cursor: 'pointer', transition: 'opacity 0.2s' }}
+                            onMouseEnter={(e) => e.currentTarget.style.opacity = '0.7'}
+                            onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                        >
+                            <span className="muted" style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Success (Paid) 👁️</span>
                             <span style={{ color: '#4ade80', fontWeight: 900 }}>{archiveStats.Paid.length} Clients ({formatMoney(archiveStats.Paid.reduce((s, l) => s + l.quoted_value_cents, 0))})</span>
                         </div>
                         <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)' }} />
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            <span className="muted" style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lost Archive</span>
+                        <div
+                            onClick={() => setArchiveTarget('Lost')}
+                            style={{ display: 'flex', flexDirection: 'column', cursor: 'pointer', transition: 'opacity 0.2s' }}
+                            onMouseEnter={(e) => e.currentTarget.style.opacity = '0.7'}
+                            onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                        >
+                            <span className="muted" style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lost Archive 👁️</span>
                             <span style={{ color: '#ff4d4d', fontWeight: 900 }}>{archiveStats.Lost.length} Rows</span>
                         </div>
                     </div>
@@ -254,7 +273,7 @@ export default function CRM() {
                 <div style={{
                     position: 'fixed', top: 0, right: 0, bottom: 0, width: '420px',
                     background: 'rgba(15, 26, 51, 0.98)', borderLeft: '1px solid var(--line)',
-                    padding: '32px', zIndex: 10000, boxShadow: '-10px 0 40px rgba(0,0,0,0.5)',
+                    padding: '32px', zIndex: 11000, boxShadow: '-10px 0 40px rgba(0,0,0,0.5)',
                     overflowY: 'auto', backdropFilter: 'blur(20px)'
                 }}>
                     <h2 style={{ marginTop: 0, color: '#fff', fontSize: '1.5rem', fontWeight: 900 }}>{editingLead ? 'Edit Project' : 'New Project'}</h2>
@@ -299,9 +318,67 @@ export default function CRM() {
                 </div>
             )}
 
-            {/* Editor Backdrop */}
-            {isDrawerOpen && (
-                <div onClick={closeEditor} style={{
+            {/* Archive Viewer Drawer */}
+            {archiveTarget && (
+                <div style={{
+                    position: 'fixed', top: 0, right: 0, bottom: 0, width: '500px',
+                    background: 'rgba(10, 15, 28, 0.98)', borderLeft: '1px solid var(--line)',
+                    padding: '32px', zIndex: 10500, boxShadow: '-15px 0 50px rgba(0,0,0,0.6)',
+                    overflowY: 'auto', backdropFilter: 'blur(30px)'
+                }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                        <h2 style={{ margin: 0, color: '#fff', fontSize: '1.6rem', fontWeight: 900 }}>
+                            {archiveTarget} Lead Archive
+                        </h2>
+                        <button onClick={() => setArchiveTarget(null)} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: '#fff', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', fontWeight: 800 }}>Close</button>
+                    </div>
+
+                    <input
+                        type="text"
+                        placeholder="Search archived names or emails..."
+                        value={archiveSearch}
+                        onChange={(e) => setArchiveSearch(e.target.value)}
+                        style={{ marginBottom: '20px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+                    />
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {activeArchiveLeads.length === 0 ? (
+                            <div className="muted" style={{ textAlign: 'center', padding: '40px' }}>No records found in this section.</div>
+                        ) : (
+                            activeArchiveLeads.map(lead => (
+                                <div key={lead.id} className="card glass" style={{ margin: 0, padding: '16px', background: 'rgba(255,255,255,0.02) !important' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                        <div>
+                                            <div style={{ fontWeight: 900, color: '#fff' }}>{lead.name}</div>
+                                            <div className="muted" style={{ fontSize: '11px' }}>{lead.project_type} · {new Date(lead.created_at).toLocaleDateString()}</div>
+                                        </div>
+                                        <div style={{ fontWeight: 900, color: archiveTarget === 'Paid' ? '#4ade80' : '#ff4d4d' }}>{formatMoney(lead.quoted_value_cents)}</div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '10px', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                        <button
+                                            onClick={() => { setArchiveTarget(null); openEditor(lead); }}
+                                            style={{ flex: 1, background: 'rgba(56, 189, 248, 0.1)', border: 'none', color: '#38bdf8', padding: '6px', borderRadius: '4px', fontSize: '11px', fontWeight: 800, cursor: 'pointer' }}
+                                        >
+                                            View/Edit Card
+                                        </button>
+                                        <select
+                                            value={lead.status}
+                                            onChange={(e) => handleMove(lead, e.target.value)}
+                                            style={{ flex: 1, fontSize: '11px', padding: '4px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
+                                        >
+                                            {[...ACTIVE_COLUMNS, { id: 'Paid', label: 'Paid' }, { id: 'Lost', label: 'Lost' }].map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Backdrop for Editor and Archive */}
+            {(isDrawerOpen || archiveTarget) && (
+                <div onClick={() => { closeEditor(); setArchiveTarget(null); }} style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
                     background: 'rgba(0,0,0,0.4)', zIndex: 9999, backdropFilter: 'blur(5px)'
                 }} />
@@ -309,3 +386,4 @@ export default function CRM() {
         </section>
     );
 }
+
