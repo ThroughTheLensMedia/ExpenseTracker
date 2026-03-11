@@ -81,4 +81,58 @@ router.get("/export-all", async (req, res) => {
     }
 });
 
+// POST /admin/import-all
+// Accepts a JSON backup and restores it into the database.
+// WARNING: This is a destructive/additive operation depending on how it's handled. 
+// For this studio version, we map table names and insert.
+router.post("/import-all", async (req, res) => {
+    try {
+        const { backup } = req.body;
+        if (!backup) return res.status(400).json({ error: "No backup data provided" });
+
+        const results = {};
+        const tables = ["expenses", "equipment_assets", "mileage_logs", "classification_rules", "clients", "invoices", "invoice_items"];
+
+        for (const table of tables) {
+            const rows = backup[table];
+            if (Array.isArray(rows) && rows.length > 0) {
+                // Remove existing data to prevent ID conflicts or duplicates?
+                // Or just insert and ignore conflicts.
+                // For a "Restore," typically we want a clean slate or smart merge.
+                // Let's go with additive but filter out IDs if they exist to let Supabase gen new ones, 
+                // UNLESS strictly required for relations (like invoices).
+
+                // For now: delete all then insert (Standard Restore behavior)
+                const { error: delErr } = await supabase.from(table).delete().neq("id", "00000000-0000-0000-0000-000000000000");
+                if (delErr) {
+                    console.error(`[Restore] Error clearing ${table}:`, delErr);
+                    continue;
+                }
+
+                // Chunked insert
+                const CHUNK = 500;
+                let inserted = 0;
+                for (let i = 0; i < rows.length; i += CHUNK) {
+                    const chunkData = rows.slice(i, i + CHUNK).map(r => {
+                        const { id, created_at, ...clean } = r; // Strip metadata
+                        return clean;
+                    });
+                    const { data, error } = await supabase.from(table).insert(chunkData).select();
+                    if (error) {
+                        console.error(`[Restore] Error inserting into ${table}:`, error);
+                    } else {
+                        inserted += data.length;
+                    }
+                }
+                results[table] = inserted;
+            }
+        }
+
+        res.json({ ok: true, message: "Restore complete", detail: results });
+    } catch (e) {
+        console.error("[Restore] Fatal Error:", e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
 module.exports = router;
