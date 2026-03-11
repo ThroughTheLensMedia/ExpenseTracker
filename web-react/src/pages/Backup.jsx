@@ -2,15 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { apiGet, apiPost, fetchAllExpenses, apiDelete } from '../api';
 import CategorySelect from '../components/CategorySelect.jsx';
 
-const QUICK_SUBS = [
-    { name: 'Starlink', cat: 'Bills & Utilities', bucket: 'Utilities', bizPct: 100 },
-    { name: 'Adobe', cat: 'Software & Tech', bucket: 'Other', bizPct: 100 },
-    { name: 'Pixieset', cat: 'Software & Tech', bucket: 'Other', bizPct: 100 },
-    { name: 'Google', cat: 'Software & Tech', bucket: 'Other', bizPct: 100 },
-    { name: 'Cloudflare', cat: 'Software & Tech', bucket: 'Other', bizPct: 100 },
-    { name: 'Apple.com', cat: 'Software & Tech', bucket: 'Other', bizPct: 100 }
-];
-
 export default function Backup() {
     const [activeTab, setActiveTab] = useState('automation'); // 'automation', 'profile', 'infrastructure'
 
@@ -155,16 +146,7 @@ export default function Backup() {
         e.preventDefault();
         setMsg("Saving profile...");
         try {
-            // Basic validation to prevent null crashes
-            const cleanSettings = {
-                business_name: settings.business_name || '',
-                contact_name: settings.contact_name || '',
-                website: settings.website || '',
-                email: settings.email || '',
-                phone: settings.phone || '',
-                address: settings.address || ''
-            };
-            await apiPost('/settings', cleanSettings);
+            await apiPost('/settings', settings);
             setMsg("Profile saved successfully!");
             setTimeout(() => setMsg(''), 3000);
             loadData(true);
@@ -199,27 +181,30 @@ export default function Backup() {
                 </nav>
             </div>
 
-            {/* System Health Stats */}
+            {/* System Health Stats (Elite Centered Aesthetic) */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px', marginBottom: '40px' }}>
-                <div className="card glass" style={{ margin: 0, borderTop: '4px solid var(--accent)', padding: '24px' }}>
+                <div className="card glass" style={{ margin: 0, borderTop: '4px solid var(--accent)', padding: '40px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
                     <div className="muted small" style={{ fontWeight: 800 }}>LIVE TRANSACTIONS</div>
-                    <div style={{ fontSize: '2.5rem', fontWeight: 900, marginTop: '8px' }}>{stats.expenses.toLocaleString()}</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '12px' }}>
+                    <div style={{ fontSize: '3.5rem', fontWeight: 950, marginTop: '8px' }}>{stats.expenses.toLocaleString()}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '16px' }}>
                         <span className={`health-dot ${isHealthy ? 'health-ok' : 'health-bad'}`} />
                         <span className="muted small" style={{ fontWeight: 900 }}>{isHealthy ? 'SYNCHRONIZED' : 'CONNECTION LAG'}</span>
                     </div>
                 </div>
-                <div className="card glass" style={{ margin: 0, borderTop: '4px solid #38bdf8', padding: '24px' }}>
+                <div className="card glass" style={{ margin: 0, borderTop: '4px solid #38bdf8', padding: '40px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
                     <div className="muted small" style={{ fontWeight: 800 }}>GEAR ASSETS</div>
-                    <div style={{ fontSize: '2.5rem', fontWeight: 900, marginTop: '8px' }}>{stats.equipment.toLocaleString()}</div>
+                    <div style={{ fontSize: '3.5rem', fontWeight: 950, marginTop: '8px' }}>{stats.equipment.toLocaleString()}</div>
+                    <div style={{ visibility: 'hidden', marginTop: '16px' }} className="muted small">.</div>
                 </div>
-                <div className="card glass" style={{ margin: 0, borderTop: '4px solid #f97316', padding: '24px' }}>
+                <div className="card glass" style={{ margin: 0, borderTop: '4px solid #f97316', padding: '40px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
                     <div className="muted small" style={{ fontWeight: 800 }}>INVOICES</div>
-                    <div style={{ fontSize: '2.5rem', fontWeight: 900, marginTop: '8px' }}>{stats.invoices.toLocaleString()}</div>
+                    <div style={{ fontSize: '3.5rem', fontWeight: 950, marginTop: '8px' }}>{stats.invoices.toLocaleString()}</div>
+                    <div style={{ visibility: 'hidden', marginTop: '16px' }} className="muted small">.</div>
                 </div>
-                <div className="card glass" style={{ margin: 0, borderTop: '4px solid #818cf8', padding: '24px' }}>
+                <div className="card glass" style={{ margin: 0, borderTop: '4px solid #818cf8', padding: '40px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
                     <div className="muted small" style={{ fontWeight: 800 }}>PIPELINE CRM</div>
-                    <div style={{ fontSize: '2.5rem', fontWeight: 900, marginTop: '8px' }}>{stats.clients.toLocaleString()}</div>
+                    <div style={{ fontSize: '3.5rem', fontWeight: 950, marginTop: '8px' }}>{stats.clients.toLocaleString()}</div>
+                    <div style={{ visibility: 'hidden', marginTop: '16px' }} className="muted small">.</div>
                 </div>
             </div>
 
@@ -379,19 +364,29 @@ export default function Backup() {
                             </label>
                         </div>
                     </div>
+
+                    {/* Cloud Access Row */}
                     <div className="card glass glow-blue" style={{ border: 'none', padding: '50px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '30px' }}>
                         <div style={{ flex: 1, minWidth: '300px' }}>
-                            <h2 style={{ fontSize: '2rem', margin: 0 }}>Master Business Download</h2>
-                            <p className="muted" style={{ fontSize: '16px', marginTop: '10px' }}>Download your entire studio ecosystem (transactions, gear, CRM) for archival purposes.</p>
+                            <h2 style={{ fontSize: '2rem', margin: 0 }}>Cloud Database Portal</h2>
+                            <p className="muted" style={{ fontSize: '16px', marginTop: '10px' }}>Access your secure Supabase environment to manage raw data, run SQL, or view infrastructure health.</p>
                         </div>
-                        <a href="/api/admin/export-all" download className="btn primary" style={{ padding: '20px 50px', fontSize: '18px', fontWeight: 900 }}>DOWNLOAD ENTIRE REPOSITORY</a>
+                        <a href="https://supabase.com/dashboard/projects" target="_blank" rel="noopener noreferrer" className="btn primary" style={{ padding: '20px 50px', fontSize: '18px', fontWeight: 900 }}>OPEN CLOUD CONSOLE</a>
+                    </div>
+
+                    <div className="card glass" style={{ border: 'none', padding: '50px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '30px' }}>
+                        <div style={{ flex: 1, minWidth: '300px' }}>
+                            <h2 style={{ fontSize: '1.8rem', margin: 0 }}>Master Business Download</h2>
+                            <p className="muted" style={{ fontSize: '16px', marginTop: '10px' }}>Download your entire studio ecosystem (transactions, gear, CRM, invoices) for archival purposes.</p>
+                        </div>
+                        <a href="/api/admin/export-all" download className="btn secondary" style={{ padding: '20px 50px', fontSize: '16px', fontWeight: 900 }}>DOWNLOAD ARCHIVE</a>
                     </div>
                 </div>
             )}
 
             <div style={{ marginTop: '50px', padding: '30px 0', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span className="muted small" style={{ fontWeight: 900 }}>ARCHITECTURE: v3.5-ELITE-SUPABASE</span>
-                <span className="muted small" style={{ fontWeight: 900 }}>CLOUD PROVIDER: {storageType.toUpperCase()}</span>
+                <span className="muted small" style={{ fontWeight: 900 }}>ARCHITECTURE: v3.7-ELITE-SUPABASE</span>
+                <span className="muted small" style={{ fontWeight: 900 }}>ENDPOINT: {window.location.hostname}</span>
             </div>
         </section>
     );
