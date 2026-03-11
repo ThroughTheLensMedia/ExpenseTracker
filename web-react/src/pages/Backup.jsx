@@ -312,12 +312,12 @@ export default function Backup() {
                             </div>
 
                             <div className="tableWrap" style={{ flex: 1, padding: '0 4px', overflowY: 'visible' }}>
-                                <table className="glass" style={{ tableLayout: 'fixed', width: '100%', borderCollapse: 'separate', borderSpacing: '0 4px' }}>
+                                <table className="glass" style={{ width: 'auto', borderCollapse: 'separate', borderSpacing: '0 4px' }}>
                                     <thead>
                                         <tr>
-                                            <th style={{ width: '35%', padding: '10px 4px', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Match Criteria</th>
-                                            <th style={{ width: '50%', padding: '10px 4px', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Assignment</th>
-                                            <th style={{ width: '15%', textAlign: 'right', padding: '10px 4px', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actions</th>
+                                            <th style={{ textAlign: 'left', padding: '10px 24px 10px 8px', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Match Criteria</th>
+                                            <th style={{ textAlign: 'left', padding: '10px 24px 10px 8px', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Assignment</th>
+                                            <th style={{ textAlign: 'right', padding: '10px 8px', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -327,11 +327,11 @@ export default function Backup() {
                                             return (
                                                 <React.Fragment key={r.id}>
                                                     <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
-                                                        <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '6px 8px', borderRadius: '6px 0 0 6px' }}>
+                                                        <td style={{ whiteSpace: 'nowrap', padding: '6px 24px 6px 8px', borderRadius: '6px 0 0 6px' }}>
                                                             <div style={{ fontWeight: 800, color: 'var(--warn)', fontSize: '12px' }}>"{r.match_value}"</div>
                                                             <div className="muted" style={{ fontSize: '9px' }}>KEYWORD</div>
                                                         </td>
-                                                        <td style={{ fontWeight: 700, fontSize: '11px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '6px 8px' }}>
+                                                        <td style={{ fontWeight: 700, fontSize: '11px', whiteSpace: 'nowrap', padding: '6px 24px 6px 8px' }}>
                                                             {r.assign_category || '—'}
                                                         </td>
                                                         <td style={{ textAlign: 'right', padding: '6px 8px', borderRadius: '0 6px 6px 0' }}>
