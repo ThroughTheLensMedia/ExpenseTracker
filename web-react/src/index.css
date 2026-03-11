@@ -364,7 +364,7 @@ tr:hover td {
   justify-content: flex-end;
   padding: 0;
   margin: 0;
-  z-index: 10000;
+  z-index: 11000;
 }
 
 .drawer-panel {
@@ -373,6 +373,8 @@ tr:hover td {
   background: linear-gradient(180deg, rgba(15, 26, 51, 0.98), rgba(15, 26, 51, 0.92));
   border-left: 1px solid var(--line);
   padding: 16px;
+  padding-bottom: 120px;
+  /* Safe space for bottom nav and home indicator */
   overflow: auto;
 }
 

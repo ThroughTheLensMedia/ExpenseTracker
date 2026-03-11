@@ -59,7 +59,6 @@ function App() {
             <NavLink to="/transactions" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Transactions</NavLink>
             <NavLink to="/tax" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Tax</NavLink>
             <NavLink to="/equipment" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Equipment</NavLink>
-            <NavLink to="/invoice" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Invoice</NavLink>
             <NavLink to="/crm" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>CRM</NavLink>
             <NavLink to="/import" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Bank Import</NavLink>
 
@@ -79,8 +78,7 @@ function App() {
             <Route path="/tax" element={<Tax />} />
             <Route path="/equipment" element={<Assets />} />
             <Route path="/backup" element={<Backup />} />
-            <Route path="/invoice" element={<Invoice />} />
-            <Route path="/crm" element={<CRM />} />
+            <Route path="/crm/*" element={<CRM />} />
             <Route path="/import" element={<Import />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>

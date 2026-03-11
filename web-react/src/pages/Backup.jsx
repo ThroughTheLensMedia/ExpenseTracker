@@ -44,7 +44,7 @@ export default function Backup() {
                 fetchAllExpenses(),
                 apiGet('/assets'),
                 apiGet('/invoices'),
-                apiGet('/invoices/clients'),
+                apiGet('/leads'),
                 apiGet('/rules'),
                 apiGet('/health')
             ]);
@@ -52,9 +52,12 @@ export default function Backup() {
             const exps = results[0].status === 'fulfilled' ? results[0].value : [];
             const eq = results[1].status === 'fulfilled' ? results[1].value : [];
             const inv = results[2].status === 'fulfilled' ? results[2].value : [];
-            const cli = results[3].status === 'fulfilled' ? results[3].value : [];
+            const leadsRes = results[3].status === 'fulfilled' ? results[3].value : { leads: [] };
             const rulesData = results[4].status === 'fulfilled' ? results[4].value : { rules: [] };
             const health = results[5].status === 'fulfilled' ? results[5].value : { ok: false };
+
+            const leads = leadsRes.leads || [];
+            const activeLeads = leads.filter(l => l.status !== 'Lost');
 
             setAllExpenses(exps || []);
             setRules(rulesData.rules || []);
@@ -63,7 +66,7 @@ export default function Backup() {
                 expenses: (exps || []).length,
                 equipment: (eq || []).length,
                 invoices: (inv || []).length,
-                clients: (cli || []).length
+                clients: activeLeads.length
             });
         } catch (e) {
             console.error("Data load failed critically", e);
@@ -256,22 +259,22 @@ export default function Backup() {
 
             {/* ── Live System Health Bar ── */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-                <div className="card glass" style={{ margin: 0, borderTop: '2px solid var(--accent)', padding: '20px' }}>
-                    <div className="muted small" style={{ fontWeight: 800 }}>TOTAL ENTRIES</div>
+                <div className="card glass" style={{ margin: 0, borderTop: '2px solid var(--accent)', padding: '20px', textAlign: 'center' }}>
+                    <div className="muted small" style={{ fontWeight: 800 }}>TOTAL TRANSACTION</div>
                     <div style={{ fontSize: '2rem', fontWeight: 900, marginTop: '4px' }}>{stats.expenses.toLocaleString()}</div>
                     <div className="tag" style={{ fontSize: '9px', marginTop: '8px' }}>POSTGRES LIVE</div>
                 </div>
-                <div className="card glass" style={{ margin: 0, borderTop: '2px solid var(--ok)', padding: '20px' }}>
-                    <div className="muted small" style={{ fontWeight: 800 }}>STUDIO ASSETS</div>
+                <div className="card glass" style={{ margin: 0, borderTop: '2px solid var(--ok)', padding: '20px', textAlign: 'center' }}>
+                    <div className="muted small" style={{ fontWeight: 800 }}>PHOTOGRAPHY GEAR</div>
                     <div style={{ fontSize: '2rem', fontWeight: 900, marginTop: '4px' }}>{stats.equipment.toLocaleString()}</div>
                     <div className="tag" style={{ fontSize: '9px', marginTop: '8px' }}>GEAR PORTFOLIO</div>
                 </div>
-                <div className="card glass" style={{ margin: 0, borderTop: '2px solid var(--warn)', padding: '20px' }}>
-                    <div className="muted small" style={{ fontWeight: 800 }}>CLASSIFICATION RULES</div>
+                <div className="card glass" style={{ margin: 0, borderTop: '2px solid var(--warn)', padding: '20px', textAlign: 'center' }}>
+                    <div className="muted small" style={{ fontWeight: 800 }}>RULES</div>
                     <div style={{ fontSize: '2rem', fontWeight: 900, marginTop: '4px' }}>{rules.length.toLocaleString()}</div>
                     <div className="tag" style={{ fontSize: '9px', marginTop: '8px' }}>ACTIVE ENGINE</div>
                 </div>
-                <div className="card glass" style={{ margin: 0, borderTop: '2px solid #818cf8', padding: '20px' }}>
+                <div className="card glass" style={{ margin: 0, borderTop: '2px solid #818cf8', padding: '20px', textAlign: 'center' }}>
                     <div className="muted small" style={{ fontWeight: 800 }}>CLIENTS</div>
                     <div style={{ fontSize: '2rem', fontWeight: 900, marginTop: '4px' }}>{stats.clients.toLocaleString()}</div>
                     <div className="tag" style={{ fontSize: '9px', marginTop: '8px' }}>CRM RECORDS</div>
