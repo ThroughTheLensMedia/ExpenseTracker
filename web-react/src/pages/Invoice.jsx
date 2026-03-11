@@ -37,13 +37,39 @@ function InvoiceItemRow({ item, index, onChange, onRemove }) {
 function InvoicePreview({ invoice, settings = {}, onClose }) {
     const previewRef = useRef();
 
-    const subtotal = (invoice.items || []).reduce((s, it) => {
-        const p = parseFloat(it.unit_price) || 0;
-        const q = parseFloat(it.quantity) || 0;
-        return s + (p * q);
-    }, 0);
-    const tax = Math.round(subtotal * ((invoice.tax_percent || 0) / 100));
-    const total = subtotal + tax - (parseFloat(invoice.discount) || 0);
+    // Data Normalization: Handle both API structure and Draft State structure
+    const data = useMemo(() => {
+        const items = invoice.items || (invoice.invoice_items || []).map(it => ({
+            description: it.description,
+            quantity: it.quantity,
+            unit_price: it.unit_price_cents ? (it.unit_price_cents / 100) : it.unit_price
+        }));
+
+        const subtotal = items.reduce((s, it) => {
+            const p = parseFloat(it.unit_price) || 0;
+            const q = parseFloat(it.quantity) || 0;
+            return s + (p * q);
+        }, 0);
+
+        const discount = invoice.discount_cents ? (invoice.discount_cents / 100) : (parseFloat(invoice.discount) || 0);
+        const taxVal = Math.round(subtotal * ((invoice.tax_percent || 0) / 100));
+        const total = subtotal + taxVal - discount;
+
+        return {
+            number: invoice.number || invoice.invoice_number || '---',
+            date: invoice.date || invoice.issue_date || '---',
+            dueDate: invoice.dueDate || invoice.due_date,
+            clientName: invoice.clientName || invoice.clients?.name || '---',
+            clientEmail: invoice.clientEmail || invoice.clients?.email || '',
+            clientPhone: invoice.clientPhone || invoice.clients?.phone || '',
+            items,
+            subtotal,
+            taxVal,
+            discount,
+            total,
+            tax_percent: invoice.tax_percent || 0
+        };
+    }, [invoice]);
 
     const handleDownloadPDF = async () => {
         const element = previewRef.current;
@@ -53,7 +79,7 @@ function InvoicePreview({ invoice, settings = {}, onClose }) {
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
         pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-        pdf.save(`Invoice_${invoice.number}.pdf`);
+        pdf.save(`Invoice_${data.number}.pdf`);
     };
 
     const formatDate = (d) => {
@@ -76,94 +102,92 @@ function InvoicePreview({ invoice, settings = {}, onClose }) {
                 <div style={{ flex: 1, overflowY: 'auto', padding: '40px' }}>
                     <div ref={previewRef} style={{ background: '#fff', width: '210mm', minWidth: '210mm', minHeight: '297mm', margin: '0 auto', padding: '60px 80px', boxShadow: '0 0 50px rgba(0,0,0,0.1)', position: 'relative', boxSizing: 'border-box' }}>
 
-                        {/* HEADER - MATCHING TEMPLATE */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '80px' }}>
+                        {/* HEADER */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '100px' }}>
                             <div>
-                                <h1 style={{ margin: 0, fontSize: '32px', fontWeight: 500, color: '#000', letterSpacing: '2px', textTransform: 'uppercase' }}>INVOICE</h1>
-                                <div style={{ marginTop: '20px', fontSize: '12px', color: '#666', lineHeight: '1.6' }}>
-                                    <div style={{ fontWeight: 800, color: '#000', fontSize: '14px' }}>{settings?.business_name || 'Through The Lens Media'}</div>
-                                    <div>Tax ID: {settings?.tax_id || '--- --- ---'}</div>
-                                    <div style={{ whiteSpace: 'pre-wrap' }}>{settings?.studio_address || 'Studio Address Not Set'}</div>
+                                <h1 style={{ margin: 0, fontSize: '42px', fontWeight: 300, color: '#000', letterSpacing: '4px', textTransform: 'uppercase' }}>INVOICE</h1>
+                                <div style={{ marginTop: '30px', fontSize: '12px', color: '#666', lineHeight: '1.8' }}>
+                                    <div style={{ fontWeight: 900, color: '#000', fontSize: '16px', marginBottom: '8px' }}>{settings?.business_name || 'Through The Lens Media'}</div>
+                                    {settings?.tax_id && <div>Tax ID: {settings.tax_id}</div>}
+                                    {settings?.studio_address && <div style={{ whiteSpace: 'pre-wrap' }}>{settings.studio_address}</div>}
                                 </div>
                             </div>
                             <div>
                                 {settings?.logo_url ? (
-                                    <div style={{ width: '120px', height: '120px', borderRadius: '50%', border: '1px solid #eee', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10px' }}>
+                                    <div style={{ width: '180px', height: '180px', borderRadius: '50%', border: '1px solid #eee', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '15px', background: '#fff' }}>
                                         <img src={settings.logo_url} alt="Studio Logo" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
                                     </div>
                                 ) : (
-                                    <div style={{ width: '120px', height: '120px', borderRadius: '50%', background: '#f9f9f9', border: '2px solid #000', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-                                        <div style={{ fontSize: '24px' }}>📸</div>
-                                        <div style={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', marginTop: '4px', letterSpacing: '1px' }}>Pure Capture</div>
+                                    <div style={{ width: '180px', height: '180px', borderRadius: '50%', background: '#fafafa', border: '3px solid #000', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+                                        <div style={{ fontSize: '42px' }}>📸</div>
+                                        <div style={{ fontSize: '12px', fontWeight: 950, textTransform: 'uppercase', marginTop: '10px', letterSpacing: '2px' }}>Pure Capture</div>
                                     </div>
                                 )}
                             </div>
                         </div>
 
                         {/* BILL TO & DETAILS */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px', marginBottom: '60px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '60px', marginBottom: '80px' }}>
                             <div>
-                                <div style={{ fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '15px', color: '#000' }}>BILL TO</div>
-                                <div style={{ fontSize: '14px', fontWeight: 700 }}>{invoice.clientName || '---'}</div>
-                                <div style={{ fontSize: '13px', color: '#666', marginTop: '4px' }}>{invoice.clientEmail}</div>
-                                <div style={{ fontSize: '13px', color: '#666' }}>{invoice.clientPhone}</div>
+                                <div style={{ fontSize: '12px', fontWeight: 950, textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '15px', color: '#000', borderBottom: '1px solid #000', paddingBottom: '8px', display: 'inline-block' }}>BILL TO</div>
+                                <div style={{ fontSize: '16px', fontWeight: 800 }}>{data.clientName}</div>
+                                <div style={{ fontSize: '14px', color: '#444', marginTop: '4px' }}>{data.clientEmail}</div>
+                                <div style={{ fontSize: '14px', color: '#444' }}>{data.clientPhone}</div>
                             </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '12px' }}>
-                                <div style={{ fontWeight: 700 }}>Invoice No:</div>
-                                <div style={{ textAlign: 'right' }}>{invoice.number}</div>
-                                <div style={{ fontWeight: 700 }}>Issue Date:</div>
-                                <div style={{ textAlign: 'right' }}>{formatDate(invoice.date)}</div>
-                                <div style={{ fontWeight: 700 }}>Due Date:</div>
-                                <div style={{ textAlign: 'right' }}>{invoice.dueDate ? formatDate(invoice.dueDate) : 'Upon Receipt'}</div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '12px', fontSize: '14px' }}>
+                                <div style={{ fontWeight: 800, color: '#666' }}>Invoice No.</div>
+                                <div style={{ textAlign: 'right', fontWeight: 900 }}>{data.number}</div>
+                                <div style={{ fontWeight: 800, color: '#666' }}>Issue Date</div>
+                                <div style={{ textAlign: 'right' }}>{formatDate(data.date)}</div>
+                                <div style={{ fontWeight: 800, color: '#666' }}>Due Date</div>
+                                <div style={{ textAlign: 'right' }}>{data.dueDate ? formatDate(data.dueDate) : 'Upon Receipt'}</div>
                             </div>
                         </div>
 
                         {/* LINE ITEMS HEADER */}
-                        <div style={{ background: '#f8f8f8', display: 'flex', fontWeight: 900, fontSize: '11px', textTransform: 'uppercase', borderBottom: '1px solid #eee' }}>
-                            <div style={{ flex: 1, padding: '12px 15px' }}>Description</div>
-                            <div style={{ width: '80px', padding: '12px 15px', textAlign: 'center' }}>Quantity</div>
-                            <div style={{ width: '120px', padding: '12px 15px', textAlign: 'right' }}>Unit Price</div>
-                            <div style={{ width: '120px', padding: '12px 15px', textAlign: 'right' }}>Amount</div>
+                        <div style={{ background: '#000', color: '#fff', display: 'flex', fontWeight: 900, fontSize: '11px', textTransform: 'uppercase', borderRadius: '4px 4px 0 0' }}>
+                            <div style={{ flex: 1, padding: '15px 20px', letterSpacing: '1px' }}>Service Description</div>
+                            <div style={{ width: '80px', padding: '15px', textAlign: 'center' }}>Qty</div>
+                            <div style={{ width: '120px', padding: '15px', textAlign: 'right' }}>Unit Price</div>
+                            <div style={{ width: '120px', padding: '15px 20px', textAlign: 'right' }}>Total</div>
                         </div>
 
                         {/* LINE ITEMS LIST */}
-                        <div style={{ marginBottom: '40px' }}>
-                            {(invoice.items || []).map((it, idx) => (
-                                <div key={idx} style={{ display: 'flex', borderBottom: '1px solid #eee', fontSize: '13px', alignItems: 'center' }}>
-                                    <div style={{ flex: 1, padding: '15px' }}>{it.description}</div>
-                                    <div style={{ width: '80px', padding: '15px', textAlign: 'center' }}>{it.quantity}</div>
-                                    <div style={{ width: '120px', padding: '15px', textAlign: 'right' }}>{formatMoney(Number(it.unit_price) * 100)}</div>
-                                    <div style={{ width: '120px', padding: '15px', textAlign: 'right', fontWeight: 700 }}>{formatMoney(Number(it.unit_price) * it.quantity * 100)}</div>
+                        <div style={{ marginBottom: '60px', border: '1px solid #eee', borderTop: 'none', borderRadius: '0 0 4px 4px' }}>
+                            {data.items.length === 0 ? (
+                                <div style={{ padding: '30px', textAlign: 'center', color: '#999', fontSize: '13px' }}>No line items generated for this snapshot.</div>
+                            ) : data.items.map((it, idx) => (
+                                <div key={idx} style={{ display: 'flex', borderBottom: idx === data.items.length - 1 ? 'none' : '1px solid #f5f5f5', fontSize: '14px', alignItems: 'center' }}>
+                                    <div style={{ flex: 1, padding: '20px', fontWeight: 500 }}>{it.description || '---'}</div>
+                                    <div style={{ width: '80px', padding: '20px', textAlign: 'center' }}>{it.quantity}</div>
+                                    <div style={{ width: '120px', padding: '20px', textAlign: 'right' }}>{formatMoney(Number(it.unit_price) * 100)}</div>
+                                    <div style={{ width: '120px', padding: '20px', textAlign: 'right', fontWeight: 700 }}>{formatMoney(Number(it.unit_price) * it.quantity * 100)}</div>
                                 </div>
                             ))}
                         </div>
 
                         {/* TOTALS BOX */}
-                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                            <div style={{ width: '300px' }}>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '13px', padding: '5px 15px' }}>
-                                    <div style={{ color: '#666' }}>Subtotal</div>
-                                    <div style={{ textAlign: 'right' }}>{formatMoney(subtotal * 100)}</div>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
+                            <div style={{ width: '320px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', fontSize: '14px', padding: '8px 20px', color: '#666' }}>
+                                    <div>Subtotal</div>
+                                    <div style={{ textAlign: 'right' }}>{formatMoney(data.subtotal * 100)}</div>
                                 </div>
-                                {invoice.discount > 0 && (
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '13px', padding: '5px 15px' }}>
-                                        <div style={{ color: '#666' }}>Discount %</div>
-                                        <div style={{ textAlign: 'right' }}>-{formatMoney(Number(invoice.discount) * 100)}</div>
+                                {data.discount > 0 && (
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', fontSize: '14px', padding: '8px 20px', color: '#ff4d4d', fontWeight: 600 }}>
+                                        <div>Studio Discount</div>
+                                        <div style={{ textAlign: 'right' }}>-{formatMoney(data.discount * 100)}</div>
                                     </div>
                                 )}
-                                {invoice.tax_percent > 0 && (
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '13px', padding: '5px 15px', marginBottom: '10px' }}>
-                                        <div style={{ color: '#666' }}>Tax ({invoice.tax_percent}%)</div>
-                                        <div style={{ textAlign: 'right' }}>{formatMoney(tax * 100)}</div>
+                                {data.tax_percent > 0 && (
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', fontSize: '14px', padding: '8px 20px', color: '#666' }}>
+                                        <div>Tax Rate ({data.tax_percent}%)</div>
+                                        <div style={{ textAlign: 'right' }}>{formatMoney(data.taxVal * 100)}</div>
                                     </div>
                                 )}
-                                <div style={{ background: '#f8f8f8', padding: '12px 15px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '14px', fontWeight: 800 }}>
-                                    <div>TOTAL</div>
-                                    <div style={{ textAlign: 'right' }}>{formatMoney(total * 100)}</div>
-                                </div>
-                                <div style={{ background: '#000', color: '#fff', padding: '12px 15px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '14px', fontWeight: 900 }}>
-                                    <div style={{ textTransform: 'uppercase' }}>Total Due</div>
-                                    <div style={{ textAlign: 'right' }}>{formatMoney(total * 100)}</div>
+                                <div style={{ marginTop: '15px', background: '#fcfcfc', borderTop: '2px solid #000', padding: '20px', display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '15px', alignItems: 'center' }}>
+                                    <div style={{ fontSize: '12px', fontWeight: 950, textTransform: 'uppercase', letterSpacing: '1px' }}>Total Due</div>
+                                    <div style={{ textAlign: 'right', fontSize: '32px', fontWeight: 900, color: '#000' }}>{formatMoney(data.total * 100)}</div>
                                 </div>
                             </div>
                         </div>
@@ -191,9 +215,21 @@ function InvoicePreview({ invoice, settings = {}, onClose }) {
                         </div>
 
                         {/* FOOTER */}
-                        <div style={{ position: 'absolute', bottom: '60px', left: 0, right: 0, textAlign: 'center', fontSize: '11px', color: '#999', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                            <div style={{ fontWeight: 900, color: '#666' }}>{settings?.business_name || 'Through The Lens Media'}</div>
-                            <div>{settings?.website || ''} · {settings?.business_email || settings?.contact_email || ''}</div>
+                        <div style={{ position: 'absolute', bottom: '80px', left: 0, right: 0, textAlign: 'center', padding: '0 100px' }}>
+                            <div style={{ borderTop: '1px solid #eee', paddingTop: '40px' }}>
+                                <div style={{
+                                    fontFamily: 'Papyrus, "Palatino Linotype", "Book Antiqua", Palatino, serif',
+                                    fontSize: '15px',
+                                    fontWeight: 'bold',
+                                    letterSpacing: '2px',
+                                    color: '#000'
+                                }}>
+                                    {settings?.website || 'throughthelens.media'}
+                                </div>
+                                <div style={{ fontSize: '10px', color: '#999', marginTop: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                                    {settings?.business_email || settings?.contact_email || ''}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
