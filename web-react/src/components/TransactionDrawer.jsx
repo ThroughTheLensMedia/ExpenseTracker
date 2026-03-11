@@ -130,13 +130,22 @@ export default function TransactionDrawer({ transaction, onClose, onSave }) {
                 <div className="row two" style={{ marginTop: '10px' }}>
                     <div>
                         <small className="muted">Tax bucket</small>
-                        <select value={taxBucket} onChange={e => setTaxBucket(e.target.value)} style={{ width: '100%', padding: '8px' }}>
+                        <select
+                            value={taxBucket}
+                            onChange={e => {
+                                const newBucket = e.target.value;
+                                setTaxBucket(newBucket);
+                                if (newBucket === 'Personal Expense') setDeduct(false);
+                            }}
+                            style={{ width: '100%', padding: '8px' }}
+                        >
                             <option value="">-- Unassigned --</option>
                             {[
                                 'Advertising', 'Car and truck', 'Commissions and fees', 'Contract labor',
                                 'Depreciation', 'Insurance', 'Interest', 'Legal and professional',
                                 'Office expense', 'Rent/lease', 'Repairs and maintenance', 'Supplies',
-                                'Taxes and licenses', 'Travel', 'Meals (50%)', 'Utilities', 'Wages', 'Other'
+                                'Taxes and licenses', 'Travel', 'Meals (50%)', 'Utilities', 'Wages', 'Other',
+                                'Personal Expense'
                             ].map(b => <option key={b} value={b}>{b}</option>)}
                         </select>
                     </div>

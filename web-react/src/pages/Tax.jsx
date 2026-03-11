@@ -24,6 +24,7 @@ const SCHEDULE_C_MAPPING = {
     'Utilities': 'Line 25',
     'Wages': 'Line 26',
     'Other': 'Line 27a',
+    'Personal Expense': 'Non-Business',
 };
 
 const IRS_GUIDELINES = {
@@ -42,7 +43,10 @@ const IRS_GUIDELINES = {
     'Taxes and licenses': 'Business licenses, local taxes, annual reports, and copyright registration fees.',
     'Travel': 'Lodging and transportation (airfare/Uber) for business trips away from your home city.',
     'Meals (50%)': 'Business-related meals with clients or while traveling. Capped at 50% deduction.',
-    'Utilities': 'Business portion of Internet, Phone, and studio electricity/water.',
+    'Utilities': 'Includes business portion of cell phone, internet, and studio utilities.',
+    'Wages': 'Salaries and wages paid to employees (not yourself as a sole proprietor).',
+    'Other': 'Miscellaneous business expenses that do not fit into other specific categories.',
+    'Personal Expense': 'Non-deductible personal transactions. Tracking these helps clear the "Unassigned" list without affecting your business net profit.',
 };
 
 // IRS rates are loaded from the DB (mileage_rates table) – no more hardcoding!
@@ -255,7 +259,11 @@ export default function Tax() {
         const transactionIncome = incomeRows.reduce((s, e) => s + Math.abs(Number(e.amount_cents || 0)), 0);
         const extraIncome = Math.round(parseFloat(manual1099 || 0) * 100);
         const grossReceipts = transactionIncome + extraIncome;
-        const totalDeductible = summary.reduce((s, r) => s + (r.tax_bucket !== 'Unassigned' ? (r.deductible_cents || 0) : 0), 0);
+        const totalDeductible = summary.reduce((s, r) => {
+            const line = SCHEDULE_C_MAPPING[r.tax_bucket];
+            const isLineItem = line && line.startsWith('Line');
+            return s + (isLineItem ? (r.deductible_cents || 0) : 0);
+        }, 0);
         const mileageDeductCents = Math.round(totalMiles * currentRate * 100);
         const totalExpenses = totalDeductible + mileageDeductCents;
         const netProfit = grossReceipts - totalExpenses;
@@ -388,7 +396,11 @@ export default function Tax() {
                     const transactionIncome = incomeRows.reduce((s, e) => s + Math.abs(Number(e.amount_cents || 0)), 0);
                     const extraIncome = Math.round(parseFloat(manual1099 || 0) * 100);
                     const grossReceipts = transactionIncome + extraIncome;
-                    const totalDeductible = summary.reduce((s, r) => s + (r.tax_bucket !== 'Unassigned' ? (r.deductible_cents || 0) : 0), 0);
+                    const totalDeductible = summary.reduce((s, r) => {
+                        const line = SCHEDULE_C_MAPPING[r.tax_bucket];
+                        const isLineItem = line && line.startsWith('Line');
+                        return s + (isLineItem ? (r.deductible_cents || 0) : 0);
+                    }, 0);
                     const mileageDeductCents = Math.round(totalMiles * currentRate * 100);
                     const totalExpenses = totalDeductible + mileageDeductCents;
                     const netProfit = grossReceipts - totalExpenses;
