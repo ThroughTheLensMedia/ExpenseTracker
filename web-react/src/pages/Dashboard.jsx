@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { fetchAllExpenses, fetchExpenseYears, formatMoney } from '../api';
 import {
     Chart as ChartJS,
@@ -29,6 +30,7 @@ ChartJS.register(
 );
 
 export default function Dashboard({ apiStatus }) {
+    const navigate = useNavigate();
     const [expenses, setExpenses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -500,8 +502,17 @@ export default function Dashboard({ apiStatus }) {
 
             {/* Actionable Intelligence / Liability Risk (Full Width Span) */}
             <div className="card glass" style={{ margin: 0, padding: '24px', borderTop: stats.missing > 0 ? '3px solid #ff4d4d' : '3px solid #4ade80' }}>
-                <h3 style={{ fontSize: '1.1rem', margin: '0 0 4px 0', color: stats.missing > 0 ? '#ff4d4d' : '#4ade80' }}>Actionable Intelligence</h3>
-                <div className="muted" style={{ fontSize: '11px', marginBottom: '16px' }}>Compliance & Operations</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+                    <div>
+                        <h3 style={{ fontSize: '1.1rem', margin: '0 0 4px 0', color: stats.missing > 0 ? '#ff4d4d' : '#4ade80' }}>Actionable Intelligence</h3>
+                        <div className="muted" style={{ fontSize: '11px' }}>Compliance & Operations</div>
+                    </div>
+                    {stats.missing > 0 && (
+                        <button className="btn secondary" onClick={() => navigate('/transactions?audit=true')} style={{ fontSize: '12px', padding: '6px 14px', borderColor: 'rgba(255, 77, 77, 0.4)', color: '#ff4d4d', fontWeight: 'bold' }}>
+                            VIEW LIABILITIES →
+                        </button>
+                    )}
+                </div>
 
                 {stats.missing > 0 ? (
                     <div style={{ background: 'rgba(255, 77, 77, 0.1)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255, 77, 77, 0.2)' }}>
