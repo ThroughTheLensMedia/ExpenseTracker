@@ -94,7 +94,10 @@ apiRouter.get("/health", (_req, res) => res.json({ ok: true, environment: proces
 apiRouter.use("/expenses", expenseRouter);
 apiRouter.use("/tax", taxRouter);
 apiRouter.use("/import", importRouter);
-apiRouter.use("/receipts", receiptsRouter);
+
+// Pass-through static serving for receipts, then the upload router
+apiRouter.use("/receipts", express.static(RECEIPT_DIR), receiptsRouter);
+
 apiRouter.use("/rules", rulesRouter);
 apiRouter.use("/mileage", mileageRouter);
 apiRouter.use("/assets", assetsRouter);
@@ -102,6 +105,9 @@ apiRouter.use("/invoices", invoiceRouter);
 apiRouter.use("/admin", adminRouter);
 apiRouter.use("/leads", leadsRouter);
 apiRouter.use("/pwa", pwaRouter);
+
+// Ensure the /api route also handles static receipt serving for consistent URLs
+apiRouter.use("/receipts-static", express.static(RECEIPT_DIR));
 
 // Mount all API routes under /api
 app.use("/api", apiRouter);
