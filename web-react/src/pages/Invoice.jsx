@@ -252,12 +252,21 @@ export default function Invoice() {
             }));
 
             if (invs.length > 0) {
-                const last = invs[0].invoice_number;
-                const match = last.match(/\d+/);
-                if (match) {
-                    const next = parseInt(match[0]) + 1;
-                    setFormData(prev => ({ ...prev, number: last.replace(/\d+/, String(next).padStart(match[0].length, '0')) }));
-                }
+                // Scan ledger for highest numeric value to prevent collisions
+                let max = 1000;
+                let prefix = 'INV-';
+                invs.forEach(inv => {
+                    const match = inv.invoice_number.match(/(\d+)/);
+                    if (match) {
+                        const val = parseInt(match[1], 10);
+                        if (val > max) max = val;
+                        // Extract prefix if it varies, otherwise default to INV-
+                        const pMatch = inv.invoice_number.match(/^([A-Za-z0-9]+-)/);
+                        if (pMatch) prefix = pMatch[1];
+                    }
+                });
+                const nextNum = max + 1;
+                setFormData(prev => ({ ...prev, number: `${prefix}${nextNum}` }));
             } else {
                 setFormData(prev => ({ ...prev, number: 'INV-1001' }));
             }
@@ -373,9 +382,14 @@ export default function Invoice() {
             } else {
                 await apiPost('/invoices', payload);
             }
+
+            // Success handshake: unlock UI immediately before background refresh
+            setLoading(false);
             setIsCreatorOpen(false);
             setEditingId(null);
-            load();
+
+            // Async non-blocking load
+            setTimeout(load, 10);
         } catch (err) {
             let errorText = err.message;
             try {
