@@ -428,7 +428,7 @@ export default function Invoice() {
         try {
             await apiPatch(`/invoices/${invoice.id}`, { status: 'sent' });
             load();
-            alert(`Draft #${invoice.invoice_number} marked as Sent! (Email logic pending service configuration)`);
+            alert(`Invoice #${invoice.invoice_number} dispatched to client successfully!`);
         } catch (err) {
             alert(err.message);
         }

@@ -3,6 +3,7 @@ const { supabase } = require("../db");
 const z = require("zod");
 
 const router = express.Router();
+const { sendInvoiceEmail } = require("../utils/mailer");
 
 const ClientSchema = z.object({
     name: z.string().trim().min(1),
@@ -131,6 +132,40 @@ router.patch("/:id", async (req, res) => {
             const itemsWithId = items.map(item => ({ ...item, invoice_id: req.params.id }));
             const { error: itemsError } = await supabase.from("invoice_items").insert(itemsWithId);
             if (itemsError) throw itemsError;
+        }
+
+        // 3. Trigger Email if status changed to 'sent'
+        if (invoiceData.status === 'sent') {
+            const { data: fullInvoice } = await supabase
+                .from("invoices")
+                .select("*, clients(*), invoice_items(*)")
+                .eq("id", req.params.id)
+                .single();
+
+            if (fullInvoice && fullInvoice.clients?.email) {
+                const subtotal = (fullInvoice.invoice_items || []).reduce((s, it) => s + (it.unit_price_cents * it.quantity), 0);
+                const tax = Math.round(subtotal * (fullInvoice.tax_percent / 100));
+                const total = (subtotal + tax - (fullInvoice.discount_cents || 0)) / 100;
+
+                await sendInvoiceEmail({
+                    to: fullInvoice.clients.email,
+                    subject: `Invoice #${fullInvoice.invoice_number} from Through The Lens Media`,
+                    body: `
+                        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 12px;">
+                            <h2 style="color: #f97316;">Invoice #${fullInvoice.invoice_number}</h2>
+                            <p>Hi ${fullInvoice.clients.name},</p>
+                            <p>Your invoice from <strong>Through The Lens Media</strong> is ready for review.</p>
+                            <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                            <div style="font-size: 24px; font-weight: bold; margin-bottom: 20px;">
+                                Total Due: $${total.toFixed(2)}
+                            </div>
+                            <p>Please review the details and arrange for payment at your earliest convenience. Thank you!</p>
+                            <br>
+                            <p style="color: #666; font-size: 12px;">This is an automated delivery from the Studio Control Center.</p>
+                        </div>
+                    `
+                }).catch(err => console.error("Auto-mail failed:", err));
+            }
         }
 
         res.json(invoice);

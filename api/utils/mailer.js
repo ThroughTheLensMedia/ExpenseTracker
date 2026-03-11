@@ -8,8 +8,8 @@
  * 2. Add RESEND_API_KEY to your .env
  */
 
-// const { Resend } = require('resend');
-// const resend = new Resend(process.env.RESEND_API_KEY);
+const { Resend } = require('resend');
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 async function sendInvoiceEmail({ to, subject, body, attachmentUrl }) {
     console.log(`[MAILER] Preparing email to ${to}...`);
@@ -21,14 +21,15 @@ async function sendInvoiceEmail({ to, subject, body, attachmentUrl }) {
     }
 
     try {
-        // const data = await resend.emails.send({
-        //     from: 'Studio <billing@yourdomain.com>',
-        //     to: [to],
-        //     subject: subject,
-        //     html: body,
-        // });
-        console.log("[MAILER] Email dispatched successfully");
-        return { success: true };
+        const fromEmail = process.env.RESEND_FROM || 'Through The Lens Media <billing@throughthelens.media>';
+        const data = await resend.emails.send({
+            from: fromEmail,
+            to: [to],
+            subject: subject,
+            html: body,
+        });
+        console.log("[MAILER] Email dispatched successfully:", data);
+        return { success: true, data };
     } catch (error) {
         console.error("[MAILER] Dispatch failed:", error);
         return { success: false, error: error.message };
