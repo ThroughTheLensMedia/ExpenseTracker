@@ -256,13 +256,14 @@ export default function Tax() {
         doc.line(14, 32, 196, 32);
 
         // ─── Financial stats calculation ───
-        const INCOME_CATS = ['Photo Income', 'Freelance Income', 'Contract Income', 'Side Income'];
-        const incomeRows = expenses.filter(e =>
-            String(e.expense_date || '').startsWith(String(year)) &&
-            Number(e.amount_cents || 0) < 0 &&
-            e.tax_deductible === true &&
-            INCOME_CATS.includes(e.category)
-        );
+        const INCOME_CATS = ['photo income', 'freelance income', 'contract income', 'side income', 'photography income'];
+        const incomeRows = expenses.filter(e => {
+            if (!String(e.expense_date || '').startsWith(String(year))) return false;
+            if (Number(e.amount_cents || 0) >= 0) return false;
+            if (!e.tax_deductible) return false;
+            const c = (e.category || '').toLowerCase();
+            return INCOME_CATS.some(kw => c.includes(kw));
+        });
         const transactionIncome = incomeRows.reduce((s, e) => s + Math.abs(Number(e.amount_cents || 0)), 0);
         const extraIncome = Math.round(parseFloat(manual1099 || 0) * 100);
         const grossReceipts = transactionIncome + extraIncome;
@@ -395,13 +396,14 @@ export default function Tax() {
 
                 {/* Part I — Gross Income */}
                 {(() => {
-                    const INCOME_CATS = ['Photo Income', 'Freelance Income', 'Contract Income', 'Side Income'];
-                    const incomeRows = expenses.filter(e =>
-                        String(e.expense_date || '').startsWith(String(selectedYear)) &&
-                        Number(e.amount_cents || 0) < 0 &&
-                        e.tax_deductible === true &&
-                        INCOME_CATS.includes(e.category)
-                    );
+                    const INCOME_CATS = ['photo income', 'freelance income', 'contract income', 'side income', 'photography income'];
+                    const incomeRows = expenses.filter(e => {
+                        if (!String(e.expense_date || '').startsWith(String(selectedYear))) return false;
+                        if (Number(e.amount_cents || 0) >= 0) return false;
+                        if (!e.tax_deductible) return false;
+                        const c = (e.category || '').toLowerCase();
+                        return INCOME_CATS.some(kw => c.includes(kw));
+                    });
                     const transactionIncome = incomeRows.reduce((s, e) => s + Math.abs(Number(e.amount_cents || 0)), 0);
                     const extraIncome = Math.round(parseFloat(manual1099 || 0) * 100);
                     const grossReceipts = transactionIncome + extraIncome;
@@ -780,11 +782,14 @@ export default function Tax() {
             </div>
             {/* Income Audit Modal */}
             {showIncomeAudit && (() => {
-                const incomeRows = expenses.filter(e =>
-                    String(e.expense_date || '').startsWith(String(selectedYear)) &&
-                    Number(e.amount_cents || 0) < 0 &&
-                    e.tax_deductible === true
-                );
+                const INCOME_CATS = ['photo income', 'freelance income', 'contract income', 'side income', 'photography income'];
+                const incomeRows = expenses.filter(e => {
+                    if (!String(e.expense_date || '').startsWith(String(selectedYear))) return false;
+                    if (Number(e.amount_cents || 0) >= 0) return false;
+                    if (!e.tax_deductible) return false;
+                    const c = (e.category || '').toLowerCase();
+                    return INCOME_CATS.some(kw => c.includes(kw));
+                });
                 const transactionIncome = incomeRows.reduce((s, e) => s + Math.abs(Number(e.amount_cents || 0)), 0);
                 const extraIncome = Math.round(parseFloat(manual1099 || 0) * 100);
                 return (

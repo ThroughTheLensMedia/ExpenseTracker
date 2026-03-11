@@ -191,21 +191,34 @@ router.post("/auto-map", async (req, res) => {
       if (!error && count) totalUpdated += count;
     }
 
-    // New: Auto-mark specific INCOME categories as business income (Line 1)
-    const INCOME_CATEGORIES = ['Photo Income', 'Freelance Income', 'Contract Income', 'Side Income'];
-    const { error: incError, count: incCount } = await supabase
-      .from("expenses")
-      .update({ tax_deductible: true })
-      .in("category", INCOME_CATEGORIES)
-      .lt("amount_cents", 0);
-    if (!incError && incCount) totalUpdated += incCount;
+    // New: Auto-mark both INCOME categories and special words case-insensitively as business income (Line 1)
+    const INCOME_KEYWORDS = ['photo income', 'freelance income', 'contract income', 'side income', 'photography income'];
+    for (const kw of INCOME_KEYWORDS) {
+      const { error: incError, count: incCount } = await supabase
+        .from("expenses")
+        .update({ tax_deductible: true })
+        .lt("amount_cents", 0)
+        .ilike("category", kw);
+      if (!incError && incCount) totalUpdated += incCount;
+    }
 
     // Fix: Un-mark expense returns (like Amazon refunds) that were accidentally flagged as Line 1 income
-    const { error: fixError } = await supabase
+    // Only un-mark if they DON'T match our income keywords
+    const { data: allNegatives, error: negError } = await supabase
       .from("expenses")
-      .update({ tax_deductible: false })
+      .select("id, category")
       .lt("amount_cents", 0)
-      .not("category", "in", `(${INCOME_CATEGORIES.map(c => `'${c}'`).join(',')})`);
+      .eq("tax_deductible", true);
+
+    if (!negError && allNegatives) {
+      for (const txn of allNegatives) {
+        const cat = (txn.category || '').toLowerCase();
+        const isIncome = INCOME_KEYWORDS.some(k => cat.includes(k));
+        if (!isIncome) {
+          await supabase.from("expenses").update({ tax_deductible: false }).eq("id", txn.id);
+        }
+      }
+    }
 
     // Then: Map the categories for expenses as normal
     for (const mapping of RM_MAPPING) {
