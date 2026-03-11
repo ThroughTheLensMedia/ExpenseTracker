@@ -311,12 +311,12 @@ export default function Backup() {
                                 <div className="muted small" style={{ fontWeight: 800 }}>{rules.length} TOTAL RULES</div>
                             </div>
 
-                            <div className="tableWrap" style={{ flex: 1, padding: '0 4px', overflowY: 'visible' }}>
-                                <table className="glass" style={{ tableLayout: 'fixed', width: '100%', borderCollapse: 'separate', borderSpacing: '0 4px' }}>
+                            <div className="tableWrap" style={{ flex: 1, padding: '0 4px', overflowY: 'visible', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                <table className="glass" style={{ tableLayout: 'fixed', width: '100%', maxWidth: '800px', borderCollapse: 'separate', borderSpacing: '0 4px' }}>
                                     <thead>
                                         <tr>
-                                            <th style={{ width: '40%', padding: '10px 8px', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Match Criteria</th>
-                                            <th style={{ width: '40%', padding: '10px 8px', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Assignment</th>
+                                            <th style={{ width: '35%', padding: '10px 8px', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Match Criteria</th>
+                                            <th style={{ width: '45%', padding: '10px 8px', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Assignment</th>
                                             <th style={{ width: '20%', textAlign: 'right', padding: '10px 8px', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actions</th>
                                         </tr>
                                     </thead>
@@ -327,19 +327,19 @@ export default function Backup() {
                                             return (
                                                 <React.Fragment key={r.id}>
                                                     <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
-                                                        <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '10px 8px', borderRadius: '6px 0 0 6px' }}>
-                                                            <div style={{ fontWeight: 800, color: 'var(--warn)', fontSize: '13px' }}>"{r.match_value}"</div>
+                                                        <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '8px', borderRadius: '6px 0 0 6px' }}>
+                                                            <div style={{ fontWeight: 800, color: 'var(--warn)', fontSize: '12px' }}>"{r.match_value}"</div>
                                                             <div className="muted" style={{ fontSize: '9px' }}>KEYWORD</div>
                                                         </td>
-                                                        <td style={{ fontWeight: 700, fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '10px 8px' }}>
+                                                        <td style={{ fontWeight: 700, fontSize: '11px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '8px' }}>
                                                             {r.assign_category || '—'}
                                                         </td>
-                                                        <td style={{ textAlign: 'right', padding: '10px 8px', borderRadius: '0 6px 6px 0' }}>
-                                                            <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                                                                <button className="btn sm secondary" style={{ padding: '4px 8px', fontSize: '10px', minWidth: '50px' }} onClick={() => handlePreviewRule(r.id)} disabled={rs.loading}>
+                                                        <td style={{ textAlign: 'right', padding: '8px', borderRadius: '0 6px 6px 0' }}>
+                                                            <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
+                                                                <button className="btn sm secondary" style={{ padding: '4px 6px', fontSize: '9px', minWidth: '45px' }} onClick={() => handlePreviewRule(r.id)} disabled={rs.loading}>
                                                                     {rs.loading ? '...' : 'AUDIT'}
                                                                 </button>
-                                                                <button className="btn sm danger" style={{ padding: '4px 8px', fontSize: '10px' }} onClick={() => handleDeleteRule(r.id)}>×</button>
+                                                                <button className="btn sm danger" style={{ padding: '4px 6px', fontSize: '9px' }} onClick={() => handleDeleteRule(r.id)}>×</button>
                                                             </div>
                                                         </td>
                                                     </tr>
