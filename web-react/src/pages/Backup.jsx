@@ -33,7 +33,11 @@ export default function Backup() {
         email: '',
         phone: '',
         address: '',
-        default_terms: ''
+        tax_id: '',
+        invoice_notes: '',
+        signature_text: '',
+        standard_terms: '',
+        payment_methods: ''
     });
 
     const loadData = async (silent = false) => {
@@ -266,16 +270,36 @@ export default function Backup() {
                             </div>
                             <div>
                                 <small className="muted" style={{ fontWeight: 900 }}>BUSINESS PHONE</small>
-                                <input value={settings.phone || ''} onChange={e => setSettings({ ...settings, phone: e.target.value })} placeholder="555-555-5555" style={{ marginTop: '8px', padding: '15px' }} />
+                                <input value={settings.phone || ''} onChange={e => setSettings({ ...settings, phone: e.target.value })} placeholder="702.236.9023" style={{ marginTop: '8px', padding: '15px' }} />
                             </div>
                             <div style={{ gridColumn: 'span 2' }}>
                                 <small className="muted" style={{ fontWeight: 900 }}>OFFICE ADDRESS</small>
                                 <textarea value={settings.address || ''} onChange={e => setSettings({ ...settings, address: e.target.value })} placeholder="Studio Address..." style={{ marginTop: '8px', padding: '15px', minHeight: '80px' }} />
                             </div>
+                            <div>
+                                <small className="muted" style={{ fontWeight: 900 }}>STUDIO TAX ID (EIN/VAT)</small>
+                                <input value={settings.tax_id || ''} onChange={e => setSettings({ ...settings, tax_id: e.target.value })} placeholder="XX-XXXXXXX" style={{ marginTop: '8px', padding: '15px' }} />
+                                <div className="muted small" style={{ marginTop: '8px' }}>Shows up on professional tax invoices.</div>
+                            </div>
                             <div style={{ gridColumn: 'span 2' }}>
-                                <small className="muted" style={{ fontWeight: 900 }}>STANDARD INVOICE TERMS & SIGNATURE</small>
-                                <textarea value={settings.default_terms || ''} onChange={e => setSettings({ ...settings, default_terms: e.target.value })} placeholder="Default payment terms, signature, social links, etc." style={{ marginTop: '8px', padding: '15px', minHeight: '120px' }} />
-                                <div className="muted small" style={{ marginTop: '8px' }}>This text will automatically populate the 'Notes' field on all new invoices.</div>
+                                <small className="muted" style={{ fontWeight: 900 }}>GLOBAL INVOICE NOTES</small>
+                                <textarea value={settings.invoice_notes || ''} onChange={e => setSettings({ ...settings, invoice_notes: e.target.value })} placeholder="e.g. Thank you for your business!" style={{ marginTop: '8px', padding: '15px', minHeight: '80px' }} />
+                                <div className="muted small" style={{ marginTop: '8px' }}>Standard greeting at the top of the invoice notes section.</div>
+                            </div>
+                            <div style={{ gridColumn: 'span 2' }}>
+                                <small className="muted" style={{ fontWeight: 900 }}>STANDARD CONTRACT TERMS</small>
+                                <textarea value={settings.standard_terms || ''} onChange={e => setSettings({ ...settings, standard_terms: e.target.value })} placeholder="e.g. Net 15, Late fees apply..." style={{ marginTop: '8px', padding: '15px', minHeight: '100px' }} />
+                                <div className="muted small" style={{ marginTop: '8px' }}>General legal or payment terms.</div>
+                            </div>
+                            <div style={{ gridColumn: 'span 2' }}>
+                                <small className="muted" style={{ fontWeight: 900 }}>ACCEPTED METHODS OF PAYMENT</small>
+                                <textarea value={settings.payment_methods || ''} onChange={e => setSettings({ ...settings, payment_methods: e.target.value })} placeholder="Zelle: hello@example.com, Bank Transfer info..." style={{ marginTop: '8px', padding: '15px', minHeight: '80px' }} />
+                                <div className="muted small" style={{ marginTop: '8px' }}>Payment instructions for the client.</div>
+                            </div>
+                            <div style={{ gridColumn: 'span 2' }}>
+                                <small className="muted" style={{ fontWeight: 900 }}>PERSONALIZED SIGNATURE & SOCIALS</small>
+                                <textarea value={settings.signature_text || ''} onChange={e => setSettings({ ...settings, signature_text: e.target.value })} placeholder="Your Name, Website, Instagram..." style={{ marginTop: '8px', padding: '15px', minHeight: '100px' }} />
+                                <div className="muted small" style={{ marginTop: '8px' }}>Professional sign-off for the bottom of the invoice.</div>
                             </div>
                             <div style={{ gridColumn: 'span 2', display: 'flex', gap: '20px', alignItems: 'center', marginTop: '10px' }}>
                                 <button type="submit" className="btn primary glow-blue" style={{ padding: '15px 45px', fontSize: '16px' }}>Save Global Identity</button>

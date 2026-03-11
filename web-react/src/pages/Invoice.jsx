@@ -216,7 +216,12 @@ export default function Invoice() {
             const settingsData = st || {};
             setSettings(settingsData);
 
-            const signature = settingsData.default_terms || `Payment is due within 15 days. Thank you for choosing ${settingsData.business_name || 'Through The Lens Media'}!\n\n${settingsData.contact_name || ''}\n${settingsData.website || ''}\n${settingsData.phone || ''}`;
+            const signature = [
+                settingsData.invoice_notes,
+                settingsData.standard_terms,
+                settingsData.payment_methods,
+                settingsData.signature_text || `${settingsData.contact_name || ''}\n${settingsData.website || ''}\n${settingsData.phone || ''}`
+            ].filter(Boolean).join('\n\n---\n');
 
             // Set default notes if empty and auto-increment invoice number
             setFormData(prev => ({
