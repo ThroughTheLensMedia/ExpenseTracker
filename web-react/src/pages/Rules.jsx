@@ -130,8 +130,8 @@ export default function Rules() {
             <div className="card glass glow-blue" style={{ padding: '24px', border: 'none', margin: 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
-                        <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 900 }}>⚡ Tax Automation Engine</h2>
-                        <div className="muted" style={{ fontSize: '13px' }}>Classify imports automatically via smart matching rules.</div>
+                        <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 900 }}>⚡ Automation Engine</h2>
+                        <div className="muted" style={{ fontSize: '13px' }}>Classify any incoming transaction automatically via keyword matching.</div>
                     </div>
                     <button className="btn primary" onClick={handleApplyRules} disabled={applying}>
                         {applying ? '⏳ Syncing...' : 'Apply Rules to Ledger'}
@@ -139,7 +139,7 @@ export default function Rules() {
                 </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '16px', alignItems: 'start' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: '16px', alignItems: 'start' }}>
 
                 {/* Main Content Area */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -241,19 +241,27 @@ export default function Rules() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
                     {/* Discovery Wizard */}
-                    <div className="card glass glow-green" style={{ margin: 0, padding: '16px', maxHeight: '350px', display: 'flex', flexDirection: 'column' }}>
+                    <div className="card glass glow-green" style={{ margin: 0, padding: '16px', maxHeight: '40vh', display: 'flex', flexDirection: 'column' }}>
                         <h3 style={{ margin: 0, fontSize: '0.9rem', color: '#4ade80' }}>💡 SMART DISCOVERY</h3>
                         <div className="muted small" style={{ margin: '4px 0 10px' }}>Frequent missing rules.</div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', overflowY: 'auto' }}>
+                        <div className="custom-scrollbar" style={{ display: 'flex', flexDirection: 'column', gap: '6px', overflowY: 'auto', paddingRight: '4px' }}>
                             {discoveryVendors.map(([name, count]) => (
                                 <button
                                     key={name}
                                     className="btn secondary sm"
-                                    style={{ textAlign: 'left', display: 'flex', justifyContent: 'space-between', padding: '6px 10px', fontSize: '11px', background: 'rgba(255,255,255,0.02)' }}
+                                    style={{
+                                        textAlign: 'left',
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        padding: '8px 10px',
+                                        fontSize: '11px',
+                                        background: 'rgba(255,255,255,0.02)',
+                                        border: '1px solid rgba(255,255,255,0.05)'
+                                    }}
                                     onClick={() => { setMatchColumn('vendor'); setMatchValue(name); }}
                                 >
-                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
-                                    <span className="tag ok" style={{ fontSize: '9px', padding: '2px 4px' }}>{count}x</span>
+                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginRight: '8px' }}>{name}</span>
+                                    <span className="tag ok" style={{ fontSize: '9px', padding: '2px 4px', flexShrink: 0 }}>{count}x</span>
                                 </button>
                             ))}
                             {!discoveryVendors.length && <div className="muted small italic">All clear!</div>}
@@ -261,15 +269,15 @@ export default function Rules() {
                     </div>
 
                     {/* Quick Lib */}
-                    <div className="card glass" style={{ margin: 0, padding: '16px', maxHeight: '300px', display: 'flex', flexDirection: 'column' }}>
+                    <div className="card glass" style={{ margin: 0, padding: '16px', maxHeight: '35vh', display: 'flex', flexDirection: 'column' }}>
                         <h3 style={{ margin: 0, fontSize: '0.9rem' }}>📦 PHOTO LIBRARY</h3>
                         <div className="muted small" style={{ margin: '4px 0 10px' }}>Common photography software.</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', overflowY: 'auto' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', overflowY: 'auto', paddingRight: '4px' }}>
                             {QUICK_SUBS.map(sub => (
                                 <button
                                     key={sub.name}
                                     className="btn secondary sm"
-                                    style={{ fontSize: '10px', padding: '6px 4px' }}
+                                    style={{ fontSize: '10px', padding: '8px 4px' }}
                                     onClick={() => handleCreate({
                                         match_column: 'vendor', match_type: 'contains', match_value: sub.name,
                                         assign_category: sub.cat, assign_tax_bucket: sub.bucket,
