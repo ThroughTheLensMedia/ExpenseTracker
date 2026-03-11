@@ -39,18 +39,16 @@ function InvoicePreview({ invoice, settings = {}, onClose }) {
 
     // Data Normalization: Handle both API structure and Draft State structure
     const data = useMemo(() => {
-        const items = invoice.items || (invoice.invoice_items || []).map(it => ({
-            description: it.description,
-            quantity: it.quantity,
-            unit_price: it.unit_price_cents ? (it.unit_price_cents / 100) : it.unit_price
+        // Defensive check: find which array has the actual data
+        const rawSource = (invoice.items && invoice.items.length > 0) ? invoice.items : (invoice.invoice_items || []);
+
+        const items = rawSource.map(it => ({
+            description: it.description || '---',
+            quantity: parseFloat(it.quantity) || 0,
+            unit_price: it.unit_price_cents ? (it.unit_price_cents / 100) : (parseFloat(it.unit_price) || 0)
         }));
 
-        const subtotal = items.reduce((s, it) => {
-            const p = parseFloat(it.unit_price) || 0;
-            const q = parseFloat(it.quantity) || 0;
-            return s + (p * q);
-        }, 0);
-
+        const subtotal = items.reduce((s, it) => s + (it.unit_price * it.quantity), 0);
         const discount = invoice.discount_cents ? (invoice.discount_cents / 100) : (parseFloat(invoice.discount) || 0);
         const taxVal = Math.round(subtotal * ((invoice.tax_percent || 0) / 100));
         const total = subtotal + taxVal - discount;
@@ -89,21 +87,21 @@ function InvoicePreview({ invoice, settings = {}, onClose }) {
     };
 
     return (
-        <div className="drawer" style={{ background: 'rgba(0,0,0,0.9)', zIndex: 20000 }}>
-            <div className="drawer-panel" style={{ width: 'min(950px, 98%)', background: '#f5f5f5', color: '#1a1a1a', padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                <div style={{ padding: '20px 40px', background: '#222', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 10 }}>
-                    <h3 style={{ margin: 0, color: '#fff', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px', fontSize: '14px' }}>Executive Preview Mode</h3>
+        <div className="drawer" style={{ background: 'rgba(0,0,0,0.92)', zIndex: 20000 }}>
+            <div className="drawer-panel" style={{ width: 'min(1000px, 98%)', background: '#f5f5f5', color: '#1a1a1a', padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ padding: '20px 40px', background: '#111', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 10 }}>
+                    <h3 style={{ margin: 0, color: '#fff', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px', fontSize: '13px' }}>Executive Snapshot</h3>
                     <div style={{ display: 'flex', gap: '12px' }}>
-                        <button className="btn glow-blue" onClick={handleDownloadPDF} style={{ padding: '10px 24px' }}>Generate PDF Snapshot</button>
-                        <button className="btn secondary" onClick={onClose} style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.2)' }}>Return to Editor</button>
+                        <button className="btn glow-blue" onClick={handleDownloadPDF} style={{ padding: '10px 24px' }}>Capture PDF Assets</button>
+                        <button className="btn secondary" onClick={onClose} style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.2)' }}>Return to Studio</button>
                     </div>
                 </div>
 
                 <div style={{ flex: 1, overflowY: 'auto', padding: '40px' }}>
-                    <div ref={previewRef} style={{ background: '#fff', width: '210mm', minWidth: '210mm', minHeight: '297mm', margin: '0 auto', padding: '60px 80px', boxShadow: '0 0 50px rgba(0,0,0,0.1)', position: 'relative', boxSizing: 'border-box' }}>
+                    <div ref={previewRef} style={{ background: '#fff', width: '210mm', minWidth: '210mm', minHeight: '297mm', margin: '0 auto', padding: '80px 100px', boxShadow: '0 0 60px rgba(0,0,0,0.15)', position: 'relative', boxSizing: 'border-box' }}>
 
                         {/* HEADER */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '100px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '80px' }}>
                             <div>
                                 <h1 style={{ margin: 0, fontSize: '42px', fontWeight: 300, color: '#000', letterSpacing: '4px', textTransform: 'uppercase' }}>INVOICE</h1>
                                 <div style={{ marginTop: '30px', fontSize: '12px', color: '#666', lineHeight: '1.8' }}>
@@ -114,11 +112,11 @@ function InvoicePreview({ invoice, settings = {}, onClose }) {
                             </div>
                             <div>
                                 {settings?.logo_url ? (
-                                    <div style={{ width: '180px', height: '180px', borderRadius: '50%', border: '1px solid #eee', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '15px', background: '#fff' }}>
+                                    <div style={{ width: '220px', height: '140px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', background: '#fff' }}>
                                         <img src={settings.logo_url} alt="Studio Logo" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
                                     </div>
                                 ) : (
-                                    <div style={{ width: '180px', height: '180px', borderRadius: '50%', background: '#fafafa', border: '3px solid #000', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+                                    <div style={{ width: '180px', height: '180px', background: '#fafafa', border: '3px solid #000', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
                                         <div style={{ fontSize: '42px' }}>📸</div>
                                         <div style={{ fontSize: '12px', fontWeight: 950, textTransform: 'uppercase', marginTop: '10px', letterSpacing: '2px' }}>Pure Capture</div>
                                     </div>
@@ -193,42 +191,41 @@ function InvoicePreview({ invoice, settings = {}, onClose }) {
                         </div>
 
                         {/* BOTTOM SECTIONS */}
-                        <div style={{ marginTop: '60px', fontSize: '12px', lineHeight: '1.6' }}>
+                        <div style={{ marginTop: '60px', fontSize: '13px', lineHeight: '1.8' }}>
                             {invoice.notes && (
-                                <div style={{ marginBottom: '20px' }}>
-                                    <div style={{ fontWeight: 900, textTransform: 'uppercase', marginBottom: '5px' }}>Notes:</div>
-                                    <div style={{ color: '#444' }}>{invoice.notes}</div>
+                                <div style={{ marginBottom: '30px' }}>
+                                    <div style={{ fontWeight: 950, textTransform: 'uppercase', fontSize: '11px', letterSpacing: '2px', marginBottom: '10px' }}>Notes</div>
+                                    <div style={{ color: '#444', background: '#fafafa', padding: '15px', borderRadius: '4px' }}>{invoice.notes}</div>
                                 </div>
                             )}
                             {settings?.standard_terms && (
-                                <div style={{ marginBottom: '20px' }}>
-                                    <div style={{ fontWeight: 900, textTransform: 'uppercase', marginBottom: '5px' }}>Terms:</div>
-                                    <div style={{ color: '#666', fontSize: '11px' }}>{settings.standard_terms}</div>
+                                <div style={{ marginBottom: '30px' }}>
+                                    <div style={{ fontWeight: 950, textTransform: 'uppercase', fontSize: '11px', letterSpacing: '2px', marginBottom: '10px' }}>Studio Terms</div>
+                                    <div style={{ color: '#666', fontSize: '12px' }}>{settings.standard_terms}</div>
                                 </div>
                             )}
+
                             {settings?.payment_methods && (
-                                <div style={{ marginTop: '40px', padding: '20px', background: '#fcfcfc', border: '1px solid #eee' }}>
-                                    <div style={{ fontWeight: 900, textTransform: 'uppercase', marginBottom: '5px' }}>Payment Info:</div>
-                                    <div style={{ color: '#000', fontWeight: 700 }}>{settings.payment_methods}</div>
+                                <div style={{ padding: '40px 0', minHeight: '120px' }}>
+                                    <div style={{ fontWeight: 950, textTransform: 'uppercase', fontSize: '11px', letterSpacing: '2px', marginBottom: '15px', color: '#888' }}>Payment Instructions</div>
+                                    <div style={{ color: '#000', fontWeight: 700, fontSize: '16px', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>{settings.payment_methods}</div>
                                 </div>
                             )}
                         </div>
 
                         {/* FOOTER */}
-                        <div style={{ position: 'absolute', bottom: '80px', left: 0, right: 0, textAlign: 'center', padding: '0 100px' }}>
-                            <div style={{ borderTop: '1px solid #eee', paddingTop: '40px' }}>
-                                <div style={{
-                                    fontFamily: 'Papyrus, "Palatino Linotype", "Book Antiqua", Palatino, serif',
-                                    fontSize: '15px',
-                                    fontWeight: 'bold',
-                                    letterSpacing: '2px',
-                                    color: '#000'
-                                }}>
-                                    {settings?.website || 'throughthelens.media'}
-                                </div>
-                                <div style={{ fontSize: '10px', color: '#999', marginTop: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                                    {settings?.business_email || settings?.contact_email || ''}
-                                </div>
+                        <div style={{ marginTop: '100px', textAlign: 'center', borderTop: '1px solid #eee', paddingTop: '40px' }}>
+                            <div style={{
+                                fontFamily: 'Papyrus, "Palatino Linotype", "Book Antiqua", Palatino, serif',
+                                fontSize: '17px',
+                                fontWeight: 'bold',
+                                letterSpacing: '2px',
+                                color: '#000'
+                            }}>
+                                {settings?.website || 'throughthelens.media'}
+                            </div>
+                            <div style={{ fontSize: '10px', color: '#999', marginTop: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                                {settings?.business_email || settings?.contact_email || ''}
                             </div>
                         </div>
                     </div>
@@ -265,6 +262,24 @@ export default function Invoice() {
         leadId: '',
         notes: ''
     });
+
+    const resetFormData = () => {
+        setFormData({
+            number: '',
+            date: new Date().toISOString().slice(0, 10),
+            dueDate: '',
+            clientId: '',
+            clientName: '',
+            clientEmail: '',
+            clientPhone: '',
+            items: [{ description: '', quantity: 1, unit_price: '' }],
+            tax_percent: 0,
+            discount: 0,
+            leadId: '',
+            notes: ''
+        });
+        setEditingId(null);
+    };
 
     const load = async () => {
         setLoading(true);
@@ -344,6 +359,7 @@ export default function Invoice() {
 
     const handleEdit = (inv) => {
         setEditingId(inv.id);
+        const invItems = inv.invoice_items || [];
         setFormData({
             number: inv.invoice_number,
             date: inv.issue_date,
@@ -352,11 +368,11 @@ export default function Invoice() {
             clientName: inv.clients?.name || '',
             clientEmail: inv.clients?.email || '',
             clientPhone: inv.clients?.phone || '',
-            items: (inv.invoice_items || []).map(it => ({
+            items: invItems.length > 0 ? invItems.map(it => ({
                 description: it.description,
                 quantity: it.quantity,
                 unit_price: (it.unit_price_cents / 100).toFixed(2)
-            })),
+            })) : [{ description: '', quantity: 1, unit_price: '' }],
             tax_percent: inv.tax_percent || 0,
             discount: (inv.discount_cents / 100).toFixed(2),
             leadId: inv.lead_id || '',
@@ -419,10 +435,10 @@ export default function Invoice() {
                 await apiPost('/invoices', payload);
             }
 
-            // Success handshake: unlock UI immediately before background refresh
+            // Success handshake
             setLoading(false);
             setIsCreatorOpen(false);
-            setEditingId(null);
+            resetFormData();
 
             // Async non-blocking load
             setTimeout(load, 10);
@@ -437,7 +453,6 @@ export default function Invoice() {
             } catch (e) { /* use raw message */ }
 
             setStatusMsg({ type: 'bad', text: errorText });
-        } finally {
             setLoading(false);
         }
     };
@@ -627,11 +642,11 @@ export default function Invoice() {
 
             {/* CREATOR DRAWER */}
             {isCreatorOpen && (
-                <div className="drawer" onClick={(e) => { if (e.target.className === 'drawer') { setIsCreatorOpen(false); setEditingId(null); } }}>
+                <div className="drawer" onClick={(e) => { if (e.target.className === 'drawer') { setIsCreatorOpen(false); resetFormData(); } }}>
                     <div className="drawer-panel" style={{ width: 'min(700px, 100%)', display: 'flex', flexDirection: 'column', padding: 0 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '24px', borderBottom: '1px solid rgba(255,255,255,0.05)', position: 'sticky', top: 0, background: 'var(--bg)', zIndex: 10 }}>
                             <h2 style={{ margin: 0, fontSize: '1.4rem' }}>{editingId ? 'Edit' : 'Create'} Invoice</h2>
-                            <button type="button" className="btn secondary" onClick={() => { setIsCreatorOpen(false); setEditingId(null); }}>Cancel</button>
+                            <button type="button" className="btn secondary" onClick={() => { setIsCreatorOpen(false); resetFormData(); }}>Cancel</button>
                         </div>
 
                         <form onSubmit={handleCreateInvoice} style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '24px', flex: 1, overflowY: 'auto' }}>
