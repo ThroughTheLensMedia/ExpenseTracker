@@ -259,25 +259,25 @@ export default function Backup() {
 
             {/* ── Live System Health Bar ── */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-                <div className="card glass" style={{ margin: 0, borderTop: '2px solid var(--accent)', padding: '20px', textAlign: 'center' }}>
+                <div className="card glass" style={{ margin: 0, borderTop: '2px solid var(--accent)', padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                     <div className="muted small" style={{ fontWeight: 800 }}>TOTAL TRANSACTION</div>
-                    <div style={{ fontSize: '2rem', fontWeight: 900, marginTop: '4px' }}>{stats.expenses.toLocaleString()}</div>
-                    <div className="tag" style={{ fontSize: '9px', marginTop: '8px' }}>POSTGRES LIVE</div>
+                    <div style={{ fontSize: '2.5rem', fontWeight: 900, marginTop: '8px' }}>{stats.expenses.toLocaleString()}</div>
+                    <div className="tag" style={{ fontSize: '9px', marginTop: '12px' }}>POSTGRES LIVE</div>
                 </div>
-                <div className="card glass" style={{ margin: 0, borderTop: '2px solid var(--ok)', padding: '20px', textAlign: 'center' }}>
+                <div className="card glass" style={{ margin: 0, borderTop: '2px solid var(--ok)', padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                     <div className="muted small" style={{ fontWeight: 800 }}>PHOTOGRAPHY GEAR</div>
-                    <div style={{ fontSize: '2rem', fontWeight: 900, marginTop: '4px' }}>{stats.equipment.toLocaleString()}</div>
-                    <div className="tag" style={{ fontSize: '9px', marginTop: '8px' }}>GEAR PORTFOLIO</div>
+                    <div style={{ fontSize: '2.5rem', fontWeight: 900, marginTop: '8px' }}>{stats.equipment.toLocaleString()}</div>
+                    <div className="tag" style={{ fontSize: '9px', marginTop: '12px' }}>GEAR PORTFOLIO</div>
                 </div>
-                <div className="card glass" style={{ margin: 0, borderTop: '2px solid var(--warn)', padding: '20px', textAlign: 'center' }}>
+                <div className="card glass" style={{ margin: 0, borderTop: '2px solid var(--warn)', padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                     <div className="muted small" style={{ fontWeight: 800 }}>RULES</div>
-                    <div style={{ fontSize: '2rem', fontWeight: 900, marginTop: '4px' }}>{rules.length.toLocaleString()}</div>
-                    <div className="tag" style={{ fontSize: '9px', marginTop: '8px' }}>ACTIVE ENGINE</div>
+                    <div style={{ fontSize: '2.5rem', fontWeight: 900, marginTop: '8px' }}>{rules.length.toLocaleString()}</div>
+                    <div className="tag" style={{ fontSize: '9px', marginTop: '12px' }}>ACTIVE ENGINE</div>
                 </div>
-                <div className="card glass" style={{ margin: 0, borderTop: '2px solid #818cf8', padding: '20px', textAlign: 'center' }}>
+                <div className="card glass" style={{ margin: 0, borderTop: '2px solid #818cf8', padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                     <div className="muted small" style={{ fontWeight: 800 }}>CLIENTS</div>
-                    <div style={{ fontSize: '2rem', fontWeight: 900, marginTop: '4px' }}>{stats.clients.toLocaleString()}</div>
-                    <div className="tag" style={{ fontSize: '9px', marginTop: '8px' }}>CRM RECORDS</div>
+                    <div style={{ fontSize: '2.5rem', fontWeight: 900, marginTop: '8px' }}>{stats.clients.toLocaleString()}</div>
+                    <div className="tag" style={{ fontSize: '9px', marginTop: '12px' }}>CRM RECORDS</div>
                 </div>
             </div>
 

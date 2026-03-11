@@ -218,36 +218,99 @@ function PipelineView() {
                 <div className="drawer" onClick={(e) => { if (e.target.className === 'drawer') closeEditor(); }}>
                     <div className="drawer-panel glass" style={{ borderLeft: '1px solid var(--line)' }}>
                         <h2 style={{ marginTop: 0 }}>{editingLead ? 'Edit Project' : 'New Project'}</h2>
-                        <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                            <input required value={formName} onChange={e => setFormName(e.target.value)} placeholder="Client Name" />
-                            <input type="number" value={formValue} onChange={e => setFormValue(e.target.value)} placeholder="Value" />
-                            <select value={formType} onChange={e => setFormType(e.target.value)}>
-                                <option value="Wedding">Wedding</option><option value="Videography">Videography</option>
-                                <option value="Portrait">Portrait</option><option value="Commercial">Commercial</option>
-                            </select>
-                            <input type="email" value={formEmail} onChange={e => setFormEmail(e.target.value)} placeholder="Email" />
-                            <textarea value={formNotes} onChange={e => setFormNotes(e.target.value)} placeholder="Notes" style={{ minHeight: '120px' }} />
-                            <button type="submit" className="btn primary">Save Details</button>
-                            <button type="button" className="btn secondary" onClick={closeEditor}>Cancel</button>
+                        <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '24px' }}>
+                            <div>
+                                <label className="muted" style={{ display: 'block', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', marginBottom: '8px' }}>Client / Project Name</label>
+                                <input required value={formName} onChange={e => setFormName(e.target.value)} style={{ padding: '12px' }} placeholder="e.g. Smith Wedding" />
+                            </div>
+                            <div style={{ display: 'flex', gap: '16px' }}>
+                                <div style={{ flex: 1 }}>
+                                    <label className="muted" style={{ display: 'block', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', marginBottom: '8px' }}>Value ($)</label>
+                                    <input required type="number" step="0.01" value={formValue} onChange={e => setFormValue(e.target.value)} style={{ padding: '12px' }} placeholder="2500.00" />
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <label className="muted" style={{ display: 'block', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', marginBottom: '8px' }}>Type</label>
+                                    <select value={formType} onChange={e => setFormType(e.target.value)} style={{ padding: '12px' }}>
+                                        <option value="Wedding">Wedding</option>
+                                        <option value="Videography">Videography</option>
+                                        <option value="Portrait">Portrait</option>
+                                        <option value="Commercial">Commercial</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label className="muted" style={{ display: 'block', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', marginBottom: '8px' }}>Email</label>
+                                <input type="email" value={formEmail} onChange={e => setFormEmail(e.target.value)} style={{ padding: '12px' }} placeholder="client@example.com" />
+                            </div>
+                            <div>
+                                <label className="muted" style={{ display: 'block', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', marginBottom: '8px' }}>Phone</label>
+                                <input type="tel" value={formPhone} onChange={e => setFormPhone(e.target.value)} style={{ padding: '12px' }} placeholder="(555) 555-5555" />
+                            </div>
+                            <div>
+                                <label className="muted" style={{ display: 'block', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', marginBottom: '8px' }}>Project Notes</label>
+                                <textarea value={formNotes} onChange={e => setFormNotes(e.target.value)} style={{ minHeight: '120px', padding: '12px' }} placeholder="Scope details, concept, etc..." />
+                            </div>
+                            <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+                                <button type="button" className="btn secondary" onClick={closeEditor} style={{ flex: 1 }}>Cancel</button>
+                                <button type="submit" className="btn glow-blue" style={{ flex: 2 }}>Save Details</button>
+                            </div>
                         </form>
                     </div>
                 </div>
             )}
 
             {archiveTarget && (
-                <div className="drawer glass" style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: '450px', padding: '24px', zIndex: 11000, background: 'rgba(15, 26, 51, 0.98)' }}>
-                    <h2>{archiveTarget} Leads</h2>
-                    <input placeholder="Search..." value={archiveSearch} onChange={e => setArchiveSearch(e.target.value)} />
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '20px' }}>
-                        {activeArchiveLeads.map(l => (
-                            <div key={l.id} className="card glass" style={{ margin: 0, padding: '12px' }}>
-                                <div style={{ fontWeight: 800 }}>{l.name}</div>
-                                <div className="muted small">{formatMoney(l.quoted_value_cents)}</div>
-                                <button onClick={() => { setArchiveTarget(null); openEditor(l); }} className="btn sm secondary" style={{ marginTop: '8px' }}>Edit</button>
-                            </div>
-                        ))}
+                <div className="drawer" onClick={(e) => { if (e.target.className === 'drawer') setArchiveTarget(null); }}>
+                    <div className="drawer-panel glass" style={{ borderLeft: '1px solid var(--line)', width: '500px', padding: '32px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                            <h2 style={{ margin: 0, color: '#fff', fontSize: '1.6rem', fontWeight: 900 }}>
+                                {archiveTarget} Lead Archive
+                            </h2>
+                            <button onClick={() => setArchiveTarget(null)} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: '#fff', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', fontWeight: 800 }}>Close</button>
+                        </div>
+
+                        <input
+                            type="text"
+                            placeholder="Search archived names..."
+                            value={archiveSearch}
+                            onChange={(e) => setArchiveSearch(e.target.value)}
+                            style={{ marginBottom: '20px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+                        />
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            {activeArchiveLeads.length === 0 ? (
+                                <div className="muted" style={{ textAlign: 'center', padding: '40px' }}>No records found.</div>
+                            ) : (
+                                activeArchiveLeads.map(lead => (
+                                    <div key={lead.id} className="card glass" style={{ margin: 0, padding: '16px', background: 'rgba(255,255,255,0.02) !important' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                            <div>
+                                                <div style={{ fontWeight: 900, color: '#fff' }}>{lead.name}</div>
+                                                <div className="muted" style={{ fontSize: '11px' }}>{lead.project_type} · {new Date(lead.created_at).toLocaleDateString()}</div>
+                                            </div>
+                                            <div style={{ fontWeight: 900, color: archiveTarget === 'Paid' ? '#4ade80' : '#ff4d4d' }}>{formatMoney(lead.quoted_value_cents)}</div>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '10px', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                            <button
+                                                onClick={() => { setArchiveTarget(null); openEditor(lead); }}
+                                                style={{ flex: 1, background: 'rgba(56, 189, 248, 0.1)', border: 'none', color: '#38bdf8', padding: '6px', borderRadius: '4px', fontSize: '11px', fontWeight: 800, cursor: 'pointer' }}
+                                            >
+                                                Edit Card
+                                            </button>
+                                            <select
+                                                value={lead.status}
+                                                onChange={(e) => handleMove(lead, e.target.value)}
+                                                style={{ flex: 1, fontSize: '11px', padding: '4px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
+                                            >
+                                                {[...ACTIVE_COLUMNS, { id: 'Paid', label: 'Paid' }, { id: 'Lost', label: 'Lost' }].map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                                            </select>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
                     </div>
-                    <button onClick={() => setArchiveTarget(null)} className="btn secondary" style={{ marginTop: '20px' }}>Close</button>
                 </div>
             )}
 

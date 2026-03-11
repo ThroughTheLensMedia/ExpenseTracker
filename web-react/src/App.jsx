@@ -4,7 +4,6 @@ import Dashboard from './pages/Dashboard';
 import Transactions from './pages/Transactions';
 import Tax from './pages/Tax';
 import Backup from './pages/Backup';
-import Invoice from './pages/Invoice';
 import Assets from './pages/Assets';
 import CRM from './pages/CRM';
 import Import from './pages/Import';
@@ -25,8 +24,6 @@ function App() {
           try {
             const body = await r.json();
             if (body && body.error) {
-              // This part of the instruction seems to be a copy-paste error from a backend file.
-              // The original logic for parsing body.error is kept, but the backend-specific code is omitted.
               errorMsg = `API: ${body.error}`;
             }
           } catch (e) {
@@ -61,7 +58,6 @@ function App() {
             <NavLink to="/equipment" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Equipment</NavLink>
             <NavLink to="/crm" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>CRM</NavLink>
             <NavLink to="/import" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Bank Import</NavLink>
-
             <NavLink to="/backup" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Studio Control Center</NavLink>
           </div>
         </header>
@@ -103,7 +99,6 @@ function App() {
             <span>CRM</span>
           </NavLink>
         </nav>
-
       </div>
     </Router>
   );

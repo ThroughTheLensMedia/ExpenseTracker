@@ -6,17 +6,18 @@ const { supabase } = require("../db");
 
 const router = express.Router();
 
-// Storage configuration - Use standard Multer disk storage for local handling
+// ── STORAGE PREP ────────────────────────────────────────────────────────────
 const RECEIPT_DIR = process.env.RECEIPT_DIR || (process.env.VERCEL ? "/tmp/receipts" : path.join(__dirname, "..", "receipts"));
-if (!fs.existsSync(RECEIPT_DIR)) fs.mkdirSync(RECEIPT_DIR, { recursive: true });
 
-const storage = multer.diskStorage({
-    destination: (_req, _file, cb) => cb(null, RECEIPT_DIR),
-    filename: (_req, file, cb) => {
-        const safe = file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_");
-        cb(null, `quick_${Date.now()}_${safe}`);
-    }
-});
+function getStoragePath(filename) {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}/${m}/${day}/${filename}`;
+}
+
+const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 /**
@@ -27,10 +28,35 @@ router.post("/quick-capture", upload.single("file"), async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
-        const receipt_link = `/receipts/${req.file.filename}`;
+        const filename = `quick_${Date.now()}_${req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+        const relativePath = getStoragePath(filename);
+        let receipt_link = "";
+
+        // Strategy A: Supabase Cloud Storage
+        const canUseCloud = !!(process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY);
+        if (canUseCloud) {
+            const { error: uploadError } = await supabase.storage
+                .from("receipts")
+                .upload(relativePath, req.file.buffer, { contentType: req.file.mimetype });
+
+            if (!uploadError) {
+                const { data: urlData } = supabase.storage.from("receipts").getPublicUrl(relativePath);
+                receipt_link = urlData.publicUrl;
+            } else {
+                console.warn("[PWA] Cloud upload fallback to local:", uploadError.message);
+            }
+        }
+
+        // Strategy B: Local Fallback
+        if (!receipt_link) {
+            const localPath = path.join(RECEIPT_DIR, relativePath);
+            const localDir = path.dirname(localPath);
+            if (!fs.existsSync(localDir)) fs.mkdirSync(localDir, { recursive: true });
+            fs.writeFileSync(localPath, req.file.buffer);
+            receipt_link = `/receipts/${relativePath}`;
+        }
 
         // Step 1: Create an "Unverified" expense record immediately
-        // This allows the user to snap now and categorize later from the dashboard liabilities
         const { data, error } = await supabase
             .from("expenses")
             .insert({
