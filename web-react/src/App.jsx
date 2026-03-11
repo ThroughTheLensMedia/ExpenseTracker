@@ -5,8 +5,6 @@ import Transactions from './pages/Transactions';
 import Tax from './pages/Tax';
 import Backup from './pages/Backup';
 import Invoice from './pages/Invoice';
-
-import Rules from './pages/Rules';
 import Assets from './pages/Assets';
 
 function App() {
@@ -61,13 +59,7 @@ function App() {
             <NavLink to="/equipment" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Equipment</NavLink>
             <NavLink to="/invoice" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Invoice</NavLink>
 
-            <div className="dropdown-wrap">
-              <div className="pill" style={{ cursor: 'pointer' }}>System ▾</div>
-              <div className="dropdown-content">
-                <NavLink to="/rules" className="dropdown-item">⚙️ Audit Rules</NavLink>
-                <NavLink to="/backup" className="dropdown-item">💾 Backup & Export</NavLink>
-              </div>
-            </div>
+            <NavLink to="/backup" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Studio Control Center</NavLink>
           </div>
         </header>
 
@@ -77,7 +69,6 @@ function App() {
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/tax" element={<Tax />} />
             <Route path="/equipment" element={<Assets />} />
-            <Route path="/rules" element={<Rules />} />
             <Route path="/backup" element={<Backup />} />
             <Route path="/invoice" element={<Invoice />} />
             <Route path="*" element={<Navigate to="/" />} />
