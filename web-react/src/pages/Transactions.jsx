@@ -211,13 +211,13 @@ export default function Transactions() {
                     + Add Manual Expense
                 </button>
                 {filtered.map(r => (
-                    <div key={r.id} className="card glass" style={{ margin: 0, padding: '16px' }} onClick={() => setEditingId(r.id)}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <div>
-                                <div style={{ fontWeight: 950, fontSize: '16px' }}>{r.vendor || 'Unknown Vendor'}</div>
-                                <div className="muted" style={{ fontSize: '11px', marginTop: '4px' }}>{formatDate(r.expense_date)} • {r.category}</div>
+                    <div key={r.id} className="card glass" style={{ margin: 0, padding: '16px', maxWidth: '100vw', overflow: 'hidden' }} onClick={() => setEditingId(r.id)}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                                <div className="text-truncate" style={{ fontWeight: 950, fontSize: '16px' }}>{r.vendor || 'Unknown Vendor'}</div>
+                                <div className="muted text-truncate" style={{ fontSize: '11px', marginTop: '4px' }}>{formatDate(r.expense_date)} • {r.category}</div>
                             </div>
-                            <div style={{ textAlign: 'right' }}>
+                            <div style={{ textAlign: 'right', flexShrink: 0 }}>
                                 <div style={{ fontWeight: 950, fontSize: '18px', color: Number(r.amount_cents) < 0 ? '#4ade80' : '#fff' }}>{formatMoney(r.amount_cents)}</div>
                                 <div style={{ marginTop: '6px' }}>
                                     {r.receipt_link ? <span className="tag ok" style={{ fontSize: '9px' }}>DOC SAVED</span> : r.tax_deductible ? <span className="tag bad" style={{ fontSize: '9px' }}>MISSING DOC</span> : null}
@@ -244,19 +244,22 @@ export default function Transactions() {
                             </tr>
                         </thead>
                         <tbody>
-                            {filtered.slice(0, 1000).map(r => (
-                                <tr key={r.id}>
-                                    <td><button className="btn secondary" style={{ fontSize: '11px', padding: '4px 10px' }} onClick={() => setEditingId(r.id)}>Edit</button></td>
-                                    <td>{formatDate(r.expense_date)}</td>
-                                    <td style={{ fontWeight: 600 }}>{r.vendor}</td>
-                                    <td>{r.category || <span className="muted">—</span>}</td>
-                                    <td style={{ fontWeight: 700, textAlign: 'right' }}>{formatMoney(r.amount_cents)}</td>
-                                    <td style={{ textAlign: 'center' }}>
-                                        {r.receipt_link ? <a className="tag ok" style={{ fontSize: '11px' }} href={r.receipt_link} target="_blank" rel="noreferrer">View</a> : <span className="muted">—</span>}
-                                    </td>
-                                    <td>{Number(r.amount_cents || 0) < 0 ? <span className="tag ok" style={{ fontSize: '11px' }}>Income</span> : <span className="tag" style={{ fontSize: '11px' }}>Expense</span>}</td>
-                                </tr>
-                            ))}
+                            {filtered.slice(0, 1000).map(r => {
+                                const receiptUrl = r.receipt_link?.startsWith('http') ? r.receipt_link : `/api${r.receipt_link}`;
+                                return (
+                                    <tr key={r.id}>
+                                        <td><button className="btn secondary" style={{ fontSize: '11px', padding: '4px 10px' }} onClick={() => setEditingId(r.id)}>Edit</button></td>
+                                        <td>{formatDate(r.expense_date)}</td>
+                                        <td style={{ fontWeight: 600 }}>{r.vendor}</td>
+                                        <td>{r.category || <span className="muted">—</span>}</td>
+                                        <td style={{ fontWeight: 700, textAlign: 'right' }}>{formatMoney(r.amount_cents)}</td>
+                                        <td style={{ textAlign: 'center' }}>
+                                            {r.receipt_link ? <a className="tag ok" style={{ fontSize: '11px' }} href={receiptUrl} target="_blank" rel="noreferrer">View</a> : <span className="muted">—</span>}
+                                        </td>
+                                        <td>{Number(r.amount_cents || 0) < 0 ? <span className="tag ok" style={{ fontSize: '11px' }}>Income</span> : <span className="tag" style={{ fontSize: '11px' }}>Expense</span>}</td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>
