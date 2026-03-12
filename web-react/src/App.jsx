@@ -34,7 +34,6 @@ function AppContent() {
 
   useEffect(() => {
     if (!user) return; // Don't check health if not logged in
-// ... (rest of useEffect logic remains same)
 
     const checkApi = async () => {
       try {
