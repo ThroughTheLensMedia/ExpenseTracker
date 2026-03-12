@@ -574,7 +574,9 @@ export default function Invoice() {
             .reduce((sum, inv) => {
                 const sub = (inv.invoice_items || []).reduce((s, it) => s + (it.unit_price_cents * it.quantity), 0);
                 const tax = Math.round(sub * (inv.tax_percent / 100));
-                return sum + sub + tax - (inv.discount_cents || 0);
+                const discountPercent = (inv.discount_cents || 0) / 100;
+                const discountAmount = Math.round(sub * (discountPercent / 100));
+                return sum + sub + tax - discountAmount;
             }, 0);
     }, [invoices]);
 
@@ -641,7 +643,9 @@ export default function Invoice() {
                                 {invoices.map(inv => {
                                     const subtotal = (inv.invoice_items || []).reduce((s, it) => s + (it.unit_price_cents * it.quantity), 0);
                                     const tax = Math.round(subtotal * (inv.tax_percent / 100));
-                                    const total = subtotal + tax - (inv.discount_cents || 0);
+                                    const discountPercent = (inv.discount_cents || 0) / 100;
+                                    const discountAmount = Math.round(subtotal * (discountPercent / 100));
+                                    const total = subtotal + tax - discountAmount;
                                     return (
                                         <tr key={inv.id}>
                                             <td style={{ fontWeight: 800 }}>

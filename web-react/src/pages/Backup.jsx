@@ -10,6 +10,7 @@ export default function Backup() {
     const [allExpenses, setAllExpenses] = useState([]);
     const [loading, setLoading] = useState(false);
     const [isHealthy, setIsHealthy] = useState(true);
+    const [isMailerReady, setIsMailerReady] = useState(false);
     const [storageType, setStorageType] = useState('unknown');
 
     // --- Automation States ---
@@ -57,6 +58,7 @@ export default function Backup() {
             setRules(rls.rules || []);
             // Dual-heartbeat: Check if API is up AND database is reachable
             setIsHealthy(hlth.ok && (hlth.db !== false));
+            setIsMailerReady(!!hlth.mailer);
             setStorageType(hlth.storage || 'unknown');
 
             // Pause settings update if user is actively in the profile tab to prevent jumpy overwrites
@@ -211,9 +213,15 @@ export default function Backup() {
                 <div className="card glass" style={{ margin: 0, borderTop: `4px solid var(--accent)`, padding: '50px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', minHeight: '220px' }}>
                     <div className="muted small" style={{ fontWeight: 800 }}>LIVE TRANSACTIONS</div>
                     <div style={{ fontSize: '3.5rem', fontWeight: 950, marginTop: '8px', lineHeight: 1 }}>{stats.expenses.toLocaleString()}</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '20px' }}>
-                        <span className={`health-dot ${isHealthy ? 'health-ok' : 'health-bad'}`} />
-                        <span className="muted small" style={{ fontWeight: 900, fontSize: '10px' }}>{isHealthy ? 'SYNCHRONIZED' : 'CONNECTION LAG'}</span>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', marginTop: '20px', justifyContent: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span className={`health-dot ${isHealthy ? 'health-ok' : 'health-bad'}`} />
+                            <span className="muted small" style={{ fontWeight: 900, fontSize: '10px' }}>DB: {isHealthy ? 'LIVE' : 'OFFLINE'}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span className={`health-dot ${isMailerReady ? 'health-ok' : 'health-bad'}`} />
+                            <span className="muted small" style={{ fontWeight: 900, fontSize: '10px' }}>EMAIL: {isMailerReady ? 'READY' : 'KEY MISSING'}</span>
+                        </div>
                     </div>
                 </div>
                 <div className="card glass" style={{ margin: 0, borderTop: '4px solid #38bdf8', padding: '50px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', minHeight: '220px' }}>

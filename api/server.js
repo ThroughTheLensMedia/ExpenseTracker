@@ -108,6 +108,7 @@ apiRouter.get("/health", async (_req, res) => {
   res.json({
     ok: true,
     db: dbOk,
+    mailer: !!process.env.RESEND_API_KEY,
     latency: `${Date.now() - start}ms`,
     environment: process.env.VERCEL ? "vercel" : "local",
     storage: hasCloud ? (dbOk ? "supabase" : "reconnecting") : "local_ephemeral"
