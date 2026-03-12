@@ -34,10 +34,15 @@ export default function Dashboard({ apiStatus }) {
     const modal = useModal();
     const navigate = useNavigate();
     const [expenses, setExpenses] = useState([]);
+    const [leads, setLeads] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [search, setSearch] = useState('');
     const [availableYears, setAvailableYears] = useState([new Date().getFullYear()]);
+    
+    // Intelligence States
+    const [startingCash, setStartingCash] = useState(() => Number(localStorage.getItem('studio_cash') || 5000));
+    const [weights, setWeights] = useState({ 'New Lead': 0.1, 'Quoted': 0.4, 'Booked': 0.9 });
 
     // PWA Mobile States
     const [snapLoading, setSnapLoading] = useState(false);
@@ -47,8 +52,12 @@ export default function Dashboard({ apiStatus }) {
     const loadData = async (targetYear = selectedYear) => {
         setLoading(true);
         try {
-            const data = await fetchAllExpenses(true, targetYear);
-            setExpenses(data);
+            const [exp, lds] = await Promise.all([
+                fetchAllExpenses(true, targetYear),
+                apiGet('/leads')
+            ]);
+            setExpenses(exp);
+            setLeads(lds.leads || []);
         } catch (e) { console.error(e); }
         finally { setLoading(false); }
     };
@@ -56,6 +65,10 @@ export default function Dashboard({ apiStatus }) {
     useEffect(() => {
         fetchExpenseYears().then(yrs => { if (yrs.length > 0) setAvailableYears(yrs); });
     }, []);
+
+    useEffect(() => {
+        localStorage.setItem('studio_cash', startingCash);
+    }, [startingCash]);
 
     useEffect(() => {
         loadData(selectedYear);
@@ -249,7 +262,26 @@ export default function Dashboard({ apiStatus }) {
     };
 
     const profitMargin = stats.income > 0 ? ((stats.net / stats.income) * 100).toFixed(1) : 0;
-    const avgBurn = stats.spend / 12;
+    const avgMonthlyBurn = stats.spend / 12;
+
+    const runwayIntel = useMemo(() => {
+        // Weighted Pipeline Value
+        let weightedValue = 0;
+        leads.forEach(l => {
+            const w = weights[l.status] || 0;
+            weightedValue += (l.quoted_value_cents || 0) * w;
+        });
+
+        const totalLiquidity = (startingCash * 100) + weightedValue;
+        const burnPerMonth = avgMonthlyBurn || 1; // don't div by 0
+        const monthsRunway = (totalLiquidity / burnPerMonth).toFixed(1);
+
+        return {
+            weightedValue,
+            totalLiquidity,
+            monthsRunway: isFinite(monthsRunway) ? monthsRunway : '∞'
+        };
+    }, [leads, weights, startingCash, avgMonthlyBurn]);
 
     const barChartData = {
         labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
@@ -413,6 +445,70 @@ export default function Dashboard({ apiStatus }) {
                 >
                     + LEAD
                 </button>
+            </div>
+
+            {/* ── Studio Intelligence: Runway & Forecast ── */}
+            <div className="card glass glow-blue" style={{ padding: '24px 30px', border: 'none', margin: 0, background: 'linear-gradient(135deg, rgba(47, 107, 255, 0.08) 0%, transparent 100%)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '30px' }}>
+                    <div style={{ flex: '1', minWidth: '300px' }}>
+                        <h2 style={{ margin: '0 0 4px 0', fontSize: '1.2rem', fontWeight: 900, letterSpacing: '0.02em', color: '#fff' }}>STUDIO INTELLIGENCE</h2>
+                        <div className="muted" style={{ fontSize: '12px', marginBottom: '25px', fontWeight: 600 }}>CFO Projection & Pipeline Velocity</div>
+                        
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                            <div>
+                                <small className="muted" style={{ fontWeight: 900, fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Projected Runway</small>
+                                <div style={{ fontSize: '2.5rem', fontWeight: 950, color: runwayIntel.monthsRunway > 6 ? '#4ade80' : '#f7b955', marginTop: '4px', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                                    {runwayIntel.monthsRunway} <span style={{ fontSize: '12px', opacity: 0.6, fontWeight: 800 }}>MONTHS</span>
+                                </div>
+                                <div className="muted" style={{ fontSize: '10px', marginTop: '4px', fontWeight: 700 }}>Based on {formatMoney(avgMonthlyBurn)} avg. monthly burn</div>
+                            </div>
+                            <div>
+                                <small className="muted" style={{ fontWeight: 900, fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Projected Yield</small>
+                                <div style={{ fontSize: '2.5rem', fontWeight: 950, color: '#fff', marginTop: '4px' }}>{formatMoney(runwayIntel.weightedValue)}</div>
+                                <div className="muted" style={{ fontSize: '10px', marginTop: '4px', fontWeight: 700 }}>Weighted value of active leads</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style={{ background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '16px', minWidth: '280px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <h4 style={{ margin: '0 0 15px 0', fontSize: '11px', fontWeight: 900, opacity: 0.8 }}>FORECAST CONTROLS</h4>
+                        
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                            <div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                                    <small className="muted" style={{ fontWeight: 800, fontSize: '10px' }}>CURRENT LIQUIDITY</small>
+                                    <span style={{ fontWeight: 900, fontSize: '12px', color: '#6366f1' }}>{formatMoney(startingCash * 100)}</span>
+                                </div>
+                                <input 
+                                    type="range" min="0" max="100000" step="500"
+                                    value={startingCash} 
+                                    onChange={e => setStartingCash(Number(e.target.value))}
+                                    style={{ width: '100%', accentColor: '#2f6bff', height: '4px' }}
+                                />
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                                {Object.keys(weights).map(k => (
+                                    <div key={k}>
+                                        <div style={{ fontSize: '8px', fontWeight: 950, opacity: 0.5, marginBottom: '4px', whiteSpace: 'nowrap' }}>{k.toUpperCase()} Prob.</div>
+                                        <select 
+                                            value={weights[k]} 
+                                            onChange={e => setWeights({...weights, [k]: Number(e.target.value)})}
+                                            style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: '6px', padding: '6px', fontSize: '10px', fontWeight: 900 }}
+                                        >
+                                            <option value="0.1">10%</option>
+                                            <option value="0.25">25%</option>
+                                            <option value="0.4">40%</option>
+                                            <option value="0.6">60%</option>
+                                            <option value="0.75">75%</option>
+                                            <option value="0.9">90%</option>
+                                        </select>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* ── Key Performance Indicators (KPIs) ── */}

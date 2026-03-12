@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './components/AuthContext';
 import Dashboard from './pages/Dashboard';
@@ -38,6 +38,7 @@ function AppContent() {
   const { user, loading, logout, subscription, settings } = useAuth();
   const [showRedeem, setShowRedeem] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const menuRef = useRef(null);
 
   // Calculate days left
   const daysLeft = subscription?.expires_at 
@@ -46,6 +47,17 @@ function AppContent() {
 
   // Use business name or email as identity
   const identityName = settings?.business_name || settings?.contact_name || user?.email;
+
+  // Close menu on click-outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setMobileMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [menuRef]);
 
   useEffect(() => {
     if (!user) return; // Don't check health if not logged in
@@ -111,7 +123,7 @@ function AppContent() {
             EXTEND ACCESS
           </button>
         </div>
-      )}      <header className="glass" style={{ border: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 30px', height: '80px', position: 'sticky', top: '10px', zIndex: 1000, margin: '15px 15px 0 15px' }}>
+      )}      <header ref={menuRef} className="card glass" style={{ border: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '24px 30px', position: 'sticky', top: '15px', zIndex: 1000, margin: '15px', cursor: 'default' }}>
         {/* Left Side: Brand */}
         <div style={{ flex: '1', display: 'flex', alignItems: 'center' }}>
           <div className="title" style={{ fontSize: '1.2rem', fontWeight: 950, letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>STUDIO TRACKER</div>
@@ -136,7 +148,7 @@ function AppContent() {
               Dashboard
             </NavLink>
             <NavLink to="/transactions" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-              Line Item Ledger
+              Transaction Ledger
             </NavLink>
             <NavLink to="/import" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
               Bank Import
@@ -148,13 +160,13 @@ function AppContent() {
               Studio Invoices
             </NavLink>
             <NavLink to="/tax" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-              Tax & Sch C
+              Tax Data / Sch C
             </NavLink>
             <NavLink to="/equipment" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-              Gear Locker
+              Camera Gear
             </NavLink>
             <NavLink to="/backup" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-              SCC Console
+              Studio Control Center
             </NavLink>
             
             <div style={{ marginTop: '12px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '16px', paddingBottom: '4px' }}>

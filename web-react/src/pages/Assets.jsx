@@ -155,7 +155,7 @@ export default function Assets() {
             <div className="card glass glow-blue" style={{ padding: '20px 24px', border: 'none', margin: '0' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                     <div>
-                        <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 900, letterSpacing: '-0.5px' }}>⚙️ Equipment Locker</h2>
+                        <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 900, letterSpacing: '-0.5px' }}>Camera Gear</h2>
                         <div className="muted" style={{ fontSize: '13px' }}>MACRS Depreciation Dashboard</div>
                     </div>
                     <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
