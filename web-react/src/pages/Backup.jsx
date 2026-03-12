@@ -255,6 +255,7 @@ export default function Backup() {
                     <button className={`pill ${activeTab === 'automation' ? 'active' : ''}`} onClick={() => setActiveTab('automation')}>⚡ Automation</button>
                     <button className={`pill ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>👤 Business Profile</button>
                     <button className={`pill ${activeTab === 'infrastructure' ? 'active' : ''}`} onClick={() => setActiveTab('infrastructure')}>🔒 Infrastructure</button>
+                    <button className={`pill ${activeTab === 'help' ? 'active' : ''}`} onClick={() => setActiveTab('help')}>❓ Studio Docs</button>
                     {user?.email === 'joshua.deuermeyer@gmail.com' && (
                         <button className={`pill ${activeTab === 'saas' ? 'active' : ''}`} onClick={() => setActiveTab('saas')}>💎 SaaS Studio Mgmt</button>
                     )}
@@ -545,7 +546,92 @@ export default function Backup() {
                 </div>
             )}
 
-            {activeTab === 'saas' && user?.email === 'joshua.deuermeyer@gmail.com' && (
+             {activeTab === 'help' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '30px', maxWidth: '1000px' }}>
+                    <div className="card glass glow-blue" style={{ border: 'none', padding: '40px' }}>
+                        <h2 style={{ fontSize: '2.2rem', margin: '0 0 10px 0' }}>Studio Onboarding Guide</h2>
+                        <p className="muted" style={{ fontSize: '18px' }}>Follow these steps to transition your studio into full automation.</p>
+                        
+                        <div style={{ marginTop: '40px', display: 'flex', flexDirection: 'column', gap: '40px' }}>
+                            <section>
+                                <div style={{ display: 'flex', gap: '15px', alignItems: 'center', marginBottom: '15px' }}>
+                                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--accent)', color: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '950' }}>1</div>
+                                    <h3 style={{ margin: 0, fontSize: '1.4rem' }}>Claim Your Identity</h3>
+                                </div>
+                                <p className="muted" style={{ lineHeight: '1.6' }}>
+                                    Navigate to the <strong>Business Profile</strong> tab. Upload your studio logo and fill out your business details. 
+                                    This information is used to professionally brand your invoices and set your tax jurisdiction.
+                                </p>
+                            </section>
+
+                            <section>
+                                <div style={{ display: 'flex', gap: '15px', alignItems: 'center', marginBottom: '15px' }}>
+                                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--accent)', color: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '950' }}>2</div>
+                                    <h3 style={{ margin: 0, fontSize: '1.4rem' }}>Initialize the Ledger</h3>
+                                </div>
+                                <p className="muted" style={{ lineHeight: '1.6' }}>
+                                    Go to the <strong>Import</strong> page. Download your transaction history from Rocket Money or your bank as a "Generic CSV". 
+                                    Upload it here to seed your studio with data. The system will handle duplicate detection automatically.
+                                </p>
+                            </section>
+
+                            <section>
+                                <div style={{ display: 'flex', gap: '15px', alignItems: 'center', marginBottom: '15px' }}>
+                                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--accent)', color: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '950' }}>3</div>
+                                    <h3 style={{ margin: 0, fontSize: '1.4rem' }}>Train the Brain (Automation)</h3>
+                                </div>
+                                <p className="muted" style={{ lineHeight: '1.6' }}>
+                                    Visit the <strong>Automation</strong> tab. Here you can create "Rules". For example, if a vendor contains "Adobe", 
+                                    always assign it to "Software & Subscriptions". Once saved, click <strong>"Run Engine"</strong> to apply these rules to your entire history.
+                                </p>
+                            </section>
+
+                            <section>
+                                <div style={{ display: 'flex', gap: '15px', alignItems: 'center', marginBottom: '15px' }}>
+                                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--accent)', color: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '950' }}>4</div>
+                                    <h3 style={{ margin: 0, fontSize: '1.4rem' }}>Audit Your Infrastructure</h3>
+                                </div>
+                                <p className="muted" style={{ lineHeight: '1.6' }}>
+                                    Log your gear in the <strong>Equipment</strong> section. This tracks your Section 179 depreciation and serial numbers for insurance purposes. 
+                                    A healthy studio is a documented studio.
+                                </p>
+                            </section>
+
+                            <section>
+                                <div style={{ display: 'flex', gap: '15px', alignItems: 'center', marginBottom: '15px' }}>
+                                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--accent)', color: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '950' }}>5</div>
+                                    <h3 style={{ margin: 0, fontSize: '1.4rem' }}>Manage the Pipeline</h3>
+                                </div>
+                                <p className="muted" style={{ lineHeight: '1.6' }}>
+                                    Use the <strong>CRM</strong> to track new leads. When a project is booked, create an <strong>Invoice</strong> directly from the lead. 
+                                    The system will use your Business Profile to generate a professional PDF and track the payment status.
+                                </p>
+                            </section>
+                        </div>
+                    </div>
+
+                    <div className="card glass" style={{ border: 'none', padding: '40px' }}>
+                        <h2 style={{ fontSize: '1.8rem', margin: '0 0 20px 0' }}>Frequently Asked Questions</h2>
+                        
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
+                            <div>
+                                <div style={{ fontWeight: 800, color: 'white', marginBottom: '8px' }}>How do I extend my studio access?</div>
+                                <div className="muted" style={{ fontSize: '14px' }}>In the <strong>Infrastructure</strong> tab, you can redeem a 12-digit Beta or Pro key. This will instantly update your expiration date in the header.</div>
+                            </div>
+                            <div>
+                                <div style={{ fontWeight: 800, color: 'white', marginBottom: '8px' }}>Is my data shared with other studios?</div>
+                                <div className="muted" style={{ fontSize: '14px' }}>Absolutely not. The platform uses Row Level Security (RLS) within our cloud database, meaning your data is cryptographically isolated to your unique User ID.</div>
+                            </div>
+                            <div>
+                                <div style={{ fontWeight: 800, color: 'white', marginBottom: '8px' }}>Can I export my data if I leave?</div>
+                                <div className="muted" style={{ fontSize: '14px' }}>Yes. You can download a "Master Business Archive" (.json) at any time from the Infrastructure tab to keep your own backups.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+             )}
+
+             {activeTab === 'saas' && user?.email === 'joshua.deuermeyer@gmail.com' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
                      <div className="card glass glow-blue" style={{ border: 'none', padding: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                          <div>

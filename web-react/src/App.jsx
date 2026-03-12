@@ -9,6 +9,8 @@ import Assets from './pages/Assets';
 import CRM from './pages/CRM';
 import Import from './pages/Import';
 import Login from './pages/Login';
+import Marketing from './pages/Marketing';
+
 
 // Higher Order Component to protect routes
 function PrivateRoute({ children }) {
@@ -119,9 +121,11 @@ function AppContent() {
             <NavLink to="/transactions" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Transactions</NavLink>
             <NavLink to="/tax" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Tax</NavLink>
             <NavLink to="/equipment" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Equipment</NavLink>
-            <NavLink to="/crm" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>CRM</NavLink>
-            <NavLink to="/backup" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>SCC Console</NavLink>
-          </div>
+             <NavLink to="/crm" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>CRM</NavLink>
+             <NavLink to="/backup" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>SCC Console</NavLink>
+             <NavLink to="/marketing" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Marketing</NavLink>
+           </div>
+
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
@@ -148,9 +152,11 @@ function AppContent() {
           <Route path="/tax" element={<Tax />} />
           <Route path="/equipment" element={<Assets />} />
           <Route path="/backup" element={<Backup />} />
-          <Route path="/crm/*" element={<CRM />} />
-          <Route path="/import" element={<Import />} />
-          <Route path="*" element={<Navigate to="/" />} />
+           <Route path="/crm/*" element={<CRM />} />
+           <Route path="/import" element={<Import />} />
+           <Route path="/marketing" element={<Marketing />} />
+           <Route path="*" element={<Navigate to="/" />} />
+
         </Routes>
       </main>
 
