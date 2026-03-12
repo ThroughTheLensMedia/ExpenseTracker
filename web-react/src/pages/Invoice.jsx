@@ -108,7 +108,7 @@ function InvoicePreview({ invoice, settings = {}, onClose }) {
                 </div>
 
                 <div style={{ flex: 1, overflowY: 'auto', padding: '40px' }}>
-                    <div ref={previewRef} style={{ background: '#fff', width: '210mm', minWidth: '210mm', minHeight: '297mm', margin: '0 auto', padding: '80px 100px', boxShadow: '0 0 60px rgba(0,0,0,0.15)', position: 'relative', boxSizing: 'border-box' }}>
+                    <div ref={previewRef} style={{ background: '#fff', width: '8.5in', minWidth: '8.5in', minHeight: '11in', margin: '0 auto', padding: '1in', boxShadow: '0 0 60px rgba(0,0,0,0.15)', position: 'relative', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
 
                         {/* HEADER */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
@@ -200,71 +200,58 @@ function InvoicePreview({ invoice, settings = {}, onClose }) {
                         </div>
 
                         {/* BOTTOM SECTIONS */}
-                        <div style={{ marginTop: '60px', display: 'flex', gap: '40px', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <div style={{ flex: 1, fontSize: '13px', lineHeight: '1.8' }}>
-                                {invoice.notes && (
-                                    <div style={{ marginBottom: '30px' }}>
-                                        <div style={{ fontWeight: 950, textTransform: 'uppercase', fontSize: '12px', letterSpacing: '2px', marginBottom: '12px', color: '#000' }}>Notes</div>
-                                        <div style={{ color: '#000' }}>{invoice.notes}</div>
-                                    </div>
-                                )}
-                                {settings?.standard_terms && (
-                                    <div style={{ marginBottom: '30px' }}>
-                                        <div style={{ fontWeight: 950, textTransform: 'uppercase', fontSize: '12px', letterSpacing: '2px', marginBottom: '12px', color: '#000' }}>Studio Terms</div>
-                                        <div style={{ color: '#000' }}>{settings.standard_terms}</div>
-                                    </div>
-                                )}
+                        <div style={{ marginTop: 'auto', paddingTop: '40px' }}>
+                            <div style={{ display: 'flex', gap: '40px', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '60px' }}>
+                                <div style={{ flex: 1, fontSize: '13px', lineHeight: '1.8' }}>
+                                    {invoice.notes && (
+                                        <div style={{ marginBottom: '25px' }}>
+                                            <div style={{ fontWeight: 950, textTransform: 'uppercase', fontSize: '11px', letterSpacing: '2px', marginBottom: '8px', color: '#000' }}>Notes</div>
+                                            <div style={{ color: '#000' }}>{invoice.notes}</div>
+                                        </div>
+                                    )}
+                                    {settings?.standard_terms && (
+                                        <div style={{ marginBottom: '25px' }}>
+                                            <div style={{ fontWeight: 950, textTransform: 'uppercase', fontSize: '11px', letterSpacing: '2px', marginBottom: '8px', color: '#000' }}>Studio Terms</div>
+                                            <div style={{ color: '#000' }}>{settings.standard_terms}</div>
+                                        </div>
+                                    )}
 
-                                {settings?.payment_methods && (
-                                    <div style={{ padding: '20px 0', minHeight: '80px' }}>
-                                        <div style={{ fontWeight: 950, textTransform: 'uppercase', fontSize: '12px', letterSpacing: '2px', marginBottom: '12px', color: '#000' }}>Payment Instructions</div>
-                                        <div style={{ color: '#000', fontWeight: 'bold', fontSize: '16px', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>{settings.payment_methods}</div>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div style={{ width: '280px', textAlign: 'right', marginTop: '40px' }}>
-                                <div style={{ fontSize: '10px', fontWeight: 950, textTransform: 'uppercase', letterSpacing: '2px', color: '#888', marginBottom: '5px' }}>Authorized Signature</div>
-                                <div style={{
-                                    fontFamily: '"Cursive", "Brush Script MT", "Apple Chancery", cursive',
-                                    fontSize: '38px',
-                                    color: '#000',
-                                    marginBottom: '-18px',
-                                    marginRight: '20px',
-                                    position: 'relative',
-                                    zIndex: 2
-                                }}>
-                                    {settings?.contact_name || 'Joshua Deuermeyer'}
+                                    {settings?.payment_methods && (
+                                        <div style={{ marginBottom: '25px' }}>
+                                            <div style={{ fontWeight: 950, textTransform: 'uppercase', fontSize: '11px', letterSpacing: '2px', marginBottom: '8px', color: '#000' }}>Payment Instructions</div>
+                                            <div style={{ color: '#000', fontWeight: 'bold', fontSize: '15px', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>{settings.payment_methods}</div>
+                                        </div>
+                                    )}
                                 </div>
-                                <div style={{ borderTop: '2px solid #000', width: '100%', marginBottom: '10px' }}></div>
-                                <div style={{ fontSize: '14px', fontWeight: 900, color: '#000', textTransform: 'uppercase' }}>{settings?.contact_name || 'Joshua Deuermeyer'}</div>
-                                <div style={{ fontSize: '12px', fontWeight: 700, color: '#666' }}>{settings?.job_title || 'Principal Director'}</div>
                             </div>
-                        </div>
 
-                        {/* FOOTER - Absolute Bottom */}
-                        <div style={{ position: 'absolute', bottom: '80px', left: '100px', right: '100px', textAlign: 'center', borderTop: '1px solid #eee', paddingTop: '40px' }}>
-                            <div style={{
-                                fontSize: '28px',
-                                fontWeight: 950,
-                                textTransform: 'uppercase',
-                                letterSpacing: '6px',
-                                color: '#000',
-                                marginBottom: '10px'
-                            }}>
-                                {settings?.business_name || 'Through The Lens Media'}
-                            </div>
-                            <div style={{
-                                fontFamily: 'Papyrus, "Palatino Linotype", "Book Antiqua", Palatino, serif',
-                                fontSize: '18px',
-                                fontWeight: 'bold',
-                                letterSpacing: '2px',
-                                color: '#666'
-                            }}>
-                                {settings?.website || 'throughthelens.media'}
-                            </div>
-                            <div style={{ fontSize: '10px', color: '#999', marginTop: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                                {settings?.business_email || settings?.contact_email || ''}
+                            {/* FOOTER ANCHOR LINE */}
+                            <div style={{ borderTop: '2px solid #000', marginTop: '20px', paddingBottom: '30px' }}></div>
+
+                            {/* FOOTER */}
+                            <div style={{ textAlign: 'center' }}>
+                                <div style={{
+                                    fontSize: '32px',
+                                    fontWeight: 950,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '6px',
+                                    color: '#000',
+                                    marginBottom: '8px'
+                                }}>
+                                    {settings?.business_name || 'Through The Lens Media'}
+                                </div>
+                                <div style={{
+                                    fontFamily: 'Papyrus, "Palatino Linotype", "Book Antiqua", Palatino, serif',
+                                    fontSize: '18px',
+                                    fontWeight: 'bold',
+                                    letterSpacing: '3px',
+                                    color: '#666'
+                                }}>
+                                    {settings?.website || 'throughthelens.media'}
+                                </div>
+                                <div style={{ fontSize: '10px', color: '#999', marginTop: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                                    {settings?.business_email || settings?.contact_email || ''}
+                                </div>
                             </div>
                         </div>
                     </div>
