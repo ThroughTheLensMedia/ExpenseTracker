@@ -121,10 +121,10 @@ router.get("/subscriptions", async (req, res) => {
 });
 
 // POST /admin/beta-codes
-// Generate a new code: { code, daysValid }
+// Generate a new code: { code, daysValid, assigned_to_name, assigned_to_email }
 router.post("/beta-codes", async (req, res) => {
     try {
-        const { code, daysValid = 30 } = req.body;
+        const { code, daysValid = 30, assigned_to_name, assigned_to_email } = req.body;
         const validUntil = new Date();
         validUntil.setDate(validUntil.getDate() + daysValid);
 
@@ -132,7 +132,9 @@ router.post("/beta-codes", async (req, res) => {
             .from('beta_codes')
             .insert({
                 code: code || Math.random().toString(36).substring(2, 10).toUpperCase(),
-                valid_until: validUntil.toISOString()
+                valid_until: validUntil.toISOString(),
+                assigned_to_name,
+                assigned_to_email
             })
             .select()
             .single();

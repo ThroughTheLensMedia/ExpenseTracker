@@ -86,7 +86,7 @@ Instead of manually typing every transaction into a spreadsheet, the modern way 
 #### 1. Depreciation (The Hidden Goldmine)
 Equipment isn't just an expense; it's an asset. Under Section 179, photographers can often deduct the entire purchase price of gear in the first year. The Studio Tracker automates this calculation, moving the value from your "Equipment" tab directly to your Schedule C Tax report.
 
-#### 2. The 67¢ Per Mile Rule
+#### 2. The 72¢ Per Mile Rule
 In 2026, every mile matters. If you're driving to client meetings or scouting locations, you're leaving money on the table if you aren't logging it. Integrated trackers that pull the official IRS rates mean you never have to guess the math again.
 
 #### 3. Receipt Integrity
@@ -95,4 +95,4 @@ If an expense is over $75, you need a receipt. It's that simple. A digital dashb
 ### Conclusion
 You didn't become a photographer to become an accountant. But to keep being a photographer, you HAVE to manage your finances. Stop using software that was built for "big companies" and start using a tool built for the creative grind. 
 
-*Ready to take control? Check out our [Studio Tracker Demo](/marketing) today.*
+*Ready to take control? Check out our [Studio Tracker Demo](/marketing/studiotracker) today.*

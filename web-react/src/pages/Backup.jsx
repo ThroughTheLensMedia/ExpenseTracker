@@ -18,6 +18,8 @@ export default function Backup() {
     const [allSubscriptions, setAllSubscriptions] = useState([]);
     const [betaCodes, setBetaCodes] = useState([]);
     const [genCodeLoading, setGenCodeLoading] = useState(false);
+    const [inviteName, setInviteName] = useState('');
+    const [inviteEmail, setInviteEmail] = useState('');
     const [allExpenses, setAllExpenses] = useState([]);
     const [loading, setLoading] = useState(false);
     const [isHealthy, setIsHealthy] = useState(true);
@@ -120,7 +122,13 @@ export default function Backup() {
     const handleGenerateBetaCode = async () => {
         setGenCodeLoading(true);
         try {
-            await apiPost('/admin/beta-codes', { daysValid: 90 });
+            await apiPost('/admin/beta-codes', { 
+                daysValid: 90,
+                assigned_to_name: inviteName,
+                assigned_to_email: inviteEmail
+            });
+            setInviteName('');
+            setInviteEmail('');
             loadData(true);
         } catch (err) {
             modal.alert(err.message);
@@ -633,17 +641,29 @@ export default function Backup() {
 
              {activeTab === 'saas' && user?.email === 'joshua.deuermeyer@gmail.com' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
-                     <div className="card glass glow-blue" style={{ border: 'none', padding: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                         <div>
-                            <h2 style={{ fontSize: '2rem', margin: 0 }}>Active Studio Licenses</h2>
-                            <p className="muted">Monitoring all registered studio sessions across the platform.</p>
+                     <div className="card glass glow-blue" style={{ border: 'none', padding: '40px' }}>
+                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '20px', flexWrap: 'wrap' }}>
+                             <div style={{ flex: 1, minWidth: '300px' }}>
+                                <h2 style={{ fontSize: '2rem', margin: 0 }}>Active Studio Licenses</h2>
+                                <p className="muted">Monitoring all registered studio sessions across the platform.</p>
+                             </div>
+                             <div style={{ display: 'flex', gap: '15px', alignItems: 'flex-end' }}>
+                                 <div style={{ width: '200px' }}>
+                                     <small className="muted" style={{ fontWeight: 900, marginBottom: '8px', display: 'block' }}>RECIPIENT NAME</small>
+                                     <input value={inviteName} onChange={e => setInviteName(e.target.value)} placeholder="Photographer Name" style={{ padding: '12px' }} />
+                                 </div>
+                                 <div style={{ width: '250px' }}>
+                                     <small className="muted" style={{ fontWeight: 900, marginBottom: '8px', display: 'block' }}>RECIPIENT EMAIL</small>
+                                     <input type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="hello@studio.com" style={{ padding: '12px' }} />
+                                 </div>
+                                 <button className="btn primary" onClick={handleGenerateBetaCode} disabled={genCodeLoading} style={{ height: '48px' }}>
+                                    {genCodeLoading ? 'Generating...' : 'Generate 90-Day Beta Key'}
+                                 </button>
+                             </div>
                          </div>
-                         <button className="btn primary" onClick={handleGenerateBetaCode} disabled={genCodeLoading}>
-                            {genCodeLoading ? 'Generating...' : 'Generate 90-Day Beta Key'}
-                         </button>
-                     </div>
+                      </div>
 
-                     <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
                         <div className="card glass" style={{ margin: 0, padding: '30px' }}>
                             <h3>Invite Codes</h3>
                             <div className="tableWrap" style={{ border: 'none', marginTop: '20px' }}>
@@ -651,16 +671,21 @@ export default function Backup() {
                                     <thead>
                                         <tr>
                                             <th style={{ textAlign: 'left' }}>Code</th>
+                                            <th style={{ textAlign: 'left' }}>Assigned To</th>
                                             <th style={{ textAlign: 'left' }}>Status</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {betaCodes.map(c => (
                                             <tr key={c.code}>
-                                                <td style={{ fontWeight: 800 }}>{c.code}</td>
+                                                <td style={{ fontWeight: 800, color: 'var(--accent)' }}>{c.code}</td>
+                                                <td>
+                                                    <div style={{ fontWeight: 800 }}>{c.assigned_to_name || '—'}</div>
+                                                    <div className="muted small">{c.assigned_to_email || 'General Release'}</div>
+                                                </td>
                                                 <td>
                                                     {c.is_used 
-                                                        ? <span className="tag bad">{c.used_by_email}</span> 
+                                                        ? <span className="tag bad" style={{ fontSize: '10px' }}>USED BY: {c.used_by_email}</span> 
                                                         : <span className="tag ok">AVAILABLE</span>
                                                     }
                                                 </td>

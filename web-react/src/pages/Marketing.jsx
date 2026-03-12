@@ -34,8 +34,9 @@ const Marketing = () => {
         <div className="glass" style={{ padding: '30px', borderRadius: '20px' }}>
           <div style={{ fontSize: '40px', marginBottom: '20px' }}>🚗</div>
           <h3 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '15px' }}>Automatic Mileage</h3>
-          <p style={{ opacity: 0.7, lineHeight: '1.6' }}>Log every trip to the studio or location shoot. We pull live IRS rates directly from IRS.gov to ensure you're getting every cent of your 67¢ per mile.</p>
+          <p style={{ opacity: 0.7, lineHeight: '1.6' }}>Log every trip to the studio or location shoot. We pull live IRS rates directly from IRS.gov to ensure you're getting every cent of your 72¢ per mile.</p>
         </div>
+
 
         <div className="glass" style={{ padding: '30px', borderRadius: '20px' }}>
           <div style={{ fontSize: '40px', marginBottom: '20px' }}>🏦</div>

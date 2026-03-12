@@ -123,8 +123,9 @@ function AppContent() {
             <NavLink to="/equipment" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Equipment</NavLink>
              <NavLink to="/crm" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>CRM</NavLink>
              <NavLink to="/backup" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>SCC Console</NavLink>
-             <NavLink to="/marketing" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Marketing</NavLink>
+             <NavLink to="/marketing/studiotracker" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Marketing</NavLink>
            </div>
+
 
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
@@ -154,8 +155,9 @@ function AppContent() {
           <Route path="/backup" element={<Backup />} />
            <Route path="/crm/*" element={<CRM />} />
            <Route path="/import" element={<Import />} />
-           <Route path="/marketing" element={<Marketing />} />
+           <Route path="/marketing/studiotracker" element={<Marketing />} />
            <Route path="*" element={<Navigate to="/" />} />
+
 
         </Routes>
       </main>
