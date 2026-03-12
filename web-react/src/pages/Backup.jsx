@@ -557,7 +557,7 @@ export default function Backup() {
                          </button>
                      </div>
 
-                     <div className="grid two">
+                     <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
                         <div className="card glass" style={{ margin: 0, padding: '30px' }}>
                             <h3>Invite Codes</h3>
                             <div className="tableWrap" style={{ border: 'none', marginTop: '20px' }}>

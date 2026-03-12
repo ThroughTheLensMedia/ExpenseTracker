@@ -50,11 +50,13 @@ app.use("/receipts", express.static(RECEIPT_DIR));
 const apiRouter = express.Router();
 
 // Public Health check
-apiRouter.get("/health", async (_req, res) => {
+apiRouter.get("/health", async (req, res) => {
   res.json({
     ok: true,
     environment: process.env.VERCEL ? "vercel" : "local",
-    lockdown: "enabled"
+    lockdown: "enabled",
+    mailer: !!process.env.RESEND_API_KEY,
+    db: true
   });
 });
 
