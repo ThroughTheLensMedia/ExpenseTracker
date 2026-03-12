@@ -268,6 +268,7 @@ export default function Invoice() {
     const [leads, setLeads] = useState([]);
     const [settings, setSettings] = useState({});
     const [loading, setLoading] = useState(true);
+    const [sendingId, setSendingId] = useState(null); // Track which invoice is currently emailing
 
     const [isCreatorOpen, setIsCreatorOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
@@ -529,12 +530,20 @@ export default function Invoice() {
     };
 
     const handleSendEmail = async (invoice) => {
+        if (!confirm(`Are you sure you want to officially dispatch Invoice #${invoice.invoice_number} to ${invoice.clients?.name || 'the client'}?`)) return;
+        
+        setSendingId(invoice.id);
+        setStatusMsg(null);
         try {
             await apiPatch(`/invoices/${invoice.id}`, { status: 'sent' });
-            load();
-            setStatusMsg({ type: 'ok', text: `Invoice #${invoice.invoice_number} dispatched to client successfully!` });
+            await load();
+            setStatusMsg({ type: 'ok', text: `Success! Invoice #${invoice.invoice_number} has been dispatched.` });
+            alert(`Voice of the Studio: Invoice #${invoice.invoice_number} dispatched successfully!`);
         } catch (err) {
-            setStatusMsg({ type: 'bad', text: err.message });
+            console.error("Email failed", err);
+            setStatusMsg({ type: 'bad', text: `Email failed: ${err.message}` });
+        } finally {
+            setSendingId(null);
         }
     };
 
@@ -654,7 +663,13 @@ export default function Invoice() {
                                                         <button className="btn sm secondary" onClick={() => handleEdit(inv)}>Edit</button>
                                                     )}
                                                     {inv.status === 'draft' && (
-                                                        <button className="btn sm glow-blue" onClick={() => handleSendEmail(inv)}>Send Email</button>
+                                                        <button 
+                                                            className="btn sm glow-blue" 
+                                                            onClick={() => handleSendEmail(inv)}
+                                                            disabled={sendingId === inv.id}
+                                                        >
+                                                            {sendingId === inv.id ? '⏳ Emailing...' : 'Send Email'}
+                                                        </button>
                                                     )}
                                                     {inv.status === 'sent' && (
                                                         <button className="btn sm primary" onClick={() => handleMarkPaid(inv.id)}>Mark Paid</button>

@@ -155,7 +155,7 @@ router.patch("/:id", async (req, res) => {
                 const discountAmount = Math.round(subtotal * (discountPercent / 100));
                 const total = (subtotal + tax - discountAmount) / 100;
 
-                await sendInvoiceEmail({
+                const result = await sendInvoiceEmail({
                     to: fullInvoice.clients.email,
                     subject: `Invoice #${fullInvoice.invoice_number} from Through The Lens Media`,
                     body: `
@@ -172,7 +172,12 @@ router.patch("/:id", async (req, res) => {
                             <p style="color: #666; font-size: 12px;">This is an automated delivery from the Studio Control Center.</p>
                         </div>
                     `
-                }).catch(err => console.error("Auto-mail failed:", err));
+                });
+                if (!result.success) {
+                    throw new Error(`Email failed: ${result.error}`);
+                }
+            } else if (invoiceData.status === 'sent') {
+                throw new Error("Cannot send invoice: Client email is missing.");
             }
         }
 
