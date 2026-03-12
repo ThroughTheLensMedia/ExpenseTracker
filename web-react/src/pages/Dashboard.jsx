@@ -15,6 +15,7 @@ import {
     Filler
 } from 'chart.js';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
+import { useModal } from '../components/ModalContext.jsx';
 
 ChartJS.register(
     CategoryScale,
@@ -30,6 +31,7 @@ ChartJS.register(
 );
 
 export default function Dashboard({ apiStatus }) {
+    const modal = useModal();
     const navigate = useNavigate();
     const [expenses, setExpenses] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -236,7 +238,7 @@ export default function Dashboard({ apiStatus }) {
             setTimeout(() => setSnapSuccess(false), 3000);
             loadData();
         } catch (err) {
-            alert("Camera Snap Failed: " + err.message);
+            modal.alert("Camera Snap Failed: " + err.message);
         } finally {
             setSnapLoading(false);
             if (fileInputRef.current) fileInputRef.current.value = '';

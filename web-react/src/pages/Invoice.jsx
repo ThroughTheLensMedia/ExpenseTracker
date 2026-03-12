@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { apiGet, apiPost, apiPatch, apiDelete, formatMoney, invalidateExpensesCache } from '../api';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import { useModal } from '../components/ModalContext.jsx';
 
 // Elite Invoice Branding
 const BRAND_ORANGE = '#f97316';
@@ -35,6 +36,7 @@ function InvoiceItemRow({ item, index, onChange, onRemove }) {
 }
 
 function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
+    const modal = useModal();
     const previewRef = useRef();
     const [isProcessing, setIsProcessing] = useState(false);
 
@@ -109,7 +111,7 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
             await onSendEmail(invoice, pdfBase64);
         } catch (err) {
             console.error("PDF Send Error:", err);
-            alert("Failed to package PDF for email.");
+            modal.alert("Failed to package PDF for email.");
         } finally {
             setIsProcessing(false);
         }
@@ -292,6 +294,7 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
 }
 
 export default function Invoice() {
+    const modal = useModal();
     const [view, setView] = useState('invoices');
     const [invoices, setInvoices] = useState([]);
     const [clients, setClients] = useState([]);
@@ -560,7 +563,8 @@ export default function Invoice() {
     };
 
     const handleSendEmail = async (invoice, pdfBase64 = null) => {
-        if (!confirm(`Are you sure you want to officially dispatch Invoice #${invoice.invoice_number} to ${invoice.clients?.name || 'the client'}?`)) return;
+        const ok = await modal.confirm(`Are you sure you want to officially dispatch Invoice #${invoice.invoice_number} to ${invoice.clients?.name || 'the client'}?`);
+        if (!ok) return;
         
         setSendingId(invoice.id);
         setStatusMsg(null);
@@ -574,7 +578,7 @@ export default function Invoice() {
             if (pdfBase64) {
                 setPreviewingInvoice(null); // Close preview if sending from there
             }
-            alert(`Voice of the Studio: Invoice #${invoice.invoice_number} dispatched successfully!`);
+            modal.alert(`Voice of the Studio: Invoice #${invoice.invoice_number} dispatched successfully!`);
         } catch (err) {
             console.error("Email failed", err);
             setStatusMsg({ type: 'bad', text: `Email failed: ${err.message}` });
@@ -594,7 +598,8 @@ export default function Invoice() {
     };
 
     const handleDeleteInvoice = async (id) => {
-        if (!confirm("Are you sure you want to permanently delete this invoice?")) return;
+        const ok = await modal.confirm("Are you sure you want to permanently delete this invoice?");
+        if (!ok) return;
         try {
             await apiDelete(`/invoices/${id}`);
             load();

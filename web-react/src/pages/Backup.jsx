@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { apiGet, apiPost, fetchAllExpenses, apiDelete } from '../api';
+import { useModal } from '../components/ModalContext.jsx';
 import CategorySelect from '../components/CategorySelect.jsx';
 
 export default function Backup() {
+    const modal = useModal();
     const [activeTab, setActiveTab] = useState('automation'); // 'automation', 'profile', 'infrastructure'
 
     // --- Common States ---
@@ -117,12 +119,13 @@ export default function Backup() {
             setMatchValue('');
             setCategory('');
             loadData(true);
-        } catch (err) { alert(err.message); }
+        } catch (err) { modal.alert(err.message); }
     };
 
     const handleDeleteRule = async (id) => {
-        if (!confirm("Are you sure?")) return;
-        try { await apiDelete(`/rules/${id}`); loadData(true); } catch (err) { alert(err.message); }
+        const ok = await modal.confirm("Are you sure?");
+        if (!ok) return;
+        try { await apiDelete(`/rules/${id}`); loadData(true); } catch (err) { modal.alert(err.message); }
     };
 
     const handlePreviewRule = async (id) => {
@@ -132,7 +135,7 @@ export default function Backup() {
             setRuleStatus(prev => ({ ...prev, [id]: { loading: false, preview: res } }));
         } catch (err) {
             setRuleStatus(prev => ({ ...prev, [id]: { loading: false } }));
-            alert(err.message);
+            modal.alert(err.message);
         }
     };
 
@@ -144,7 +147,7 @@ export default function Backup() {
             loadData(true);
         } catch (err) {
             setRuleStatus(prev => ({ ...prev, [id]: { ...prev[id], applying: false } }));
-            alert(err.message);
+            modal.alert(err.message);
         }
     };
 
@@ -156,7 +159,7 @@ export default function Backup() {
             setApplyMsg(`Success! Built ${res.updatedCount} connections.`);
             loadData(true);
             setTimeout(() => { setApplying(false); setApplyMsg(''); }, 3000);
-        } catch (err) { alert(err.message); setApplying(false); }
+        } catch (err) { modal.alert(err.message); setApplying(false); }
     };
 
     const handleLogoUpload = (e) => {
@@ -187,7 +190,7 @@ export default function Backup() {
             await new Promise(r => setTimeout(r, 1000));
             setMsg('GLOBAL CACHE PURGED');
             setTimeout(() => setMsg(''), 3000);
-        } catch (err) { alert(err.message); } finally { setPurging(false); }
+        } catch (err) { modal.alert(err.message); } finally { setPurging(false); }
     };
 
     if (loading && !allExpenses.length) return <div style={{ padding: '60px', textAlign: 'center' }}><div className="spinner" /></div>;
@@ -429,8 +432,13 @@ export default function Backup() {
                                 <input type="file" accept=".json" onChange={async (e) => {
                                     const file = e.target.files[0]; if (!file) return; setRestoring(true);
                                     const reader = new FileReader(); reader.onload = async (ev) => {
-                                        try { const data = JSON.parse(ev.target.result); await apiPost('/admin/import-all', data); alert("Studio state restored!"); loadData(); }
-                                        catch (err) { alert(err.message); } finally { setRestoring(false); }
+                                        try { 
+                                            const data = JSON.parse(ev.target.result); 
+                                            await apiPost('/admin/import-all', data); 
+                                            await modal.alert("Studio state restored!"); 
+                                            loadData(); 
+                                        }
+                                        catch (err) { modal.alert(err.message); } finally { setRestoring(false); }
                                     }; reader.readAsText(file);
                                 }} style={{ display: 'none' }} />
                                 {restoring ? 'Restoring Archive...' : 'Upload & Restore Snapshot'}

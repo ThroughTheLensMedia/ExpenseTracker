@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Routes, Route, NavLink, useSearchParams } from 'react-router-dom';
 import { apiGet, apiPost, apiPatch, formatMoney } from '../api';
+import { useModal } from '../components/ModalContext.jsx';
 import Invoice from './Invoice';
 
 const ACTIVE_COLUMNS = [
@@ -10,6 +11,7 @@ const ACTIVE_COLUMNS = [
 ];
 
 function PipelineView() {
+    const modal = useModal();
     const [searchParams, setSearchParams] = useSearchParams();
     const [leads, setLeads] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -85,7 +87,7 @@ function PipelineView() {
             clearForm();
             loadLeads();
         } catch (err) {
-            alert(err.message);
+            modal.alert(err.message);
         }
     };
 
@@ -95,7 +97,7 @@ function PipelineView() {
             await apiPatch(`/leads/${lead.id}`, { status: newStatus });
         } catch (err) {
             loadLeads();
-            alert(err.message);
+            modal.alert(err.message);
         }
     };
 
