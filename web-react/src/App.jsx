@@ -15,7 +15,17 @@ function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
   const location = useLocation();
 
-  if (loading) return null; // Or a spinner
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a', color: 'white' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div className="spinner" style={{ marginBottom: '20px' }}></div>
+          <div style={{ fontWeight: 800, letterSpacing: '0.1em', fontSize: '12px', opacity: 0.5 }}>INITIALIZING STUDIO...</div>
+        </div>
+      </div>
+    );
+  }
+  
   if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
@@ -24,7 +34,7 @@ function PrivateRoute({ children }) {
 
 function AppContent() {
   const [apiStatus, setApiStatus] = useState('Checking...');
-  const { user, logout, subscription } = useAuth();
+  const { user, loading, logout, subscription } = useAuth();
   const [showRedeem, setShowRedeem] = useState(false);
 
   // Calculate days left
@@ -52,6 +62,17 @@ function AppContent() {
     const interval = setInterval(checkApi, 15000);
     return () => clearInterval(interval);
   }, [user]);
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a', color: 'white' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div className="spinner" style={{ marginBottom: '20px' }}></div>
+          <div style={{ fontWeight: 800, letterSpacing: '0.1em', fontSize: '12px', opacity: 0.5 }}>SYNCHRONIZING STUDIO...</div>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (

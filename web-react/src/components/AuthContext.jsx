@@ -32,22 +32,35 @@ export function AuthProvider({ children }) {
   };
 
   useEffect(() => {
+    // 1. Initial Session Check
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) fetchSubscription(session.user.id);
+      if (session) {
+        setSession(session);
+        setUser(session.user);
+        fetchSubscription(session.user.id);
+      }
+      setLoading(false);
+    }).catch(err => {
+      console.error("Session check failed:", err);
       setLoading(false);
     });
 
-    const { data: { subscription: authSub } } = supabase.auth.onAuthStateChange((_event, session) => {
+    // 2. Auth State Listener
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user) fetchSubscription(session.user.id);
-      else setSubscription(null);
-      setLoading(false);
+      if (session?.user) {
+        fetchSubscription(session.user.id);
+      } else {
+        setSubscription(null);
+      }
     });
 
-    return () => authSub.unsubscribe();
+    return () => {
+      if (authListener?.subscription) {
+        authListener.subscription.unsubscribe();
+      }
+    };
   }, []);
 
   const login = async (email, password) => {
