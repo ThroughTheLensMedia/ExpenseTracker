@@ -111,78 +111,56 @@ function AppContent() {
             EXTEND ACCESS
           </button>
         </div>
-      )}
-
-      <header className="glass" style={{ border: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 30px', height: '80px', position: 'sticky', top: '10px', zIndex: 1000, margin: '15px 15px 0 15px' }}>
+      )}      <header className="glass" style={{ border: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 30px', height: '80px', position: 'sticky', top: '10px', zIndex: 1000, margin: '15px 15px 0 15px' }}>
         {/* Left Side: Brand */}
-        <div style={{ flex: '0 1 200px', display: 'flex', alignItems: 'center' }}>
-          <div className="title" style={{ fontSize: '1.2rem', fontWeight: 900, letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>Studio Tracker</div>
+        <div style={{ flex: '1', display: 'flex', alignItems: 'center' }}>
+          <div className="title" style={{ fontSize: '1.2rem', fontWeight: 950, letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>STUDIO TRACKER</div>
         </div>
 
-        {/* Center: Primary Navigation (Desktop) */}
-        <div className="desktop-nav" style={{ flex: '1', display: 'flex', justifyContent: 'center', minWidth: '0', overflow: 'hidden' }}>
-          <div className="nav" style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.03)', padding: '5px', borderRadius: '12px', flexWrap: 'nowrap' }}>
-            <NavLink to="/" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`} style={{ padding: '8px 12px', fontSize: '12px', whiteSpace: 'nowrap' }} end>Dashboard</NavLink>
-            <NavLink to="/transactions" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`} style={{ padding: '8px 12px', fontSize: '12px', whiteSpace: 'nowrap' }}>Transactions</NavLink>
-            <NavLink to="/tax" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`} style={{ padding: '8px 12px', fontSize: '12px', whiteSpace: 'nowrap' }}>Tax</NavLink>
-            <NavLink to="/equipment" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`} style={{ padding: '8px 12px', fontSize: '12px', whiteSpace: 'nowrap' }}>Equipment</NavLink>
-            <NavLink to="/crm" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`} style={{ padding: '8px 12px', fontSize: '12px', whiteSpace: 'nowrap' }}>CRM</NavLink>
-            <NavLink to="/backup" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`} style={{ padding: '8px 12px', fontSize: '12px', whiteSpace: 'nowrap' }}>SCC Console</NavLink>
-          </div>
-        </div>
-
-        {/* Mobile Toggle (Hamburger) */}
+        {/* Right Side: Toggle */}
         <div className="mobile-toggle" style={{ cursor: 'pointer', padding: '10px' }} onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
           <div style={{ width: '22px', height: '2px', background: 'white', margin: '4px 0' }}></div>
           <div style={{ width: '22px', height: '2px', background: 'white', margin: '4px 0' }}></div>
           <div style={{ width: '16px', height: '2px', background: 'white', margin: '4px 0', marginLeft: 'auto' }}></div>
         </div>
 
-        {/* Right Side: Identity & Actions */}
-        <div className="identity-block" style={{ flex: '0 1 240px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '15px' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
-              <span className="muted" style={{ fontWeight: 950, fontSize: '11px', color: 'white', whiteSpace: 'nowrap' }}>{identityName}</span>
-              <span style={{ fontSize: '9px', color: daysLeft <= 7 ? '#f59e0b' : '#10b981', fontWeight: 800, letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
-                {subscription?.plan_type?.toUpperCase() || 'PRO'} ACCESS 
-                {daysLeft !== null && ` • ${daysLeft}D LEFT`}
-              </span>
-            </div>
-            <button onClick={logout} className="btn sm secondary" style={{ fontSize: '10px', padding: '6px 12px', borderRadius: '8px', fontWeight: 900 }}>LOGOUT</button>
-        </div>
-
-        {/* Mobile Menu Overlay */}
+        {/* Elite Navigation Overlay */}
         {mobileMenuOpen && (
           <div className="glass" style={{ 
             position: 'absolute', 
             top: '85px', 
-            right: '30px', 
-            width: '260px',
-            background: 'rgba(15, 26, 51, 0.98)', 
-            backdropFilter: 'blur(30px)',
+            right: '0', 
+            width: '280px',
+            background: 'rgba(8, 12, 24, 0.99)', 
+            backdropFilter: 'blur(40px)',
             borderRadius: '16px',
             border: '1px solid var(--line)',
-            padding: '10px',
+            padding: '12px',
             display: 'flex',
             flexDirection: 'column',
             gap: '4px',
-            boxShadow: '0 30px 60px rgba(0,0,0,0.8)',
+            boxShadow: '0 40px 80px rgba(0,0,0,0.9)',
             zIndex: 1000,
             overflow: 'hidden',
             animation: 'fadeInDown 0.2s ease-out'
           }}>
             <NavLink to="/" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`} style={{ padding: '15px' }} end>Dashboard</NavLink>
-            <NavLink to="/transactions" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`} style={{ padding: '15px' }}>Transactions</NavLink>
-            <NavLink to="/tax" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`} style={{ padding: '15px' }}>Tax</NavLink>
-            <NavLink to="/equipment" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`} style={{ padding: '15px' }}>Equipment</NavLink>
-            <NavLink to="/crm" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`} style={{ padding: '15px' }}>CRM</NavLink>
+            <NavLink to="/transactions" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`} style={{ padding: '15px' }}>Line Item Ledger</NavLink>
+            <NavLink to="/import" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`} style={{ padding: '15px' }}>Bank Import</NavLink>
+            <NavLink to="/crm" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`} style={{ padding: '15px' }}>CRM Pipeline</NavLink>
+            <NavLink to="/crm/invoices" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`} style={{ padding: '15px' }}>Studio Invoices</NavLink>
+            <NavLink to="/tax" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`} style={{ padding: '15px' }}>Tax & Sch C</NavLink>
+            <NavLink to="/equipment" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`} style={{ padding: '15px' }}>Gear Locker</NavLink>
             <NavLink to="/backup" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`} style={{ padding: '15px' }}>SCC Console</NavLink>
-            <div style={{ height: '1px', background: 'var(--line)', margin: '10px' }}></div>
-            <div style={{ padding: '15px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            
+            <div style={{ height: '1px', background: 'var(--line)', margin: '15px 10px' }}></div>
+            
+            <div style={{ padding: '15px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <div style={{ lineHeight: '1.2' }}>
-                  <div className="muted" style={{ fontWeight: 950, fontSize: '11px', color: 'white' }}>{identityName}</div>
-                  <div style={{ fontSize: '9px', color: daysLeft <= 7 ? '#f59e0b' : '#10b981', fontWeight: 800 }}>PRO ACCESS • {daysLeft}D LEFT</div>
+                  <div className="muted" style={{ fontWeight: 950, fontSize: '11px', color: 'white', textTransform: 'uppercase' }}>{identityName}</div>
+                  <div style={{ fontSize: '9px', color: daysLeft <= 7 ? '#f59e0b' : '#10b981', fontWeight: 900, letterSpacing: '0.05em' }}>PRO ACCESS • {daysLeft}D LEFT</div>
                 </div>
-                <button onClick={logout} className="btn sm secondary" style={{ fontSize: '10px', borderRadius: '8px', width: '100%', padding: '10px' }}>LOGOUT SESSION</button>
+                <button onClick={logout} className="btn sm secondary" style={{ fontSize: '10px', borderRadius: '8px', width: '100%', padding: '12px', fontWeight: 900 }}>CLOSE STUDIO SESSION</button>
             </div>
           </div>
         )}
@@ -198,32 +176,22 @@ function AppContent() {
            <Route path="/crm/*" element={<CRM />} />
            <Route path="/import" element={<Import />} />
            <Route path="*" element={<Navigate to="/" />} />
-
-
         </Routes>
       </main>
 
-      {/* PWA Bottom Navigation Bar */}
+      {/* Focused Mobile Navigation */}
       <nav className="bottom-nav mobile-only">
         <NavLink to="/" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`} end>
           <span className="bottom-nav-icon">📊</span>
-          <span>Home</span>
+          <span>Studio</span>
         </NavLink>
         <NavLink to="/transactions" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
           <span className="bottom-nav-icon">💸</span>
           <span>Ledger</span>
         </NavLink>
-        <NavLink to="/import" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
-          <span className="bottom-nav-icon">🏦</span>
-          <span>Import</span>
-        </NavLink>
         <NavLink to="/crm" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`} end>
           <span className="bottom-nav-icon">👥</span>
-          <span>CRM</span>
-        </NavLink>
-        <NavLink to="/crm/invoices" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
-          <span className="bottom-nav-icon">🧾</span>
-          <span>Invoices</span>
+          <span>Leads</span>
         </NavLink>
       </nav>
     </div>
