@@ -10,18 +10,25 @@ const { createClient } = require("@supabase/supabase-js");
 
 const SUPABASE_URL = (process.env.SUPABASE_URL || "").trim();
 const SUPABASE_ANON_KEY = (process.env.SUPABASE_ANON_KEY || "").trim();
+const SUPABASE_SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
 
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  console.error("CRITICAL: Missing SUPABASE_URL or SUPABASE_ANON_KEY environment variables.");
+if (!SUPABASE_URL || (!SUPABASE_ANON_KEY && !SUPABASE_SERVICE_KEY)) {
+  console.error("CRITICAL: Missing Supabase environment variables.");
 }
 
 // Ensure URL is valid before creating client
 let supabase;
 try {
-  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
-    supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  } else {
-    // Return a proxy to prevent crashes on chained calls like supabase.from().select().order()...
+  if (SUPABASE_URL) {
+    // Prioritize Service Key for backend operations to bypass RLS
+    const key = SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY;
+    if (key) {
+      supabase = createClient(SUPABASE_URL, key);
+    }
+  }
+  
+  if (!supabase) {
+    // Fallback to proxy
     const mock = () => mock;
     supabase = new Proxy({}, {
       get: () => {

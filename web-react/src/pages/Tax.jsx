@@ -362,7 +362,7 @@ export default function Tax() {
                     <div>
                         <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 950, letterSpacing: '-0.01em' }}>Schedule C Business Summary</h2>
                         <div className="muted small" style={{ marginTop: '4px', fontWeight: 600 }}>
-                            {settings?.business_name || 'Photography Studio'} · {settings?.entity_type || 'Sole Proprietorship'} · Business Code {settings?.naics_code || '711510'}
+                            {settings?.business_category || 'Photography Studio'} · {settings?.entity_type || 'Sole Proprietorship'} · Business Code {settings?.naics_code || '711510'}
                         </div>
                     </div>
 

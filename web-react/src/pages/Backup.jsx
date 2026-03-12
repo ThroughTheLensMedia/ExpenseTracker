@@ -53,7 +53,8 @@ export default function Backup() {
         standard_terms: '',
         payment_methods: '',
         entity_type: 'Sole Proprietorship',
-        naics_code: '711510'
+        naics_code: '711510',
+        business_category: 'Photography Studio'
     });
 
     const loadData = async (silent = false) => {
@@ -350,6 +351,11 @@ export default function Backup() {
                             <div style={{ gridColumn: 'span 2' }}>
                                 <small className="muted" style={{ fontWeight: 900 }}>OFFICIAL BUSINESS NAME</small>
                                 <input value={settings.business_name || ''} onChange={e => setSettings({ ...settings, business_name: e.target.value })} placeholder="Through The Lens Media" style={{ marginTop: '8px', padding: '15px' }} />
+                            </div>
+                            <div style={{ gridColumn: 'span 2' }}>
+                                <small className="muted" style={{ fontWeight: 900 }}>BUSINESS CATEGORY</small>
+                                <input value={settings.business_category || ''} onChange={e => setSettings({ ...settings, business_category: e.target.value })} placeholder="Photography Studio" style={{ marginTop: '8px', padding: '15px' }} />
+                                <div className="muted small" style={{ marginTop: '8px' }}>Your primary line of work (e.g. Wedding Photography, Media Production).</div>
                             </div>
                             <div>
                                 <small className="muted" style={{ fontWeight: 900 }}>CONTACT NAME</small>
