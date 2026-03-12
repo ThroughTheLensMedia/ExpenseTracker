@@ -114,13 +114,13 @@ function InvoicePreview({ invoice, settings = {}, onClose }) {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
                             <div>
                                 {settings?.logo_url ? (
-                                    <div style={{ width: '280px', height: '140px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', background: '#fff' }}>
+                                    <div style={{ width: '350px', height: '180px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', background: '#fff' }}>
                                         <img src={settings.logo_url} alt="Studio Logo" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
                                     </div>
                                 ) : (
-                                    <div style={{ width: '180px', height: '180px', background: '#fafafa', border: '3px solid #000', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-                                        <div style={{ fontSize: '42px' }}>📸</div>
-                                        <div style={{ fontSize: '12px', fontWeight: 950, textTransform: 'uppercase', marginTop: '10px', letterSpacing: '2px' }}>Pure Capture</div>
+                                    <div style={{ width: '220px', height: '220px', background: '#fafafa', border: '3px solid #000', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+                                        <div style={{ fontSize: '52px' }}>📸</div>
+                                        <div style={{ fontSize: '14px', fontWeight: 950, textTransform: 'uppercase', marginTop: '10px', letterSpacing: '2px' }}>Pure Capture</div>
                                     </div>
                                 )}
                             </div>
@@ -204,54 +204,59 @@ function InvoicePreview({ invoice, settings = {}, onClose }) {
                             <div style={{ flex: 1, fontSize: '13px', lineHeight: '1.8' }}>
                                 {invoice.notes && (
                                     <div style={{ marginBottom: '30px' }}>
-                                        <div style={{ fontWeight: 950, textTransform: 'uppercase', fontSize: '11px', letterSpacing: '2px', marginBottom: '10px' }}>Notes</div>
-                                        <div style={{ color: '#444' }}>{invoice.notes}</div>
+                                        <div style={{ fontWeight: 950, textTransform: 'uppercase', fontSize: '12px', letterSpacing: '2px', marginBottom: '12px', color: '#000' }}>Notes</div>
+                                        <div style={{ color: '#000' }}>{invoice.notes}</div>
                                     </div>
                                 )}
                                 {settings?.standard_terms && (
                                     <div style={{ marginBottom: '30px' }}>
-                                        <div style={{ fontWeight: 950, textTransform: 'uppercase', fontSize: '11px', letterSpacing: '2px', marginBottom: '10px' }}>Studio Terms</div>
-                                        <div style={{ color: '#666', fontSize: '12px' }}>{settings.standard_terms}</div>
+                                        <div style={{ fontWeight: 950, textTransform: 'uppercase', fontSize: '12px', letterSpacing: '2px', marginBottom: '12px', color: '#000' }}>Studio Terms</div>
+                                        <div style={{ color: '#000' }}>{settings.standard_terms}</div>
                                     </div>
                                 )}
 
                                 {settings?.payment_methods && (
                                     <div style={{ padding: '20px 0', minHeight: '80px' }}>
-                                        <div style={{ fontWeight: 950, textTransform: 'uppercase', fontSize: '11px', letterSpacing: '2px', marginBottom: '15px', color: '#888' }}>Payment Instructions</div>
-                                        <div style={{ color: '#000', fontWeight: 700, fontSize: '16px', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>{settings.payment_methods}</div>
+                                        <div style={{ fontWeight: 950, textTransform: 'uppercase', fontSize: '12px', letterSpacing: '2px', marginBottom: '12px', color: '#000' }}>Payment Instructions</div>
+                                        <div style={{ color: '#000', fontWeight: 'bold', fontSize: '16px', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>{settings.payment_methods}</div>
                                     </div>
                                 )}
                             </div>
 
-                            <div style={{ width: '220px', textAlign: 'right', borderTop: '2px solid #eee', paddingTop: '20px', marginTop: '20px' }}>
-                                <div style={{ fontSize: '11px', fontWeight: 950, textTransform: 'uppercase', letterSpacing: '2px', color: '#999', marginBottom: '10px' }}>Authorized Signature</div>
+                            <div style={{ width: '280px', textAlign: 'right', marginTop: '40px' }}>
+                                <div style={{ fontSize: '10px', fontWeight: 950, textTransform: 'uppercase', letterSpacing: '2px', color: '#888', marginBottom: '5px' }}>Authorized Signature</div>
                                 <div style={{
                                     fontFamily: '"Cursive", "Brush Script MT", "Apple Chancery", cursive',
-                                    fontSize: '32px',
+                                    fontSize: '38px',
                                     color: '#000',
-                                    marginBottom: '5px'
+                                    marginBottom: '-18px',
+                                    marginRight: '20px',
+                                    position: 'relative',
+                                    zIndex: 2
                                 }}>
                                     {settings?.contact_name || 'Joshua Deuermeyer'}
                                 </div>
-                                <div style={{ fontSize: '12px', fontWeight: 800, color: '#666' }}>Principal Director</div>
+                                <div style={{ borderTop: '2px solid #000', width: '100%', marginBottom: '10px' }}></div>
+                                <div style={{ fontSize: '14px', fontWeight: 900, color: '#000', textTransform: 'uppercase' }}>{settings?.contact_name || 'Joshua Deuermeyer'}</div>
+                                <div style={{ fontSize: '12px', fontWeight: 700, color: '#666' }}>{settings?.job_title || 'Principal Director'}</div>
                             </div>
                         </div>
 
-                        {/* FOOTER */}
-                        <div style={{ marginTop: '100px', textAlign: 'center', borderTop: '1px solid #eee', paddingTop: '40px' }}>
+                        {/* FOOTER - Absolute Bottom */}
+                        <div style={{ position: 'absolute', bottom: '80px', left: '100px', right: '100px', textAlign: 'center', borderTop: '1px solid #eee', paddingTop: '40px' }}>
                             <div style={{
-                                fontSize: '24px',
+                                fontSize: '28px',
                                 fontWeight: 950,
                                 textTransform: 'uppercase',
-                                letterSpacing: '4px',
+                                letterSpacing: '6px',
                                 color: '#000',
-                                marginBottom: '15px'
+                                marginBottom: '10px'
                             }}>
                                 {settings?.business_name || 'Through The Lens Media'}
                             </div>
                             <div style={{
                                 fontFamily: 'Papyrus, "Palatino Linotype", "Book Antiqua", Palatino, serif',
-                                fontSize: '17px',
+                                fontSize: '18px',
                                 fontWeight: 'bold',
                                 letterSpacing: '2px',
                                 color: '#666'

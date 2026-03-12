@@ -5,11 +5,17 @@ CREATE TABLE IF NOT EXISTS settings (
   id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   business_name TEXT NOT NULL DEFAULT '',
   contact_name TEXT NOT NULL DEFAULT '',
+  job_title TEXT NOT NULL DEFAULT '',
   website TEXT NOT NULL DEFAULT '',
   email TEXT NOT NULL DEFAULT '',
   phone TEXT NOT NULL DEFAULT '',
   address TEXT NOT NULL DEFAULT '',
   tax_id TEXT NOT NULL DEFAULT '',
+  logo_url TEXT,
+  invoice_notes TEXT,
+  signature_text TEXT,
+  standard_terms TEXT,
+  payment_methods TEXT,
   currency TEXT NOT NULL DEFAULT 'USD',
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

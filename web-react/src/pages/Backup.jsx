@@ -262,6 +262,10 @@ export default function Backup() {
                                 <input value={settings.contact_name || ''} onChange={e => setSettings({ ...settings, contact_name: e.target.value })} placeholder="Joshua Dewey" style={{ marginTop: '8px', padding: '15px' }} />
                             </div>
                             <div>
+                                <small className="muted" style={{ fontWeight: 900 }}>JOB TITLE</small>
+                                <input value={settings.job_title || ''} onChange={e => setSettings({ ...settings, job_title: e.target.value })} placeholder="Principal Director" style={{ marginTop: '8px', padding: '15px' }} />
+                            </div>
+                            <div>
                                 <small className="muted" style={{ fontWeight: 900 }}>BUSINESS WEBSITE</small>
                                 <input value={settings.website || ''} onChange={e => setSettings({ ...settings, website: e.target.value })} placeholder="throughthelens.media" style={{ marginTop: '8px', padding: '15px' }} />
                             </div>
