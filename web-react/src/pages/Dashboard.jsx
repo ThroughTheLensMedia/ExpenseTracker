@@ -53,18 +53,39 @@ export default function Dashboard({ apiStatus }) {
     const loadData = async (targetYear = selectedYear) => {
         setLoading(true);
         try {
-            const [exp, lds] = await Promise.all([
+            const [exp, lds, yrs] = await Promise.all([
                 fetchAllExpenses(true, targetYear),
-                apiGet('/leads')
+                apiGet('/leads'),
+                fetchExpenseYears()
             ]);
             setExpenses(exp);
             setLeads(lds.leads || []);
+            if (yrs.length > 0) {
+                setAvailableYears(yrs);
+                // If current year is empty but we have other years, and this is the first load
+                if (exp.length === 0 && targetYear === new Date().getFullYear() && yrs.includes(yrs[0])) {
+                   // We don't auto-switch yet, but we'll let the user know or they can use the dropdown
+                }
+            }
         } catch (e) { console.error(e); }
         finally { setLoading(false); }
     };
 
     useEffect(() => {
-        fetchExpenseYears().then(yrs => { if (yrs.length > 0) setAvailableYears(yrs); });
+        // Initial load should try to find the best starting year
+        fetchExpenseYears().then(yrs => {
+            if (yrs.length > 0) {
+                setAvailableYears(yrs);
+                const latest = yrs[0];
+                if (latest !== selectedYear) {
+                    setSelectedYear(latest);
+                } else {
+                    loadData(latest);
+                }
+            } else {
+                loadData(selectedYear);
+            }
+        });
     }, []);
 
     useEffect(() => {
@@ -97,11 +118,11 @@ export default function Dashboard({ apiStatus }) {
     }, [operationalExpenses, availableYears]);
 
     const filtered = useMemo(() => {
-        // Since loadData already fetches the specific year, we don't need to filter by startswith(selectedYear)
-        // unless we want to be doubly sure. Let's make it more robust.
+        // Double check formatting to ensure matches
+        const yearStr = String(selectedYear);
         let rows = operationalExpenses.filter(r => {
             if (!r.expense_date) return false;
-            return r.expense_date.includes(String(selectedYear));
+            return r.expense_date.includes(yearStr);
         });
         if (search) {
             const q = search.toLowerCase();
@@ -470,7 +491,7 @@ export default function Dashboard({ apiStatus }) {
             </div>
 
             {/* ── Studio Intelligence: Runway & Forecast ── */}
-            <div className="card glass glow-blue" style={{ padding: '24px 30px', border: 'none', margin: 0, background: 'linear-gradient(135deg, rgba(47, 107, 255, 0.08) 0%, transparent 100%)' }}>
+            <div className="card glass glow-blue" style={{ display: 'block', width: '100%', padding: '24px 30px', border: 'none', margin: '0 0 20px 0', background: 'linear-gradient(135deg, rgba(47, 107, 255, 0.08) 0%, transparent 100%)', minHeight: '180px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '30px' }}>
                     <div style={{ flex: '1', minWidth: '300px' }}>
                         <h2 style={{ margin: '0 0 4px 0', fontSize: '1.2rem', fontWeight: 900, letterSpacing: '0.02em', color: '#fff' }}>STUDIO INTELLIGENCE</h2>

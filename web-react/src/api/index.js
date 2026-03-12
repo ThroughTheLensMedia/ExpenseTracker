@@ -83,22 +83,27 @@ export async function fetchAllExpenses(force = false, year = null) {
     // Simple per-year cache mapping could be added, but for now let's just use the global cache
     // or invalidate if year changes. For simplicity, we'll just allow passing year to the API.
     
-    const PAGE = 2000;
+    const PAGE = 1000; // Use 1000 to match standard Supabase/PostgREST defaults for safety
     let offset = 0;
     let allRows = [];
     
-    const queryParams = [`limit=${PAGE}`];
-    if (year) {
-        queryParams.push(`start=${year}-01-01`);
-        queryParams.push(`end=${year}-12-31`);
-    }
-
     while (true) {
-        const data = await apiGet(`/expenses?${queryParams.join('&')}&offset=${offset}`);
+        const queryParams = [`limit=${PAGE}`, `offset=${offset}`];
+        if (year) {
+            queryParams.push(`start=${year}-01-01`);
+            queryParams.push(`end=${year}-12-31`);
+        }
+        
+        const data = await apiGet(`/expenses?${queryParams.join('&')}`);
         const rows = data.rows || [];
         allRows = allRows.concat(rows);
-        if (rows.length < PAGE) break;
-        offset += PAGE;
+        
+        // Continue if we got a full page
+        if (rows.length === PAGE) {
+            offset += PAGE;
+        } else {
+            break;
+        }
     }
 
     return allRows;
