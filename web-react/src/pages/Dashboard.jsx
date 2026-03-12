@@ -10,7 +10,9 @@ import {
     LineElement,
     Title,
     Tooltip,
-    Legend
+    Legend,
+    ArcElement,
+    Filler
 } from 'chart.js';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import { useModal } from '../components/ModalContext.jsx';
@@ -23,7 +25,9 @@ ChartJS.register(
     LineElement,
     Title,
     Tooltip,
-    Legend
+    Legend,
+    ArcElement,
+    Filler
 );
 
 export default function Dashboard() {
