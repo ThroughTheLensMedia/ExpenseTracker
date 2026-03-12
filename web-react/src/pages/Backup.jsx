@@ -51,7 +51,9 @@ export default function Backup() {
         invoice_notes: '',
         signature_text: '',
         standard_terms: '',
-        payment_methods: ''
+        payment_methods: '',
+        entity_type: 'Sole Proprietorship',
+        naics_code: '711510'
     });
 
     const loadData = async (silent = false) => {
@@ -377,6 +379,22 @@ export default function Backup() {
                                 <small className="muted" style={{ fontWeight: 900 }}>STUDIO TAX ID (EIN/VAT)</small>
                                 <input value={settings.tax_id || ''} onChange={e => setSettings({ ...settings, tax_id: e.target.value })} placeholder="XX-XXXXXXX" style={{ marginTop: '8px', padding: '15px' }} />
                                 <div className="muted small" style={{ marginTop: '8px' }}>Shows up on professional tax invoices.</div>
+                            </div>
+                            <div>
+                                <small className="muted" style={{ fontWeight: 900 }}>IRS ENTITY TYPE</small>
+                                <select value={settings.entity_type || 'Sole Proprietorship'} onChange={e => setSettings({ ...settings, entity_type: e.target.value })} style={{ marginTop: '8px', padding: '15px', color: 'white', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', width: '100%' }}>
+                                    <option value="Sole Proprietorship">Sole Proprietorship</option>
+                                    <option value="LLC (Single Member)">LLC (Single Member)</option>
+                                    <option value="LLC (Multi Member)">LLC (Multi Member)</option>
+                                    <option value="S-Corp">S-Corp</option>
+                                    <option value="C-Corp">C-Corp</option>
+                                    <option value="Partnership">Partnership</option>
+                                </select>
+                            </div>
+                            <div>
+                                <small className="muted" style={{ fontWeight: 900 }}>IRS BUSINESS CODE (NAICS)</small>
+                                <input value={settings.naics_code || '711510'} onChange={e => setSettings({ ...settings, naics_code: e.target.value })} placeholder="711510" style={{ marginTop: '8px', padding: '15px' }} />
+                                <div className="muted small" style={{ marginTop: '8px' }}>Standard code for photographers is 711510.</div>
                             </div>
                             <div style={{ gridColumn: 'span 2' }}>
                                 <small className="muted" style={{ fontWeight: 900 }}>GLOBAL INVOICE NOTES</small>

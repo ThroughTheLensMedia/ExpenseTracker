@@ -4,6 +4,7 @@ import TransactionDrawer from '../components/TransactionDrawer';
 import { useModal } from '../components/ModalContext.jsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { useAuth } from '../components/AuthContext';
 
 const SCHEDULE_C_MAPPING = {
     'Advertising': 'Line 8',
@@ -52,6 +53,7 @@ const IRS_GUIDELINES = {
 // IRS rates are loaded from the DB (mileage_rates table) – no more hardcoding!
 
 export default function Tax() {
+    const { settings } = useAuth();
     const [expenses, setExpenses] = useState([]);
     const [selectedYear, setSelectedYear] = useState(2025);
     const modal = useModal();
@@ -359,7 +361,9 @@ export default function Tax() {
                 }}>
                     <div>
                         <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 950, letterSpacing: '-0.01em' }}>Schedule C Business Summary</h2>
-                        <div className="muted small" style={{ marginTop: '4px', fontWeight: 600 }}>Photography Studio · Sole Proprietorship · Business Code 711510</div>
+                        <div className="muted small" style={{ marginTop: '4px', fontWeight: 600 }}>
+                            {settings?.business_name || 'Photography Studio'} · {settings?.entity_type || 'Sole Proprietorship'} · Business Code {settings?.naics_code || '711510'}
+                        </div>
                     </div>
 
                     <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
