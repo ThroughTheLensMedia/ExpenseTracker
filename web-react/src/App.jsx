@@ -123,7 +123,7 @@ function AppContent() {
             EXTEND ACCESS
           </button>
         </div>
-      )}      <header ref={menuRef} className="card glass" style={{ border: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '24px 30px', position: 'sticky', top: '15px', zIndex: 1000, margin: '15px', cursor: 'default' }}>
+      )}      <header ref={menuRef} className="card glass" style={{ border: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '24px 30px', position: 'sticky', top: '15px', zIndex: 1000, margin: '15px auto', maxWidth: '1400px', cursor: 'default' }}>
         {/* Left Side: Brand */}
         <div style={{ flex: '1', display: 'flex', alignItems: 'center' }}>
           <div className="title" style={{ fontSize: '1.2rem', fontWeight: 950, letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>STUDIO TRACKER</div>

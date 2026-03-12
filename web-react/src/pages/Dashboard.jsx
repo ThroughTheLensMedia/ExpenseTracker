@@ -47,6 +47,7 @@ export default function Dashboard({ apiStatus }) {
     // PWA Mobile States
     const [snapLoading, setSnapLoading] = useState(false);
     const [snapSuccess, setSnapSuccess] = useState(false);
+    const [importReminderDays, setImportReminderDays] = useState(() => Number(localStorage.getItem('studio_import_reminder') || 7));
     const fileInputRef = useRef(null);
 
     const loadData = async (targetYear = selectedYear) => {
@@ -71,6 +72,10 @@ export default function Dashboard({ apiStatus }) {
     }, [startingCash]);
 
     useEffect(() => {
+        localStorage.setItem('studio_import_reminder', importReminderDays);
+    }, [importReminderDays]);
+
+    useEffect(() => {
         loadData(selectedYear);
     }, [selectedYear]);
 
@@ -92,25 +97,37 @@ export default function Dashboard({ apiStatus }) {
     }, [operationalExpenses, availableYears]);
 
     const filtered = useMemo(() => {
-        let rows = operationalExpenses.filter(r => String(r.expense_date || '').startsWith(String(selectedYear)));
+        // Since loadData already fetches the specific year, we don't need to filter by startswith(selectedYear)
+        // unless we want to be doubly sure. Let's make it more robust.
+        let rows = operationalExpenses.filter(r => {
+            if (!r.expense_date) return false;
+            return r.expense_date.includes(String(selectedYear));
+        });
         if (search) {
             const q = search.toLowerCase();
             rows = rows.filter(r => `${r.vendor} ${r.category} ${r.notes}`.toLowerCase().includes(q));
         }
         return rows;
-    }, [expenses, selectedYear, search]);
+    }, [operationalExpenses, selectedYear, search]);
 
     const stats = useMemo(() => {
         let income = 0, spend = 0, missing = 0;
         const byCat = new Map();
         const monthlyData = Array(12).fill().map(() => ({ income: 0, expense: 0 }));
-
+        let lastImportDate = null;
         for (const r of filtered) {
             const cents = Number(r.amount_cents || 0);
             const isIncome = cents < 0;
             if (isIncome) income += Math.abs(cents); else spend += cents;
 
             if (cents > 7500 && !r.receipt_link) missing++;
+
+            // Track last bank import
+            if (r.source && r.source !== 'manual' && r.expense_date) {
+                if (!lastImportDate || r.expense_date > lastImportDate) {
+                    lastImportDate = r.expense_date;
+                }
+            }
 
             const monthIndex = parseInt(String(r.expense_date).slice(5, 7), 10) - 1;
             if (monthIndex >= 0 && monthIndex <= 11) {
@@ -125,7 +142,12 @@ export default function Dashboard({ apiStatus }) {
                 byCat.set(c, cPrev);
             }
         }
-        return { income, spend, net: income - spend, missing, topCats: [...byCat.entries()].sort((a, b) => b[1].cents - a[1].cents).slice(0, 10), monthlyData };
+        return { 
+            income, spend, net: income - spend, missing, 
+            topCats: [...byCat.entries()].sort((a, b) => b[1].cents - a[1].cents).slice(0, 10), 
+            monthlyData,
+            lastImportDate
+        };
     }, [filtered]);
 
     // Trendline & Projection Calculation
@@ -273,8 +295,8 @@ export default function Dashboard({ apiStatus }) {
         });
 
         const totalLiquidity = (startingCash * 100) + weightedValue;
-        const burnPerMonth = avgMonthlyBurn || 1; // don't div by 0
-        const monthsRunway = (totalLiquidity / burnPerMonth).toFixed(1);
+        const burnPerMonth = avgMonthlyBurn > 100 ? avgMonthlyBurn : 0; // Ignore tiny/zero burn for runway
+        const monthsRunway = burnPerMonth > 0 ? (totalLiquidity / burnPerMonth).toFixed(1) : '∞';
 
         return {
             weightedValue,
@@ -470,20 +492,38 @@ export default function Dashboard({ apiStatus }) {
                         </div>
                     </div>
 
-                    <div style={{ background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '16px', minWidth: '280px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div style={{ background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '16px', minWidth: '320px', border: '1px solid rgba(255,255,255,0.05)' }}>
                         <h4 style={{ margin: '0 0 15px 0', fontSize: '11px', fontWeight: 900, opacity: 0.8 }}>FORECAST CONTROLS</h4>
                         
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                             <div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                                     <small className="muted" style={{ fontWeight: 800, fontSize: '10px' }}>CURRENT LIQUIDITY</small>
-                                    <span style={{ fontWeight: 900, fontSize: '12px', color: '#6366f1' }}>{formatMoney(startingCash * 100)}</span>
+                                    <div style={{ position: 'relative', width: '120px' }}>
+                                        <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '12px', fontWeight: 900, color: '#6366f1' }}>$</span>
+                                        <input 
+                                            type="number" 
+                                            value={startingCash} 
+                                            onChange={e => setStartingCash(Number(e.target.value))}
+                                            style={{ 
+                                                width: '100%', 
+                                                padding: '6px 6px 6px 20px', 
+                                                fontSize: '13px', 
+                                                fontWeight: 900, 
+                                                background: 'rgba(255,255,255,0.05)', 
+                                                border: '1px solid rgba(99, 102, 241, 0.3)', 
+                                                borderRadius: '8px',
+                                                color: '#fff',
+                                                outline: 'none'
+                                            }}
+                                        />
+                                    </div>
                                 </div>
                                 <input 
-                                    type="range" min="0" max="100000" step="500"
+                                    type="range" min="0" max="250000" step="1000"
                                     value={startingCash} 
                                     onChange={e => setStartingCash(Number(e.target.value))}
-                                    style={{ width: '100%', accentColor: '#2f6bff', height: '4px' }}
+                                    style={{ width: '100%', accentColor: '#6366f1', height: '4px', cursor: 'pointer' }}
                                 />
                             </div>
 
@@ -496,19 +536,47 @@ export default function Dashboard({ apiStatus }) {
                                             onChange={e => setWeights({...weights, [k]: Number(e.target.value)})}
                                             style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: '6px', padding: '6px', fontSize: '10px', fontWeight: 900 }}
                                         >
-                                            <option value="0.1">10%</option>
-                                            <option value="0.25">25%</option>
-                                            <option value="0.4">40%</option>
-                                            <option value="0.6">60%</option>
-                                            <option value="0.75">75%</option>
-                                            <option value="0.9">90%</option>
+                                            {[0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0].map(v => (
+                                                <option key={v} value={v}>{(v * 100).toFixed(0)}%</option>
+                                            ))}
                                         </select>
                                     </div>
                                 ))}
                             </div>
+
+                            <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '15px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <small className="muted" style={{ fontWeight: 800, fontSize: '9px' }}>DATA FRESHNESS REMINDER</small>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <input 
+                                            type="number" 
+                                            value={importReminderDays} 
+                                            onChange={e => setImportReminderDays(Number(e.target.value))}
+                                            style={{ width: '40px', padding: '4px', fontSize: '11px', background: 'rgba(255,255,255,0.05)', border: 'none', color: '#fff', borderRadius: '4px', textAlign: 'center' }}
+                                        />
+                                        <span className="muted" style={{ fontSize: '9px', fontWeight: 800 }}>DAYS</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
+                
+                {stats.lastImportDate && (
+                    <div style={{ marginTop: '20px', borderTop: '1px dotted rgba(255,255,255,0.1)', paddingTop: '15px', display: 'flex', justifyContent: 'flex-start', gap: '30px' }}>
+                        <div>
+                            <small className="muted" style={{ fontWeight: 900, fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Last Ledger Sync</small>
+                            <div style={{ fontSize: '13px', fontWeight: 800, color: (Date.now() - new Date(stats.lastImportDate)) / (1000*3600*24) > importReminderDays ? '#f59e0b' : '#4ade80', marginTop: '4px' }}>
+                                {stats.lastImportDate} ({(Math.floor((Date.now() - new Date(stats.lastImportDate)) / (1000*3600*24)))} days ago)
+                            </div>
+                        </div>
+                        {(Date.now() - new Date(stats.lastImportDate)) / (1000*3600*24) > importReminderDays && (
+                            <div className="btn secondary" onClick={() => navigate('/import')} style={{ fontSize: '10px', padding: '5px 12px', borderRadius: '8px', color: '#f59e0b', borderColor: 'rgba(245, 158, 11, 0.3)' }}>
+                                🔄 REFRESH LEDGER DATA
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* ── Key Performance Indicators (KPIs) ── */}
@@ -549,7 +617,7 @@ export default function Dashboard({ apiStatus }) {
                             <div className="muted" style={{ fontSize: '11px', marginTop: '4px' }}>MoM Revenue vs COGS Analysis</div>
                         </div>
                     </div>
-                    <div style={{ flex: 1, position: 'relative', minHeight: '0' }}>
+                    <div style={{ flex: 1, position: 'relative', minHeight: '300px', width: '100%', overflow: 'hidden' }}>
                         <Bar data={barChartData} options={{
                             responsive: true, maintainAspectRatio: false,
                             plugins: {
