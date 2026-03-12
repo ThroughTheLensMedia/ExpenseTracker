@@ -18,7 +18,7 @@ function getResend() {
     return resendClient;
 }
 
-async function sendInvoiceEmail({ to, subject, body, attachmentUrl }) {
+async function sendInvoiceEmail({ to, subject, body, attachments }) {
     console.log(`[MAILER] Preparing email to ${to}...`);
     console.log(`[MAILER] Subject: ${subject}`);
 
@@ -30,12 +30,22 @@ async function sendInvoiceEmail({ to, subject, body, attachmentUrl }) {
 
     try {
         const fromEmail = process.env.RESEND_FROM || 'Through The Lens Media <billing@throughthelens.media>';
-        const data = await resend.emails.send({
+        
+        const payload = {
             from: fromEmail,
             to: [to],
             subject: subject,
-            html: body,
-        });
+            html: body
+        };
+
+        if (attachments && Array.isArray(attachments)) {
+            payload.attachments = attachments.map(a => ({
+                filename: a.filename || 'attachment.pdf',
+                content: a.content // Assuming base64 or buffer
+            }));
+        }
+
+        const data = await resend.emails.send(payload);
         console.log("[MAILER] Email dispatched successfully:", data);
         return { success: true, data };
     } catch (error) {

@@ -34,7 +34,7 @@ function InvoiceItemRow({ item, index, onChange, onRemove }) {
     );
 }
 
-function InvoicePreview({ invoice, settings = {}, onClose }) {
+function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
     const previewRef = useRef();
 
     // Data Normalization: Handle both API structure and Draft State structure
@@ -90,6 +90,29 @@ function InvoicePreview({ invoice, settings = {}, onClose }) {
         pdf.save(`Invoice_${data.number}.pdf`);
     };
 
+    const handleSendWithPDF = async () => {
+        if (!onSendEmail) return;
+        setLoading(true);
+        try {
+            const element = previewRef.current;
+            const canvas = await html2canvas(element, { scale: 3, useCORS: true });
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            
+            // Generate Base64 for attachment
+            const pdfBase64 = pdf.output('datauristring').split(',')[1];
+            await onSendEmail(invoice, pdfBase64);
+        } catch (err) {
+            console.error("PDF Send Error:", err);
+            alert("Failed to package PDF for email.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const formatDate = (d) => {
         if (!d) return '---';
         const date = new Date(d);
@@ -102,7 +125,12 @@ function InvoicePreview({ invoice, settings = {}, onClose }) {
                 <div style={{ padding: '20px 40px', background: '#111', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 10 }}>
                     <h3 style={{ margin: 0, color: '#fff', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px', fontSize: '13px' }}>Executive Snapshot</h3>
                     <div style={{ display: 'flex', gap: '12px' }}>
-                        <button className="btn glow-blue" onClick={handleDownloadPDF} style={{ padding: '10px 24px' }}>Capture PDF Assets</button>
+                        {(invoice.status === 'draft' || invoice.status === 'sent') && (
+                            <button className="btn glow-blue" onClick={handleSendWithPDF} disabled={loading} style={{ padding: '10px 24px' }}>
+                                {loading ? '⏳ Preparing PDF...' : 'Email to Client'}
+                            </button>
+                        )}
+                        <button className="btn secondary" onClick={handleDownloadPDF} style={{ padding: '10px 24px', color: '#fff' }}>Capture PDF Assets</button>
                         <button className="btn secondary" onClick={onClose} style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.2)' }}>Return to Studio</button>
                     </div>
                 </div>
@@ -529,15 +557,21 @@ export default function Invoice() {
         }
     };
 
-    const handleSendEmail = async (invoice) => {
+    const handleSendEmail = async (invoice, pdfBase64 = null) => {
         if (!confirm(`Are you sure you want to officially dispatch Invoice #${invoice.invoice_number} to ${invoice.clients?.name || 'the client'}?`)) return;
         
         setSendingId(invoice.id);
         setStatusMsg(null);
         try {
-            await apiPatch(`/invoices/${invoice.id}`, { status: 'sent' });
+            await apiPatch(`/invoices/${invoice.id}`, { 
+                status: 'sent',
+                pdf_base64: pdfBase64 // Send generated PDF if available
+            });
             await load();
             setStatusMsg({ type: 'ok', text: `Success! Invoice #${invoice.invoice_number} has been dispatched.` });
+            if (pdfBase64) {
+                setPreviewingInvoice(null); // Close preview if sending from there
+            }
             alert(`Voice of the Studio: Invoice #${invoice.invoice_number} dispatched successfully!`);
         } catch (err) {
             console.error("Email failed", err);
@@ -828,7 +862,12 @@ export default function Invoice() {
                 </div>
             )}
 
-            {previewingInvoice && <InvoicePreview invoice={previewingInvoice} settings={settings} onClose={() => setPreviewingInvoice(null)} />}
+            {previewingInvoice && <InvoicePreview 
+                invoice={previewingInvoice} 
+                settings={settings} 
+                onClose={() => setPreviewingInvoice(null)} 
+                onSendEmail={handleSendEmail}
+            />}
 
         </section>
     );

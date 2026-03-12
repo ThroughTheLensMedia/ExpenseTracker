@@ -142,11 +142,20 @@ router.patch("/:id", async (req, res) => {
 
         // 3. Trigger Email if status changed to 'sent'
         if (invoiceData.status === 'sent') {
-            const { data: fullInvoice } = await supabase
-                .from("invoices")
-                .select("*, clients(*), invoice_items(*)")
-                .eq("id", req.params.id)
-                .single();
+            const [{ data: fullInvoice }, { data: settings }] = await Promise.all([
+                supabase
+                    .from("invoices")
+                    .select("*, clients(*), invoice_items(*)")
+                    .eq("id", req.params.id)
+                    .single(),
+                supabase
+                    .from("settings")
+                    .select("business_name")
+                    .limit(1)
+                    .maybeSingle()
+            ]);
+
+            const studioName = settings?.business_name || 'Through The Lens Media';
 
             if (fullInvoice && fullInvoice.clients?.email) {
                 const subtotal = (fullInvoice.invoice_items || []).reduce((s, it) => s + (it.unit_price_cents * it.quantity), 0);
@@ -155,23 +164,32 @@ router.patch("/:id", async (req, res) => {
                 const discountAmount = Math.round(subtotal * (discountPercent / 100));
                 const total = (subtotal + tax - discountAmount) / 100;
 
+                const emailAttachments = [];
+                if (req.body.pdf_base64) {
+                    emailAttachments.push({
+                        filename: `Invoice_${fullInvoice.invoice_number}.pdf`,
+                        content: req.body.pdf_base64
+                    });
+                }
+
                 const result = await sendInvoiceEmail({
                     to: fullInvoice.clients.email,
-                    subject: `Invoice #${fullInvoice.invoice_number} from Through The Lens Media`,
+                    subject: `Invoice #${fullInvoice.invoice_number} from ${studioName}`,
                     body: `
                         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 12px;">
                             <h2 style="color: #f97316;">Invoice #${fullInvoice.invoice_number}</h2>
                             <p>Hi ${fullInvoice.clients.name},</p>
-                            <p>Your invoice from <strong>Through The Lens Media</strong> is ready for review.</p>
+                            <p>Your invoice from <strong>${studioName}</strong> is ready for review.</p>
                             <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
                             <div style="font-size: 24px; font-weight: bold; margin-bottom: 20px;">
                                 Total Due: $${total.toFixed(2)}
                             </div>
-                            <p>Please review the details and arrange for payment at your earliest convenience. Thank you!</p>
+                            <p>Please review the attached PDF for details and arrange for payment at your earliest convenience. Thank you!</p>
                             <br>
-                            <p style="color: #666; font-size: 12px;">This is an automated delivery from the Studio Control Center.</p>
+                            <p style="color: #666; font-size: 12px;">This is an automated delivery from ${studioName}.</p>
                         </div>
-                    `
+                    `,
+                    attachments: emailAttachments
                 });
                 if (!result.success) {
                     throw new Error(`Email failed: ${result.error}`);
