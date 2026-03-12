@@ -112,34 +112,34 @@ function AppContent() {
         </div>
       )}
 
-      <header className="glass desktop-only" style={{ border: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 30px' }}>
+      <header className="glass desktop-only" style={{ border: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 30px', height: '80px' }}>
         {/* Left Side: Brand */}
-        <div style={{ flex: '1 0 200px', display: 'flex', alignItems: 'center' }}>
-          <div className="title" style={{ fontSize: '1.2rem', fontWeight: 900, letterSpacing: '-0.02em' }}>Studio Tracker</div>
+        <div style={{ flex: '1', display: 'flex', alignItems: 'center', minWidth: '200px' }}>
+          <div className="title" style={{ fontSize: '1.2rem', fontWeight: 900, letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>Studio Tracker</div>
         </div>
 
         {/* Center: Primary Navigation */}
-        <div style={{ flex: '2', display: 'flex', justifyContent: 'center' }}>
-          <div className="nav" style={{ display: 'flex', gap: '8px' }}>
-            <NavLink to="/" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`} end>Dashboard</NavLink>
-            <NavLink to="/transactions" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Transactions</NavLink>
-            <NavLink to="/tax" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Tax</NavLink>
-            <NavLink to="/equipment" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Equipment</NavLink>
-            <NavLink to="/crm" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>CRM</NavLink>
-            <NavLink to="/backup" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>SCC Console</NavLink>
+        <div style={{ flex: '2', display: 'flex', justifyContent: 'center', minWidth: '0' }}>
+          <div className="nav" style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.03)', padding: '5px', borderRadius: '12px', whiteSpace: 'nowrap' }}>
+            <NavLink to="/" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`} style={{ padding: '8px 12px', fontSize: '12px' }} end>Dashboard</NavLink>
+            <NavLink to="/transactions" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`} style={{ padding: '8px 12px', fontSize: '12px' }}>Transactions</NavLink>
+            <NavLink to="/tax" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`} style={{ padding: '8px 12px', fontSize: '12px' }}>Tax</NavLink>
+            <NavLink to="/equipment" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`} style={{ padding: '8px 12px', fontSize: '12px' }}>Equipment</NavLink>
+            <NavLink to="/crm" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`} style={{ padding: '8px 12px', fontSize: '12px' }}>CRM</NavLink>
+            <NavLink to="/backup" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`} style={{ padding: '8px 12px', fontSize: '12px' }}>SCC Console</NavLink>
           </div>
         </div>
 
         {/* Right Side: Identity & Actions */}
-        <div style={{ flex: '1 0 200px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '20px' }}>
+        <div style={{ flex: '1', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '15px', minWidth: '240px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
-              <span className="muted" style={{ fontWeight: 900, fontSize: '12px', color: 'white' }}>{identityName}</span>
-              <span style={{ fontSize: '10px', color: daysLeft <= 7 ? '#f59e0b' : '#10b981', fontWeight: 800, letterSpacing: '0.02em' }}>
+              <span className="muted" style={{ fontWeight: 950, fontSize: '11px', color: 'white', whiteSpace: 'nowrap' }}>{identityName}</span>
+              <span style={{ fontSize: '9px', color: daysLeft <= 7 ? '#f59e0b' : '#10b981', fontWeight: 800, letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
                 {subscription?.plan_type?.toUpperCase() || 'PRO'} ACCESS 
                 {daysLeft !== null && ` • ${daysLeft}D LEFT`}
               </span>
             </div>
-            <button onClick={logout} className="btn sm secondary" style={{ fontSize: '10px', padding: '6px 12px' }}>LOGOUT</button>
+            <button onClick={logout} className="btn sm secondary" style={{ fontSize: '10px', padding: '6px 12px', borderRadius: '8px', fontWeight: 900 }}>LOGOUT</button>
         </div>
       </header>
 

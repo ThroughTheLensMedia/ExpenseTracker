@@ -3,14 +3,19 @@ import { useAuth } from '../components/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 export default function Login() {
+  const navigate = useNavigate();
+  const { login, signup } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('');
+
+  // Auto-fill from URL
+  const params = new URLSearchParams(window.location.search);
+  
+  const [email, setEmail] = useState(params.get('email') || '');
   const [password, setPassword] = useState('');
+  const [betaCode, setBetaCode] = useState(params.get('code') || '');
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const { login, signup } = useAuth();
-  const navigate = useNavigate();
-
   const [success, setSuccess] = useState(null);
 
   const handleSubmit = async (e) => {
@@ -21,13 +26,13 @@ export default function Login() {
     try {
       if (isLogin) {
         await login(email, password);
+        navigate('/');
       } else {
+        if (!betaCode) throw new Error("A valid Beta Code is required to create an account.");
         await signup(email, password);
-        setSuccess("Studio account created! Please check your email for a confirmation link.");
+        setSuccess("Studio account created! Check your email to confirm, then use your code to activate.");
         setIsLogin(true);
-        return;
       }
-      navigate('/');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -74,6 +79,21 @@ export default function Login() {
               required
             />
           </div>
+
+          {!isLogin && (
+            <div style={{ textAlign: 'left' }}>
+              <label className="muted" style={{ fontSize: '12px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--accent)' }}>Studio Invite Code</label>
+              <input 
+                type="text" 
+                value={betaCode} 
+                onChange={(e) => setBetaCode(e.target.value.toUpperCase())} 
+                placeholder=" ENTER YOUR 8-DIGIT CODE"
+                style={{ marginTop: '8px', width: '100%', borderColor: 'var(--accent)', fontWeight: 900, letterSpacing: '0.1em' }}
+                required
+              />
+              <div className="muted small" style={{ marginTop: '8px', fontSize: '10px' }}>Exclusive access code required. Check your invitation email.</div>
+            </div>
+          )}
 
           <div style={{ textAlign: 'left' }}>
             <label className="muted" style={{ fontSize: '12px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Password</label>

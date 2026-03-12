@@ -130,6 +130,11 @@ export default function Backup() {
                 assigned_to_name: inviteName,
                 assigned_to_email: inviteEmail
             });
+            if (inviteEmail) {
+                modal.alert(`Success! 90-day invite created and emailed to ${inviteEmail}.`);
+            } else {
+                modal.alert(`Success! Invite code ${inviteName ? 'for ' + inviteName : ''} created.`);
+            }
             setInviteName('');
             setInviteEmail('');
             loadData(true);

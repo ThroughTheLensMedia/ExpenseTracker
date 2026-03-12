@@ -135,16 +135,20 @@ router.post("/subscriptions/:userId/suspend", async (req, res) => {
 
 // POST /admin/beta-codes
 // Generate a new code: { code, daysValid, assigned_to_name, assigned_to_email }
+const { sendInviteEmail } = require("../utils/mailer");
+
 router.post("/beta-codes", async (req, res) => {
     try {
-        const { code, daysValid = 30, assigned_to_name, assigned_to_email } = req.body;
+        const { code, daysValid = 90, assigned_to_name, assigned_to_email } = req.body;
         const validUntil = new Date();
-        validUntil.setDate(validUntil.getDate() + daysValid);
+        validUntil.setDate(validUntil.getDate() + (daysValid || 90));
+
+        const newCode = code || Math.random().toString(36).substring(2, 10).toUpperCase();
 
         const { data, error } = await req.sb
             .from('beta_codes')
             .insert({
-                code: code || Math.random().toString(36).substring(2, 10).toUpperCase(),
+                code: newCode,
                 valid_until: validUntil.toISOString(),
                 assigned_to_name,
                 assigned_to_email
@@ -153,6 +157,16 @@ router.post("/beta-codes", async (req, res) => {
             .single();
 
         if (error) throw error;
+
+        // Auto-send invite email if email is provided
+        if (assigned_to_email) {
+            await sendInviteEmail({
+                to: assigned_to_email,
+                name: assigned_to_name,
+                code: newCode
+            }).catch(e => console.error("Auto-invite email failed:", e));
+        }
+
         res.json(data);
     } catch (e) {
         res.status(400).json({ error: e.message });
