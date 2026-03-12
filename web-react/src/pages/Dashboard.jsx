@@ -772,14 +772,18 @@ export default function Dashboard() {
                         </div>
                     </div>
                     <div style={{ flex: 1, position: 'relative' }}>
-                        <Line data={trendChartData} options={{
-                            responsive: true, maintainAspectRatio: false,
-                            plugins: { legend: { position: 'top', align: 'end' } },
-                            scales: {
-                                y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { callback: v => '$' + (v / 1000) + 'k' } },
-                                x: { grid: { display: false } }
-                            }
-                        }} />
+                        {trendChartData ? (
+                            <Line data={trendChartData} options={{
+                                responsive: true, maintainAspectRatio: false,
+                                plugins: { legend: { position: 'top', align: 'end' } },
+                                scales: {
+                                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { callback: v => '$' + (v / 1000) + 'k' } },
+                                    x: { grid: { display: false } }
+                                }
+                            }} />
+                        ) : (
+                            <div className="muted center" style={{ paddingTop: '100px', fontSize: '12px' }}>Insufficient Historical Data for Projection</div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -795,11 +799,15 @@ export default function Dashboard() {
                 <div className="card glass" style={{ padding: '20px' }}>
                     <h3 style={{ fontSize: '1rem', margin: '0 0 15px 0' }}>Capital Allocation</h3>
                     <div style={{ height: '250px', position: 'relative' }}>
-                        <Doughnut data={{
-                                labels: stats.topCats.map(c => c[0]),
-                                datasets: [{ data: stats.topCats.map(c => c[1].cents / 100), backgroundColor: chartColors, borderWidth: 0 }]
-                            }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }} 
-                        />
+                        {stats.topCats.length > 0 ? (
+                            <Doughnut data={{
+                                    labels: stats.topCats.map(c => c[0]),
+                                    datasets: [{ data: stats.topCats.map(c => c[1].cents / 100), backgroundColor: chartColors, borderWidth: 0 }]
+                                }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }} 
+                            />
+                        ) : (
+                            <div className="muted center" style={{ paddingTop: '80px', fontSize: '12px' }}>Insufficient Data</div>
+                        )}
                     </div>
                 </div>
             </div>
