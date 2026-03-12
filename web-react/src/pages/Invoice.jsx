@@ -637,21 +637,21 @@ export default function Invoice() {
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginTop: '30px' }}>
-                    <div className="stat glass" style={{ borderTop: '4px solid #4ade80' }}>
+                    <div className="stat glass" style={{ borderTop: '4px solid #4ade80', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
                         <div className="muted small" style={{ fontWeight: 800 }}>PENDING REVENUE</div>
-                        <div style={{ fontSize: '2rem', fontWeight: 950, color: '#4ade80', marginTop: '8px' }}>{formatMoney(receivables)}</div>
+                        <div style={{ fontSize: '2.4rem', fontWeight: 950, color: '#4ade80', marginTop: '8px' }}>{formatMoney(receivables)}</div>
                     </div>
-                    <div className="stat glass" style={{ borderTop: '4px solid #38bdf8' }}>
+                    <div className="stat glass" style={{ borderTop: '4px solid #38bdf8', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
                         <div className="muted small" style={{ fontWeight: 800 }}>TOTAL INVOICED</div>
-                        <div style={{ fontSize: '2rem', fontWeight: 950, marginTop: '8px' }}>{invoices.length}</div>
+                        <div style={{ fontSize: '2.4rem', fontWeight: 950, marginTop: '8px' }}>{invoices.length}</div>
                     </div>
-                    <div className="stat glass" style={{ borderTop: '4px solid #fbbf24' }}>
+                    <div className="stat glass" style={{ borderTop: '4px solid #fbbf24', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
                         <div className="muted small" style={{ fontWeight: 800 }}>REVIEW QUEUE</div>
-                        <div style={{ fontSize: '2rem', fontWeight: 950, color: '#fbbf24', marginTop: '8px' }}>{draftCount} Drafts</div>
+                        <div style={{ fontSize: '2.4rem', fontWeight: 950, color: '#fbbf24', marginTop: '8px' }}>{draftCount} Drafts</div>
                     </div>
-                    <div className="stat glass" style={{ borderTop: `2px solid ${BRAND_ORANGE}` }}>
+                    <div className="stat glass" style={{ borderTop: `2px solid ${BRAND_ORANGE}`, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
                         <div className="muted small" style={{ fontWeight: 800 }}>CLIENT BASE</div>
-                        <div style={{ fontSize: '2rem', fontWeight: 950, marginTop: '8px' }}>{clients.length}</div>
+                        <div style={{ fontSize: '2.4rem', fontWeight: 950, marginTop: '8px' }}>{clients.length}</div>
                     </div>
                 </div>
             </div>

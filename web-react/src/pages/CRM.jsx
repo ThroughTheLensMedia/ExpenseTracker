@@ -170,21 +170,21 @@ function PipelineView() {
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginTop: '30px' }}>
-                        <div className="stat glass" style={{ borderTop: '4px solid #38bdf8' }}>
+                        <div className="stat glass" style={{ borderTop: '4px solid #38bdf8', textAlign: 'center', padding: '24px' }}>
                             <div className="muted small" style={{ fontWeight: 800 }}>PIPELINE VALUE</div>
-                            <div style={{ fontSize: '2rem', fontWeight: 950, color: '#38bdf8', marginTop: '8px' }}>{formatMoney(pipelineStats.potential)}</div>
+                            <div style={{ fontSize: '2.4rem', fontWeight: 950, color: '#38bdf8', marginTop: '8px' }}>{formatMoney(pipelineStats.potential)}</div>
                         </div>
-                        <div className="stat glass" style={{ borderTop: '4px solid #a8b6dd' }}>
+                        <div className="stat glass" style={{ borderTop: '4px solid #a8b6dd', textAlign: 'center', padding: '24px' }}>
                             <div className="muted small" style={{ fontWeight: 800 }}>NEW INTEREST</div>
-                            <div style={{ fontSize: '2rem', fontWeight: 950, marginTop: '8px' }}>{activeDraftCount} Leads</div>
+                            <div style={{ fontSize: '2.4rem', fontWeight: 950, marginTop: '8px' }}>{activeDraftCount} Leads</div>
                         </div>
-                        <div className="stat glass" style={{ borderTop: '4px solid #fbbf24' }}>
+                        <div className="stat glass" style={{ borderTop: '4px solid #fbbf24', textAlign: 'center', padding: '24px' }}>
                             <div className="muted small" style={{ fontWeight: 800 }}>BOOKED RATIO</div>
-                            <div style={{ fontSize: '2rem', fontWeight: 950, color: '#fbbf24', marginTop: '8px' }}>{pipelineStats.bookedCount} Projects</div>
+                            <div style={{ fontSize: '2.4rem', fontWeight: 950, color: '#fbbf24', marginTop: '8px' }}>{pipelineStats.bookedCount} Projects</div>
                         </div>
-                        <div className="stat glass" style={{ borderTop: '4px solid #4ade80', cursor: 'pointer' }} onClick={() => setArchiveTarget('Paid')}>
+                        <div className="stat glass" style={{ borderTop: '4px solid #4ade80', cursor: 'pointer', textAlign: 'center', padding: '24px' }} onClick={() => setArchiveTarget('Paid')}>
                             <div className="muted small" style={{ fontWeight: 800 }}>CONVERTED / PAID 👁️</div>
-                            <div style={{ fontSize: '2rem', fontWeight: 950, color: '#4ade80', marginTop: '8px' }}>{archiveStats.Paid.length} Clients</div>
+                            <div style={{ fontSize: '2.4rem', fontWeight: 950, color: '#4ade80', marginTop: '8px' }}>{archiveStats.Paid.length} Clients</div>
                         </div>
                     </div>
                 </div>
@@ -340,12 +340,12 @@ function PipelineView() {
 export default function CRM() {
     return (
         <section className="dashboard">
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '32px' }}>
-                <NavLink to="/crm" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`} end>
-                    Pipeline
+            <div style={{ display: 'flex', gap: '0', marginBottom: '40px', background: 'rgba(255,255,255,0.02)', borderRadius: '20px', padding: '6px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <NavLink to="/crm" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`} style={{ flex: 1, textAlign: 'center', borderRadius: '16px', padding: '16px', fontSize: '15px', border: 'none' }} end>
+                    Lead Pipeline
                 </NavLink>
-                <NavLink to="/crm/financials" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>
-                    Financials
+                <NavLink to="/crm/financials" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`} style={{ flex: 1, textAlign: 'center', borderRadius: '16px', padding: '16px', fontSize: '15px', border: 'none' }}>
+                    Financial Ledger
                 </NavLink>
             </div>
 

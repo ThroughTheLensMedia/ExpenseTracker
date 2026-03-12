@@ -41,7 +41,7 @@ async function sendInvoiceEmail({ to, subject, body, attachments }) {
         if (attachments && Array.isArray(attachments)) {
             payload.attachments = attachments.map(a => ({
                 filename: a.filename || 'attachment.pdf',
-                content: a.content // Assuming base64 or buffer
+                content: Buffer.from(a.content, 'base64')
             }));
         }
 
