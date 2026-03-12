@@ -39,7 +39,6 @@ function InvoicePreview({ invoice, settings = {}, onClose }) {
 
     // Data Normalization: Handle both API structure and Draft State structure
     const data = useMemo(() => {
-        // Defensive check: find which array has the actual data
         const rawSource = (invoice.items && invoice.items.length > 0) ? invoice.items : (invoice.invoice_items || []);
 
         const items = rawSource.map(it => ({
@@ -49,9 +48,19 @@ function InvoicePreview({ invoice, settings = {}, onClose }) {
         }));
 
         const subtotal = items.reduce((s, it) => s + (it.unit_price * it.quantity), 0);
-        const discount = invoice.discount_cents ? (invoice.discount_cents / 100) : (parseFloat(invoice.discount) || 0);
-        const taxVal = Math.round(subtotal * ((invoice.tax_percent || 0) / 100));
-        const total = subtotal + taxVal - discount;
+        // Treat discount as a percentage. 
+        // draft: invoice.discount (the number string)
+        // api: invoice.discount_cents (we store percent * 100)
+        let discountPercent = 0;
+        if (invoice.discount_cents !== undefined) {
+            discountPercent = (invoice.discount_cents / 100);
+        } else {
+            discountPercent = parseFloat(invoice.discount) || 0;
+        }
+
+        const discountAmount = subtotal * (discountPercent / 100);
+        const taxVal = Math.round(subtotal * ((parseFloat(invoice.tax_percent) || 0) / 100));
+        const total = subtotal + taxVal - discountAmount;
 
         return {
             number: invoice.number || invoice.invoice_number || '---',
@@ -63,9 +72,10 @@ function InvoicePreview({ invoice, settings = {}, onClose }) {
             items,
             subtotal,
             taxVal,
-            discount,
+            discount: discountAmount,
+            discountPercent,
             total,
-            tax_percent: invoice.tax_percent || 0
+            tax_percent: invoice.tax_percent
         };
     }, [invoice]);
 
@@ -101,38 +111,25 @@ function InvoicePreview({ invoice, settings = {}, onClose }) {
                     <div ref={previewRef} style={{ background: '#fff', width: '210mm', minWidth: '210mm', minHeight: '297mm', margin: '0 auto', padding: '80px 100px', boxShadow: '0 0 60px rgba(0,0,0,0.15)', position: 'relative', boxSizing: 'border-box' }}>
 
                         {/* HEADER */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '80px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
                             <div>
-                                <h1 style={{ margin: 0, fontSize: '42px', fontWeight: 300, color: '#000', letterSpacing: '4px', textTransform: 'uppercase' }}>INVOICE</h1>
-                                <div style={{ marginTop: '30px', fontSize: '12px', color: '#666', lineHeight: '1.8' }}>
+                                {settings?.logo_url ? (
+                                    <div style={{ width: '280px', height: '140px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', background: '#fff' }}>
+                                        <img src={settings.logo_url} alt="Studio Logo" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                                    </div>
+                                ) : (
+                                    <div style={{ width: '180px', height: '180px', background: '#fafafa', border: '3px solid #000', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+                                        <div style={{ fontSize: '42px' }}>📸</div>
+                                        <div style={{ fontSize: '12px', fontWeight: 950, textTransform: 'uppercase', marginTop: '10px', letterSpacing: '2px' }}>Pure Capture</div>
+                                    </div>
+                                )}
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                                <h1 style={{ margin: 0, fontSize: '38px', fontWeight: 300, color: '#000', letterSpacing: '4px', textTransform: 'uppercase' }}>INVOICE</h1>
+                                <div style={{ marginTop: '10px', fontSize: '12px', color: '#666', lineHeight: '1.6' }}>
                                     {settings?.tax_id && <div>Tax ID: {settings.tax_id}</div>}
                                     {settings?.studio_address && <div style={{ whiteSpace: 'pre-wrap' }}>{settings.studio_address}</div>}
                                 </div>
-                            </div>
-                            <div>
-                                {settings?.logo_url ? (
-                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
-                                        <div style={{ width: '300px', height: '180px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', background: '#fff' }}>
-                                            <img src={settings.logo_url} alt="Studio Logo" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-                                        </div>
-                                        <div style={{
-                                            fontSize: '14px',
-                                            fontWeight: 700,
-                                            color: '#666',
-                                            letterSpacing: '1px',
-                                            textAlign: 'right',
-                                            marginRight: '10px'
-                                        }}>
-                                            {settings?.website || 'throughthelens.media'}
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div style={{ width: '220px', height: '220px', background: '#fafafa', border: '3px solid #000', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-                                        <div style={{ fontSize: '52px' }}>📸</div>
-                                        <div style={{ fontSize: '14px', fontWeight: 950, textTransform: 'uppercase', marginTop: '10px', letterSpacing: '2px' }}>Pure Capture</div>
-                                        <div style={{ fontSize: '11px', color: '#888', marginTop: '5px' }}>{settings?.website || 'throughthelens.media'}</div>
-                                    </div>
-                                )}
                             </div>
                         </div>
 
@@ -183,9 +180,9 @@ function InvoicePreview({ invoice, settings = {}, onClose }) {
                                     <div>Subtotal</div>
                                     <div style={{ textAlign: 'right' }}>{formatMoney(data.subtotal * 100)}</div>
                                 </div>
-                                {data.discount > 0 && (
+                                {data.discountPercent > 0 && (
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', fontSize: '14px', padding: '8px 20px', color: '#ff4d4d', fontWeight: 600 }}>
-                                        <div>Studio Discount</div>
+                                        <div>Discount ({data.discountPercent}%)</div>
                                         <div style={{ textAlign: 'right' }}>-{formatMoney(data.discount * 100)}</div>
                                     </div>
                                 )}
@@ -219,24 +216,24 @@ function InvoicePreview({ invoice, settings = {}, onClose }) {
                                 )}
 
                                 {settings?.payment_methods && (
-                                    <div style={{ padding: '40px 0', minHeight: '120px' }}>
+                                    <div style={{ padding: '20px 0', minHeight: '80px' }}>
                                         <div style={{ fontWeight: 950, textTransform: 'uppercase', fontSize: '11px', letterSpacing: '2px', marginBottom: '15px', color: '#888' }}>Payment Instructions</div>
                                         <div style={{ color: '#000', fontWeight: 700, fontSize: '16px', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>{settings.payment_methods}</div>
                                     </div>
                                 )}
                             </div>
 
-                            <div style={{ width: '220px', textAlign: 'right', borderTop: '2px solid #eee', paddingTop: '20px', marginTop: '40px' }}>
+                            <div style={{ width: '220px', textAlign: 'right', borderTop: '2px solid #eee', paddingTop: '20px', marginTop: '20px' }}>
                                 <div style={{ fontSize: '11px', fontWeight: 950, textTransform: 'uppercase', letterSpacing: '2px', color: '#999', marginBottom: '10px' }}>Authorized Signature</div>
                                 <div style={{
                                     fontFamily: '"Cursive", "Brush Script MT", "Apple Chancery", cursive',
-                                    fontSize: '28px',
+                                    fontSize: '32px',
                                     color: '#000',
                                     marginBottom: '5px'
                                 }}>
-                                    {settings?.business_name || 'Through The Lens Media'}
+                                    {settings?.contact_name || 'Joshua Deuermeyer'}
                                 </div>
-                                <div style={{ fontSize: '12px', fontWeight: 800, color: '#666' }}>Studio Director</div>
+                                <div style={{ fontSize: '12px', fontWeight: 800, color: '#666' }}>Principal Director</div>
                             </div>
                         </div>
 
@@ -294,8 +291,8 @@ export default function Invoice() {
         clientEmail: '',
         clientPhone: '',
         items: [{ description: '', quantity: 1, unit_price: '' }],
-        tax_percent: 0,
-        discount: 0,
+        tax_percent: '',
+        discount: '',
         leadId: '',
         notes: ''
     });
@@ -310,8 +307,8 @@ export default function Invoice() {
             clientEmail: '',
             clientPhone: '',
             items: [{ description: '', quantity: 1, unit_price: '' }],
-            tax_percent: 0,
-            discount: 0,
+            tax_percent: '',
+            discount: '',
             leadId: '',
             notes: ''
         });
@@ -412,8 +409,8 @@ export default function Invoice() {
                     quantity: it.quantity,
                     unit_price: (it.unit_price_cents / 100).toFixed(2)
                 })) : [{ description: '', quantity: 1, unit_price: '' }],
-                tax_percent: fullInv.tax_percent || 0,
-                discount: (fullInv.discount_cents / 100).toFixed(2),
+                tax_percent: fullInv.tax_percent !== undefined ? fullInv.tax_percent : '',
+                discount: fullInv.discount_cents !== undefined ? (fullInv.discount_cents / 100) : '',
                 leadId: fullInv.lead_id || '',
                 notes: fullInv.notes || ''
             });
@@ -519,7 +516,9 @@ export default function Invoice() {
         try {
             const subtotal = (invoice.invoice_items || []).reduce((s, it) => s + (it.unit_price_cents * it.quantity), 0);
             const tax = Math.round(subtotal * (invoice.tax_percent / 100));
-            const total = subtotal + tax - (invoice.discount_cents || 0);
+            const discountPercent = (invoice.discount_cents || 0) / 100;
+            const discountAmount = Math.round(subtotal * (discountPercent / 100));
+            const total = subtotal + tax - discountAmount;
 
             await apiPost('/expenses', {
                 expense_date: new Date().toISOString().slice(0, 10),
@@ -737,7 +736,13 @@ export default function Invoice() {
                             {!editingId && (
                                 <div>
                                     <small className="muted" style={{ fontWeight: 800 }}>CRM IMPORT (OPTIONAL)</small>
-                                    <select onChange={handleLeadSelect} style={{ background: 'rgba(249, 115, 22, 0.1)', borderColor: 'rgba(249, 115, 22, 0.3)' }}>
+                                    <select
+                                        onChange={handleLeadSelect}
+                                        style={{
+                                            background: formData.leadId ? 'rgba(34, 197, 94, 0.1)' : 'rgba(255,255,255,0.05)',
+                                            borderColor: formData.leadId ? 'rgba(34, 197, 94, 0.3)' : 'rgba(255,255,255,0.1)'
+                                        }}
+                                    >
                                         <option value="">-- No lead selected --</option>
                                         {leads.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
                                     </select>
@@ -777,11 +782,11 @@ export default function Invoice() {
                             <div className="grid two">
                                 <div>
                                     <small className="muted" style={{ fontWeight: 800 }}>TAX RATE (%)</small>
-                                    <input type="number" value={formData.tax_percent || 0} onChange={e => setFormData({ ...formData, tax_percent: e.target.value })} />
+                                    <input type="number" placeholder="0" value={formData.tax_percent} onChange={e => setFormData({ ...formData, tax_percent: e.target.value })} />
                                 </div>
                                 <div>
-                                    <small className="muted" style={{ fontWeight: 800 }}>DISCOUNT ($)</small>
-                                    <input type="number" value={formData.discount || 0} onChange={e => setFormData({ ...formData, discount: e.target.value })} />
+                                    <small className="muted" style={{ fontWeight: 800 }}>DISCOUNT (%)</small>
+                                    <input type="number" placeholder="0" value={formData.discount} onChange={e => setFormData({ ...formData, discount: e.target.value })} />
                                 </div>
                             </div>
 

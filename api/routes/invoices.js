@@ -151,7 +151,9 @@ router.patch("/:id", async (req, res) => {
             if (fullInvoice && fullInvoice.clients?.email) {
                 const subtotal = (fullInvoice.invoice_items || []).reduce((s, it) => s + (it.unit_price_cents * it.quantity), 0);
                 const tax = Math.round(subtotal * (fullInvoice.tax_percent / 100));
-                const total = (subtotal + tax - (fullInvoice.discount_cents || 0)) / 100;
+                const discountPercent = (fullInvoice.discount_cents || 0) / 100;
+                const discountAmount = Math.round(subtotal * (discountPercent / 100));
+                const total = (subtotal + tax - discountAmount) / 100;
 
                 await sendInvoiceEmail({
                     to: fullInvoice.clients.email,
