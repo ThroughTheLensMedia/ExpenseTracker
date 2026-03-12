@@ -233,6 +233,7 @@ export default function Assets() {
                                             <th>Item</th>
                                             <th>Cost</th>
                                             <th>{selectedYear} Ded.</th>
+                                            <th>Full Depr.</th>
                                             <th>Status</th>
                                             <th></th>
                                         </tr>
@@ -251,6 +252,7 @@ export default function Assets() {
                                                 </td>
                                                 <td style={{ fontWeight: 600 }}>{formatMoney(a.cost * 100)}</td>
                                                 <td style={{ color: '#4ade80', fontWeight: 800 }}>{formatMoney(a.deduction_this_year * 100)}</td>
+                                                <td style={{ fontSize: '11px', fontWeight: 700, opacity: 0.8 }}>{a.full_depreciation_date}</td>
                                                 <td><span style={{ fontSize: '9px', fontWeight: 800, color: STATUS_UI[a.status]?.color }}>{STATUS_UI[a.status]?.label}</span></td>
                                                 <td>
                                                     <div style={{ display: 'flex', gap: '4px' }}>

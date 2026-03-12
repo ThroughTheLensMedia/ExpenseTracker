@@ -162,6 +162,13 @@ router.get("/depreciation", async (req, res) => {
                 total_depreciated: Math.round(totalDepreciated * 100) / 100,
                 remaining_basis: Math.round(remainingBasis * 100) / 100,
                 status,
+                full_depreciation_date: method === "section_179" 
+                    ? `Immediate (${purchaseYear})`
+                    : (() => {
+                        const d = new Date(asset.purchase_date + 'T00:00:00');
+                        d.setFullYear(d.getFullYear() + life);
+                        return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+                    })()
             };
         });
 
