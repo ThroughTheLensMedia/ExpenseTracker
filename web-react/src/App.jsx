@@ -34,13 +34,16 @@ function PrivateRoute({ children }) {
 
 function AppContent() {
   const [apiStatus, setApiStatus] = useState('Checking...');
-  const { user, loading, logout, subscription } = useAuth();
+  const { user, loading, logout, subscription, settings } = useAuth();
   const [showRedeem, setShowRedeem] = useState(false);
 
   // Calculate days left
   const daysLeft = subscription?.expires_at 
     ? Math.ceil((new Date(subscription.expires_at) - new Date()) / (1000 * 60 * 60 * 24))
     : null;
+
+  // Use business name or email as identity
+  const identityName = settings?.business_name || settings?.contact_name || user?.email;
 
   useEffect(() => {
     if (!user) return; // Don't check health if not logged in
@@ -120,15 +123,15 @@ function AppContent() {
             <NavLink to="/backup" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>SCC Console</NavLink>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            <div className="flex-col" style={{ alignItems: 'flex-end' }}>
-              <span className="muted" style={{ fontWeight: 800, fontSize: '11px' }}>{user.email}</span>
-              <span style={{ fontSize: '9px', color: daysLeft <= 7 ? '#f59e0b' : '#10b981', fontWeight: 'bold' }}>
-                {subscription?.plan_type === 'free_beta' ? 'BETA ACCESS' : 'PRO ACCESS'} 
-                {daysLeft !== null && ` (${daysLeft}D LEFT)`}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
+              <span className="muted" style={{ fontWeight: 900, fontSize: '12px', color: 'white' }}>{identityName}</span>
+              <span style={{ fontSize: '10px', color: daysLeft <= 7 ? '#f59e0b' : '#10b981', fontWeight: 800, letterSpacing: '0.02em' }}>
+                {subscription?.plan_type?.toUpperCase() || 'PRO'} ACCESS 
+                {daysLeft !== null && ` • ${daysLeft}D LEFT`}
               </span>
             </div>
-            <button onClick={logout} className="btn sm secondary" style={{ fontSize: '10px' }}>LOGOUT</button>
+            <button onClick={logout} className="btn sm secondary" style={{ fontSize: '10px', padding: '6px 12px' }}>LOGOUT</button>
         </div>
       </header>
 

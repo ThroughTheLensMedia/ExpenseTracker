@@ -18,22 +18,29 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [session, setSession] = useState(null);
   const [subscription, setSubscription] = useState(null);
+  const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const fetchSubscription = async (userId) => {
     try {
-      // We use a small fetch here directly against the API since we want the verified server status
-      const response = await fetch('/api/subscription/status', {
-        headers: {
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers = { 'Authorization': `Bearer ${session?.access_token}` };
+      
+      const [subRes, setRes] = await Promise.all([
+        fetch('/api/subscription/status', { headers }),
+        fetch('/api/settings', { headers })
+      ]);
+
+      if (subRes.ok) {
+        const data = await subRes.json();
         setSubscription(data);
       }
+      if (setRes.ok) {
+        const data = await setRes.json();
+        setSettings(data);
+      }
     } catch (e) {
-      console.error("Failed to fetch subscription:", e);
+      console.error("Failed to fetch profile data:", e);
     }
   };
 
@@ -100,6 +107,7 @@ export function AuthProvider({ children }) {
     user,
     session,
     subscription,
+    settings,
     loading,
     login,
     signup,
