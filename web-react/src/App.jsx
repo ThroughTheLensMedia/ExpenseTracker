@@ -37,6 +37,7 @@ function AppContent() {
   const [apiStatus, setApiStatus] = useState('Checking...');
   const { user, loading, logout, subscription, settings } = useAuth();
   const [showRedeem, setShowRedeem] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Calculate days left
   const daysLeft = subscription?.expires_at 
@@ -112,26 +113,33 @@ function AppContent() {
         </div>
       )}
 
-      <header className="glass desktop-only" style={{ border: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 30px', height: '80px' }}>
+      <header className="glass" style={{ border: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 30px', height: '80px', position: 'sticky', top: '10px', zIndex: 1000, margin: '15px 15px 0 15px' }}>
         {/* Left Side: Brand */}
-        <div style={{ flex: '1', display: 'flex', alignItems: 'center', minWidth: '200px' }}>
+        <div style={{ flex: '0 1 200px', display: 'flex', alignItems: 'center' }}>
           <div className="title" style={{ fontSize: '1.2rem', fontWeight: 900, letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>Studio Tracker</div>
         </div>
 
-        {/* Center: Primary Navigation */}
-        <div style={{ flex: '2', display: 'flex', justifyContent: 'center', minWidth: '0' }}>
-          <div className="nav" style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.03)', padding: '5px', borderRadius: '12px', whiteSpace: 'nowrap' }}>
-            <NavLink to="/" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`} style={{ padding: '8px 12px', fontSize: '12px' }} end>Dashboard</NavLink>
-            <NavLink to="/transactions" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`} style={{ padding: '8px 12px', fontSize: '12px' }}>Transactions</NavLink>
-            <NavLink to="/tax" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`} style={{ padding: '8px 12px', fontSize: '12px' }}>Tax</NavLink>
-            <NavLink to="/equipment" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`} style={{ padding: '8px 12px', fontSize: '12px' }}>Equipment</NavLink>
-            <NavLink to="/crm" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`} style={{ padding: '8px 12px', fontSize: '12px' }}>CRM</NavLink>
-            <NavLink to="/backup" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`} style={{ padding: '8px 12px', fontSize: '12px' }}>SCC Console</NavLink>
+        {/* Center: Primary Navigation (Desktop) */}
+        <div className="desktop-nav" style={{ flex: '1', display: 'flex', justifyContent: 'center', minWidth: '0', overflow: 'hidden' }}>
+          <div className="nav" style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.03)', padding: '5px', borderRadius: '12px', flexWrap: 'nowrap' }}>
+            <NavLink to="/" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`} style={{ padding: '8px 12px', fontSize: '12px', whiteSpace: 'nowrap' }} end>Dashboard</NavLink>
+            <NavLink to="/transactions" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`} style={{ padding: '8px 12px', fontSize: '12px', whiteSpace: 'nowrap' }}>Transactions</NavLink>
+            <NavLink to="/tax" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`} style={{ padding: '8px 12px', fontSize: '12px', whiteSpace: 'nowrap' }}>Tax</NavLink>
+            <NavLink to="/equipment" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`} style={{ padding: '8px 12px', fontSize: '12px', whiteSpace: 'nowrap' }}>Equipment</NavLink>
+            <NavLink to="/crm" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`} style={{ padding: '8px 12px', fontSize: '12px', whiteSpace: 'nowrap' }}>CRM</NavLink>
+            <NavLink to="/backup" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`} style={{ padding: '8px 12px', fontSize: '12px', whiteSpace: 'nowrap' }}>SCC Console</NavLink>
           </div>
         </div>
 
+        {/* Mobile Toggle (Hamburger) */}
+        <div className="mobile-toggle" style={{ cursor: 'pointer', padding: '10px' }} onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+          <div style={{ width: '22px', height: '2px', background: 'white', margin: '4px 0' }}></div>
+          <div style={{ width: '22px', height: '2px', background: 'white', margin: '4px 0' }}></div>
+          <div style={{ width: '16px', height: '2px', background: 'white', margin: '4px 0', marginLeft: 'auto' }}></div>
+        </div>
+
         {/* Right Side: Identity & Actions */}
-        <div style={{ flex: '1', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '15px', minWidth: '240px' }}>
+        <div className="identity-block" style={{ flex: '0 1 240px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '15px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
               <span className="muted" style={{ fontWeight: 950, fontSize: '11px', color: 'white', whiteSpace: 'nowrap' }}>{identityName}</span>
               <span style={{ fontSize: '9px', color: daysLeft <= 7 ? '#f59e0b' : '#10b981', fontWeight: 800, letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
@@ -141,12 +149,41 @@ function AppContent() {
             </div>
             <button onClick={logout} className="btn sm secondary" style={{ fontSize: '10px', padding: '6px 12px', borderRadius: '8px', fontWeight: 900 }}>LOGOUT</button>
         </div>
-      </header>
 
-      {/* Mobile Minimal Header */}
-      <header className="glass mobile-only" style={{ border: 'none', justifyContent: 'space-between', padding: '0 20px' }}>
-        <div className="title">ThroughTheLens</div>
-        <button onClick={logout} style={{ background: 'none', border: 'none', fontSize: '18px' }}>📤</button>
+        {/* Mobile Menu Overlay */}
+        {mobileMenuOpen && (
+          <div className="glass" style={{ 
+            position: 'absolute', 
+            top: '90px', 
+            left: '0', 
+            right: '0', 
+            background: 'rgba(15, 26, 51, 0.98)', 
+            backdropFilter: 'blur(30px)',
+            borderRadius: '16px',
+            border: '1px solid var(--line)',
+            padding: '10px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '4px',
+            boxShadow: '0 30px 60px rgba(0,0,0,0.8)',
+            zIndex: 1000
+          }}>
+            <NavLink to="/" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`} style={{ padding: '15px' }} end>Dashboard</NavLink>
+            <NavLink to="/transactions" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`} style={{ padding: '15px' }}>Transactions</NavLink>
+            <NavLink to="/tax" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`} style={{ padding: '15px' }}>Tax</NavLink>
+            <NavLink to="/equipment" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`} style={{ padding: '15px' }}>Equipment</NavLink>
+            <NavLink to="/crm" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`} style={{ padding: '15px' }}>CRM</NavLink>
+            <NavLink to="/backup" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`} style={{ padding: '15px' }}>SCC Console</NavLink>
+            <div style={{ height: '1px', background: 'var(--line)', margin: '10px' }}></div>
+            <div style={{ padding: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ lineHeight: '1.2' }}>
+                  <div className="muted" style={{ fontWeight: 950, fontSize: '11px', color: 'white' }}>{identityName}</div>
+                  <div style={{ fontSize: '9px', color: daysLeft <= 7 ? '#f59e0b' : '#ok', fontWeight: 800 }}>PRO ACCESS • {daysLeft}D LEFT</div>
+                </div>
+                <button onClick={logout} className="btn sm secondary" style={{ fontSize: '10px', borderRadius: '8px' }}>LOGOUT</button>
+            </div>
+          </div>
+        )}
       </header>
 
       <main style={{ marginTop: '16px', minHeight: 'calc(100vh - 160px)' }}>

@@ -692,25 +692,22 @@ export default function Backup() {
 
              {activeTab === 'saas' && user?.email === 'joshua.deuermeyer@gmail.com' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
-                     <div className="card glass glow-blue" style={{ border: 'none', padding: '40px' }}>
-                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '20px', flexWrap: 'wrap' }}>
-                             <div style={{ flex: 1, minWidth: '300px' }}>
-                                <h2 style={{ fontSize: '2rem', margin: 0 }}>Active Studio Licenses</h2>
-                                <p className="muted">Monitoring all registered studio sessions across the platform.</p>
+                     <div className="card glass glow-blue" style={{ border: 'none', padding: '30px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                         <h2 style={{ fontSize: '1.8rem', margin: '0 0 10px 0' }}>Active Studio Licenses</h2>
+                         <p className="muted" style={{ margin: '0 0 25px 0' }}>Monitoring all registered studio sessions across the platform.</p>
+                         
+                         <div style={{ display: 'flex', gap: '15px', alignItems: 'flex-end', justifyContent: 'center', flexWrap: 'wrap' }}>
+                             <div style={{ width: '200px', textAlign: 'left' }}>
+                                 <small className="muted" style={{ fontWeight: 900, marginBottom: '8px', display: 'block' }}>RECIPIENT NAME</small>
+                                 <input value={inviteName} onChange={e => setInviteName(e.target.value)} placeholder="Photographer Name" style={{ padding: '12px' }} />
                              </div>
-                             <div style={{ display: 'flex', gap: '15px', alignItems: 'flex-end' }}>
-                                 <div style={{ width: '200px' }}>
-                                     <small className="muted" style={{ fontWeight: 900, marginBottom: '8px', display: 'block' }}>RECIPIENT NAME</small>
-                                     <input value={inviteName} onChange={e => setInviteName(e.target.value)} placeholder="Photographer Name" style={{ padding: '12px' }} />
-                                 </div>
-                                 <div style={{ width: '250px' }}>
-                                     <small className="muted" style={{ fontWeight: 900, marginBottom: '8px', display: 'block' }}>RECIPIENT EMAIL</small>
-                                     <input type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="hello@studio.com" style={{ padding: '12px' }} />
-                                 </div>
-                                 <button className="btn primary" onClick={handleGenerateBetaCode} disabled={genCodeLoading} style={{ height: '48px' }}>
-                                    {genCodeLoading ? 'Generating...' : 'Generate 90-Day Beta Key'}
-                                 </button>
+                             <div style={{ width: '250px', textAlign: 'left' }}>
+                                 <small className="muted" style={{ fontWeight: 900, marginBottom: '8px', display: 'block' }}>RECIPIENT EMAIL</small>
+                                 <input type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="hello@studio.com" style={{ padding: '12px' }} />
                              </div>
+                             <button className="btn primary" onClick={handleGenerateBetaCode} disabled={genCodeLoading} style={{ height: '48px', padding: '0 25px' }}>
+                                {genCodeLoading ? 'Generating...' : 'Generate 90-Day Beta Key'}
+                             </button>
                          </div>
                       </div>
 
