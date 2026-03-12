@@ -60,7 +60,7 @@ router.get("/summary", async (req, res) => {
     const start = `${year}-01-01`;
     const end = `${year}-12-31`;
 
-    const { data, error } = await supabase
+    const { data, error } = await req.sb
       .from("expenses")
       .select("tax_bucket, amount_cents, tax_deductible, business_use_pct")
       .gte("expense_date", start)
@@ -214,7 +214,7 @@ router.post("/auto-map", async (req, res) => {
         const cat = (txn.category || '').toLowerCase();
         const isIncome = INCOME_KEYWORDS.some(k => cat.includes(k));
         if (!isIncome) {
-          await supabase.from("expenses").update({ tax_deductible: false }).eq("id", txn.id);
+          await req.sb.from("expenses").update({ tax_deductible: false }).eq("id", txn.id);
         }
       }
     }

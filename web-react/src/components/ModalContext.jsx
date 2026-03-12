@@ -68,7 +68,7 @@ export function ModalProvider({ children }) {
                                 letterSpacing: '0.12em', color: 'rgba(165,180,252,0.9)',
                                 textTransform: 'uppercase'
                             }}>
-                                Expense Tracker's Brain says...
+                                Studio Tracker's Engine says...
                             </span>
                         </div>
 

@@ -74,7 +74,7 @@ export default function Login() {
               type="email" 
               value={email} 
               onChange={(e) => setEmail(e.target.value)} 
-              placeholder=" Joshua@throughthelens.media"
+              placeholder=" Joshua@studio.com"
               style={{ marginTop: '8px', width: '100%' }}
               required
             />
@@ -139,7 +139,7 @@ export default function Login() {
         </div>
 
         <div className="muted" style={{ marginTop: '40px', fontSize: '11px', fontWeight: 800 }}>
-          SECURE ENCRYPTED SESSION • THROUGH THE LENS MEDIA © 2026
+          SECURE ENCRYPTED SESSION • STUDIO TRACKER © 2026
         </div>
       </div>
     </div>

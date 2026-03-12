@@ -29,7 +29,7 @@ async function sendInvoiceEmail({ to, subject, body, attachments }) {
     }
 
     try {
-        const fromEmail = process.env.RESEND_FROM || 'Through The Lens Media <billing@throughthelens.media>';
+        const fromEmail = process.env.RESEND_FROM || 'Studio Tracker <billing@throughthelens.media>';
         
         const payload = {
             from: fromEmail,

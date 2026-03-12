@@ -76,26 +76,32 @@ let _expensesCache = null;
 let _expensesAge = 0;
 const CACHE_TTL = 30000; // 30 seconds
 
-// Fetch ALL expenses by paginating in batches of 1000
-export async function fetchAllExpenses(force = false) {
-    if (!force && _expensesCache && (Date.now() - _expensesAge < CACHE_TTL)) {
-        return [..._expensesCache]; // return copy
-    }
-
-    const PAGE = 1000;
+// Fetch expenses, optionally filtered by year
+export async function fetchAllExpenses(force = false, year = null) {
+    const cacheKey = year ? `year_${year}` : 'all';
+    
+    // Simple per-year cache mapping could be added, but for now let's just use the global cache
+    // or invalidate if year changes. For simplicity, we'll just allow passing year to the API.
+    
+    const PAGE = 2000;
     let offset = 0;
     let allRows = [];
+    
+    const queryParams = [`limit=${PAGE}`];
+    if (year) {
+        queryParams.push(`start=${year}-01-01`);
+        queryParams.push(`end=${year}-12-31`);
+    }
+
     while (true) {
-        const data = await apiGet(`/expenses?limit=${PAGE}&offset=${offset}`);
+        const data = await apiGet(`/expenses?${queryParams.join('&')}&offset=${offset}`);
         const rows = data.rows || [];
         allRows = allRows.concat(rows);
         if (rows.length < PAGE) break;
         offset += PAGE;
     }
 
-    _expensesCache = allRows;
-    _expensesAge = Date.now();
-    return [...allRows];
+    return allRows;
 }
 
 export function invalidateExpensesCache() {

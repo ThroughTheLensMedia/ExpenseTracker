@@ -160,7 +160,7 @@ router.patch("/:id", async (req, res) => {
                     .maybeSingle()
             ]);
 
-            const studioName = settings?.business_name || 'Through The Lens Media';
+            const studioName = settings?.business_name || 'Studio Tracker';
 
             if (fullInvoice && fullInvoice.clients?.email) {
                 const subtotal = (fullInvoice.invoice_items || []).reduce((s, it) => s + (it.unit_price_cents * it.quantity), 0);

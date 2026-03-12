@@ -44,10 +44,10 @@ export default function Dashboard({ apiStatus }) {
     const [snapSuccess, setSnapSuccess] = useState(false);
     const fileInputRef = useRef(null);
 
-    const loadData = async () => {
+    const loadData = async (targetYear = selectedYear) => {
         setLoading(true);
         try {
-            const data = await fetchAllExpenses();
+            const data = await fetchAllExpenses(true, targetYear);
             setExpenses(data);
         } catch (e) { console.error(e); }
         finally { setLoading(false); }
@@ -55,8 +55,11 @@ export default function Dashboard({ apiStatus }) {
 
     useEffect(() => {
         fetchExpenseYears().then(yrs => { if (yrs.length > 0) setAvailableYears(yrs); });
-        loadData();
     }, []);
+
+    useEffect(() => {
+        loadData(selectedYear);
+    }, [selectedYear]);
 
     const operationalExpenses = useMemo(() => {
         const ignore = ['internal transfer', 'credit card payment', 'funds transfer'];
