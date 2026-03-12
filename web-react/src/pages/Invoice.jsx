@@ -82,12 +82,12 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
 
     const handleDownloadPDF = async () => {
         const element = previewRef.current;
-        const canvas = await html2canvas(element, { scale: 3, useCORS: true });
-        const imgData = canvas.toDataURL('image/png');
+        const canvas = await html2canvas(element, { scale: 2, useCORS: true });
+        const imgData = canvas.toDataURL('image/jpeg', 0.8);
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
         pdf.save(`Invoice_${data.number}.pdf`);
     };
 
@@ -96,12 +96,12 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
         setIsProcessing(true);
         try {
             const element = previewRef.current;
-            const canvas = await html2canvas(element, { scale: 3, useCORS: true });
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF('p', 'mm', 'a4');
+            const canvas = await html2canvas(element, { scale: 2, useCORS: true });
+            const imgData = canvas.toDataURL('image/jpeg', 0.8);
+            const pdf = new jsPDF('p', 'mm', 'a4', true); // Use compression
             const pdfWidth = pdf.internal.pageSize.getWidth();
             const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
             
             // Generate Base64 for attachment
             const pdfBase64 = pdf.output('datauristring').split(',')[1];

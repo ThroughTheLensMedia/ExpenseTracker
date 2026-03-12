@@ -119,6 +119,9 @@ router.post("/", async (req, res) => {
 router.patch("/:id", async (req, res) => {
     try {
         const { items, pdf_base64, ...invoiceData } = req.body;
+        if (pdf_base64) {
+            console.log(`[INVOICE] Payload received. PDF Attachment Size: ${(pdf_base64.length / 1024).toFixed(2)} KB`);
+        }
 
         // 1. Update Invoice Metadata
         const { data: invoice, error: invError } = await supabase
