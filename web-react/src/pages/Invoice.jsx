@@ -628,10 +628,10 @@ export default function Invoice() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
                         <h1 style={{ margin: 0, fontSize: '2rem', fontWeight: 950, letterSpacing: '-0.02em' }}>Business Invoicing</h1>
-                        <div className="muted" style={{ marginTop: '4px', fontSize: '15px' }}>{settings.business_name || 'Elite Photography Studio'} · Receivables Control</div>
+                        <div className="muted" style={{ marginTop: '4px', fontSize: '15px' }}>Accounts Receivables</div>
                     </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
-                        <button className={`pill ${view === 'invoices' ? 'active' : ''}`} onClick={() => setView('invoices')}>Ledger</button>
+                        <button className={`pill ${view === 'invoices' ? 'active' : ''}`} onClick={() => setView('invoices')}>Invoice</button>
                         <button className={`pill ${view === 'clients' ? 'active' : ''}`} onClick={() => setView('clients')}>Clients</button>
                         <button className="btn glow-blue" onClick={() => setIsCreatorOpen(true)} style={{ marginLeft: '10px', padding: '10px 24px' }}>+ Create Invoice</button>
                     </div>

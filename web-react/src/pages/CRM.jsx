@@ -161,7 +161,7 @@ function PipelineView() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
                         <div>
                             <h1 style={{ margin: 0, fontSize: '2rem', fontWeight: 950, letterSpacing: '-0.02em' }}>Executive Pipeline</h1>
-                            <div className="muted" style={{ marginTop: '4px', fontSize: '15px' }}>Through The Lens · Studio Leads & Sales Funnel</div>
+                            <div className="muted" style={{ marginTop: '4px', fontSize: '15px' }}>Leads & Sales Funnel</div>
                         </div>
                         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                             <button className="btn secondary sm" onClick={exportToCSV}>📤 Export CSV</button>
@@ -342,10 +342,10 @@ export default function CRM() {
         <section className="dashboard">
             <div style={{ display: 'flex', gap: '0', marginBottom: '40px', background: 'rgba(255,255,255,0.02)', borderRadius: '20px', padding: '6px', border: '1px solid rgba(255,255,255,0.05)' }}>
                 <NavLink to="/crm" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`} style={{ flex: 1, textAlign: 'center', borderRadius: '16px', padding: '16px', fontSize: '15px', border: 'none' }} end>
-                    Lead Pipeline
+                    Executive Pipeline
                 </NavLink>
                 <NavLink to="/crm/financials" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`} style={{ flex: 1, textAlign: 'center', borderRadius: '16px', padding: '16px', fontSize: '15px', border: 'none' }}>
-                    Financial Ledger
+                    Business Invoicing
                 </NavLink>
             </div>
 
