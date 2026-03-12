@@ -187,6 +187,31 @@ router.get("/beta-codes", async (req, res) => {
     }
 });
 
+// POST /admin/beta-codes/:code/resend
+router.post("/beta-codes/:code/resend", async (req, res) => {
+    try {
+        const { data: codeData, error } = await req.sb
+            .from('beta_codes')
+            .select('*')
+            .eq('code', req.params.code)
+            .single();
+
+        if (error || !codeData) throw new Error("Invite code not found");
+
+        if (!codeData.assigned_to_email) throw new Error("No email associated with this code");
+
+        await sendInviteEmail({
+            to: codeData.assigned_to_email,
+            name: codeData.assigned_to_name,
+            code: codeData.code
+        });
+
+        res.json({ ok: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // DELETE /admin/beta-codes/:code
 router.delete("/beta-codes/:code", async (req, res) => {
     try {

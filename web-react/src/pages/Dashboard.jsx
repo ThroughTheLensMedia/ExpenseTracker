@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchAllExpenses, fetchExpenseYears, formatMoney, apiPost } from '../api';
+import { fetchAllExpenses, fetchExpenseYears, formatMoney, apiGet } from '../api';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -10,9 +10,7 @@ import {
     LineElement,
     Title,
     Tooltip,
-    Legend,
-    ArcElement,
-    Filler
+    Legend
 } from 'chart.js';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import { useModal } from '../components/ModalContext.jsx';
@@ -23,21 +21,19 @@ ChartJS.register(
     BarElement,
     PointElement,
     LineElement,
-    ArcElement,
     Title,
     Tooltip,
-    Legend,
-    Filler
+    Legend
 );
 
-export default function Dashboard({ apiStatus }) {
+export default function Dashboard() {
     const modal = useModal();
     const navigate = useNavigate();
     const [expenses, setExpenses] = useState([]);
     const [leads, setLeads] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-    const [search, setSearch] = useState('');
+    const [search] = useState('');
     const [availableYears, setAvailableYears] = useState([new Date().getFullYear()]);
     
     // Intelligence States
@@ -72,10 +68,11 @@ export default function Dashboard({ apiStatus }) {
     };
 
     useEffect(() => {
-        // Initial load should try to find the best starting year
+        // Initial load should try to find the best starting year with data
         fetchExpenseYears().then(yrs => {
             if (yrs.length > 0) {
                 setAvailableYears(yrs);
+                // Pick the first year in the list (already sorted desc by API)
                 const latest = yrs[0];
                 if (latest !== selectedYear) {
                     setSelectedYear(latest);
@@ -319,12 +316,18 @@ export default function Dashboard({ apiStatus }) {
         const burnPerMonth = avgMonthlyBurn > 100 ? avgMonthlyBurn : 0; // Ignore tiny/zero burn for runway
         const monthsRunway = burnPerMonth > 0 ? (totalLiquidity / burnPerMonth).toFixed(1) : '∞';
 
+        // Additional insights for charts
+        const monthlyProfitMargins = stats.monthlyData.map(d => d.income > 0 ? ((d.income - d.expense) / d.income * 100) : 0);
+        const taxLiability = stats.income * 0.25; // 25% reserve as estimate
+
         return {
             weightedValue,
             totalLiquidity,
-            monthsRunway: isFinite(monthsRunway) ? monthsRunway : '∞'
+            monthsRunway: isFinite(monthsRunway) ? monthsRunway : '∞',
+            monthlyProfitMargins,
+            taxLiability
         };
-    }, [leads, weights, startingCash, avgMonthlyBurn]);
+    }, [leads, weights, startingCash, avgMonthlyBurn, stats]);
 
     const barChartData = {
         labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
@@ -582,24 +585,39 @@ export default function Dashboard({ apiStatus }) {
                         </div>
                     </div>
                 </div>
-                
+
                 {stats.lastImportDate && (
-                    <div style={{ marginTop: '20px', borderTop: '1px dotted rgba(255,255,255,0.1)', paddingTop: '15px', display: 'flex', justifyContent: 'flex-start', gap: '30px' }}>
-                        <div>
-                            <small className="muted" style={{ fontWeight: 900, fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Last Ledger Sync</small>
-                            <div style={{ fontSize: '13px', fontWeight: 800, color: (Date.now() - new Date(stats.lastImportDate)) / (1000*3600*24) > importReminderDays ? '#f59e0b' : '#4ade80', marginTop: '4px' }}>
-                                {stats.lastImportDate} ({(Math.floor((Date.now() - new Date(stats.lastImportDate)) / (1000*3600*24)))} days ago)
+                    <div style={{ marginTop: '20px', borderTop: '1px dotted rgba(255,255,255,0.1)', paddingTop: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
+                        <div style={{ display: 'flex', gap: '30px' }}>
+                            <div>
+                                <small className="muted" style={{ fontWeight: 900, fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Last Ledger Sync</small>
+                                <div style={{ fontSize: '13px', fontWeight: 800, color: (Date.now() - new Date(stats.lastImportDate)) / (1000 * 3600 * 24) > importReminderDays ? '#f59e0b' : '#4ade80', marginTop: '4px' }}>
+                                    {stats.lastImportDate} ({(Math.floor((Date.now() - new Date(stats.lastImportDate)) / (1000 * 3600 * 24)))} days ago)
+                                </div>
+                            </div>
+                            <div>
+                                <small className="muted" style={{ fontWeight: 900, fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Vigilance Alert</small>
+                                <div style={{ fontSize: '11px', fontWeight: 800, color: '#fff', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    Remind after 
+                                    <input 
+                                        type="number" 
+                                        value={importReminderDays} 
+                                        onChange={e => setImportReminderDays(Number(e.target.value))}
+                                        style={{ width: '40px', padding: '2px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '4px', textAlign: 'center', fontSize: '10px' }}
+                                    />
+                                    days
+                                </div>
                             </div>
                         </div>
-                        {(Date.now() - new Date(stats.lastImportDate)) / (1000*3600*24) > importReminderDays && (
-                            <div className="btn secondary" onClick={() => navigate('/import')} style={{ fontSize: '10px', padding: '5px 12px', borderRadius: '8px', color: '#f59e0b', borderColor: 'rgba(245, 158, 11, 0.3)' }}>
+                        {(Date.now() - new Date(stats.lastImportDate)) / (1000 * 3600 * 24) > importReminderDays && (
+                            <div className="btn secondary" onClick={() => navigate('/import')} style={{ fontSize: '10px', padding: '8px 16px', borderRadius: '10px', color: '#f59e0b', borderColor: 'rgba(245, 158, 11, 0.3)', fontWeight: 900 }}>
                                 🔄 REFRESH LEDGER DATA
                             </div>
                         )}
                     </div>
                 )}
             </div>
-
+           
             {/* ── Key Performance Indicators (KPIs) ── */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
                 <div className="card glass" style={{ margin: 0, padding: '24px', borderTop: '3px solid #4ade80', borderRadius: '16px' }}>
@@ -628,7 +646,7 @@ export default function Dashboard({ apiStatus }) {
             </div>
 
             {/* ── Advanced Analytics Charts (Desktop) ── */}
-            <div className="desktop-only" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', alignItems: 'start' }}>
+            <div className="desktop-only" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: '20px', alignItems: 'start' }}>
 
                 {/* Cash Flow Velocity Chart */}
                 <div className="card glass" style={{ margin: 0, padding: '24px', height: '420px', display: 'flex', flexDirection: 'column' }}>
@@ -646,65 +664,156 @@ export default function Dashboard({ apiStatus }) {
                                 tooltip: { mode: 'index', intersect: false, backgroundColor: 'rgba(15,26,51,0.95)', titleColor: '#fff', bodyColor: '#a8b6dd', bodyFont: { size: 13, weight: 'bold' }, borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, padding: 12, cornerRadius: 8 }
                             },
                             scales: {
-                                x: { grid: { display: false }, ticks: { color: '#a8b6dd', font: { size: 11 } } },
-                                y: { grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false }, ticks: { color: '#a8b6dd', font: { size: 11 }, callback: v => '$' + (v >= 1000 ? (v / 1000) + 'k' : v) } }
-                            },
-                            interaction: { mode: 'nearest', axis: 'x', intersect: false }
+                                x: { grid: { display: false }, ticks: { color: '#a8b6dd', font: { size: 10, weight: 'bold' } } },
+                                y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#a8b6dd', font: { size: 10 }, callback: v => '$' + (v / 1000) + 'k' } }
+                            }
                         }} />
                     </div>
                 </div>
 
-                {/* Capital Allocation Doughnut */}
-                <div className="card glass" style={{ margin: 0, padding: '24px', minHeight: '420px' }}>
-                    <h2 style={{ fontSize: '1.2rem', marginBottom: '4px' }}>Capital Allocation</h2>
-                    <div className="muted" style={{ fontSize: '11px', marginBottom: '24px' }}>Top 10 Expense Categories</div>
+                {/* NEW: Profit Margin Trajectory */}
+                <div className="card glass" style={{ margin: 0, padding: '24px', height: '420px', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                        <div>
+                            <h2 style={{ fontSize: '1.2rem', margin: 0 }}>Profit Margin Trajectory</h2>
+                            <div className="muted" style={{ fontSize: '11px', marginTop: '4px' }}>Net Yield Percentage by Month</div>
+                        </div>
+                    </div>
+                    <div style={{ flex: 1, position: 'relative' }}>
+                        <Line data={{
+                            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                            datasets: [{
+                                label: 'Margin %',
+                                data: runwayIntel.monthlyProfitMargins,
+                                borderColor: '#818cf8',
+                                backgroundColor: 'rgba(129, 140, 248, 0.1)',
+                                fill: true,
+                                tension: 0.4,
+                                borderWidth: 3,
+                                pointRadius: 4
+                            }]
+                        }} options={{
+                            responsive: true, maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                y: { ticks: { callback: v => v + '%' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                                x: { grid: { display: false } }
+                            }
+                        }} />
+                    </div>
+                </div>
 
-                    <div style={{ height: '220px', position: 'relative' }}>
-                        {stats.topCats.length > 0 ? (
-                            <Doughnut data={{
-                                labels: stats.topCats.map(c => c[0]),
-                                datasets: [{
-                                    data: stats.topCats.map(c => c[1].cents / 100),
-                                    backgroundColor: chartColors.slice(0, stats.topCats.length),
-                                    borderWidth: 0,
-                                    hoverOffset: 6
-                                }]
-                            }} options={{
-                                responsive: true, maintainAspectRatio: false,
-                                cutout: '75%',
-                                plugins: {
-                                    legend: { display: false },
-                                    tooltip: { backgroundColor: 'rgba(15,26,51,0.95)', bodyColor: '#fff', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, padding: 12, bodyFont: { size: 13, weight: 'bold' }, callbacks: { label: function (context) { return ' $' + context.raw.toLocaleString(); } } }
-                                }
-                            }} />
-                        ) : (
-                            <div className="muted center" style={{ paddingTop: '100px', fontSize: '12px' }}>Insufficient Data for Analysis</div>
-                        )}
-                        {/* Inner Circle Text */}
-                        {stats.topCats.length > 0 && (
-                            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center', pointerEvents: 'none' }}>
-                                <div className="muted" style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.05em' }}>OPEX</div>
-                                <div style={{ fontSize: '20px', fontWeight: 950, color: '#fff', marginTop: '2px' }}>{stats.topCats.length > 0 ? ((stats.topCats[0][1].cents / stats.spend) * 100).toFixed(0) : 0}%</div>
-                            </div>
-                        )}
+                {/* Capital Allocation & Tax Liability */}
+                <div className="card glass" style={{ margin: 0, padding: '24px', minHeight: '420px', display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '24px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ marginBottom: '20px' }}>
+                            <h2 style={{ fontSize: '1.2rem', margin: 0 }}>Capital Allocation</h2>
+                            <div className="muted" style={{ fontSize: '11px', marginTop: '4px' }}>Top 10 Expense Categories</div>
+                        </div>
+                        <div style={{ flex: 1, position: 'relative', minHeight: '200px' }}>
+                            {stats.topCats.length > 0 ? (
+                                <Doughnut data={{
+                                    labels: stats.topCats.map(c => c[0]),
+                                    datasets: [{
+                                        data: stats.topCats.map(c => c[1].cents / 100),
+                                        backgroundColor: chartColors,
+                                        borderWidth: 0,
+                                        hoverOffset: 15
+                                    }]
+                                }} options={{
+                                    responsive: true, maintainAspectRatio: false,
+                                    cutout: '75%',
+                                    plugins: {
+                                        legend: { display: false },
+                                        tooltip: { backgroundColor: 'rgba(15,26,51,0.95)', bodyColor: '#fff', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, padding: 12, bodyFont: { size: 13, weight: 'bold' }, callbacks: { label: function (context) { return ' $' + context.raw.toLocaleString(); } } }
+                                    }
+                                }} />
+                            ) : (
+                                <div className="muted center" style={{ paddingTop: '80px', fontSize: '12px' }}>Insufficient Data</div>
+                            )}
+                            {stats.topCats.length > 0 && (
+                                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center', pointerEvents: 'none' }}>
+                                    <div className="muted" style={{ fontSize: '10px', fontWeight: 800 }}>OPEX</div>
+                                    <div style={{ fontSize: '20px', fontWeight: 950, color: '#fff' }}>{((stats.topCats[0][1].cents / stats.spend) * 100).toFixed(0)}%</div>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
-                    <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {stats.topCats.slice(0, 5).map(([cat, meta], i) => {
-                            const color = chartColors[i % chartColors.length];
-                            return (
-                                <div key={cat} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', background: 'rgba(255,255,255,0.02)', padding: '6px 10px', borderRadius: '8px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: color }} />
-                                        <span style={{ fontWeight: 800, color: '#a8b6dd', textTransform: 'uppercase', letterSpacing: '0.02em', fontSize: '9px', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat}</span>
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                                        <span style={{ fontWeight: 700, color: '#fff', fontSize: '11px' }}>{formatMoney(meta.cents)}</span>
-                                        <span style={{ fontWeight: 900, color: color, minWidth: '35px', textAlign: 'right', fontSize: '10px' }}>{((meta.cents / stats.spend) * 100).toFixed(1)}%</span>
-                                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', borderLeft: '1px solid rgba(255,255,255,0.05)', paddingLeft: '24px' }}>
+                        <div>
+                            <small className="muted" style={{ fontWeight: 900, fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Tax Reservoir Est.</small>
+                            <div style={{ fontSize: '1.8rem', fontWeight: 950, color: '#f7b955', marginTop: '4px' }}>{formatMoney(runwayIntel.taxLiability)}</div>
+                            <div className="muted" style={{ fontSize: '10px', marginTop: '4px', fontWeight: 700 }}>25% of {selectedYear} Net Income</div>
+                        </div>
+                        
+                        <div style={{ marginTop: 'auto' }}>
+                             <div className="muted" style={{ fontSize: '10px', fontWeight: 800, marginBottom: '10px' }}>DISTRIBUTION ARCHIVE</div>
+                             {stats.topCats.slice(0, 4).map(([cat, meta]) => (
+                                <div key={cat} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '8px' }}>
+                                    <span className="muted" style={{ fontWeight: 700 }}>{cat}</span>
+                                    <span style={{ fontWeight: 900 }}>{((meta.cents / stats.spend) * 100).toFixed(0)}%</span>
                                 </div>
-                            );
-                        })}
+                             ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Burn Velocity Projection */}
+                <div className="card glass" style={{ margin: 0, padding: '24px', height: '420px', display: 'flex', flexDirection: 'column' }}>
+                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                        <div>
+                            <h2 style={{ fontSize: '1.2rem', margin: 0 }}>Burn Velocity Projection</h2>
+                            <div className="muted" style={{ fontSize: '11px', marginTop: '4px' }}>Rolling 3-Mos Operational Runrate</div>
+                        </div>
+                    </div>
+                    <div style={{ flex: 1, position: 'relative' }}>
+                        <Line data={trendChartData} options={{
+                            responsive: true, maintainAspectRatio: false,
+                            plugins: { legend: { position: 'top', align: 'end' } },
+                            scales: {
+                                y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { callback: v => '$' + (v / 1000) + 'k' } },
+                                x: { grid: { display: false } }
+                            }
+                        }} />
+                    </div>
+                </div>
+            </div>
+
+            {/* ── Mobile Analytics Stack (Streamlined) ── */}
+            <div className="mobile-only" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div className="card glass" style={{ padding: '20px' }}>
+                    <h3 style={{ fontSize: '1rem', margin: '0 0 15px 0' }}>Cash Flow Velocity</h3>
+                    <div style={{ height: '250px' }}>
+                        <Bar data={barChartData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }} />
+                    </div>
+                </div>
+                <div className="card glass" style={{ padding: '20px' }}>
+                    <h3 style={{ fontSize: '1rem', margin: '0 0 15px 0' }}>Capital Allocation</h3>
+                    <div style={{ height: '250px', position: 'relative' }}>
+                        <Doughnut data={{
+                                labels: stats.topCats.map(c => c[0]),
+                                datasets: [{ data: stats.topCats.map(c => c[1].cents / 100), backgroundColor: chartColors, borderWidth: 0 }]
+                            }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }} 
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* ── SCC Console: AI Brain Placeholder ── */}
+            <div className="card glass" style={{ margin: 0, padding: '24px', borderTop: '3px solid #6366f1', borderRadius: '16px', background: 'linear-gradient(180deg, rgba(99, 102, 241, 0.05), transparent)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                    <div>
+                        <h3 style={{ fontSize: '1.2rem', margin: '0 0 4px 0', color: '#6366f1' }}>SCC Console</h3>
+                        <div className="muted" style={{ fontSize: '12px' }}>AI Brain & Predictive Analytics</div>
+                    </div>
+                    <button className="btn primary" style={{ fontSize: '13px', padding: '10px 16px', borderColor: 'rgba(99, 102, 241, 0.4)', color: '#fff', fontWeight: 900, background: '#6366f1' }}>
+                        LAUNCH AI BRAIN →
+                    </button>
+                </div>
+                <div style={{ marginTop: '16px', background: 'rgba(99, 102, 241, 0.08)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(99, 102, 241, 0.15)' }}>
+                    <div style={{ fontSize: '13px', color: '#c7d2fe', lineHeight: 1.6 }}>
+                        The SCC (Studio Command Center) AI Brain provides advanced predictive analytics and strategic recommendations.
                     </div>
                 </div>
             </div>

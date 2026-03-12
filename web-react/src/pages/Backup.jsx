@@ -167,6 +167,15 @@ export default function Backup() {
         }
     };
 
+    const handleResendInvite = async (code) => {
+        try {
+            await apiPost(`/admin/beta-codes/${code}/resend`);
+            modal.alert("Invite resent successfully!");
+        } catch (err) {
+            modal.alert(err.message);
+        }
+    };
+
     useEffect(() => {
         loadData();
         // Safety Lock: Do not start the background sync timer if we are in the Business Profile tab
@@ -732,7 +741,16 @@ export default function Backup() {
                                                     <div className="muted small">{c.assigned_to_email || 'General Release'}</div>
                                                 </td>
                                                 <td>
-                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '15px' }}>
+                                                        {!c.is_used && (
+                                                            <button 
+                                                                onClick={() => handleResendInvite(c.code)}
+                                                                className="btn sm secondary"
+                                                                style={{ fontSize: '10px', height: '30px', padding: '0 15px' }}
+                                                            >
+                                                                RESEND
+                                                            </button>
+                                                        )}
                                                         {c.is_used 
                                                             ? <span className="tag bad" style={{ fontSize: '10px' }}>USED BY: {c.used_by_email}</span> 
                                                             : <span className="tag ok">AVAILABLE</span>
@@ -790,8 +808,25 @@ export default function Backup() {
                             </div>
                         </div>
                      </div>
+                    <div className="card glass" style={{ border: 'none', padding: '50px', background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, transparent 100%)', marginTop: '30px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '30px' }}>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                                    <span style={{ padding: '4px 8px', background: 'rgba(99, 102, 241, 0.2)', color: '#a5b4fc', borderRadius: '4px', fontSize: '10px', fontWeight: 900 }}>ROADMAP 2026</span>
+                                    <h2 style={{ fontSize: '2rem', margin: 0 }}>Studio Brain (AI Analytics)</h2>
+                                </div>
+                                <p className="muted" style={{ fontSize: '16px' }}>
+                                    The "Studio Brain" is coming. Predictive pipeline analysis, automated receipt forensics, and executive tax strategy recommendations.
+                                </p>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '250px' }}>
+                                <div className="btn primary" style={{ opacity: 0.5, cursor: 'not-allowed', padding: '15px' }}>COMING SOON</div>
+                                <div style={{ fontSize: '11px' }} className="muted center">Predictive Engine Integration PENDING</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            )}
+             )}
         </section>
     );
 }

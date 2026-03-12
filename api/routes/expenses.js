@@ -60,19 +60,25 @@ router.get("/", async (req, res) => {
   }
 });
 
-// GET /expenses/years – returns distinct years that have data (lightweight, no row cap issues)
 router.get("/years", async (req, res) => {
   try {
+    // We only need the years, so we select just the column. 
+    // To be safe with row caps, we'll ask for a high limit.
     const { data, error } = await req.sb
       .from("expenses")
       .select("expense_date")
-      .not("expense_date", "is", null);
+      .not("expense_date", "is", null)
+      .limit(20000); // 20k rows is usually plenty for year discovery
+
     if (error) throw error;
     const yearSet = new Set();
     for (const r of data || []) {
       const y = String(r.expense_date || "").slice(0, 4);
       if (/^\d{4}$/.test(y)) yearSet.add(Number(y));
     }
+    // Always include current year even if no data
+    yearSet.add(new Date().getFullYear());
+    
     res.json({ years: [...yearSet].sort((a, b) => b - a) });
   } catch (e) {
     res.status(500).json({ error: String(e.message || e) });
