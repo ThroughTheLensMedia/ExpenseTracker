@@ -2,8 +2,8 @@
  * server.js
  * API for Expense Tracker (Refactored)
  *
- * Version: v3.0.0
- * Updated: 2026-03-05
+ * Version: v3.0.1
+ * Updated: 2026-03-11 (Triggering Build for Env Specs)
  */
 
 const express = require("express");
