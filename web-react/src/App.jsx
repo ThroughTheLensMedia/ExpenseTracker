@@ -154,9 +154,9 @@ function AppContent() {
         {mobileMenuOpen && (
           <div className="glass" style={{ 
             position: 'absolute', 
-            top: '90px', 
-            left: '0', 
-            right: '0', 
+            top: '85px', 
+            right: '30px', 
+            width: '260px',
             background: 'rgba(15, 26, 51, 0.98)', 
             backdropFilter: 'blur(30px)',
             borderRadius: '16px',
@@ -166,7 +166,9 @@ function AppContent() {
             flexDirection: 'column',
             gap: '4px',
             boxShadow: '0 30px 60px rgba(0,0,0,0.8)',
-            zIndex: 1000
+            zIndex: 1000,
+            overflow: 'hidden',
+            animation: 'fadeInDown 0.2s ease-out'
           }}>
             <NavLink to="/" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`} style={{ padding: '15px' }} end>Dashboard</NavLink>
             <NavLink to="/transactions" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`} style={{ padding: '15px' }}>Transactions</NavLink>
@@ -175,12 +177,12 @@ function AppContent() {
             <NavLink to="/crm" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`} style={{ padding: '15px' }}>CRM</NavLink>
             <NavLink to="/backup" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`} style={{ padding: '15px' }}>SCC Console</NavLink>
             <div style={{ height: '1px', background: 'var(--line)', margin: '10px' }}></div>
-            <div style={{ padding: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ padding: '15px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <div style={{ lineHeight: '1.2' }}>
                   <div className="muted" style={{ fontWeight: 950, fontSize: '11px', color: 'white' }}>{identityName}</div>
-                  <div style={{ fontSize: '9px', color: daysLeft <= 7 ? '#f59e0b' : '#ok', fontWeight: 800 }}>PRO ACCESS • {daysLeft}D LEFT</div>
+                  <div style={{ fontSize: '9px', color: daysLeft <= 7 ? '#f59e0b' : '#10b981', fontWeight: 800 }}>PRO ACCESS • {daysLeft}D LEFT</div>
                 </div>
-                <button onClick={logout} className="btn sm secondary" style={{ fontSize: '10px', borderRadius: '8px' }}>LOGOUT</button>
+                <button onClick={logout} className="btn sm secondary" style={{ fontSize: '10px', borderRadius: '8px', width: '100%', padding: '10px' }}>LOGOUT SESSION</button>
             </div>
           </div>
         )}
