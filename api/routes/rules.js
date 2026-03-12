@@ -1,12 +1,11 @@
 const express = require("express");
-const { supabase } = require("../db");
 
 const router = express.Router();
 
 // GET /rules
 router.get("/", async (req, res) => {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await req.sb
             .from("classification_rules")
             .select("*")
             .order("match_column")
@@ -75,12 +74,12 @@ router.delete("/:id", async (req, res) => {
 });
 
 // Helper to fetch ALL rows from a table (Supabase defaults to 1000)
-async function fetchAllRows(tableName, selectStr = "*") {
+async function fetchAllRows(sb, tableName, selectStr = "*") {
     let all = [];
     let page = 0;
     const PAGE_SIZE = 1000;
     while (true) {
-        const { data, error } = await supabase
+        const { data, error } = await sb
             .from(tableName)
             .select(selectStr)
             .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);

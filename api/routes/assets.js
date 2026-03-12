@@ -1,5 +1,4 @@
 const express = require("express");
-const { supabase } = require("../db");
 const z = require("zod");
 
 const router = express.Router();
@@ -27,7 +26,7 @@ const AssetSchema = z.object({
 // GET /assets
 router.get("/", async (req, res) => {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await req.sb
             .from("equipment_assets")
             .select("*")
             .order("purchase_date", { ascending: false });
@@ -43,7 +42,7 @@ router.post("/", async (req, res) => {
     try {
         const body = AssetSchema.parse(req.body);
         const useful_life_years = body.useful_life_years || DEPRECIATION_LIFE[body.category] || 5;
-        const { data, error } = await supabase
+        const { data, error } = await req.sb
             .from("equipment_assets")
             .insert({ ...body, useful_life_years })
             .select()
@@ -60,7 +59,7 @@ router.post("/", async (req, res) => {
 router.patch("/:id", async (req, res) => {
     try {
         const body = AssetSchema.partial().parse(req.body);
-        const { data, error } = await supabase
+        const { data, error } = await req.sb
             .from("equipment_assets")
             .update(body)
             .eq("id", req.params.id)
@@ -77,7 +76,7 @@ router.patch("/:id", async (req, res) => {
 // DELETE /assets/:id
 router.delete("/:id", async (req, res) => {
     try {
-        const { error } = await supabase
+        const { error } = await req.sb
             .from("equipment_assets")
             .delete()
             .eq("id", req.params.id);
@@ -93,7 +92,7 @@ router.delete("/:id", async (req, res) => {
 router.get("/depreciation", async (req, res) => {
     try {
         const year = Number(req.query.year) || new Date().getFullYear();
-        const { data, error } = await supabase
+        const { data, error } = await req.sb
             .from("equipment_assets")
             .select("*")
             .order("purchase_date", { ascending: true });

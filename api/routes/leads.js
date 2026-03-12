@@ -1,12 +1,11 @@
 const express = require("express");
-const { supabase } = require("../db");
 
 const router = express.Router();
 
 // GET /leads
 router.get("/", async (req, res) => {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await req.sb
             .from("leads")
             .select(`
                 *,
@@ -27,7 +26,7 @@ router.post("/", async (req, res) => {
     try {
         const payload = req.body;
 
-        const { data, error } = await supabase
+        const { data, error } = await req.sb
             .from("leads")
             .insert({
                 client_id: payload.client_id || null,
@@ -54,7 +53,7 @@ router.post("/", async (req, res) => {
 router.patch("/:id", async (req, res) => {
     try {
         const id = parseInt(req.params.id, 10);
-        const { data, error } = await supabase
+        const { data, error } = await req.sb
             .from("leads")
             .update({
                 ...req.body,
@@ -76,7 +75,7 @@ router.patch("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
     try {
         const id = parseInt(req.params.id, 10);
-        const { error } = await supabase
+        const { error } = await req.sb
             .from("leads")
             .delete()
             .eq("id", id);

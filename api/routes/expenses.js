@@ -1,5 +1,4 @@
 const express = require("express");
-const { supabase } = require("../db");
 const z = require("zod");
 
 const router = express.Router();
@@ -39,7 +38,7 @@ const ExpenseUpdateSchema = ExpenseBaseSchema.partial();
 router.get("/", async (req, res) => {
   try {
     const query = QuerySchema.parse(req.query);
-    let builder = supabase.from("expenses").select("*");
+    let builder = req.sb.from("expenses").select("*");
 
     if (query.start) builder = builder.gte("expense_date", query.start);
     if (query.end) builder = builder.lte("expense_date", query.end);
@@ -64,7 +63,7 @@ router.get("/", async (req, res) => {
 // GET /expenses/years – returns distinct years that have data (lightweight, no row cap issues)
 router.get("/years", async (req, res) => {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await req.sb
       .from("expenses")
       .select("expense_date")
       .not("expense_date", "is", null);
@@ -84,7 +83,7 @@ router.get("/years", async (req, res) => {
 router.get("/export.csv", async (req, res) => {
   try {
     const query = QuerySchema.pick({ start: true, end: true }).parse(req.query);
-    let builder = supabase.from("expenses").select("*");
+    let builder = req.sb.from("expenses").select("*");
 
     if (query.start) builder = builder.gte("expense_date", query.start);
     if (query.end) builder = builder.lte("expense_date", query.end);
@@ -128,7 +127,7 @@ router.post("/", async (req, res) => {
     const data = ExpenseBaseSchema.parse(req.body);
     if (!data.expense_date) data.expense_date = new Date().toISOString().slice(0, 10);
 
-    const { data: inserted, error } = await supabase
+    const { data: inserted, error } = await req.sb
       .from("expenses")
       .insert(data)
       .select()
@@ -151,7 +150,7 @@ router.post("/bulk", async (req, res) => {
     const parsedItems = z.array(ExpenseBaseSchema).parse(items);
 
     // Upsert using rm_id as uniqueness constraint
-    const { data, error } = await supabase
+    const { data, error } = await req.sb
       .from("expenses")
       .upsert(parsedItems, { onConflict: 'rm_id' })
       .select();
@@ -169,7 +168,7 @@ router.patch("/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     const data = ExpenseUpdateSchema.parse(req.body);
-    const { data: updated, error } = await supabase
+    const { data: updated, error } = await req.sb
       .from("expenses")
       .update(data)
       .eq("id", id)
@@ -189,7 +188,7 @@ router.patch("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
-    const { error, count } = await supabase
+    const { error, count } = await req.sb
       .from("expenses")
       .delete()
       .eq("id", id);

@@ -2,13 +2,22 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { apiGet, apiPost, fetchAllExpenses, apiDelete } from '../api';
 import { useModal } from '../components/ModalContext.jsx';
 import CategorySelect from '../components/CategorySelect.jsx';
+import { useAuth } from '../components/AuthContext';
 
 export default function Backup() {
     const modal = useModal();
-    const [activeTab, setActiveTab] = useState('automation'); // 'automation', 'profile', 'infrastructure'
-
+    const { user, subscription, refreshSubscription } = useAuth();
+    const [activeTab, setActiveTab] = useState('automation'); 
+    
     // --- Common States ---
     const [stats, setStats] = useState({ expenses: 0, equipment: 0, invoices: 0, clients: 0 });
+// ...
+    // --- Subscription States ---
+    const [betaCode, setBetaCode] = useState('');
+    const [redeeming, setRedeeming] = useState(false);
+    const [allSubscriptions, setAllSubscriptions] = useState([]);
+    const [betaCodes, setBetaCodes] = useState([]);
+    const [genCodeLoading, setGenCodeLoading] = useState(false);
     const [allExpenses, setAllExpenses] = useState([]);
     const [loading, setLoading] = useState(false);
     const [isHealthy, setIsHealthy] = useState(true);
@@ -75,10 +84,48 @@ export default function Backup() {
                 invoices: inv.length,
                 clients: activeLeads.length
             });
+
+            // Admin Logic: If you are Joshua, load the SaaS management data
+            if (user?.email === 'joshua.deuermeyer@gmail.com') {
+                const [subs, codes] = await Promise.all([
+                    apiGet('/admin/subscriptions'),
+                    apiGet('/admin/beta-codes')
+                ]);
+                setAllSubscriptions(subs || []);
+                setBetaCodes(codes || []);
+            }
         } catch (e) {
             console.error("Master load failed", e);
         } finally {
             if (!silent) setLoading(false);
+        }
+    };
+
+    const handleRedeemCode = async () => {
+        if (!betaCode) return;
+        setRedeeming(true);
+        try {
+            const res = await apiPost('/subscription/redeem', { code: betaCode });
+            modal.alert(res.message);
+            setBetaCode('');
+            refreshSubscription();
+            loadData(true);
+        } catch (err) {
+            modal.alert(err.message);
+        } finally {
+            setRedeeming(false);
+        }
+    };
+
+    const handleGenerateBetaCode = async () => {
+        setGenCodeLoading(true);
+        try {
+            await apiPost('/admin/beta-codes', { daysValid: 90 });
+            loadData(true);
+        } catch (err) {
+            modal.alert(err.message);
+        } finally {
+            setGenCodeLoading(false);
         }
     };
 
@@ -208,6 +255,9 @@ export default function Backup() {
                     <button className={`pill ${activeTab === 'automation' ? 'active' : ''}`} onClick={() => setActiveTab('automation')}>⚡ Automation</button>
                     <button className={`pill ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>👤 Business Profile</button>
                     <button className={`pill ${activeTab === 'infrastructure' ? 'active' : ''}`} onClick={() => setActiveTab('infrastructure')}>🔒 Infrastructure</button>
+                    {user?.email === 'joshua.deuermeyer@gmail.com' && (
+                        <button className={`pill ${activeTab === 'saas' ? 'active' : ''}`} onClick={() => setActiveTab('saas')}>💎 SaaS Studio Mgmt</button>
+                    )}
                 </nav>
             </div>
 
@@ -419,32 +469,51 @@ export default function Backup() {
             {activeTab === 'infrastructure' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
                     <div className="grid two">
+                        <div className="card glass glow-blue" style={{ margin: 0, padding: '30px', border: 'none' }} id="redeem">
+                            <h2>Studio License Lock</h2>
+                            <p className="muted">Enter your Beta Studio Key or Pro Key to extend your access.</p>
+                            <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                                <input 
+                                    value={betaCode} 
+                                    onChange={e => setBetaCode(e.target.value.toUpperCase())} 
+                                    placeholder="XXXX-XXXX-XXXX" 
+                                    style={{ padding: '12px' }} 
+                                />
+                                <button className="btn primary" onClick={handleRedeemCode} disabled={redeeming || !betaCode}>
+                                    {redeeming ? 'Unlocking...' : 'Redeem Key'}
+                                </button>
+                            </div>
+                            <div className="muted small" style={{ marginTop: '10px' }}>
+                                Current Plan: <span style={{ fontWeight: 800, color: 'var(--accent)' }}>{subscription?.plan_type?.toUpperCase()}</span>
+                            </div>
+                        </div>
                         <div className="card glass" style={{ margin: 0, padding: '30px' }}>
                             <h2>Edge Network Purge</h2>
                             <p className="muted">Force-clear stagnant cache on global edge nodes. Useful if UI data feels delayed.</p>
                             <button className="btn secondary" onClick={handlePurge} style={{ width: '100%', marginTop: '20px', height: '50px' }}>{purging ? 'Purging Nodes...' : 'Execute Purge'}</button>
                             {msg && <div className="tag ok" style={{ marginTop: '15px', width: '100%', justifyContent: 'center' }}>{msg}</div>}
                         </div>
-                        <div className="card glass" style={{ margin: 0, padding: '30px' }}>
-                            <h2>Restore Hub</h2>
-                            <p className="muted">Upload your studio archive (.json) to restore historical system state.</p>
-                            <label className="btn secondary" style={{ width: '100%', marginTop: '20px', cursor: 'pointer', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <input type="file" accept=".json" onChange={async (e) => {
-                                    const file = e.target.files[0]; if (!file) return; setRestoring(true);
-                                    const reader = new FileReader(); reader.onload = async (ev) => {
-                                        try { 
-                                            const data = JSON.parse(ev.target.result); 
-                                            await apiPost('/admin/import-all', data); 
-                                            await modal.alert("Studio state restored!"); 
-                                            loadData(); 
-                                        }
-                                        catch (err) { modal.alert(err.message); } finally { setRestoring(false); }
-                                    }; reader.readAsText(file);
-                                }} style={{ display: 'none' }} />
-                                {restoring ? 'Restoring Archive...' : 'Upload & Restore Snapshot'}
-                            </label>
-                        </div>
                     </div>
+                    <div className="card glass" style={{ margin: 0, padding: '30px' }}>
+                        <h2>Restore Hub</h2>
+                        <p className="muted">Upload your studio archive (.json) to restore historical system state.</p>
+                        <label className="btn secondary" style={{ width: '100%', marginTop: '20px', cursor: 'pointer', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <input type="file" accept=".json" onChange={async (e) => {
+                                const file = e.target.files[0]; if (!file) return; setRestoring(true);
+                                const reader = new FileReader(); reader.onload = async (ev) => {
+                                    try { 
+                                        const data = JSON.parse(ev.target.result); 
+                                        await apiPost('/admin/import-all', data); 
+                                        await modal.alert("Studio state restored!"); 
+                                        loadData(); 
+                                    }
+                                    catch (err) { modal.alert(err.message); } finally { setRestoring(false); }
+                                }; reader.readAsText(file);
+                            }} style={{ display: 'none' }} />
+                            {restoring ? 'Restoring Archive...' : 'Upload & Restore Snapshot'}
+                        </label>
+                    </div>
+{/* ... rest of original infrastructure content ... */}
 
                     {/* Cloud Access Row */}
                     <div className="card glass glow-blue" style={{ border: 'none', padding: '50px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '30px' }}>
@@ -473,6 +542,75 @@ export default function Backup() {
                             <span style={{ fontWeight: 950, fontSize: '13px', letterSpacing: '0.05em' }}>{window.location.hostname}</span>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {activeTab === 'saas' && user?.email === 'joshua.deuermeyer@gmail.com' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+                     <div className="card glass glow-blue" style={{ border: 'none', padding: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                         <div>
+                            <h2 style={{ fontSize: '2rem', margin: 0 }}>Active Studio Licenses</h2>
+                            <p className="muted">Monitoring all registered studio sessions across the platform.</p>
+                         </div>
+                         <button className="btn primary" onClick={handleGenerateBetaCode} disabled={genCodeLoading}>
+                            {genCodeLoading ? 'Generating...' : 'Generate 90-Day Beta Key'}
+                         </button>
+                     </div>
+
+                     <div className="grid two">
+                        <div className="card glass" style={{ margin: 0, padding: '30px' }}>
+                            <h3>Invite Codes</h3>
+                            <div className="tableWrap" style={{ border: 'none', marginTop: '20px' }}>
+                                <table style={{ width: '100%' }}>
+                                    <thead>
+                                        <tr>
+                                            <th style={{ textAlign: 'left' }}>Code</th>
+                                            <th style={{ textAlign: 'left' }}>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {betaCodes.map(c => (
+                                            <tr key={c.code}>
+                                                <td style={{ fontWeight: 800 }}>{c.code}</td>
+                                                <td>
+                                                    {c.is_used 
+                                                        ? <span className="tag bad">{c.used_by_email}</span> 
+                                                        : <span className="tag ok">AVAILABLE</span>
+                                                    }
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div className="card glass" style={{ margin: 0, padding: '30px' }}>
+                            <h3>Studio Sessions</h3>
+                            <div className="tableWrap" style={{ border: 'none', marginTop: '20px' }}>
+                                <table style={{ width: '100%' }}>
+                                    <thead>
+                                        <tr>
+                                            <th style={{ textAlign: 'left' }}>Email</th>
+                                            <th style={{ textAlign: 'left' }}>Expires</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {allSubscriptions.map(s => (
+                                            <tr key={s.user_id}>
+                                                <td style={{ fontSize: '12px' }}>{s.email}</td>
+                                                <td>
+                                                  <span className={`tag ${new Date(s.expires_at) < new Date() ? 'bad' : 'ok'}`}>
+                                                    {new Date(s.expires_at).toLocaleDateString()}
+                                                  </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                     </div>
                 </div>
             )}
         </section>

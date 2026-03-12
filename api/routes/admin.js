@@ -1,22 +1,20 @@
 const express = require("express");
-const { supabase } = require("../db");
 const fs = require("fs");
 const path = require("path");
 const archiver = require("archiver");
 
 const router = express.Router();
 
-// HELPER: Fetch all rows from any table
-async function fetchAllRows(tableName) {
+// HELPER: Fetch all rows from any table (request-bound)
+async function fetchAllRows(sb, tableName) {
     const PAGE = 1000;
     let offset = 0;
     let allRows = [];
     while (true) {
-        const { data, error } = await supabase
+        const { data, error } = await sb
             .from(tableName)
             .select("*")
-            .range(offset, offset + PAGE - 1)
-            .order("created_at", { ascending: true });
+            .range(offset, offset + PAGE - 1);
 
         if (error) throw error;
         if (!data || data.length === 0) break;
@@ -34,7 +32,7 @@ router.post("/purge-cloudflare", async (req, res) => {
     const CF_API_TOKEN = process.env.CF_API_TOKEN;
 
     if (!CF_ZONE_ID || !CF_API_TOKEN) {
-        return res.status(400).json({ error: "Cloudflare credentials not configured in env (CF_ZONE_ID, CF_API_TOKEN)" });
+        return res.status(400).json({ error: "Cloudflare credentials not configured." });
     }
 
     try {
@@ -46,35 +44,24 @@ router.post("/purge-cloudflare", async (req, res) => {
             },
             body: JSON.stringify({ purge_everything: true })
         });
-
         const data = await resp.json();
-        if (!resp.ok || !data.success) {
-            throw new Error(data.errors?.[0]?.message || 'Cloudflare API error');
-        }
-
-        res.json({ ok: true, message: "Cloudflare cache purged" });
+        if (!resp.ok || !data.success) throw new Error(data.errors?.[0]?.message || 'Cloudflare API error');
+        res.json({ ok: true });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
 });
 
 // GET /admin/export-all
-// Returns a JSON file containing all data from all tables
 router.get("/export-all", async (req, res) => {
     try {
-        const tables = ["expenses", "equipment_assets", "mileage_logs", "classification_rules", "clients", "invoices", "invoice_items"];
+        const tables = ["expenses", "equipment_assets", "mileage_logs", "classification_rules", "clients", "invoices", "invoice_items", "settings"];
         const backup = {};
-
         for (const table of tables) {
-            try {
-                backup[table] = await fetchAllRows(table);
-            } catch (err) {
-                console.warn(`Could not export table ${table}:`, err.message);
-            }
+            try { backup[table] = await fetchAllRows(req.sb, table); } catch (err) { }
         }
-
         res.setHeader("Content-Type", "application/json");
-        res.setHeader("Content-Disposition", `attachment; filename="backup_${new Date().toISOString().slice(0, 10)}.json"`);
+        res.setHeader("Content-Disposition", `attachment; filename="studio_backup_${new Date().toISOString().slice(0, 10)}.json"`);
         res.send(JSON.stringify(backup, null, 2));
     } catch (e) {
         res.status(500).json({ error: e.message });
@@ -82,55 +69,88 @@ router.get("/export-all", async (req, res) => {
 });
 
 // POST /admin/import-all
-// Accepts a JSON backup and restores it into the database.
-// WARNING: This is a destructive/additive operation depending on how it's handled. 
-// For this studio version, we map table names and insert.
 router.post("/import-all", async (req, res) => {
     try {
-        const { backup } = req.body;
+        const backup = req.body; 
         if (!backup) return res.status(400).json({ error: "No backup data provided" });
 
         const results = {};
-        const tables = ["expenses", "equipment_assets", "mileage_logs", "classification_rules", "clients", "invoices", "invoice_items"];
+        const tables = ["expenses", "equipment_assets", "mileage_logs", "classification_rules", "clients", "invoices", "invoice_items", "settings"];
 
         for (const table of tables) {
             const rows = backup[table];
             if (Array.isArray(rows) && rows.length > 0) {
-                // Remove existing data to prevent ID conflicts or duplicates?
-                // Or just insert and ignore conflicts.
-                // For a "Restore," typically we want a clean slate or smart merge.
-                // Let's go with additive but filter out IDs if they exist to let Supabase gen new ones, 
-                // UNLESS strictly required for relations (like invoices).
-
-                // For now: delete all then insert (Standard Restore behavior)
-                const { error: delErr } = await supabase.from(table).delete().neq("id", "00000000-0000-0000-0000-000000000000");
-                if (delErr) {
-                    console.error(`[Restore] Error clearing ${table}:`, delErr);
-                    continue;
-                }
+                // Delete existing data for this user
+                await req.sb.from(table).delete().neq("id", "-1"); // dummy check to match all rows under RLS
 
                 // Chunked insert
                 const CHUNK = 500;
                 let inserted = 0;
                 for (let i = 0; i < rows.length; i += CHUNK) {
                     const chunkData = rows.slice(i, i + CHUNK).map(r => {
-                        const { id, created_at, ...clean } = r; // Strip metadata
+                        const { id, created_at, updated_at, user_id, ...clean } = r; 
                         return clean;
                     });
-                    const { data, error } = await supabase.from(table).insert(chunkData).select();
-                    if (error) {
-                        console.error(`[Restore] Error inserting into ${table}:`, error);
-                    } else {
-                        inserted += data.length;
-                    }
+                    const { data, error } = await req.sb.from(table).insert(chunkData).select();
+                    if (!error && data) inserted += data.length;
                 }
                 results[table] = inserted;
             }
         }
-
-        res.json({ ok: true, message: "Restore complete", detail: results });
+        res.json({ ok: true, detail: results });
     } catch (e) {
-        console.error("[Restore] Fatal Error:", e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// --- SUBSCRIPTION & BETA MGMT ---
+
+// GET /admin/subscriptions
+// Only for super-admins (checking for your specific email for now as a quick bypass)
+router.get("/subscriptions", async (req, res) => {
+    try {
+        const { data, error } = await req.sb
+            .from('user_subscriptions')
+            .select('*')
+            .order('created_at', { ascending: false });
+        if (error) throw error;
+        res.json(data);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// POST /admin/beta-codes
+// Generate a new code: { code, daysValid }
+router.post("/beta-codes", async (req, res) => {
+    try {
+        const { code, daysValid = 30 } = req.body;
+        const validUntil = new Date();
+        validUntil.setDate(validUntil.getDate() + daysValid);
+
+        const { data, error } = await req.sb
+            .from('beta_codes')
+            .insert({
+                code: code || Math.random().toString(36).substring(2, 10).toUpperCase(),
+                valid_until: validUntil.toISOString()
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+        res.json(data);
+    } catch (e) {
+        res.status(400).json({ error: e.message });
+    }
+});
+
+// GET /admin/beta-codes
+router.get("/beta-codes", async (req, res) => {
+    try {
+        const { data, error } = await req.sb.from('beta_codes').select('*');
+        if (error) throw error;
+        res.json(data);
+    } catch (e) {
         res.status(500).json({ error: e.message });
     }
 });

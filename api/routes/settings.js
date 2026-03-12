@@ -1,11 +1,10 @@
 const express = require("express");
-const { supabase } = require("../db");
 const router = express.Router();
 
 // Get settings - always returns an object even if empty
 router.get("/", async (req, res) => {
     try {
-        const { data, error } = await supabase.from("settings").select("*").limit(1).maybeSingle();
+        const { data, error } = await req.sb.from("settings").select("*").limit(1).maybeSingle();
         if (error) throw error;
         res.json(data || {});
     } catch (e) {
@@ -16,7 +15,7 @@ router.get("/", async (req, res) => {
 // Update settings - robust upsert logic
 router.post("/", async (req, res) => {
     try {
-        const { data: existing } = await supabase.from("settings").select("id").limit(1).maybeSingle();
+        const { data: existing } = await req.sb.from("settings").select("id").limit(1).maybeSingle();
 
         let result;
         const payload = { ...req.body };
@@ -26,14 +25,14 @@ router.post("/", async (req, res) => {
         protectedFields.forEach(f => delete payload[f]);
 
         if (existing && existing.id) {
-            result = await supabase
+            result = await req.sb
                 .from("settings")
                 .update(payload)
                 .eq("id", existing.id)
                 .select()
                 .single();
         } else {
-            result = await supabase
+            result = await req.sb
                 .from("settings")
                 .insert([payload])
                 .select()

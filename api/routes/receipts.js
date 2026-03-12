@@ -2,7 +2,6 @@ const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const { supabase } = require("../db");
 
 const router = express.Router();
 
@@ -61,7 +60,7 @@ router.post("/:table/:id", upload.single("file"), async (req, res) => {
         }
 
         // Update Database
-        const { data, error } = await supabase
+        const { data, error } = await req.sb
             .from(table)
             .update({ receipt_link, updated_at: new Date().toISOString() })
             .eq("id", id)

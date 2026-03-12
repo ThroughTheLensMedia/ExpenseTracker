@@ -1,5 +1,4 @@
 const express = require("express");
-const { supabase } = require("../db");
 const z = require("zod");
 
 const router = express.Router();
@@ -20,7 +19,7 @@ const QuerySchema = z.object({
 router.get("/", async (req, res) => {
     try {
         const { year } = QuerySchema.parse(req.query);
-        let query = supabase.from("mileage_logs").select("*").order("log_date", { ascending: false });
+        let query = req.sb.from("mileage_logs").select("*").order("log_date", { ascending: false });
         if (year) {
             query = query.gte("log_date", `${year}-01-01`).lte("log_date", `${year}-12-31`);
         }
@@ -65,7 +64,7 @@ router.delete("/:id", async (req, res) => {
 // GET /mileage/rates  – returns all stored IRS rates
 router.get("/rates", async (req, res) => {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await req.sb
             .from("mileage_rates")
             .select("*")
             .order("year", { ascending: false });
@@ -120,7 +119,7 @@ router.post("/rates/sync", async (req, res) => {
         }
 
         // Upsert the rate
-        const { error: upsertError } = await supabase
+        const { error: upsertError } = await req.sb
             .from("mileage_rates")
             .upsert({
                 year: currentYear,
@@ -146,7 +145,7 @@ router.post("/rates", async (req, res) => {
             rate_per_mile: z.coerce.number().min(0).max(5),
         }).parse(req.body);
 
-        const { error } = await supabase
+        const { error } = await req.sb
             .from("mileage_rates")
             .upsert({ ...body, source: "Manual entry", last_synced_at: new Date().toISOString() }, { onConflict: "year" });
 

@@ -1,15 +1,35 @@
-// API Data Fetching Service
+// API Data Fetching Service (SaaS Authenticated Version)
+import { supabase } from '../components/AuthContext';
+
+async function getAuthHeaders() {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    return {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    };
+}
 
 export async function apiGet(path) {
-    const r = await fetch("/api" + path, { credentials: "include" });
-    if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+    const headers = await getAuthHeaders();
+    const r = await fetch("/api" + path, { 
+        headers: { 'Authorization': headers.Authorization },
+        credentials: "include" 
+    });
+    if (!r.ok) {
+        if (r.status === 401) {
+             // Session expired - could trigger a logout/redirect here if needed
+        }
+        throw new Error(`${r.status} ${r.statusText}`);
+    }
     return r.json();
 }
 
 export async function apiPatch(path, payload) {
+    const headers = await getAuthHeaders();
     const r = await fetch("/api" + path, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers,
         credentials: "include",
         body: JSON.stringify(payload)
     });
@@ -22,9 +42,10 @@ export async function apiPatch(path, payload) {
 }
 
 export async function apiPost(path, payload) {
+    const headers = await getAuthHeaders();
     const r = await fetch("/api" + path, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         credentials: "include",
         body: JSON.stringify(payload)
     });
@@ -37,8 +58,10 @@ export async function apiPost(path, payload) {
 }
 
 export async function apiDelete(path) {
+    const headers = await getAuthHeaders();
     const r = await fetch("/api" + path, {
         method: "DELETE",
+        headers: { 'Authorization': headers.Authorization },
         credentials: "include"
     });
     if (!r.ok) {
@@ -53,7 +76,7 @@ let _expensesCache = null;
 let _expensesAge = 0;
 const CACHE_TTL = 30000; // 30 seconds
 
-// Fetch ALL expenses by paginating in batches of 1000 (Supabase hard-caps at 1000/page)
+// Fetch ALL expenses by paginating in batches of 1000
 export async function fetchAllExpenses(force = false) {
     if (!force && _expensesCache && (Date.now() - _expensesAge < CACHE_TTL)) {
         return [..._expensesCache]; // return copy
@@ -66,7 +89,7 @@ export async function fetchAllExpenses(force = false) {
         const data = await apiGet(`/expenses?limit=${PAGE}&offset=${offset}`);
         const rows = data.rows || [];
         allRows = allRows.concat(rows);
-        if (rows.length < PAGE) break; // last page — fewer rows than page size means no more
+        if (rows.length < PAGE) break;
         offset += PAGE;
     }
 
@@ -75,13 +98,11 @@ export async function fetchAllExpenses(force = false) {
     return [...allRows];
 }
 
-// Helper to invalidate the cache when user edits/adds data
 export function invalidateExpensesCache() {
     _expensesCache = null;
     _expensesAge = 0;
 }
 
-// Lightweight: get just the distinct years that have data (for year dropdowns)
 export async function fetchExpenseYears() {
     try {
         const data = await apiGet('/expenses/years');
@@ -96,7 +117,6 @@ export async function fetchAllMileage(year) {
     return apiGet(path);
 }
 
-// Global utility for formatting
 export function formatMoney(cents) {
     const n = Number(cents || 0) / 100;
     const abs = Math.abs(n);

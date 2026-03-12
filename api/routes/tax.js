@@ -1,5 +1,4 @@
 const express = require("express");
-const { supabase } = require("../db");
 const z = require("zod");
 
 const router = express.Router();
@@ -22,9 +21,9 @@ const TaxAssignSchema = z.object({
   business_use_pct: z.coerce.number().min(0).max(100).optional()
 });
 
-async function fetchDepreciationTotal(year) {
+async function fetchDepreciationTotal(sb, year) {
   try {
-    const { data, error } = await supabase.from("equipment_assets").select("*");
+    const { data, error } = await sb.from("equipment_assets").select("*");
     if (error || !data) return 0;
 
     let totalCents = 0;
@@ -93,7 +92,7 @@ router.get("/summary", async (req, res) => {
     }
 
     // INJECT DEPRECIATION FROM ASSETS TABLE (Line 13)
-    const assetDeprCents = await fetchDepreciationTotal(year);
+    const assetDeprCents = await fetchDepreciationTotal(req.sb, year);
     if (assetDeprCents > 0) {
       if (!buckets["Depreciation"]) {
         buckets["Depreciation"] = { tax_bucket: "Depreciation", count: 0, spend_cents: 0, deductible_cents: 0 };
@@ -130,7 +129,7 @@ router.post("/assign", async (req, res) => {
     if (data.tax_deductible !== undefined) updateData.tax_deductible = data.tax_deductible;
     if (data.business_use_pct !== undefined) updateData.business_use_pct = data.business_use_pct;
 
-    const { error, count } = await supabase
+    const { error, count } = await req.sb
       .from("expenses")
       .update(updateData)
       .gte("expense_date", start)
@@ -179,7 +178,7 @@ router.post("/auto-map", async (req, res) => {
     ];
 
     for (const vmap of VENDOR_MAPPING) {
-      const { error, count } = await supabase
+      const { error, count } = await req.sb
         .from("expenses")
         .update({
           tax_bucket: vmap.bucket,
@@ -194,7 +193,7 @@ router.post("/auto-map", async (req, res) => {
     // New: Auto-mark both INCOME categories and special words case-insensitively as business income (Line 1)
     const INCOME_KEYWORDS = ['photo income', 'freelance income', 'contract income', 'side income', 'photography income'];
     for (const kw of INCOME_KEYWORDS) {
-      const { error: incError, count: incCount } = await supabase
+      const { error: incError, count: incCount } = await req.sb
         .from("expenses")
         .update({ tax_deductible: true })
         .lt("amount_cents", 0)
@@ -204,7 +203,7 @@ router.post("/auto-map", async (req, res) => {
 
     // Fix: Un-mark expense returns (like Amazon refunds) that were accidentally flagged as Line 1 income
     // Only un-mark if they DON'T match our income keywords
-    const { data: allNegatives, error: negError } = await supabase
+    const { data: allNegatives, error: negError } = await req.sb
       .from("expenses")
       .select("id, category")
       .lt("amount_cents", 0)
@@ -223,7 +222,7 @@ router.post("/auto-map", async (req, res) => {
     // Then: Map the categories for expenses as normal
     for (const mapping of RM_MAPPING) {
       for (const cat of mapping.categories) {
-        const { error, count } = await supabase
+        const { error, count } = await req.sb
           .from("expenses")
           .update({
             tax_bucket: mapping.bucket,
@@ -251,7 +250,7 @@ router.get("/export.csv", async (req, res) => {
     const end = `${year}-12-31`;
 
     // Fetch all fields needed for line-item detail
-    const { data, error } = await supabase
+    const { data, error } = await req.sb
       .from("expenses")
       .select("expense_date, vendor, category, tax_bucket, amount_cents, tax_deductible, business_use_pct, notes")
       .gte("expense_date", start)

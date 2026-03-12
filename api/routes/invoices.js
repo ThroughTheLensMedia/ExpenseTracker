@@ -1,5 +1,4 @@
 const express = require("express");
-const { supabase } = require("../db");
 const z = require("zod");
 
 const router = express.Router();
@@ -36,7 +35,7 @@ const InvoiceSchema = z.object({
 
 router.get("/clients", async (req, res) => {
     try {
-        const { data, error } = await supabase.from("clients").select("*").order("name");
+        const { data, error } = await req.sb.from("clients").select("*").order("name");
         if (error) throw error;
         res.json(data);
     } catch (e) {
@@ -47,7 +46,7 @@ router.get("/clients", async (req, res) => {
 router.post("/clients", async (req, res) => {
     try {
         const body = ClientSchema.parse(req.body);
-        const { data, error } = await supabase.from("clients").insert(body).select().single();
+        const { data, error } = await req.sb.from("clients").insert(body).select().single();
         if (error) throw error;
         res.json(data);
     } catch (e) {
@@ -59,7 +58,7 @@ router.post("/clients", async (req, res) => {
 
 router.get("/", async (req, res) => {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await req.sb
             .from("invoices")
             .select("*, clients(name, email), invoice_items(*)")
             .order("issue_date", { ascending: false });
@@ -72,7 +71,7 @@ router.get("/", async (req, res) => {
 
 router.get("/:id", async (req, res) => {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await req.sb
             .from("invoices")
             .select("*, clients(*), invoice_items(*)")
             .eq("id", req.params.id)
@@ -90,7 +89,7 @@ router.post("/", async (req, res) => {
         const { items, ...invoiceData } = body;
 
         // 1. Insert Invoice
-        const { data: invoice, error: invError } = await supabase
+        const { data: invoice, error: invError } = await req.sb
             .from("invoices")
             .insert(invoiceData)
             .select()
@@ -102,7 +101,7 @@ router.post("/", async (req, res) => {
 
         // 2. Insert Items
         const itemsWithId = items.map(item => ({ ...item, invoice_id: invoice.id }));
-        const { error: itemsError } = await supabase.from("invoice_items").insert(itemsWithId);
+        const { error: itemsError } = await req.sb.from("invoice_items").insert(itemsWithId);
 
         if (itemsError) {
             console.error("Item insertion error:", itemsError);
@@ -124,7 +123,7 @@ router.patch("/:id", async (req, res) => {
         }
 
         // 1. Update Invoice Metadata
-        const { data: invoice, error: invError } = await supabase
+        const { data: invoice, error: invError } = await req.sb
             .from("invoices")
             .update({ ...invoiceData, updated_at: new Date() })
             .eq("id", req.params.id)
@@ -139,10 +138,10 @@ router.patch("/:id", async (req, res) => {
         // 2. Handle Items if provided (Replace old items with new ones for simplicity in edits)
         if (items && Array.isArray(items)) {
             // Delete old items
-            await supabase.from("invoice_items").delete().eq("invoice_id", req.params.id);
+            await req.sb.from("invoice_items").delete().eq("invoice_id", req.params.id);
             // Insert new items
             const itemsWithId = items.map(item => ({ ...item, invoice_id: req.params.id }));
-            const { error: itemsError } = await supabase.from("invoice_items").insert(itemsWithId);
+            const { error: itemsError } = await req.sb.from("invoice_items").insert(itemsWithId);
             if (itemsError) throw itemsError;
         }
 
@@ -213,7 +212,7 @@ router.patch("/:id", async (req, res) => {
 
 router.delete("/:id", async (req, res) => {
     try {
-        const { error } = await supabase.from("invoices").delete().eq("id", req.params.id);
+        const { error } = await req.sb.from("invoices").delete().eq("id", req.params.id);
         if (error) throw error;
         res.json({ ok: true });
     } catch (e) {
