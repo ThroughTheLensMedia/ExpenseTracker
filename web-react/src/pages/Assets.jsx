@@ -22,7 +22,7 @@ const BLANK = {
     purchase_date: '', vendor: '', description: '', category: 'Camera',
     cost_cents: '', serial_number: '', receipt_on_file: false,
     depreciation_method: 'straight_line', notes: '',
-    disposal_date: '', disposal_value_cents: ''
+    disposal_date: '', disposal_value_cents: '', receipt_link: ''
 };
 
 export default function Assets() {
@@ -38,6 +38,7 @@ export default function Assets() {
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [years, setYears] = useState([2024, 2025, 2026]);
     const [searchTerm, setSearchTerm] = useState('');
+    const [receiptFile, setReceiptFile] = useState(null);
 
     const load = async () => {
         setLoading(true);
@@ -68,9 +69,31 @@ export default function Assets() {
                 disposal_value_cents: form.disposal_value_cents ? parseDollar(form.disposal_value_cents) : null,
                 disposal_date: form.disposal_date || null
             };
-            if (editingAsset) await apiPatch(`/assets/${editingAsset.id}`, payload);
-            else await apiPost('/assets', payload);
-            setForm(BLANK); setEditingAsset(null); setMsg('✅ Asset Saved'); load();
+            
+            let result;
+            if (editingAsset) {
+                result = await apiPatch(`/assets/${editingAsset.id}`, payload);
+            } else {
+                result = await apiPost('/assets', payload);
+            }
+
+            // Handle potential receipt upload
+            if (receiptFile && result?.id) {
+                setMsg('📂 Uploading receipt...');
+                const fd = new FormData();
+                fd.append("file", receiptFile);
+                await fetch(`/api/receipts/equipment_assets/${result.id}`, {
+                    method: "POST",
+                    credentials: "include",
+                    body: fd
+                });
+            }
+
+            setForm(BLANK); 
+            setEditingAsset(null); 
+            setReceiptFile(null);
+            setMsg('✅ Asset & Receipt Saved'); 
+            load();
         } catch (e) { setMsg(`❌ Error: ${e.message}`); }
         finally { setSaving(false); }
     };
@@ -218,7 +241,12 @@ export default function Assets() {
                                         {filteredAssets.map(a => (
                                             <tr key={a.id}>
                                                 <td style={{ padding: '8px 10px' }}>
-                                                    <div style={{ fontWeight: 700 }}>{a.description}</div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                        <div style={{ fontWeight: 700 }}>{a.description}</div>
+                                                        {a.receipt_link && (
+                                                            <a href={a.receipt_link} target="_blank" rel="noreferrer" title="View Receipt" style={{ textDecoration: 'none', fontSize: '14px' }}>🧾</a>
+                                                        )}
+                                                    </div>
                                                     <div className="muted small" style={{ fontSize: '10px' }}>{a.purchase_date} · {a.vendor}</div>
                                                 </td>
                                                 <td style={{ fontWeight: 600 }}>{formatMoney(a.cost * 100)}</td>
@@ -241,7 +269,9 @@ export default function Assets() {
                                     const ui = STATUS_UI[a.status] || STATUS_UI.active;
                                     return (
                                         <div key={a.id} className="gear-slot glass" style={{ opacity: a.status === 'sold' ? 0.6 : 1, padding: '14px', borderRadius: '18px' }}>
-                                            <div className="cat-icon" style={{ width: '38px', height: '38px', fontSize: '20px', borderRadius: '12px' }}>{cat.icon}</div>
+                                            <div className="cat-icon" style={{ width: '38px', height: '38px', fontSize: '20px', borderRadius: '12px' }}>
+                                                {a.receipt_link ? <a href={a.receipt_link} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>🧾</a> : cat.icon}
+                                            </div>
                                             <div className="price-tag" style={{ top: '14px', right: '14px', fontSize: '12px' }}>{formatMoney(a.cost * 100)}</div>
                                             <div style={{ marginTop: '8px' }}>
                                                 <div style={{ fontWeight: 800, fontSize: '13px', lineHeight: 1.2 }}>{a.description}</div>
@@ -293,6 +323,16 @@ export default function Assets() {
                             <div>
                                 <small className="muted" style={{ fontSize: '10px' }}>Vendor</small>
                                 <input style={{ fontSize: '12px', padding: '8px' }} value={form.vendor} onChange={e => setForm({ ...form, vendor: e.target.value })} placeholder="Adorama..." />
+                            </div>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                            <div>
+                                <small className="muted" style={{ fontSize: '10px' }}>Receipt Upload</small>
+                                <input type="file" style={{ fontSize: '10px', padding: '4px' }} onChange={e => setReceiptFile(e.target.files[0])} />
+                            </div>
+                            <div>
+                                <small className="muted" style={{ fontSize: '10px' }}>Receipt Link (Manual)</small>
+                                <input style={{ fontSize: '12px', padding: '8px' }} value={form.receipt_link || ''} onChange={e => setForm({ ...form, receipt_link: e.target.value })} placeholder="https://..." />
                             </div>
                         </div>
                         <div className="hr"></div>

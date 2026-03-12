@@ -69,7 +69,7 @@ export default function TransactionDrawer({ transaction, onClose, onSave }) {
         try {
             const fd = new FormData();
             fd.append("file", receiptFile);
-            const r = await fetch(`/api/receipts/${transaction.id}`, {
+            const r = await fetch(`/api/receipts/expenses/${transaction.id}`, {
                 method: "POST",
                 credentials: "include",
                 body: fd

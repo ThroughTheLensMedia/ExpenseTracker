@@ -76,6 +76,7 @@ CREATE TABLE IF NOT EXISTS equipment_assets (
   useful_life_years SMALLINT NOT NULL DEFAULT 5,
   disposal_date DATE,                   -- Date item was sold or retired
   disposal_value_cents BIGINT,          -- Resale price / salvage value
+  receipt_link TEXT,                    -- Link to purchase receipt
   notes TEXT NOT NULL DEFAULT '',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
