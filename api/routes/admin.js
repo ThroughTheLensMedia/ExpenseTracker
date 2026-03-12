@@ -226,4 +226,35 @@ router.delete("/beta-codes/:code", async (req, res) => {
     }
 });
 
+// POST /admin/subscriptions/:userId/extend
+router.post("/subscriptions/:userId/extend", async (req, res) => {
+    try {
+        const { data: current } = await req.sb
+            .from('user_subscriptions')
+            .select('expires_at')
+            .eq('user_id', req.params.userId)
+            .single();
+            
+        let newExpiry = new Date();
+        if (current && current.expires_at && new Date(current.expires_at) > new Date()) {
+            newExpiry = new Date(current.expires_at);
+        }
+        newExpiry.setDate(newExpiry.getDate() + 90);
+
+        const { error } = await req.sb
+            .from('user_subscriptions')
+            .update({ 
+                expires_at: newExpiry.toISOString(),
+                status: 'active',
+                updated_at: new Date() 
+            })
+            .eq('user_id', req.params.userId);
+            
+        if (error) throw error;
+        res.json({ ok: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 module.exports = router;

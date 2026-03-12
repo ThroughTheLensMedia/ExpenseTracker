@@ -54,7 +54,8 @@ export default function Backup() {
         payment_methods: '',
         entity_type: 'Sole Proprietorship',
         naics_code: '711510',
-        business_category: 'Photography Studio'
+        business_category: 'Photography Studio',
+        job_title: ''
     });
 
     const loadData = async (silent = false) => {
@@ -170,7 +171,19 @@ export default function Backup() {
     const handleResendInvite = async (code) => {
         try {
             await apiPost(`/admin/beta-codes/${code}/resend`);
-            modal.alert("Invite resent successfully!");
+            modal.alert(`Invite resent for code ${code}!`);
+        } catch (err) {
+            modal.alert(err.message);
+        }
+    };
+
+    const handleExtendSubscription = async (userId, email) => {
+        const ok = await modal.confirm(`Extend ${email}'s access by 90 days?`);
+        if (!ok) return;
+        try {
+            await apiPost(`/admin/subscriptions/${userId}/extend`);
+            modal.alert(`Success! 90 days added to ${email}.`);
+            loadData(true);
         } catch (err) {
             modal.alert(err.message);
         }
@@ -790,15 +803,24 @@ export default function Backup() {
                                                         <span className={`tag ${new Date(s.expires_at) < new Date() || s.status === 'suspended' ? 'bad' : 'ok'}`}>
                                                             {s.status === 'suspended' ? 'SUSPENDED' : new Date(s.expires_at).toLocaleDateString()}
                                                         </span>
-                                                        {s.status !== 'suspended' && (
-                                                            <button 
-                                                                onClick={() => handleRevokeSubscription(s.user_id, s.email)}
-                                                                className="btn sm secondary" 
-                                                                style={{ fontSize: '9px', padding: '2px 6px' }}
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                             <button 
+                                                                onClick={() => handleExtendSubscription(s.user_id, s.email)}
+                                                                className="btn sm secondary"
+                                                                style={{ fontSize: '9px', padding: '4px 8px', color: '#4ade80', borderColor: 'rgba(74, 222, 128, 0.2)' }}
                                                             >
-                                                                SUSPEND
+                                                                EXTEND 90D
                                                             </button>
-                                                        )}
+                                                            {s.status !== 'suspended' && (
+                                                                <button 
+                                                                    onClick={() => handleRevokeSubscription(s.user_id, s.email)}
+                                                                    className="btn sm secondary" 
+                                                                    style={{ fontSize: '9px', padding: '4px 8px' }}
+                                                                >
+                                                                    SUSPEND
+                                                                </button>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </td>
                                             </tr>

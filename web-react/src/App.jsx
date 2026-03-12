@@ -47,6 +47,7 @@ function AppContent() {
 
   // Use business name or email as identity
   const identityName = settings?.business_name || settings?.contact_name || user?.email;
+  const identityTitle = settings?.job_title;
 
   // Close menu on click-outside
   useEffect(() => {
@@ -165,7 +166,7 @@ function AppContent() {
             <NavLink to="/equipment" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
               Camera Gear
             </NavLink>
-            <NavLink to="/backup" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
+            <NavLink to="/StudioControlCenter" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
               Studio Control Center
             </NavLink>
             
@@ -173,6 +174,7 @@ function AppContent() {
                 <div style={{ padding: '0 12px 16px 12px' }}>
                   <div className="muted" style={{ fontWeight: 950, fontSize: '9px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', marginBottom: '6px', letterSpacing: '0.05em' }}>Studio Session</div>
                   <div style={{ fontWeight: 800, fontSize: '13px', color: 'white' }}>{identityName}</div>
+                  {identityTitle && <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.6)', fontWeight: 700 }}>{identityTitle}</div>}
                   <div style={{ fontSize: '10px', color: daysLeft <= 7 ? '#f59e0b' : '#10b981', fontWeight: 900, marginTop: '4px' }}>
                     PRO ACCESS • {daysLeft}D LEFT
                   </div>
@@ -200,7 +202,8 @@ function AppContent() {
           <Route path="/transactions" element={<Transactions />} />
           <Route path="/tax" element={<Tax />} />
           <Route path="/equipment" element={<Assets />} />
-          <Route path="/backup" element={<Backup />} />
+          <Route path="/StudioControlCenter" element={<Backup />} />
+          <Route path="/backup" element={<Navigate to="/StudioControlCenter" replace />} />
            <Route path="/crm/*" element={<CRM />} />
            <Route path="/import" element={<Import />} />
            <Route path="*" element={<Navigate to="/" />} />
