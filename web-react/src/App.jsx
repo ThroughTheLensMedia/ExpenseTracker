@@ -129,44 +129,52 @@ function AppContent() {
           <div className="dropdown-menu" style={{ 
             position: 'absolute', 
             top: '90px', 
-            right: '15px', 
-            width: '280px',
+            right: '15px',
             animation: 'fadeInDown 0.2s ease-out'
           }}>
             <NavLink to="/" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`} end>
-              <span style={{ marginRight: '10px' }}>📊</span> Dashboard
+              Dashboard
             </NavLink>
             <NavLink to="/transactions" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-              <span style={{ marginRight: '10px' }}>💸</span> Line Item Ledger
+              Line Item Ledger
             </NavLink>
             <NavLink to="/import" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-              <span style={{ marginRight: '10px' }}>🏦</span> Bank Import
+              Bank Import
             </NavLink>
             <NavLink to="/crm" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-              <span style={{ marginRight: '10px' }}>👥</span> CRM Pipeline
+              CRM Pipeline
             </NavLink>
             <NavLink to="/crm/invoices" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-              <span style={{ marginRight: '10px' }}>🧾</span> Studio Invoices
+              Studio Invoices
             </NavLink>
             <NavLink to="/tax" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-              <span style={{ marginRight: '10px' }}>🏛️</span> Tax & Sch C
+              Tax & Sch C
             </NavLink>
             <NavLink to="/equipment" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-              <span style={{ marginRight: '10px' }}>📷</span> Gear Locker
+              Gear Locker
             </NavLink>
             <NavLink to="/backup" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-              <span style={{ marginRight: '10px' }}>⚙️</span> SCC Console
+              SCC Console
             </NavLink>
             
-            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '20px' }}>
-                <div style={{ marginBottom: '15px' }}>
-                  <div className="muted" style={{ fontWeight: 950, fontSize: '10px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', marginBottom: '4px' }}>Authenticated Session</div>
-                  <div style={{ fontWeight: 800, fontSize: '12px', color: 'white' }}>{identityName}</div>
-                  <div style={{ fontSize: '9px', color: daysLeft <= 7 ? '#f59e0b' : '#10b981', fontWeight: 900, marginTop: '2px' }}>
+            <div style={{ marginTop: '12px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '16px', paddingBottom: '4px' }}>
+                <div style={{ padding: '0 12px 16px 12px' }}>
+                  <div className="muted" style={{ fontWeight: 950, fontSize: '9px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', marginBottom: '6px', letterSpacing: '0.05em' }}>Studio Session</div>
+                  <div style={{ fontWeight: 800, fontSize: '13px', color: 'white' }}>{identityName}</div>
+                  <div style={{ fontSize: '10px', color: daysLeft <= 7 ? '#f59e0b' : '#10b981', fontWeight: 900, marginTop: '4px' }}>
                     PRO ACCESS • {daysLeft}D LEFT
                   </div>
                 </div>
-                <button onClick={logout} className="btn sm secondary" style={{ fontSize: '10px', borderRadius: '8px', width: '100%', padding: '12px', fontWeight: 900, border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444' }}>
+                <button onClick={logout} className="btn sm secondary" style={{ 
+                  fontSize: '11px', 
+                  borderRadius: '12px', 
+                  width: '100%', 
+                  padding: '14px', 
+                  fontWeight: 900, 
+                  background: 'rgba(239, 68, 68, 0.05)',
+                  border: '1px solid rgba(239, 68, 68, 0.2)', 
+                  color: '#ef4444' 
+                }}>
                   LOGOUT SESSION
                 </button>
             </div>
