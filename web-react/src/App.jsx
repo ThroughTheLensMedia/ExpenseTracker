@@ -112,21 +112,26 @@ function AppContent() {
         </div>
       )}
 
-      <header className="glass desktop-only" style={{ border: 'none' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <div className="title">Studio Tracker</div>
-          <div className="nav">
+      <header className="glass desktop-only" style={{ border: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 30px' }}>
+        {/* Left Side: Brand */}
+        <div style={{ flex: '1 0 200px', display: 'flex', alignItems: 'center' }}>
+          <div className="title" style={{ fontSize: '1.2rem', fontWeight: 900, letterSpacing: '-0.02em' }}>Studio Tracker</div>
+        </div>
+
+        {/* Center: Primary Navigation */}
+        <div style={{ flex: '2', display: 'flex', justifyContent: 'center' }}>
+          <div className="nav" style={{ display: 'flex', gap: '8px' }}>
             <NavLink to="/" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`} end>Dashboard</NavLink>
             <NavLink to="/transactions" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Transactions</NavLink>
             <NavLink to="/tax" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Tax</NavLink>
             <NavLink to="/equipment" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Equipment</NavLink>
-             <NavLink to="/crm" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>CRM</NavLink>
-             <NavLink to="/backup" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>SCC Console</NavLink>
-           </div>
-
-
+            <NavLink to="/crm" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>CRM</NavLink>
+            <NavLink to="/backup" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>SCC Console</NavLink>
+          </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+
+        {/* Right Side: Identity & Actions */}
+        <div style={{ flex: '1 0 200px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '20px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
               <span className="muted" style={{ fontWeight: 900, fontSize: '12px', color: 'white' }}>{identityName}</span>
               <span style={{ fontSize: '10px', color: daysLeft <= 7 ? '#f59e0b' : '#10b981', fontWeight: 800, letterSpacing: '0.02em' }}>

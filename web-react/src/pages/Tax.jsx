@@ -358,29 +358,31 @@ export default function Tax() {
                     gap: '16px'
                 }}>
                     <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <h2 style={{ margin: 0, fontSize: '1.4rem' }}>Schedule C Business Summary</h2>
-                            <select
-                                value={selectedYear}
-                                onChange={e => setSelectedYear(Number(e.target.value))}
-                                style={{
-                                    background: 'rgba(99,102,241,0.1)',
-                                    border: '1px solid rgba(99,102,241,0.3)',
-                                    borderRadius: '8px',
-                                    padding: '4px 10px',
-                                    color: '#818cf8',
-                                    fontWeight: '800',
-                                    fontSize: '1.1rem',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                {years.map(y => <option key={y} value={y}>{y}</option>)}
-                            </select>
-                        </div>
-                        <div className="muted small" style={{ marginTop: '4px' }}>Photography Studio · Sole Proprietorship · Business Code 711510</div>
+                        <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 950, letterSpacing: '-0.01em' }}>Schedule C Business Summary</h2>
+                        <div className="muted small" style={{ marginTop: '4px', fontWeight: 600 }}>Photography Studio · Sole Proprietorship · Business Code 711510</div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                        <select
+                            value={selectedYear}
+                            onChange={e => setSelectedYear(Number(e.target.value))}
+                            style={{
+                                background: 'rgba(99,102,241,0.05)',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                borderRadius: '6px',
+                                padding: '6px 12px',
+                                color: 'white',
+                                fontWeight: '800',
+                                fontSize: '14px',
+                                cursor: 'pointer',
+                                width: '100px'
+                            }}
+                        >
+                            {years.map(y => <option key={y} value={y}>{y}</option>)}
+                        </select>
+
+                        <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)', margin: '0 5px' }} />
+
                         {(() => {
                             const unassigned = summary.find(r => r.tax_bucket === 'Unassigned');
                             const uCount = unassigned ? unassigned.count : 0;
@@ -395,8 +397,6 @@ export default function Tax() {
                                 </div>
                             ) : null;
                         })()}
-
-                        <div style={{ width: '1px', height: '30px', background: 'rgba(255,255,255,0.1)', margin: '0 8px' }} />
 
                         <button className="btn secondary sm" onClick={() => { loadData(true); loadSummary(selectedYear); }}>Refresh</button>
                         <button className="btn secondary sm" onClick={exportCsv}>CSV</button>
