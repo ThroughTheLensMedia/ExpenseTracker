@@ -36,6 +36,7 @@ function InvoiceItemRow({ item, index, onChange, onRemove }) {
 
 function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
     const previewRef = useRef();
+    const [isProcessing, setIsProcessing] = useState(false);
 
     // Data Normalization: Handle both API structure and Draft State structure
     const data = useMemo(() => {
@@ -92,7 +93,7 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
 
     const handleSendWithPDF = async () => {
         if (!onSendEmail) return;
-        setLoading(true);
+        setIsProcessing(true);
         try {
             const element = previewRef.current;
             const canvas = await html2canvas(element, { scale: 3, useCORS: true });
@@ -109,7 +110,7 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
             console.error("PDF Send Error:", err);
             alert("Failed to package PDF for email.");
         } finally {
-            setLoading(false);
+            setIsProcessing(false);
         }
     };
 
@@ -126,8 +127,8 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
                     <h3 style={{ margin: 0, color: '#fff', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px', fontSize: '13px' }}>Executive Snapshot</h3>
                     <div style={{ display: 'flex', gap: '12px' }}>
                         {(invoice.status === 'draft' || invoice.status === 'sent') && (
-                            <button className="btn glow-blue" onClick={handleSendWithPDF} disabled={loading} style={{ padding: '10px 24px' }}>
-                                {loading ? '⏳ Preparing PDF...' : 'Email to Client'}
+                            <button className="btn glow-blue" onClick={handleSendWithPDF} disabled={isProcessing} style={{ padding: '10px 24px' }}>
+                                {isProcessing ? '⏳ Preparing PDF...' : (invoice.status === 'sent' ? 'Resend to Client' : 'Email to Client')}
                             </button>
                         )}
                         <button className="btn secondary" onClick={handleDownloadPDF} style={{ padding: '10px 24px', color: '#fff' }}>Capture PDF Assets</button>
@@ -710,7 +711,10 @@ export default function Invoice() {
                                                         </button>
                                                     )}
                                                     {inv.status === 'sent' && (
-                                                        <button className="btn sm primary" onClick={() => handleMarkPaid(inv.id)}>Mark Paid</button>
+                                                        <>
+                                                            <button className="btn sm secondary" onClick={() => handlePreview(inv)}>Resend</button>
+                                                            <button className="btn sm primary" onClick={() => handleMarkPaid(inv.id)}>Mark Paid</button>
+                                                        </>
                                                     )}
                                                     {inv.status === 'paid' && (
                                                         <button className="btn sm glow-blue" onClick={() => handleSyncToExpenses(inv)}>Sync Ledger</button>

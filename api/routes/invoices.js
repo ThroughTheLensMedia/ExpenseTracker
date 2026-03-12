@@ -61,7 +61,7 @@ router.get("/", async (req, res) => {
     try {
         const { data, error } = await supabase
             .from("invoices")
-            .select("*, clients(name, email)")
+            .select("*, clients(name, email), invoice_items(*)")
             .order("issue_date", { ascending: false });
         if (error) throw error;
         res.json(data);
@@ -118,7 +118,7 @@ router.post("/", async (req, res) => {
 
 router.patch("/:id", async (req, res) => {
     try {
-        const { items, ...invoiceData } = req.body;
+        const { items, pdf_base64, ...invoiceData } = req.body;
 
         // 1. Update Invoice Metadata
         const { data: invoice, error: invError } = await supabase
@@ -128,7 +128,10 @@ router.patch("/:id", async (req, res) => {
             .select()
             .single();
 
-        if (invError) throw invError;
+        if (invError) {
+            console.error("Supabase Update Error:", invError);
+            throw invError;
+        }
 
         // 2. Handle Items if provided (Replace old items with new ones for simplicity in edits)
         if (items && Array.isArray(items)) {
