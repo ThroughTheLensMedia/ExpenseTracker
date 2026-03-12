@@ -138,7 +138,7 @@ function InvoicePreview({ invoice, settings = {}, onClose }) {
                                 <div style={{ fontWeight: 800, color: '#666' }}>Issue Date</div>
                                 <div style={{ textAlign: 'right' }}>{formatDate(data.date)}</div>
                                 <div style={{ fontWeight: 800, color: '#666' }}>Due Date</div>
-                                <div style={{ textAlign: 'right' }}>{data.dueDate ? formatDate(data.dueDate) : 'Upon Receipt'}</div>
+                                <div style={{ textAlign: 'right' }}>{data.dueDate ? formatDate(data.dueDate) : 'Day of Photoshoot'}</div>
                             </div>
                         </div>
 
@@ -342,7 +342,6 @@ export default function Invoice() {
         if (!leadId) return;
         const lead = leads.find(l => String(l.id) === leadId);
         if (lead) {
-            // Smart link: check if we already have a client with this email
             const existingClient = clients.find(c => c.email?.toLowerCase() === lead.email?.toLowerCase());
 
             setFormData(prev => ({
@@ -357,28 +356,50 @@ export default function Invoice() {
         }
     };
 
-    const handleEdit = (inv) => {
-        setEditingId(inv.id);
-        const invItems = inv.invoice_items || [];
-        setFormData({
-            number: inv.invoice_number,
-            date: inv.issue_date,
-            dueDate: inv.due_date || '',
-            clientId: inv.client_id,
-            clientName: inv.clients?.name || '',
-            clientEmail: inv.clients?.email || '',
-            clientPhone: inv.clients?.phone || '',
-            items: invItems.length > 0 ? invItems.map(it => ({
-                description: it.description,
-                quantity: it.quantity,
-                unit_price: (it.unit_price_cents / 100).toFixed(2)
-            })) : [{ description: '', quantity: 1, unit_price: '' }],
-            tax_percent: inv.tax_percent || 0,
-            discount: (inv.discount_cents / 100).toFixed(2),
-            leadId: inv.lead_id || '',
-            notes: inv.notes || ''
-        });
-        setIsCreatorOpen(true);
+    const handleEdit = async (inv) => {
+        setLoading(true);
+        try {
+            const fullInv = await apiGet(`/invoices/${inv.id}`);
+            setEditingId(fullInv.id);
+            const invItems = fullInv.invoice_items || [];
+            setFormData({
+                number: fullInv.invoice_number,
+                date: fullInv.issue_date,
+                dueDate: fullInv.due_date || '',
+                clientId: fullInv.client_id,
+                clientName: fullInv.clients?.name || '',
+                clientEmail: fullInv.clients?.email || '',
+                clientPhone: fullInv.clients?.phone || '',
+                items: invItems.length > 0 ? invItems.map(it => ({
+                    description: it.description,
+                    quantity: it.quantity,
+                    unit_price: (it.unit_price_cents / 100).toFixed(2)
+                })) : [{ description: '', quantity: 1, unit_price: '' }],
+                tax_percent: fullInv.tax_percent || 0,
+                discount: (fullInv.discount_cents / 100).toFixed(2),
+                leadId: fullInv.lead_id || '',
+                notes: fullInv.notes || ''
+            });
+            setIsCreatorOpen(true);
+        } catch (e) {
+            console.error("Failed to load invoice items", e);
+            setStatusMsg({ type: 'bad', text: "Failed to load full invoice details." });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handlePreview = async (inv) => {
+        setLoading(true);
+        try {
+            const fullInv = await apiGet(`/invoices/${inv.id}`);
+            setPreviewingInvoice(fullInv);
+        } catch (e) {
+            console.error("Failed to preview", e);
+            setStatusMsg({ type: 'bad', text: "Failed to load preview details." });
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleCreateInvoice = async (e) => {
@@ -600,7 +621,7 @@ export default function Invoice() {
                                             </td>
                                             <td style={{ textAlign: 'right' }}>
                                                 <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                                                    <button className="btn sm secondary" onClick={() => setPreviewingInvoice(inv)}>Preview</button>
+                                                    <button className="btn sm secondary" onClick={() => handlePreview(inv)}>Preview</button>
                                                     {(inv.status === 'draft' || inv.status === 'sent') && (
                                                         <button className="btn sm secondary" onClick={() => handleEdit(inv)}>Edit</button>
                                                     )}
@@ -658,6 +679,19 @@ export default function Invoice() {
                                 <div>
                                     <small className="muted" style={{ fontWeight: 800 }}>ISSUE DATE</small>
                                     <input type="date" value={formData.date || ''} onChange={e => setFormData({ ...formData, date: e.target.value })} />
+                                </div>
+                            </div>
+
+                            <div className="grid two">
+                                <div>
+                                    <small className="muted" style={{ fontWeight: 800 }}>DUE DATE (OPTIONAL)</small>
+                                    <input type="date" value={formData.dueDate || ''} onChange={e => setFormData({ ...formData, dueDate: e.target.value })} />
+                                    <div className="muted extra-small" style={{ marginTop: '4px' }}>Defaults to "Day of Photoshoot" if empty.</div>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                                    <button type="button" className="btn sm secondary" style={{ width: '100%' }} onClick={() => setPreviewingInvoice(formData)}>
+                                        👁️ Preview Current Draft
+                                    </button>
                                 </div>
                             </div>
 
