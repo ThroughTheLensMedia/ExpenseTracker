@@ -42,9 +42,9 @@ router.post("/", async (req, res) => {
             assign_business_use_pct: Number(assign_business_use_pct) || 100
         };
 
-        const { data: inserted, error } = await supabase
+        const { data: inserted, error } = await req.sb
             .from("classification_rules")
-            .insert(data)
+            .insert({ ...data, user_id: req.user.id }) // Ensure user_id is set
             .select()
             .single();
 
@@ -60,7 +60,7 @@ router.post("/", async (req, res) => {
 router.delete("/:id", async (req, res) => {
     try {
         const id = req.params.id;
-        const { error } = await supabase
+        const { error } = await req.sb
             .from("classification_rules")
             .delete()
             .eq("id", id);
@@ -96,12 +96,12 @@ async function fetchAllRows(sb, tableName, selectStr = "*") {
 // Returns all transactions that match this rule, and shows what would change.
 router.get("/:id/preview", async (req, res) => {
     try {
-        const { data: rule, error: rErr } = await supabase
+        const { data: rule, error: rErr } = await req.sb
             .from("classification_rules").select("*").eq("id", req.params.id).single();
         if (rErr || !rule) return res.status(404).json({ error: "Rule not found" });
 
         // Fetch ALL expenses to ensure we catch those beyond the 1000-row default limit
-        const expenses = await fetchAllRows("expenses", "id, vendor, notes, category, tax_bucket, tax_deductible, business_use_pct");
+        const expenses = await fetchAllRows(req.sb, "expenses", "id, vendor, notes, category, tax_bucket, tax_deductible, business_use_pct");
 
         const matched = [];
         const val = (rule.match_value || '').toLowerCase().trim();
@@ -152,12 +152,12 @@ router.get("/:id/preview", async (req, res) => {
 // Applies a single rule to all matching existing transactions.
 router.post("/:id/apply", async (req, res) => {
     try {
-        const { data: rule, error: rErr } = await supabase
+        const { data: rule, error: rErr } = await req.sb
             .from("classification_rules").select("*").eq("id", req.params.id).single();
         if (rErr || !rule) return res.status(404).json({ error: "Rule not found" });
 
         // Fetch ALL expenses to ensure we catch those beyond the 1000-row default limit
-        const expenses = await fetchAllRows("expenses", "id, vendor, notes, category, tax_bucket, tax_deductible, business_use_pct");
+        const expenses = await fetchAllRows(req.sb, "expenses", "id, vendor, notes, category, tax_bucket, tax_deductible, business_use_pct");
 
         let updated = 0;
         const errors = [];
@@ -180,7 +180,7 @@ router.post("/:id/apply", async (req, res) => {
 
             if (Object.keys(patch).length === 0) continue;
 
-            const { error: updErr } = await supabase.from("expenses").update(patch).eq("id", exp.id);
+            const { error: updErr } = await req.sb.from("expenses").update(patch).eq("id", exp.id);
             if (updErr) errors.push({ vendor: exp.vendor, error: updErr.message });
             else updated++;
         }

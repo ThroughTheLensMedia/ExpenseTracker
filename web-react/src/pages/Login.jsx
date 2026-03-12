@@ -11,18 +11,19 @@ export default function Login() {
   const { login, signup } = useAuth();
   const navigate = useNavigate();
 
+  const [success, setSuccess] = useState(null);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setSuccess(null);
     try {
       if (isLogin) {
         await login(email, password);
       } else {
         await signup(email, password);
-        // Supabase often requires email confirmation, 
-        // but we'll try to navigate or show a message.
-        alert("Check your email for a confirmation link!");
+        setSuccess("Studio account created! Please check your email for a confirmation link.");
         setIsLogin(true);
         return;
       }
@@ -89,6 +90,12 @@ export default function Login() {
           {error && (
             <div className="tag bad" style={{ padding: '12px', borderRadius: '8px', fontSize: '13px' }}>
               {error}
+            </div>
+          )}
+
+          {success && (
+            <div className="tag ok" style={{ padding: '12px', borderRadius: '8px', fontSize: '13px', background: 'rgba(74, 222, 128, 0.1)', color: '#4ade80' }}>
+              {success}
             </div>
           )}
 
