@@ -48,10 +48,10 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
             unit_price: it.unit_price_cents ? (it.unit_price_cents / 100) : (parseFloat(it.unit_price) || 0)
         }));
 
-        const subtotal = items.reduce((s, it) => s + (it.unit_price * it.quantity), 0);
-        // Treat discount as a percentage. 
-        // draft: invoice.discount (the number string)
-        // api: invoice.discount_cents (we store percent * 100)
+        // Work in cents to match ledger logic exactly
+        const subtotalCents = items.reduce((s, it) => s + Math.round(it.unit_price * 100 * it.quantity), 0);
+        
+        // Treat discount correctly
         let discountPercent = 0;
         if (invoice.discount_cents !== undefined) {
             discountPercent = (invoice.discount_cents / 100);
@@ -59,9 +59,10 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
             discountPercent = parseFloat(invoice.discount) || 0;
         }
 
-        const discountAmount = subtotal * (discountPercent / 100);
-        const taxVal = Math.round(subtotal * ((parseFloat(invoice.tax_percent) || 0) / 100));
-        const total = subtotal + taxVal - discountAmount;
+        const taxPercent = parseFloat(invoice.tax_percent) || 0;
+        const discountCents = Math.round(subtotalCents * (discountPercent / 100));
+        const taxCents = Math.round(subtotalCents * (taxPercent / 100));
+        const totalCents = subtotalCents + taxCents - discountCents;
 
         return {
             number: invoice.number || invoice.invoice_number || '---',
@@ -71,12 +72,12 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
             clientEmail: invoice.clientEmail || invoice.clients?.email || '',
             clientPhone: invoice.clientPhone || invoice.clients?.phone || '',
             items,
-            subtotal,
-            taxVal,
-            discount: discountAmount,
+            subtotal: subtotalCents / 100,
+            taxVal: taxCents / 100,
+            discount: discountCents / 100,
             discountPercent,
-            total,
-            tax_percent: invoice.tax_percent
+            total: totalCents / 100,
+            tax_percent: taxPercent
         };
     }, [invoice]);
 
