@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Studio Tracker | Built for Photographers</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.08);
+            --primary: linear-gradient(135deg, #60a5fa 0%, #a855f7 100%);
+            --text-muted: rgba(255, 255, 255, 0.6);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .glass {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+        }
+
+        /* Hero */
+        .hero {
+            text-align: center;
+            padding: 100px 20px;
+            margin-bottom: 80px;
+        }
+
+        h1 {
+            font-size: clamp(2.5rem, 8vw, 4.5rem);
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 24px;
+            background: var(--primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            max-width: 700px;
+            margin: 0 auto 40px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 16px 48px;
+            border-radius: 14px;
+            font-weight: 800;
+            text-decoration: none;
+            transition: transform 0.2s, opacity 0.2s;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            opacity: 0.9;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            border: 1px solid var(--border);
+            margin-left: 20px;
+        }
+
+        /* Features */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 40px;
+            margin-bottom: 100px;
+        }
+
+        .feature-card {
+            padding: 40px;
+            transition: transform 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .icon {
+            font-size: 48px;
+            margin-bottom: 24px;
+        }
+
+        h3 {
+            font-size: 24px;
+            margin-bottom: 16px;
+        }
+
+        .feature-card p {
+            color: var(--text-muted);
+        }
+
+        /* Visuals */
+        .visual-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 80px;
+            align-items: center;
+            margin-bottom: 120px;
+        }
+
+        @media (max-width: 968px) {
+            .visual-section { grid-template-columns: 1fr; gap: 40px; }
+            .btn-secondary { margin-left: 0; margin-top: 15px; }
+            .hero { padding: 60px 0; }
+        }
+
+        .visual-img-wrap {
+            padding: 12px;
+            border-radius: 32px;
+        }
+
+        .visual-img-wrap img {
+            width: 100%;
+            border-radius: 20px;
+            display: block;
+        }
+
+        ul {
+            list-style: none;
+            margin-top: 30px;
+        }
+
+        li {
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .check {
+            color: #10b981;
+            font-weight: bold;
+        }
+
+        /* Footer CTA */
+        .cta-bottom {
+            text-align: center;
+            padding: 100px 40px;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border: 1px solid var(--border);
+            border-radius: 40px;
+        }
+
+        .cta-bottom h2 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+
+        .main-features-img {
+            max-width: 900px;
+            width: 100%;
+            margin: 0 auto 100px;
+            display: block;
+            border-radius: 32px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Hero Section -->
+        <header class="hero glass">
+            <h1>Built for Creatives.<br>Perfected for Photographers.</h1>
+            <p>Stop wrestling with generic accounting software. Transform your raw transactions into a lightning-fast, audit-proof business engine.</p>
+            <div class="hero-btns">
+                <a href="https://app.throughthelens.media" class="btn btn-primary">Open Studio App</a>
+                <a href="#learn-more" class="btn btn-secondary">Watch Demo</a>
+            </div>
+        </header>
+
+        <img src="features.png" alt="Key Features" class="main-features-img">
+
+        <!-- Grid -->
+        <div class="feature-grid">
+            <div class="feature-card glass">
+                <div class="icon">📸</div>
+                <h3>Gear Depreciation</h3>
+                <p>That $3,000 prime lens just became a tax shield. We handle Section 179 and Straight-Line math automatically.</p>
+            </div>
+            <div class="feature-card glass">
+                <div class="icon">🚗</div>
+                <h3>Automatic Mileage</h3>
+                <p>Log your travels at the current IRS rate of 72¢ per mile. Built-in compliance, zero extra apps needed.</p>
+            </div>
+            <div class="feature-card glass">
+                <div class="icon">🏦</div>
+                <h3>CSV Mapping</h3>
+                <p>The magic bridge. Drop your Rocket Money or Bank exports and we'll map them to tax buckets in seconds.</p>
+            </div>
+        </div>
+
+        <!-- Deep Dive -->
+        <section class="visual-section">
+            <div>
+                <h2 style="font-size: 3rem; margin-bottom: 24px;">Documentation You Can Trust.</h2>
+                <p style="font-size: 1.25rem; color: var(--text-muted);">The IRS requires receipts for expenses over $75. Our system flags missing records so you can stay audit-proof without the stress.</p>
+                <ul>
+                    <li><span class="check">✔</span> Accountant-ready CSV exports</li>
+                    <li><span class="check">✔</span> Real-time Schedule C snapshots</li>
+                    <li><span class="check">✔</span> Unlimited receipt storage</li>
+                </ul>
+            </div>
+            <div class="visual-img-wrap glass">
+                <img src="workspace.png" alt="Photographer Workflow">
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <section class="cta-bottom">
+            <h2>Ready to Scale Your Studio?</h2>
+            <p style="margin-bottom: 40px; color: var(--text-muted); font-size: 1.2rem;">Join the elite photographers managing their business with precision.</p>
+            <a href="https://app.throughthelens.media/login" class="btn btn-primary" style="padding: 20px 80px; font-size: 1.25rem;">Launch the Tracker</a>
+        </section>
+
+        <footer style="text-align: center; margin-top: 80px; color: var(--text-muted); font-size: 0.9rem;">
+            &copy; 2026 ThroughTheLens Media. All rights reserved.
+        </footer>
+    </div>
+
+</body>
+</html>

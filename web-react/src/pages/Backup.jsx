@@ -138,7 +138,8 @@ export default function Backup() {
     };
 
     const handleDeleteBetaCode = async (code) => {
-        if (!window.confirm(`Are you sure you want to delete code ${code}?`)) return;
+        const ok = await modal.confirm(`Are you sure you want to delete code ${code}?`);
+        if (!ok) return;
         try {
             await apiDelete(`/admin/beta-codes/${code}`);
             loadData(true);
@@ -148,7 +149,8 @@ export default function Backup() {
     };
 
     const handleRevokeSubscription = async (userId, email) => {
-        if (!window.confirm(`Revoke access for ${email}? This will suspend their studio immediately.`)) return;
+        const ok = await modal.confirm(`Revoke access for ${email}? This will suspend their studio immediately.`);
+        if (!ok) return;
         try {
             await apiPost(`/admin/subscriptions/${userId}/suspend`);
             loadData(true);
@@ -711,7 +713,7 @@ export default function Backup() {
                                                         }
                                                         <button 
                                                             onClick={() => handleDeleteBetaCode(c.code)}
-                                                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', opacity: 0.5 }}
+                                                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', color: '#ef4444', fontWeight: 'bold', padding: '5px' }}
                                                             title="Delete Invite Code"
                                                         >
                                                             ✕

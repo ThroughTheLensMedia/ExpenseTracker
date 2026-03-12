@@ -95,4 +95,4 @@ If an expense is over $75, you need a receipt. It's that simple. A digital dashb
 ### Conclusion
 You didn't become a photographer to become an accountant. But to keep being a photographer, you HAVE to manage your finances. Stop using software that was built for "big companies" and start using a tool built for the creative grind. 
 
-*Ready to take control? Check out our [Studio Tracker Demo](/marketing/studiotracker) today.*
+*Ready to take control? Check out our [Studio Tracker Demo](https://throughthelens.media/marketing/studiotracker) today.*

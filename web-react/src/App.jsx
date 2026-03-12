@@ -9,7 +9,6 @@ import Assets from './pages/Assets';
 import CRM from './pages/CRM';
 import Import from './pages/Import';
 import Login from './pages/Login';
-import Marketing from './pages/Marketing';
 
 
 // Higher Order Component to protect routes
@@ -154,7 +153,6 @@ function AppContent() {
           <Route path="/backup" element={<Backup />} />
            <Route path="/crm/*" element={<CRM />} />
            <Route path="/import" element={<Import />} />
-           <Route path="/marketing/studiotracker" element={<Marketing />} />
            <Route path="*" element={<Navigate to="/" />} />
 
 
