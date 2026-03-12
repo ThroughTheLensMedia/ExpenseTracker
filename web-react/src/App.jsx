@@ -123,7 +123,6 @@ function AppContent() {
             <NavLink to="/equipment" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Equipment</NavLink>
              <NavLink to="/crm" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>CRM</NavLink>
              <NavLink to="/backup" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>SCC Console</NavLink>
-             <NavLink to="/marketing/studiotracker" className={({ isActive }) => `pill ${isActive ? 'active' : ''}`}>Marketing</NavLink>
            </div>
 
 

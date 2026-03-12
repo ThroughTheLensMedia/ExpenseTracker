@@ -106,7 +106,6 @@ router.post("/import-all", async (req, res) => {
 // --- SUBSCRIPTION & BETA MGMT ---
 
 // GET /admin/subscriptions
-// Only for super-admins (checking for your specific email for now as a quick bypass)
 router.get("/subscriptions", async (req, res) => {
     try {
         const { data, error } = await req.sb
@@ -115,6 +114,20 @@ router.get("/subscriptions", async (req, res) => {
             .order('created_at', { ascending: false });
         if (error) throw error;
         res.json(data);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// POST /admin/subscriptions/:userId/suspend
+router.post("/subscriptions/:userId/suspend", async (req, res) => {
+    try {
+        const { error } = await req.sb
+            .from('user_subscriptions')
+            .update({ status: 'suspended', updated_at: new Date() })
+            .eq('user_id', req.params.userId);
+        if (error) throw error;
+        res.json({ ok: true });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
@@ -149,9 +162,26 @@ router.post("/beta-codes", async (req, res) => {
 // GET /admin/beta-codes
 router.get("/beta-codes", async (req, res) => {
     try {
-        const { data, error } = await req.sb.from('beta_codes').select('*');
+        const { data, error } = await req.sb
+            .from('beta_codes')
+            .select('*')
+            .order('created_at', { ascending: false });
         if (error) throw error;
         res.json(data);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// DELETE /admin/beta-codes/:code
+router.delete("/beta-codes/:code", async (req, res) => {
+    try {
+        const { error } = await req.sb
+            .from('beta_codes')
+            .delete()
+            .eq('code', req.params.code);
+        if (error) throw error;
+        res.json({ ok: true });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }

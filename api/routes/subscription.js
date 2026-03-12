@@ -66,6 +66,7 @@ router.post("/redeem", async (req, res) => {
             .update({
                 plan_type: 'beta_tester',
                 status: 'active',
+                email: req.user.email,
                 expires_at: newExpiry.toISOString(),
                 beta_code_used: betaCode.code,
                 updated_at: new Date().toISOString()

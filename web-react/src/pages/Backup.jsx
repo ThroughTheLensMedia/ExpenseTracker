@@ -137,6 +137,26 @@ export default function Backup() {
         }
     };
 
+    const handleDeleteBetaCode = async (code) => {
+        if (!window.confirm(`Are you sure you want to delete code ${code}?`)) return;
+        try {
+            await apiDelete(`/admin/beta-codes/${code}`);
+            loadData(true);
+        } catch (err) {
+            modal.alert(err.message);
+        }
+    };
+
+    const handleRevokeSubscription = async (userId, email) => {
+        if (!window.confirm(`Revoke access for ${email}? This will suspend their studio immediately.`)) return;
+        try {
+            await apiPost(`/admin/subscriptions/${userId}/suspend`);
+            loadData(true);
+        } catch (err) {
+            modal.alert(err.message);
+        }
+    };
+
     useEffect(() => {
         loadData();
         // Safety Lock: Do not start the background sync timer if we are in the Business Profile tab
@@ -684,10 +704,19 @@ export default function Backup() {
                                                     <div className="muted small">{c.assigned_to_email || 'General Release'}</div>
                                                 </td>
                                                 <td>
-                                                    {c.is_used 
-                                                        ? <span className="tag bad" style={{ fontSize: '10px' }}>USED BY: {c.used_by_email}</span> 
-                                                        : <span className="tag ok">AVAILABLE</span>
-                                                    }
+                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                        {c.is_used 
+                                                            ? <span className="tag bad" style={{ fontSize: '10px' }}>USED BY: {c.used_by_email}</span> 
+                                                            : <span className="tag ok">AVAILABLE</span>
+                                                        }
+                                                        <button 
+                                                            onClick={() => handleDeleteBetaCode(c.code)}
+                                                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', opacity: 0.5 }}
+                                                            title="Delete Invite Code"
+                                                        >
+                                                            ✕
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}
@@ -711,9 +740,20 @@ export default function Backup() {
                                             <tr key={s.user_id}>
                                                 <td style={{ fontSize: '12px' }}>{s.email}</td>
                                                 <td>
-                                                  <span className={`tag ${new Date(s.expires_at) < new Date() ? 'bad' : 'ok'}`}>
-                                                    {new Date(s.expires_at).toLocaleDateString()}
-                                                  </span>
+                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                        <span className={`tag ${new Date(s.expires_at) < new Date() || s.status === 'suspended' ? 'bad' : 'ok'}`}>
+                                                            {s.status === 'suspended' ? 'SUSPENDED' : new Date(s.expires_at).toLocaleDateString()}
+                                                        </span>
+                                                        {s.status !== 'suspended' && (
+                                                            <button 
+                                                                onClick={() => handleRevokeSubscription(s.user_id, s.email)}
+                                                                className="btn sm secondary" 
+                                                                style={{ fontSize: '9px', padding: '2px 6px' }}
+                                                            >
+                                                                SUSPEND
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}
