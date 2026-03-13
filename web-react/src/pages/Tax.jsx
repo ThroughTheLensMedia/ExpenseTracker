@@ -58,9 +58,6 @@ export default function Tax() {
     const [selectedYear, setSelectedYear] = useState(2025);
     const modal = useModal();
     const [summary, setSummary] = useState([]);
-    const [mileage, setMileage] = useState([]);
-    const [mileageRates, setMileageRates] = useState([]);
-    const [mileageInput, setMileageInput] = useState({ date: new Date().toISOString().slice(0, 10), miles: '', purpose: '' });
     const [syncStatus, setSyncStatus] = useState('');
     const [manualRate, setManualRate] = useState({ year: new Date().getFullYear(), rate: '' });
 
@@ -82,13 +79,11 @@ export default function Tax() {
 
     const loadData = async (force = false) => {
         try {
-            const [exps, miles, rates] = await Promise.all([
+            const [exps, rates] = await Promise.all([
                 fetchAllExpenses(force),
-                fetchAllMileage(selectedYear),
                 apiGet('/mileage/rates')
             ]);
             setExpenses(exps);
-            setMileage(miles);
             setMileageRates(rates);
         } catch (e) {
             console.error(e);
@@ -152,35 +147,9 @@ export default function Tax() {
         }
     };
 
-    const handleAddMileage = async () => {
-        if (!mileageInput.miles || !mileageInput.purpose) return;
-        try {
-            await apiPost("/mileage", {
-                log_date: mileageInput.date,
-                miles: Number(mileageInput.miles),
-                purpose: mileageInput.purpose
-            });
-            setMileageInput({ ...mileageInput, miles: '', purpose: '' });
-            const miles = await fetchAllMileage(selectedYear);
-            setMileage(miles);
-        } catch (err) {
-            console.error("Mileage failed:", err);
-        }
-    };
-
-    const handleDeleteMileage = async (id) => {
-        try {
-            await apiDelete(`/mileage/${id}`);
-            const miles = await fetchAllMileage(selectedYear);
-            setMileage(miles);
-        } catch (err) {
-            console.error("Delete failed:", err);
-        }
-    };
-
-    const totalMiles = mileage.reduce((sum, m) => sum + Number(m.miles || 0), 0);
-    const currentRate = mileageRates.find(r => r.year === selectedYear)?.rate_per_mile ?? 0.70;
-    const mileageDeduction = totalMiles * currentRate;
+    const totalMiles = Number(summary.find(r => r.tax_bucket === 'Car and truck')?.notes || 0); // Temporary placeholder or use summary data
+    const currentRate = mileageRates.find(r => r.year === Number(selectedYear))?.rate_per_mile ?? 0.70;
+    const mileageDeduction = Number(summary.find(r => r.tax_bucket === 'Car and truck')?.deductible_cents || 0);
 
     const filteredAuditing = useMemo(() => {
         if (!auditingBucket) return [];
@@ -537,10 +506,12 @@ export default function Tax() {
                                                 {/* Mileage line */}
                                                 <tr style={{ borderTop: '2px solid rgba(99,102,241,0.3)' }}>
                                                     <td><span className="tag ok" style={{ fontSize: '0.75rem' }}>Line 9</span></td>
-                                                    <td style={{ fontWeight: 600 }}>Car & Truck — Standard Mileage ({totalMiles.toLocaleString()} mi @ ${currentRate.toFixed(2)})</td>
-                                                    <td style={{ textAlign: 'right' }}>{formatMoney(mileageDeductCents)}</td>
-                                                    <td style={{ textAlign: 'right', fontWeight: 700, color: '#4ade80' }}>{formatMoney(mileageDeductCents)}</td>
-                                                    <td></td>
+                                                    <td style={{ fontWeight: 600 }}>Car & Truck — Standard Mileage (Calculated Ledger)</td>
+                                                    <td style={{ textAlign: 'right' }}>{formatMoney(mileageDeduction)}</td>
+                                                    <td style={{ textAlign: 'right', fontWeight: 700, color: '#4ade80' }}>{formatMoney(mileageDeduction)}</td>
+                                                    <td>
+                                                        <button className="btn sm secondary" onClick={() => window.location.hash = '/mileage'} style={{ fontSize: '10px' }}>Manage Log</button>
+                                                    </td>
                                                 </tr>
                                             </tbody>
                                             <tfoot>
@@ -692,109 +663,7 @@ export default function Tax() {
                 {bulkMsg && <div className="tag ok" style={{ marginTop: '10px' }}>{bulkMsg}</div>}
             </div>
 
-            {/* ── Business Mileage Tracking — full width ── */}
-            <div className="card">
-                <h2>Business Mileage Tracking ({selectedYear})</h2>
-
-                {/* Summary stats */}
-                <div style={{ display: 'flex', gap: '16px', marginBottom: '18px', flexWrap: 'wrap' }}>
-                    <div className="card accent" style={{ flex: 1, textAlign: 'center', padding: '15px', minWidth: '160px' }}>
-                        <div className="muted small">Total Business Miles</div>
-                        <div style={{ fontSize: '2rem', fontWeight: 800, margin: '5px 0' }}>{totalMiles.toLocaleString()}</div>
-                    </div>
-                    <div className="card accent" style={{ flex: 1, textAlign: 'center', padding: '15px', minWidth: '160px' }}>
-                        <div className="muted small">IRS Rate (${currentRate.toFixed(2)}/mi)</div>
-                        <div style={{ fontSize: '2rem', fontWeight: 800, margin: '5px 0' }}>{formatMoney(mileageDeduction * 100)}</div>
-                    </div>
-                </div>
-
-                {/* Add trip form */}
-                <div className="controls" style={{ gap: '8px', marginBottom: '14px' }}>
-                    <input type="date" value={mileageInput.date} onChange={e => setMileageInput({ ...mileageInput, date: e.target.value })} style={{ width: '148px' }} />
-                    <input type="number" placeholder="Miles" value={mileageInput.miles} onChange={e => setMileageInput({ ...mileageInput, miles: e.target.value })} style={{ width: '90px' }} />
-                    <input type="text" placeholder="Purpose (e.g. Wedding Photo Shoot - Las Vegas)" value={mileageInput.purpose} onChange={e => setMileageInput({ ...mileageInput, purpose: e.target.value })} style={{ flex: 1 }} />
-                    <button className="btn primary" onClick={handleAddMileage}>Add Trip</button>
-                </div>
-
-                {/* Trip log table */}
-                <div className="tableWrap" style={{ maxHeight: '320px' }}>
-                    <table>
-                        <thead>
-                            <tr><th>Date</th><th>Miles</th><th>Purpose</th><th>Deduction</th><th></th></tr>
-                        </thead>
-                        <tbody>
-                            {mileage.map(m => (
-                                <tr key={m.id}>
-                                    <td>{m.log_date}</td>
-                                    <td><strong>{Number(m.miles).toLocaleString()}</strong></td>
-                                    <td className="muted">{m.purpose}</td>
-                                    <td>{formatMoney(Number(m.miles) * currentRate * 100)}</td>
-                                    <td><button className="btn sm danger" onClick={() => handleDeleteMileage(m.id)}>×</button></td>
-                                </tr>
-                            ))}
-                            {mileage.length === 0 && (
-                                <tr><td colSpan="5" className="muted center">No trips logged for {selectedYear}.</td></tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            {/* ── IRS Standard Mileage Rates — collapsible ── */}
-            <div className="card">
-                <div
-                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
-                    onClick={() => setRatesOpen(o => !o)}
-                >
-                    <div>
-                        <h2 style={{ margin: 0 }}>IRS Standard Mileage Rates {ratesOpen ? '▲' : '▼'}</h2>
-                        <div className="muted small">Current rate for {selectedYear}: <strong>${currentRate.toFixed(2)}/mile</strong> · Click to {ratesOpen ? 'collapse' : 'expand'}</div>
-                    </div>
-                    <button className="btn primary" onClick={e => { e.stopPropagation(); handleSyncIRS(); }}>🔄 Sync from IRS.gov</button>
-                </div>
-
-                {syncStatus && (
-                    <div className="tag" style={{ marginTop: '10px', background: syncStatus.startsWith('✅') ? 'rgba(74,222,128,0.1)' : 'rgba(251,191,36,0.1)', color: syncStatus.startsWith('✅') ? '#4ade80' : '#fbbf24' }}>
-                        {syncStatus}
-                    </div>
-                )}
-
-                {ratesOpen && (
-                    <div className="grid two" style={{ gap: '16px', marginTop: '16px' }}>
-                        <div>
-                            <div className="tableWrap" style={{ maxHeight: '220px' }}>
-                                <table className="sm">
-                                    <thead>
-                                        <tr><th>Year</th><th>Rate/Mile</th><th>Source</th><th>Last Synced</th></tr>
-                                    </thead>
-                                    <tbody>
-                                        {mileageRates.map(r => (
-                                            <tr key={r.year} style={r.year === selectedYear ? { background: 'rgba(99,102,241,0.15)' } : {}}>
-                                                <td><strong>{r.year}</strong></td>
-                                                <td><span className="tag ok">${Number(r.rate_per_mile).toFixed(2)}</span></td>
-                                                <td className="muted small">{r.source}</td>
-                                                <td className="muted small">{r.last_synced_at?.slice(0, 10)}</td>
-                                            </tr>
-                                        ))}
-                                        {mileageRates.length === 0 && (
-                                            <tr><td colSpan="4" className="muted center">No rates — click Sync from IRS.gov.</td></tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        <div>
-                            <h3 style={{ marginTop: 0 }}>Add / Override Rate Manually</h3>
-                            <div className="muted small" style={{ marginBottom: '10px' }}>Use if sync fails or IRS hasn't published the new year's rate yet.</div>
-                            <div className="controls">
-                                <input type="number" min="2019" max="2099" placeholder="Year" value={manualRate.year} onChange={e => setManualRate({ ...manualRate, year: Number(e.target.value) })} style={{ width: '80px' }} />
-                                <input type="number" step="0.005" min="0" max="5" placeholder="Rate (e.g. 0.70)" value={manualRate.rate} onChange={e => setManualRate({ ...manualRate, rate: e.target.value })} style={{ width: '140px' }} />
-                                <button className="btn secondary" onClick={handleManualRate}>Save Rate</button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </div>
+            {/* Mileage tracker removed from here, now in its own page */}
             {/* Income Audit Modal */}
             {showIncomeAudit && (() => {
                 const INCOME_CATS = ['photo income', 'freelance income', 'contract income', 'side income', 'photography income'];

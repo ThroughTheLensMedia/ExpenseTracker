@@ -92,7 +92,7 @@ export default function Backup() {
             });
 
             // Admin Logic: If you are Joshua, load the SaaS management data
-            if (user?.email === 'joshua.deuermeyer@gmail.com') {
+            if (user?.email?.toLowerCase() === 'joshua.deuermeyer@gmail.com') {
                 const [subs, codes] = await Promise.all([
                     apiGet('/admin/subscriptions'),
                     apiGet('/admin/beta-codes')
@@ -712,7 +712,7 @@ export default function Backup() {
                 </div>
              )}
 
-             {activeTab === 'saas' && user?.email === 'joshua.deuermeyer@gmail.com' && (
+             {activeTab === 'saas' && user?.email?.toLowerCase() === 'joshua.deuermeyer@gmail.com' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
                      <div className="card glass glow-blue" style={{ border: 'none', padding: '30px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
                          <h2 style={{ fontSize: '1.8rem', margin: '0 0 10px 0' }}>Active Studio Licenses</h2>

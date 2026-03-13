@@ -78,27 +78,28 @@ const CACHE_TTL = 30000; // 30 seconds
 
 // Fetch expenses, optionally filtered by year
 export async function fetchAllExpenses(force = false, year = null) {
-    const cacheKey = year ? `year_${year}` : 'all';
+    const now = Date.now();
     
-    // Simple per-year cache mapping could be added, but for now let's just use the global cache
-    // or invalidate if year changes. For simplicity, we'll just allow passing year to the API.
+    // 1. Return cache if still valid and not forced
+    if (!force && _expensesCache && (now - _expensesAge < CACHE_TTL)) {
+        if (!year) return _expensesCache;
+        // If year requested, filter from cache if possible
+        return _expensesCache.filter(e => String(e.expense_date || '').startsWith(String(year)));
+    }
     
-    const PAGE = 1000; // Use 1000 to match standard Supabase/PostgREST defaults for safety
+    const PAGE = 1000;
     let offset = 0;
     let allRows = [];
     
     while (true) {
         const queryParams = [`limit=${PAGE}`, `offset=${offset}`];
-        if (year) {
-            queryParams.push(`start=${year}-01-01`);
-            queryParams.push(`end=${year}-12-31`);
-        }
+        // We always fetch ALL to populate the global cache, unless force is specifically for a year
+        // But for most reliability, we fetch the full set and then filter.
         
         const data = await apiGet(`/expenses?${queryParams.join('&')}`);
         const rows = data.rows || [];
         allRows = allRows.concat(rows);
         
-        // Continue if we got a full page
         if (rows.length === PAGE) {
             offset += PAGE;
         } else {
@@ -106,6 +107,13 @@ export async function fetchAllExpenses(force = false, year = null) {
         }
     }
 
+    // 2. Update global cache
+    _expensesCache = allRows;
+    _expensesAge = now;
+
+    if (year) {
+        return allRows.filter(e => String(e.expense_date || '').startsWith(String(year)));
+    }
     return allRows;
 }
 

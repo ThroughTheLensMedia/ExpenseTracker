@@ -41,7 +41,7 @@ export default function Dashboard() {
     const [availableYears, setAvailableYears] = useState([new Date().getFullYear()]);
     
     // Intelligence States
-    const [startingCash, setStartingCash] = useState(() => Number(localStorage.getItem('studio_cash') || 5000));
+    const [startingCash, setStartingCash] = useState(25000); // Default estimate
     const [weights, setWeights] = useState({ 'New Lead': 0.1, 'Quoted': 0.4, 'Booked': 0.9 });
 
     // PWA Mobile States
@@ -461,6 +461,10 @@ export default function Dashboard() {
                     </div>
 
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                         {/* Desktop Customizer Trigger */}
+                        <button className="btn secondary desktop-only" onClick={() => setChartSettingsOpen(!chartSettingsOpen)} style={{ padding: '10px 16px', borderRadius: '12px', fontSize: '13px' }}>
+                            {chartSettingsOpen ? 'CLOSE CUSTOMIZER' : '⚙️ CUSTOMIZE VIEW'}
+                        </button>
                         <select value={selectedYear} onChange={(e) => setSelectedYear(Number(e.target.value))} className="btn secondary" style={{ padding: '10px 16px', borderRadius: '12px', fontWeight: 900, fontSize: '14px', appearance: 'none', outline: 'none', cursor: 'pointer' }}>
                             {years.map(y => <option key={y} value={y}>FY {y}</option>)}
                         </select>
@@ -469,6 +473,23 @@ export default function Dashboard() {
                         </button>
                     </div>
                 </div>
+                
+                {chartSettingsOpen && (
+                    <div style={{ marginTop: '20px', padding: '20px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', animation: 'fadeInDown 0.2s ease-out' }}>
+                        <h4 style={{ margin: '0 0 12px 0', fontSize: '11px', letterSpacing: '0.1em', opacity: 0.6 }}>ACTIVE ANALYTICS MODULES (DESKTOP)</h4>
+                        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                            {Object.keys(visibleCharts).map(k => (
+                                <label key={k} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 700 }}>
+                                    <input type="checkbox" checked={visibleCharts[k]} onChange={() => setVisibleCharts(prev => ({...prev, [k]: !prev[k]}))} />
+                                    {k === 'flow' && 'Cash Flow Velocity'}
+                                    {k === 'trajectory' && 'Profit Margin Trajectory'}
+                                    {k === 'allocation' && 'Capital Allocation'}
+                                    {k === 'burn' && 'Burn Velocity Projection'}
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Studio Docs Link Bar */}
@@ -652,9 +673,8 @@ export default function Dashboard() {
 
             {/* ── Advanced Analytics Charts (Desktop) ── */}
             <div className="desktop-only" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: '20px', alignItems: 'start' }}>
-
-                {/* Cash Flow Velocity Chart */}
-                <div className="card glass" style={{ margin: 0, padding: '24px', height: '420px', display: 'flex', flexDirection: 'column' }}>
+                {visibleCharts.flow && (
+                    <div className="card glass" style={{ margin: 0, padding: '24px', height: '420px', display: 'flex', flexDirection: 'column' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                         <div>
                             <h2 style={{ fontSize: '1.2rem', margin: 0 }}>Cash Flow Velocity</h2>
@@ -675,9 +695,10 @@ export default function Dashboard() {
                         }} />
                     </div>
                 </div>
+                )}
 
-                {/* NEW: Profit Margin Trajectory */}
-                <div className="card glass" style={{ margin: 0, padding: '24px', height: '420px', display: 'flex', flexDirection: 'column' }}>
+                {visibleCharts.trajectory && (
+                    <div className="card glass" style={{ margin: 0, padding: '24px', height: '420px', display: 'flex', flexDirection: 'column' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                         <div>
                             <h2 style={{ fontSize: '1.2rem', margin: 0 }}>Profit Margin Trajectory</h2>
@@ -707,9 +728,10 @@ export default function Dashboard() {
                         }} />
                     </div>
                 </div>
+                )}
 
-                {/* Capital Allocation & Tax Liability */}
-                <div className="card glass" style={{ margin: 0, padding: '24px', minHeight: '420px', display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '24px' }}>
+                {visibleCharts.allocation && (
+                    <div className="card glass" style={{ margin: 0, padding: '24px', minHeight: '420px', display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '24px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                         <div style={{ marginBottom: '20px' }}>
                             <h2 style={{ fontSize: '1.2rem', margin: 0 }}>Capital Allocation</h2>
@@ -763,9 +785,10 @@ export default function Dashboard() {
                         </div>
                     </div>
                 </div>
+                )}
 
-                {/* Burn Velocity Projection */}
-                <div className="card glass" style={{ margin: 0, padding: '24px', height: '420px', display: 'flex', flexDirection: 'column' }}>
+                {visibleCharts.burn && (
+                    <div className="card glass" style={{ margin: 0, padding: '24px', height: '420px', display: 'flex', flexDirection: 'column' }}>
                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                         <div>
                             <h2 style={{ fontSize: '1.2rem', margin: 0 }}>Burn Velocity Projection</h2>
@@ -787,6 +810,7 @@ export default function Dashboard() {
                         )}
                     </div>
                 </div>
+                )}
             </div>
 
             {/* ── Mobile Analytics Stack (Streamlined) ── */}

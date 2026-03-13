@@ -9,6 +9,7 @@ import Assets from './pages/Assets';
 import CRM from './pages/CRM';
 import Import from './pages/Import';
 import Login from './pages/Login';
+import Mileage from './pages/Mileage';
 
 
 // Higher Order Component to protect routes
@@ -166,6 +167,9 @@ function AppContent() {
             <NavLink to="/equipment" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
               Camera Gear
             </NavLink>
+            <NavLink to="/mileage" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
+              Mileage Log
+            </NavLink>
             <NavLink to="/StudioControlCenter" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
               Studio Control Center
             </NavLink>
@@ -201,6 +205,7 @@ function AppContent() {
           <Route path="/" element={<Dashboard apiStatus={apiStatus} />} />
           <Route path="/transactions" element={<Transactions />} />
           <Route path="/tax" element={<Tax />} />
+          <Route path="/mileage" element={<Mileage />} />
           <Route path="/equipment" element={<Assets />} />
           <Route path="/StudioControlCenter" element={<Backup />} />
           <Route path="/backup" element={<Navigate to="/StudioControlCenter" replace />} />
@@ -220,7 +225,11 @@ function AppContent() {
           <span className="bottom-nav-icon">💸</span>
           <span>Ledger</span>
         </NavLink>
-        <NavLink to="/crm" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`} end>
+        <NavLink to="/mileage" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+          <span className="bottom-nav-icon">🚗</span>
+          <span>Trips</span>
+        </NavLink>
+        <NavLink to="/crm" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
           <span className="bottom-nav-icon">👥</span>
           <span>Leads</span>
         </NavLink>
