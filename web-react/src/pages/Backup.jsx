@@ -7,7 +7,16 @@ import { useAuth } from '../components/AuthContext';
 export default function Backup() {
     const modal = useModal();
     const { user, subscription, refreshSubscription } = useAuth();
-    const [activeTab, setActiveTab] = useState('automation'); 
+    const [activeTab, setActiveTab] = useState('automation');
+    const [showChangeLog, setShowChangeLog] = useState(false);
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const t = params.get('tab');
+        if (t && ['automation', 'profile', 'infrastructure', 'help', 'saas'].includes(t)) {
+            setActiveTab(t);
+        }
+    }, [window.location.search]);
     
     // --- Common States ---
     const [stats, setStats] = useState({ expenses: 0, equipment: 0, invoices: 0, clients: 0 });
@@ -329,43 +338,37 @@ export default function Backup() {
                 </div>
 
                 <nav style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                    <button className={`pill ${activeTab === 'automation' ? 'active' : ''}`} onClick={() => setActiveTab('automation')}>⚡ Automation</button>
                     <button className={`pill ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>👤 Business Profile</button>
+                    <button className={`pill ${activeTab === 'automation' ? 'active' : ''}`} onClick={() => setActiveTab('automation')}>⚡ Automation</button>
                     <button className={`pill ${activeTab === 'infrastructure' ? 'active' : ''}`} onClick={() => setActiveTab('infrastructure')}>🔒 Infrastructure</button>
-                    <button className={`pill ${activeTab === 'help' ? 'active' : ''}`} onClick={() => setActiveTab('help')}>❓ Studio Docs</button>
+                    <button className={`pill ${activeTab === 'help' ? 'active' : ''}`} onClick={() => setActiveTab('help')}>❓ Documentation</button>
                     {user?.email === 'joshua.deuermeyer@gmail.com' && (
                         <button className={`pill ${activeTab === 'saas' ? 'active' : ''}`} onClick={() => setActiveTab('saas')}>💎 SaaS Studio Mgmt</button>
                     )}
                 </nav>
             </div>
 
-            {/* System Health Stats (Elite Centered Aesthetic) */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '16px', alignItems: 'start' }}>
-                <div className="card glass" style={{ margin: 0, borderTop: `4px solid var(--accent)`, padding: '50px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', minHeight: '220px' }}>
-                    <div className="muted small" style={{ fontWeight: 800 }}>LIVE TRANSACTIONS</div>
-                    <div style={{ fontSize: '3.5rem', fontWeight: 950, marginTop: '8px', lineHeight: 1 }}>{stats.expenses.toLocaleString()}</div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', marginTop: '20px', justifyContent: 'center' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span className={`health-dot ${isHealthy ? 'health-ok' : 'health-bad'}`} />
-                            <span className="muted small" style={{ fontWeight: 900, fontSize: '10px' }}>DB: {isHealthy ? 'LIVE' : 'OFFLINE'}</span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span className={`health-dot ${isMailerReady ? 'health-ok' : 'health-bad'}`} />
-                            <span className="muted small" style={{ fontWeight: 900, fontSize: '10px' }}>EMAIL: {isMailerReady ? 'READY' : 'KEY MISSING'}</span>
-                        </div>
+            {/* System Health Stats (Elite Compact HUD) */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', alignItems: 'start', marginBottom: '40px' }}>
+                <div className="card glass" style={{ margin: 0, borderTop: `3px solid var(--accent)`, padding: '24px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', minHeight: '160px' }}>
+                    <div className="muted extra-small" style={{ fontWeight: 900, letterSpacing: '0.05em' }}>LIVE TRANSACTIONS</div>
+                    <div style={{ fontSize: '2.4rem', fontWeight: 950, marginTop: '6px', lineHeight: 1 }}>{stats.expenses.toLocaleString()}</div>
+                    <div style={{ display: 'flex', gap: '10px', marginTop: '12px', justifyContent: 'center' }}>
+                        <span className={`health-dot ${isHealthy ? 'health-ok' : 'health-bad'}`} title={isHealthy ? 'DB Connected' : 'DB Link Offline'} />
+                        <span className={`health-dot ${isMailerReady ? 'health-ok' : 'health-bad'}`} title={isMailerReady ? 'SMTP Ready' : 'SMTP Missing'} />
                     </div>
                 </div>
-                <div className="card glass" style={{ margin: 0, borderTop: '4px solid #38bdf8', padding: '50px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', minHeight: '220px' }}>
-                    <div className="muted small" style={{ fontWeight: 800 }}>GEAR ASSETS</div>
-                    <div style={{ fontSize: '3.5rem', fontWeight: 950, marginTop: '8px', lineHeight: 1 }}>{stats.equipment.toLocaleString()}</div>
+                <div className="card glass" style={{ margin: 0, borderTop: '3px solid #38bdf8', padding: '24px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', minHeight: '160px' }}>
+                    <div className="muted extra-small" style={{ fontWeight: 900, letterSpacing: '0.05em' }}>GEAR ASSETS</div>
+                    <div style={{ fontSize: '2.4rem', fontWeight: 950, marginTop: '6px', lineHeight: 1 }}>{stats.equipment.toLocaleString()}</div>
                 </div>
-                <div className="card glass" style={{ margin: 0, borderTop: '4px solid #f97316', padding: '50px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', minHeight: '220px' }}>
-                    <div className="muted small" style={{ fontWeight: 800 }}>INVOICES</div>
-                    <div style={{ fontSize: '3.5rem', fontWeight: 950, marginTop: '8px', lineHeight: 1 }}>{stats.invoices.toLocaleString()}</div>
+                <div className="card glass" style={{ margin: 0, borderTop: '3px solid #f97316', padding: '24px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', minHeight: '160px' }}>
+                    <div className="muted extra-small" style={{ fontWeight: 900, letterSpacing: '0.05em' }}>INVOICES</div>
+                    <div style={{ fontSize: '2.4rem', fontWeight: 950, marginTop: '6px', lineHeight: 1 }}>{stats.invoices.toLocaleString()}</div>
                 </div>
-                <div className="card glass" style={{ margin: 0, borderTop: '4px solid #818cf8', padding: '50px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', minHeight: '220px' }}>
-                    <div className="muted small" style={{ fontWeight: 800 }}>PIPELINE CRM</div>
-                    <div style={{ fontSize: '3.5rem', fontWeight: 950, marginTop: '8px', lineHeight: 1 }}>{stats.clients.toLocaleString()}</div>
+                <div className="card glass" style={{ margin: 0, borderTop: '3px solid #818cf8', padding: '24px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', minHeight: '160px' }}>
+                    <div className="muted extra-small" style={{ fontWeight: 900, letterSpacing: '0.05em' }}>PIPELINE CRM</div>
+                    <div style={{ fontSize: '2.4rem', fontWeight: 950, marginTop: '6px', lineHeight: 1 }}>{stats.clients.toLocaleString()}</div>
                 </div>
             </div>
 
@@ -645,10 +648,15 @@ export default function Backup() {
             )}
 
              {activeTab === 'help' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '30px', maxWidth: '1000px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '30px', maxWidth: '1400px' }}>
                     <div className="card glass glow-blue" style={{ border: 'none', padding: '40px' }}>
-                        <h2 style={{ fontSize: '2.2rem', margin: '0 0 10px 0' }}>Studio Onboarding Guide</h2>
-                        <p className="muted" style={{ fontSize: '18px' }}>Follow these steps to transition your studio into full automation.</p>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px', marginBottom: '10px' }}>
+                            <div>
+                                <h2 style={{ fontSize: '2.2rem', margin: 0 }}>Studio Onboarding Guide</h2>
+                                <p className="muted" style={{ fontSize: '18px' }}>Follow these steps to transition your studio into full automation.</p>
+                            </div>
+                            <button className="pill" onClick={() => setShowChangeLog(true)} style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--accent)', border: '1px solid var(--accent)' }}>💎 CHANGE LOG</button>
+                        </div>
                         
                         <div style={{ marginTop: '40px', display: 'flex', flexDirection: 'column', gap: '40px' }}>
                             <section>
@@ -721,167 +729,266 @@ export default function Backup() {
                                 <div className="muted" style={{ fontSize: '14px' }}>Absolutely not. The platform uses Row Level Security (RLS) within our cloud database, meaning your data is cryptographically isolated to your unique User ID.</div>
                             </div>
                             <div>
+                                <div style={{ fontWeight: 800, color: 'white', marginBottom: '8px' }}>What does the color-coded Import status mean?</div>
+                                <div className="muted" style={{ fontSize: '14px' }}>
+                                    The "Import Age" pill in your dashboard header tracks how long it's been since you last synced your bank data:
+                                    <ul style={{ paddingLeft: '20px', marginTop: '8px' }}>
+                                        <li><span style={{ color: '#4ade80', fontWeight: 900 }}>Green:</span> Fresh (Less than 5 days old).</li>
+                                        <li><span style={{ color: '#f59e0b', fontWeight: 900 }}>Yellow:</span> Stale (5-6 days old).</li>
+                                        <li><span style={{ color: '#ff4d4d', fontWeight: 900 }}>Red:</span> Critical (7+ days old). Keep your data synced for accurate tax forecasting!</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div>
                                 <div style={{ fontWeight: 800, color: 'white', marginBottom: '8px' }}>Can I export my data if I leave?</div>
                                 <div className="muted" style={{ fontSize: '14px' }}>Yes. You can download a "Master Business Archive" (.json) at any time from the Infrastructure tab to keep your own backups.</div>
                             </div>
                         </div>
                     </div>
                 </div>
-             )}
+            )}
 
-             {activeTab === 'saas' && user?.email?.toLowerCase() === 'joshua.deuermeyer@gmail.com' && (
+            {activeTab === 'saas' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
-                      {statusMsg && statusMsg.type === 'bad' && (
-                          <div className="card glass" style={{ border: '1px solid #ff4d4d', padding: '20px', marginBottom: '20px', background: 'rgba(255, 77, 77, 0.05)' }}>
-                              <div style={{ color: '#ff4d4d', fontWeight: 900, marginBottom: '10px' }}>⚠️ SYSTEM ALERT: DATA ACCESS BLOCKED</div>
-                              <div className="muted" style={{ fontSize: '13px', lineHeight: '1.6' }}>
-                                  {statusMsg.text}
-                                  <br /><br />
-                                  <strong>Possible Fixes:</strong>
-                                  <ul style={{ marginTop: '10px', paddingLeft: '20px' }}>
-                                      <li>Ensure <code>SUPABASE_SERVICE_ROLE_KEY</code> is set in Vercel Environment Variables.</li>
-                                      <li>Run the "Admin Unlock" SQL script in your Supabase Dashboard.</li>
-                                      <li>The database might be returning an empty list because the Service Key is missing and RLS is hiding other users' rows.</li>
-                                  </ul>
-                              </div>
-                          </div>
-                      )}
-
-                      <div className="card glass glow-blue" style={{ border: 'none', padding: '30px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-                         <h2 style={{ fontSize: '1.8rem', margin: '0 0 10px 0' }}>Active Studio Licenses</h2>
-                         <p className="muted" style={{ margin: '0 0 25px 0' }}>Monitoring all registered studio sessions across the platform.</p>
-                         
-                         <div style={{ display: 'flex', gap: '15px', alignItems: 'flex-end', justifyContent: 'center', flexWrap: 'wrap' }}>
-                             <div style={{ width: '200px', textAlign: 'left' }}>
-                                 <small className="muted" style={{ fontWeight: 900, marginBottom: '8px', display: 'block' }}>RECIPIENT NAME</small>
-                                 <input value={inviteName} onChange={e => setInviteName(e.target.value)} placeholder="Photographer Name" style={{ padding: '12px' }} />
-                             </div>
-                             <div style={{ width: '250px', textAlign: 'left' }}>
-                                 <small className="muted" style={{ fontWeight: 900, marginBottom: '8px', display: 'block' }}>RECIPIENT EMAIL</small>
-                                 <input type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="hello@studio.com" style={{ padding: '12px' }} />
-                             </div>
-                             <button className="btn primary" onClick={handleGenerateBetaCode} disabled={genCodeLoading} style={{ height: '48px', padding: '0 25px' }}>
-                                {genCodeLoading ? 'Generating...' : 'Generate 90-Day Beta Key'}
-                             </button>
-                         </div>
-                      </div>
-
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
-                        <div className="card glass" style={{ margin: 0, padding: '30px' }}>
-                            <h3>Invite Codes</h3>
-                            <div className="tableWrap" style={{ border: 'none', marginTop: '20px' }}>
-                                <table style={{ width: '100%' }}>
-                                    <thead>
-                                        <tr>
-                                            <th style={{ textAlign: 'left' }}>Code</th>
-                                            <th style={{ textAlign: 'left' }}>Assigned To</th>
-                                            <th style={{ textAlign: 'left' }}>Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {betaCodes.map(c => (
-                                            <tr key={c.code}>
-                                                <td style={{ fontWeight: 800, color: 'var(--accent)' }}>{c.code}</td>
-                                                <td>
-                                                    <div style={{ fontWeight: 800 }}>{c.assigned_to_name || '—'}</div>
-                                                    <div className="muted small">{c.assigned_to_email || 'General Release'}</div>
-                                                </td>
-                                                <td>
-                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '15px' }}>
-                                                        {!c.is_used && (
-                                                            <button 
-                                                                onClick={() => handleResendInvite(c.code)}
-                                                                className="btn sm secondary"
-                                                                style={{ fontSize: '10px', height: '30px', padding: '0 15px' }}
-                                                            >
-                                                                RESEND
-                                                            </button>
-                                                        )}
-                                                        {c.is_used 
-                                                            ? <span className="tag bad" style={{ fontSize: '10px' }}>USED BY: {c.used_by_email}</span> 
-                                                            : <span className="tag ok">AVAILABLE</span>
-                                                        }
-                                                        <button 
-                                                            onClick={() => handleDeleteBetaCode(c.code)}
-                                                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', color: '#ef4444', fontWeight: 'bold', padding: '5px' }}
-                                                            title="Delete Invite Code"
-                                                        >
-                                                            ✕
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                    {user?.email?.toLowerCase() !== 'joshua.deuermeyer@gmail.com' ? (
+                        <div className="card glass" style={{ textAlign: 'center', padding: '100px 40px' }}>
+                            <div style={{ fontSize: '3rem', marginBottom: '20px' }}>🔒</div>
+                            <h2 style={{ fontSize: '2rem' }}>Administrative Hub</h2>
+                            <p className="muted" style={{ maxWidth: '500px', margin: '0 auto', lineHeight: '1.6' }}>
+                                The SaaS Studio Management suite is restricted to the administrator account (<strong>Joshua Deuermeyer</strong>). 
+                                Users with <strong>Beta</strong> or <strong>Professional</strong> access can manage their own studio settings in the <strong>Business Profile</strong> tab.
+                            </p>
                         </div>
-
-                        <div className="card glass" style={{ margin: 0, padding: '30px' }}>
-                            <h3>Studio Sessions</h3>
-                            <div className="tableWrap" style={{ border: 'none', marginTop: '20px' }}>
-                                <table style={{ width: '100%' }}>
-                                    <thead>
-                                        <tr>
-                                            <th style={{ textAlign: 'left' }}>Email</th>
-                                            <th style={{ textAlign: 'left' }}>Expires</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {allSubscriptions.map(s => (
-                                            <tr key={s.user_id}>
-                                                <td style={{ fontSize: '12px' }}>{s.email}</td>
-                                                <td>
-                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                                        <span className={`tag ${new Date(s.expires_at) < new Date() || s.status === 'suspended' ? 'bad' : 'ok'}`}>
-                                                            {s.status === 'suspended' ? 'SUSPENDED' : new Date(s.expires_at).toLocaleDateString()}
-                                                        </span>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                             <button 
-                                                                onClick={() => handleExtendSubscription(s.user_id, s.email)}
-                                                                className="btn sm secondary"
-                                                                style={{ fontSize: '9px', padding: '4px 8px', color: '#4ade80', borderColor: 'rgba(74, 222, 128, 0.2)' }}
-                                                            >
-                                                                EXTEND 90D
-                                                            </button>
-                                                            {s.status !== 'suspended' && (
-                                                                <button 
-                                                                    onClick={() => handleRevokeSubscription(s.user_id, s.email)}
-                                                                    className="btn sm secondary" 
-                                                                    style={{ fontSize: '9px', padding: '4px 8px' }}
-                                                                >
-                                                                    SUSPEND
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                     </div>
-                    <div className="card glass" style={{ border: 'none', padding: '50px', background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, transparent 100%)', marginTop: '30px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-                            <div style={{ flex: 1 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                                    <span style={{ padding: '4px 8px', background: 'rgba(99, 102, 241, 0.2)', color: '#a5b4fc', borderRadius: '4px', fontSize: '10px', fontWeight: 900 }}>ROADMAP 2026</span>
-                                    <h2 style={{ fontSize: '2rem', margin: 0 }}>Studio Brain (AI Analytics)</h2>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+                            {statusMsg && statusMsg.type === 'bad' && (
+                                <div className="card glass" style={{ border: '1px solid #ff4d4d', padding: '20px', marginBottom: '20px', background: 'rgba(255, 77, 77, 0.05)' }}>
+                                    <div style={{ color: '#ff4d4d', fontWeight: 900, marginBottom: '10px' }}>⚠️ SYSTEM ALERT: DATA ACCESS BLOCKED</div>
+                                    <div className="muted" style={{ fontSize: '13px', lineHeight: '1.6' }}>
+                                        {statusMsg.text}
+                                        <br /><br />
+                                        <strong>Possible Fixes:</strong>
+                                        <ul style={{ marginTop: '10px', paddingLeft: '20px' }}>
+                                            <li>Ensure <code>SUPABASE_SERVICE_ROLE_KEY</code> is set in Vercel Environment Variables.</li>
+                                            <li>Run the "Admin Unlock" SQL script in your Supabase Dashboard.</li>
+                                            <li>The database might be returning an empty list because the Service Key is missing and RLS is hiding other users' rows.</li>
+                                        </ul>
+                                    </div>
                                 </div>
-                                <p className="muted" style={{ fontSize: '16px' }}>
-                                    The "Studio Brain" is coming. Predictive pipeline analysis, automated receipt forensics, and executive tax strategy recommendations.
-                                </p>
+                            )}
+
+                            <div className="card glass glow-blue" style={{ border: 'none', padding: '30px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                                <h2 style={{ fontSize: '1.8rem', margin: '0 0 10px 0' }}>Active Studio Licenses</h2>
+                                <p className="muted" style={{ margin: '0 0 25px 0' }}>Monitoring all registered studio sessions across the platform.</p>
+                                
+                                <div style={{ display: 'flex', gap: '15px', alignItems: 'flex-end', justifyContent: 'center', flexWrap: 'wrap' }}>
+                                    <div style={{ width: '200px', textAlign: 'left' }}>
+                                        <small className="muted" style={{ fontWeight: 900, marginBottom: '8px', display: 'block' }}>RECIPIENT NAME</small>
+                                        <input value={inviteName} onChange={e => setInviteName(e.target.value)} placeholder="Photographer Name" style={{ padding: '12px' }} />
+                                    </div>
+                                    <div style={{ width: '250px', textAlign: 'left' }}>
+                                        <small className="muted" style={{ fontWeight: 900, marginBottom: '8px', display: 'block' }}>RECIPIENT EMAIL</small>
+                                        <input type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="hello@studio.com" style={{ padding: '12px' }} />
+                                    </div>
+                                    <button className="btn primary" onClick={handleGenerateBetaCode} disabled={genCodeLoading} style={{ height: '48px', padding: '0 25px' }}>
+                                        {genCodeLoading ? 'Generating...' : 'Generate 90-Day Beta Key'}
+                                    </button>
+                                </div>
                             </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '250px' }}>
-                                <div className="btn primary" style={{ opacity: 0.5, cursor: 'not-allowed', padding: '15px' }}>COMING SOON</div>
-                                <div style={{ fontSize: '11px' }} className="muted center">Predictive Engine Integration PENDING</div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+                                <div className="card glass" style={{ margin: 0, padding: '30px' }}>
+                                    <h3>Invite Codes</h3>
+                                    <div className="tableWrap" style={{ border: 'none', marginTop: '20px' }}>
+                                        <table style={{ width: '100%' }}>
+                                            <thead>
+                                                <tr>
+                                                    <th style={{ textAlign: 'left' }}>Code</th>
+                                                    <th style={{ textAlign: 'left' }}>Assigned To</th>
+                                                    <th style={{ textAlign: 'left' }}>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {betaCodes.map(c => (
+                                                    <tr key={c.code}>
+                                                        <td style={{ fontWeight: 800, color: 'var(--accent)' }}>{c.code}</td>
+                                                        <td>
+                                                            <div style={{ fontWeight: 800 }}>{c.assigned_to_name || '—'}</div>
+                                                            <div className="muted small">{c.assigned_to_email || 'General Release'}</div>
+                                                        </td>
+                                                        <td>
+                                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '15px' }}>
+                                                                {!c.is_used && (
+                                                                    <button 
+                                                                        onClick={() => handleResendInvite(c.code)}
+                                                                        className="btn sm secondary"
+                                                                        style={{ fontSize: '10px', height: '30px', padding: '0 15px' }}
+                                                                    >
+                                                                        RESEND
+                                                                    </button>
+                                                                )}
+                                                                {c.is_used 
+                                                                    ? <span className="tag bad" style={{ fontSize: '10px' }}>USED BY: {c.used_by_email}</span> 
+                                                                    : <span className="tag ok">AVAILABLE</span>
+                                                                }
+                                                                <button 
+                                                                    onClick={() => handleDeleteBetaCode(c.code)}
+                                                                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', color: '#ef4444', fontWeight: 'bold', padding: '5px' }}
+                                                                    title="Delete Invite Code"
+                                                                >
+                                                                    ✕
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div className="card glass" style={{ margin: 0, padding: '30px' }}>
+                                    <h3>Studio Sessions</h3>
+                                    <div className="tableWrap" style={{ border: 'none', marginTop: '20px' }}>
+                                        <table style={{ width: '100%' }}>
+                                            <thead>
+                                                <tr>
+                                                    <th style={{ textAlign: 'left' }}>Studio Identity</th>
+                                                    <th style={{ textAlign: 'left' }}>Account Type</th>
+                                                    <th style={{ textAlign: 'right' }}>Status / Cycle</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {allSubscriptions.map(s => {
+                                                    const isExpired = new Date(s.expires_at) < new Date();
+                                                    const planLabels = {
+                                                        'beta_tester': 'BETA TESTER',
+                                                        'lifetime': 'OWNER / LIFETIME',
+                                                        'monthly': 'PROFESSIONAL / MO',
+                                                        'annual': 'PROFESSIONAL / YR',
+                                                        'pro': 'PRO ACCESS'
+                                                    };
+                                                    const planLabel = planLabels[s.plan_type] || 'STUDIO MEMBER';
+                                                    return (
+                                                        <tr key={s.user_id}>
+                                                            <td>
+                                                                <div style={{ fontWeight: 800 }}>{s.display_name || 'Studio Member'}</div>
+                                                                <div className="muted small">{s.email}</div>
+                                                            </td>
+                                                            <td>
+                                                                <span className="tag secondary" style={{ fontSize: '10px' }}>{planLabel}</span>
+                                                            </td>
+                                                            <td style={{ textAlign: 'right' }}>
+                                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '15px' }}>
+                                                                    <span className={`tag ${isExpired || s.status === 'suspended' ? 'bad' : 'ok'}`} style={{ fontSize: '10px' }}>
+                                                                        {s.status === 'suspended' ? 'SUSPENDED' : isExpired ? `EXPIRED ${new Date(s.expires_at).toLocaleDateString()}` : `ACCESS UNTIL ${new Date(s.expires_at).toLocaleDateString()}`}
+                                                                    </span>
+                                                                    <div style={{ display: 'flex', gap: '6px' }}>
+                                                                         <button 
+                                                                            onClick={() => handleExtendSubscription(s.user_id, s.email)}
+                                                                            className="btn sm primary"
+                                                                            style={{ fontSize: '9px', padding: '6px 10px' }}
+                                                                        >
+                                                                            EXTEND +90D
+                                                                        </button>
+                                                                        {s.status !== 'suspended' && (
+                                                                            <button 
+                                                                                onClick={() => handleRevokeSubscription(s.user_id, s.email)}
+                                                                                className="btn sm danger" 
+                                                                                style={{ fontSize: '9px', padding: '6px 10px' }}
+                                                                            >
+                                                                                SUSPEND
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="card glass" style={{ border: 'none', padding: '50px', background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, transparent 100%)', marginTop: '30px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                                            <span style={{ padding: '4px 8px', background: 'rgba(99, 102, 241, 0.2)', color: '#a5b4fc', borderRadius: '4px', fontSize: '10px', fontWeight: 900 }}>ROADMAP 2026</span>
+                                            <h2 style={{ fontSize: '2rem', margin: 0 }}>Studio Brain (AI Analytics)</h2>
+                                        </div>
+                                        <p className="muted" style={{ fontSize: '16px' }}>
+                                            The "Studio Brain" is coming. Predictive pipeline analysis, automated receipt forensics, and executive tax strategy recommendations.
+                                        </p>
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '250px' }}>
+                                        <div className="btn primary" style={{ opacity: 0.5, cursor: 'not-allowed', padding: '15px' }}>COMING SOON</div>
+                                        <div style={{ fontSize: '11px' }} className="muted center">Predictive Engine Integration PENDING</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
+                    )}
+                </div>
+            )}
+            {/* Change Log Modal */}
+            {showChangeLog && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)', zIndex: 20000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+                    <div className="card glass glow-blue" style={{ width: '100%', maxWidth: '700px', padding: '40px', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+                            <h2 style={{ fontSize: '1.8rem', margin: 0 }}>System Intelligence Update Log</h2>
+                            <button onClick={() => setShowChangeLog(false)} style={{ background: 'none', border: 'none', color: 'white', fontSize: '24px', cursor: 'pointer' }}>✕</button>
+                        </div>
+                        
+                        <div style={{ flex: 1, overflowY: 'auto', paddingRight: '20px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '35px' }}>
+                                <section>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>
+                                        <div style={{ fontWeight: 950, fontSize: '1.4rem', color: 'var(--accent)' }}>V3.7-ELITE</div>
+                                        <div style={{ fontWeight: 800, opacity: 0.6, fontSize: '12px' }}>MARCH 13, 2026</div>
+                                    </div>
+                                    <ul style={{ display: 'flex', flexDirection: 'column', gap: '10px', paddingLeft: '15px' }}>
+                                        <li style={{ fontSize: '14px', lineHeight: '1.5' }}><strong>Documentation Refresh:</strong> Integrated the "Change Log" repository for real-time feature tracking.</li>
+                                        <li style={{ fontSize: '14px', lineHeight: '1.5' }}><strong>Widescreen Optimization:</strong> Expanded Onboarding and FAQ containers to 1400px for better data density on high-res displays.</li>
+                                        <li style={{ fontSize: '14px', lineHeight: '1.5' }}><strong>Branding Evolution:</strong> Increased <strong>"STUDIO TRACKER"</strong> brand presence in the primary command bar.</li>
+                                        <li style={{ fontSize: '14px', lineHeight: '1.5' }}><strong>Executive Symmetry:</strong> Precision grid calibration for dashboard controls (CHARTS, YEAR, SYNC).</li>
+                                        <li style={{ fontSize: '14px', lineHeight: '1.5' }}><strong>Dual Trajectory:</strong> Split profitability tracking into dual modules for "Margin %" and "Net Income Pulse".</li>
+                                        <li style={{ fontSize: '14px', lineHeight: '1.5' }}><strong>Inventory Density:</strong> Optimized Equipment Locker for 40% higher visibility per scroll.</li>
+                                    </ul>
+                                </section>
+
+                                <section>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>
+                                        <div style={{ fontWeight: 950, fontSize: '1.4rem', color: '#fff' }}>V3.6.1-PWA</div>
+                                        <div style={{ fontWeight: 800, opacity: 0.6, fontSize: '12px' }}>MARCH 12, 2026</div>
+                                    </div>
+                                    <ul style={{ display: 'flex', flexDirection: 'column', gap: '10px', paddingLeft: '15px' }}>
+                                        <li style={{ fontSize: '14px', lineHeight: '1.5' }}><strong>Mobile Command Bar:</strong> Initial release of the PWA bottom navigation for field usage.</li>
+                                        <li style={{ fontSize: '14px', lineHeight: '1.5' }}><strong>Visual Pulse:</strong> Added color-coded "Data Age" indicators to ensure sync health.</li>
+                                        <li style={{ fontSize: '14px', lineHeight: '1.5' }}><strong>Performance:</strong> Global implementation of <code>fadeIn</code> page transitions.</li>
+                                    </ul>
+                                </section>
+
+                                <section>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>
+                                        <div style={{ fontWeight: 950, fontSize: '1.4rem', color: '#fff' }}>V3.5</div>
+                                        <div style={{ fontWeight: 800, opacity: 0.6, fontSize: '12px' }}>MARCH 11, 2026</div>
+                                    </div>
+                                    <ul style={{ display: 'flex', flexDirection: 'column', gap: '10px', paddingLeft: '15px' }}>
+                                        <li style={{ fontSize: '14px', lineHeight: '1.5' }}><strong>Pipeline-to-Invoice:</strong> Direct lead conversion engine for rapid billing.</li>
+                                        <li style={{ fontSize: '14px', lineHeight: '1.5' }}><strong>Receipt Forensics:</strong> Integrated file storage for equipment serialized assets.</li>
+                                        <li style={{ fontSize: '14px', lineHeight: '1.5' }}><strong>Security Core:</strong> Role-based restriction for administrator-only studio management.</li>
+                                    </ul>
+                                </section>
+                            </div>
+                        </div>
+                        
+                        <button className="btn primary glow-blue" onClick={() => setShowChangeLog(false)} style={{ marginTop: '30px', width: '100%', padding: '15px' }}>CLOSE UPDATES</button>
                     </div>
                 </div>
-             )}
+            )}
         </section>
     );
 }

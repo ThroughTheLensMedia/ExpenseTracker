@@ -18,10 +18,18 @@ async function licensingMiddleware(req, res, next) {
             .single();
 
         if (error || !sub) {
-            // If no subscription record exists, we allow it for now but log it.
-            // In a strict mode, we might want to block this.
-            console.warn(`[Licensing] No subscription record for user ${userId}`);
-            return next();
+            // STRICT MODE: If no subscription record exists, we require a code redemption.
+            // Allow only the status and redeem routes to pass through so they can fix it
+            const allowedPublicPaths = ['/subscription/status', '/subscription/redeem'];
+            if (allowedPublicPaths.includes(req.path)) {
+                return next();
+            }
+
+            return res.status(402).json({
+                error: "Studio Access Required",
+                message: "A valid Beta or Professional access code is required to enter this studio.",
+                code: "CODE_REQUIRED"
+            });
         }
 
         // 2. Check Expiration

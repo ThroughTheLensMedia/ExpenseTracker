@@ -39,6 +39,7 @@ export default function Assets() {
     const [years, setYears] = useState([2024, 2025, 2026]);
     const [searchTerm, setSearchTerm] = useState('');
     const [receiptFile, setReceiptFile] = useState(null);
+    const [showForm, setShowForm] = useState(false);
 
     const load = async () => {
         setLoading(true);
@@ -92,6 +93,7 @@ export default function Assets() {
             setForm(BLANK); 
             setEditingAsset(null); 
             setReceiptFile(null);
+            setShowForm(false);
             setMsg('✅ Asset & Receipt Saved'); 
             load();
         } catch (e) { setMsg(`❌ Error: ${e.message}`); }
@@ -111,11 +113,7 @@ export default function Assets() {
             disposal_value_cents: asset.disposal_value_cents ? (Number(asset.disposal_value_cents) / 100).toFixed(2) : '',
             disposal_date: asset.disposal_date || ''
         });
-        // Scroll to form for visibility
-        setTimeout(() => {
-            const formHeading = document.querySelector('h3');
-            if (formHeading) formHeading.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 100);
+        setShowForm(true);
     };
 
     const handleDelete = async (id) => {
@@ -175,29 +173,23 @@ export default function Assets() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                     <div className="stat glass" style={{ padding: '16px 20px', borderRadius: '18px' }}>
                         <div className="muted small" style={{ fontSize: '10px' }}>TOTAL LOCKER VALUE</div>
-                        <div style={{ fontSize: '1.6rem', fontWeight: 900, marginTop: '4px' }}>{formatMoney(stats.totalCost)}</div>
+                        <div style={{ fontSize: '1.6rem', fontWeight: 950, marginTop: '4px' }}>{formatMoney(stats.totalCost)}</div>
                         <div className="muted small" style={{ fontSize: '11px', marginTop: '4px' }}>{assets.length} Active Items</div>
                     </div>
                     <div className="stat glass glow-green" style={{ padding: '16px 20px', borderRadius: '18px', border: '1px solid rgba(25, 195, 125, 0.4)' }}>
                         <div className="muted small" style={{ color: '#4ade80', fontSize: '10px' }}>{selectedYear} TAX DEDUCTION</div>
-                        <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#4ade80', marginTop: '4px' }}>{formatMoney(stats.totalDepr)}</div>
+                        <div style={{ fontSize: '1.6rem', fontWeight: 950, color: '#4ade80', marginTop: '4px' }}>{formatMoney(stats.totalDepr)}</div>
                         <div className="muted small" style={{ fontSize: '11px', marginTop: '4px' }}>Sch C · Line 13</div>
                     </div>
-                    <div className="stat glass" style={{ padding: '16px 20px', borderRadius: '18px' }}>
-                        <div className="muted small" style={{ fontSize: '10px' }}>ASSET MIX</div>
-                        <div style={{ display: 'flex', gap: '6px', marginTop: '10px' }}>
-                            {CATEGORIES.slice(0, 7).map(c => (
-                                <div key={c.name} title={c.name} style={{ width: '32px', height: '32px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>
-                                    {c.icon}
-                                </div>
-                            ))}
-                        </div>
+                    <div className="stat glass" style={{ padding: '16px 20px', borderRadius: '18px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+                         <button className="btn primary glow-blue" onClick={() => { setForm(BLANK); setEditingAsset(null); setShowForm(true); }} style={{ width: '100%', height: '100%', borderRadius: '12px', fontSize: '14px', fontWeight: 900 }}>
+                            ➕ ADD ENTRY
+                         </button>
                     </div>
                 </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '16px', alignItems: 'start' }}>
-
+            <div style={{ width: '100%' }}>
                 {/* Main Content Area */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <div className="card glass" style={{ padding: '16px 20px', margin: '0' }}>
@@ -241,14 +233,14 @@ export default function Assets() {
                                     <tbody>
                                         {filteredAssets.map(a => (
                                             <tr key={a.id}>
-                                                <td style={{ padding: '8px 10px' }}>
+                                                <td style={{ padding: '6px 10px' }}>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                        <div style={{ fontWeight: 700 }}>{a.description}</div>
+                                                        <div style={{ fontWeight: 700, fontSize: '12px' }}>{a.description}</div>
                                                         {a.receipt_link && (
-                                                            <a href={a.receipt_link} target="_blank" rel="noreferrer" title="View Receipt" style={{ textDecoration: 'none', fontSize: '14px' }}>🧾</a>
+                                                            <a href={a.receipt_link} target="_blank" rel="noreferrer" title="View Receipt" style={{ textDecoration: 'none', fontSize: '12px' }}>🧾</a>
                                                         )}
                                                     </div>
-                                                    <div className="muted small" style={{ fontSize: '10px' }}>{a.purchase_date} · {a.vendor}</div>
+                                                    <div className="muted small" style={{ fontSize: '9px' }}>{a.purchase_date} · {a.vendor}</div>
                                                 </td>
                                                 <td style={{ fontWeight: 600 }}>{formatMoney(a.cost * 100)}</td>
                                                 <td style={{ color: '#4ade80', fontWeight: 800 }}>{formatMoney(a.deduction_this_year * 100)}</td>
@@ -265,29 +257,29 @@ export default function Assets() {
                                 </table>
                             </div>
                         ) : (
-                            <div className="locker-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '12px', marginTop: '0' }}>
+                            <div className="locker-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px', marginTop: '0' }}>
                                 {filteredAssets.map(a => {
                                     const cat = CATEGORIES.find(c => c.name === a.category) || CATEGORIES[CATEGORIES.length - 1];
                                     const ui = STATUS_UI[a.status] || STATUS_UI.active;
                                     return (
-                                        <div key={a.id} className="gear-slot glass" style={{ opacity: a.status === 'sold' ? 0.6 : 1, padding: '14px', borderRadius: '18px' }}>
-                                            <div className="cat-icon" style={{ width: '38px', height: '38px', fontSize: '20px', borderRadius: '12px' }}>
+                                        <div key={a.id} className="gear-slot glass" style={{ opacity: a.status === 'sold' ? 0.6 : 1, padding: '12px 14px', borderRadius: '14px' }}>
+                                            <div className="cat-icon" style={{ width: '32px', height: '32px', fontSize: '16px', borderRadius: '8px' }}>
                                                 {a.receipt_link ? <a href={a.receipt_link} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>🧾</a> : cat.icon}
                                             </div>
-                                            <div className="price-tag" style={{ top: '14px', right: '14px', fontSize: '12px' }}>{formatMoney(a.cost * 100)}</div>
-                                            <div style={{ marginTop: '8px' }}>
-                                                <div style={{ fontWeight: 800, fontSize: '13px', lineHeight: 1.2 }}>{a.description}</div>
-                                                <div className="muted small" style={{ fontSize: '10px', marginTop: '2px' }}>{a.vendor}</div>
+                                            <div className="price-tag" style={{ top: '12px', right: '12px', fontSize: '11px' }}>{formatMoney(a.cost * 100)}</div>
+                                            <div style={{ marginTop: '6px' }}>
+                                                <div style={{ fontWeight: 800, fontSize: '12px', lineHeight: 1.1 }}>{a.description}</div>
+                                                <div className="muted small" style={{ fontSize: '9px', marginTop: '1px' }}>{a.vendor}</div>
                                             </div>
-                                            <div className="meta" style={{ marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <span style={{ fontSize: '9px', fontWeight: 900, color: ui.color, background: ui.bg, padding: '2px 6px', borderRadius: '5px' }}>{ui.label}</span>
-                                                <span style={{ fontWeight: 800, color: a.deduction_this_year > 0 ? '#4ade80' : 'inherit', fontSize: '11px' }}>
+                                            <div className="meta" style={{ marginTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <span style={{ fontSize: '8px', fontWeight: 900, color: ui.color, background: ui.bg, padding: '1px 5px', borderRadius: '4px' }}>{ui.label}</span>
+                                                <span style={{ fontWeight: 800, color: a.deduction_this_year > 0 ? '#4ade80' : 'inherit', fontSize: '10px' }}>
                                                     {formatMoney(a.deduction_this_year * 100)}
                                                 </span>
                                             </div>
-                                            <div className="actions" style={{ marginTop: '10px', opacity: 1 }}>
-                                                <button className="btn sm secondary" style={{ flex: 1, fontSize: '10px', padding: '3px' }} onClick={() => handleEdit(a)}>Edit</button>
-                                                <button className="btn sm danger" style={{ fontSize: '10px', padding: '3px' }} onClick={() => handleDelete(a.id)}>×</button>
+                                            <div className="actions" style={{ marginTop: '8px', opacity: 1 }}>
+                                                <button className="btn sm secondary" style={{ flex: 1, fontSize: '9px', padding: '2px' }} onClick={() => handleEdit(a)}>Edit</button>
+                                                <button className="btn sm danger" style={{ fontSize: '9px', padding: '2px' }} onClick={() => handleDelete(a.id)}>×</button>
                                             </div>
                                         </div>
                                     );
@@ -296,63 +288,67 @@ export default function Assets() {
                         )}
                     </div>
                 </div>
+            </div>
 
-                {/* Sidebar Form */}
-                <div className="card glass" style={{ padding: '16px 20px', border: editingAsset ? '1px solid var(--accent)' : 'none', position: 'sticky', top: '16px', margin: '0' }}>
-                    <h3 style={{ margin: '0 0 16px 0', fontSize: '1.1rem' }}>{editingAsset ? '📝 Edit Asset' : '➕ Add to Locker'}</h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        <div>
-                            <small className="muted" style={{ fontSize: '10px' }}>Description</small>
-                            <input style={{ fontSize: '12px', padding: '8px' }} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Sony A7IV..." />
+            {/* Float Modal Form */}
+            {showForm && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+                    <div className="card glass" style={{ width: '100%', maxWidth: '600px', padding: '30px', border: editingAsset ? '1px solid var(--accent)' : 'none' }}>
+                        <h3 style={{ margin: '0 0 20px 0', fontSize: '1.4rem', fontWeight: 900 }}>{editingAsset ? '📝 Edit Asset' : '➕ Add to Locker'}</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            <div>
+                                <small className="muted" style={{ fontSize: '10px', fontWeight: 800 }}>GENERAL DESCRIPTION</small>
+                                <input style={{ fontSize: '14px', padding: '12px' }} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="e.g. Sony A7IV Body" />
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                <div>
+                                    <small className="muted" style={{ fontSize: '10px', fontWeight: 800 }}>CATEGORY</small>
+                                    <select style={{ fontSize: '14px', padding: '12px', background: 'rgba(255,255,255,0.05)', color: 'white' }} value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
+                                        {CATEGORIES.map(c => <option key={c.name} value={c.name}>{c.icon} {c.name}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <small className="muted" style={{ fontSize: '10px', fontWeight: 800 }}>HISTORICAL COST ($)</small>
+                                    <input style={{ fontSize: '14px', padding: '12px' }} value={form.cost_cents} onChange={e => setForm({ ...form, cost_cents: e.target.value })} placeholder="0.00" />
+                                </div>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                <div>
+                                    <small className="muted" style={{ fontSize: '10px', fontWeight: 800 }}>PURCHASE DATE</small>
+                                    <input type="date" style={{ fontSize: '14px', padding: '12px' }} value={form.purchase_date} onChange={e => setForm({ ...form, purchase_date: e.target.value })} />
+                                </div>
+                                <div>
+                                    <small className="muted" style={{ fontSize: '10px', fontWeight: 800 }}>VENDOR</small>
+                                    <input style={{ fontSize: '14px', padding: '12px' }} value={form.vendor} onChange={e => setForm({ ...form, vendor: e.target.value })} placeholder="e.g. Adorama" />
+                                </div>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                <div>
+                                    <small className="muted" style={{ fontSize: '10px', fontWeight: 800 }}>RECEIPT (FILE)</small>
+                                    <input type="file" style={{ fontSize: '11px', padding: '8px' }} onChange={e => setReceiptFile(e.target.files[0])} />
+                                </div>
+                                <div>
+                                    <small className="muted" style={{ fontSize: '10px', fontWeight: 800 }}>RECEIPT (URL)</small>
+                                    <input style={{ fontSize: '14px', padding: '12px' }} value={form.receipt_link || ''} onChange={e => setForm({ ...form, receipt_link: e.target.value })} placeholder="https://..." />
+                                </div>
+                            </div>
+                            {editingAsset && (
+                                <div style={{ paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                                    <small className="muted" style={{ fontSize: '10px', fontWeight: 800 }}>DISPOSAL / DATE SOLD (OPTIONAL)</small>
+                                    <input type="date" style={{ fontSize: '14px', padding: '12px', marginTop: '6px' }} value={form.disposal_date || ''} onChange={e => setForm({ ...form, disposal_date: e.target.value })} />
+                                </div>
+                            )}
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                            <div>
-                                <small className="muted" style={{ fontSize: '10px' }}>Category</small>
-                                <select style={{ fontSize: '12px', padding: '8px' }} value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
-                                    {CATEGORIES.map(c => <option key={c.name} value={c.name}>{c.icon} {c.name}</option>)}
-                                </select>
-                            </div>
-                            <div>
-                                <small className="muted" style={{ fontSize: '10px' }}>Cost</small>
-                                <input style={{ fontSize: '12px', padding: '8px' }} value={form.cost_cents} onChange={e => setForm({ ...form, cost_cents: e.target.value })} placeholder="0.00" />
-                            </div>
+                        <div style={{ marginTop: '30px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <button className="btn primary glow-blue" onClick={handleSave} disabled={saving} style={{ padding: '16px', fontSize: '15px', fontWeight: 900 }}>
+                                {saving ? 'SYNCING ASSET...' : editingAsset ? 'UPDATE SYSTEM' : 'ADD TO LOCKER'}
+                            </button>
+                            <button className="btn secondary" onClick={() => { setShowForm(false); setEditingAsset(null); setForm(BLANK); }} style={{ padding: '12px', fontSize: '13px' }}>DISCARD CHANGES</button>
+                            {msg && <div className="tag ok" style={{ alignSelf: 'center', fontSize: '11px' }}>{msg}</div>}
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                            <div>
-                                <small className="muted" style={{ fontSize: '10px' }}>Purchase Date</small>
-                                <input type="date" style={{ fontSize: '12px', padding: '8px' }} value={form.purchase_date} onChange={e => setForm({ ...form, purchase_date: e.target.value })} />
-                            </div>
-                            <div>
-                                <small className="muted" style={{ fontSize: '10px' }}>Vendor</small>
-                                <input style={{ fontSize: '12px', padding: '8px' }} value={form.vendor} onChange={e => setForm({ ...form, vendor: e.target.value })} placeholder="Adorama..." />
-                            </div>
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                            <div>
-                                <small className="muted" style={{ fontSize: '10px' }}>Receipt Upload</small>
-                                <input type="file" style={{ fontSize: '10px', padding: '4px' }} onChange={e => setReceiptFile(e.target.files[0])} />
-                            </div>
-                            <div>
-                                <small className="muted" style={{ fontSize: '10px' }}>Receipt Link (Manual)</small>
-                                <input style={{ fontSize: '12px', padding: '8px' }} value={form.receipt_link || ''} onChange={e => setForm({ ...form, receipt_link: e.target.value })} placeholder="https://..." />
-                            </div>
-                        </div>
-                        <div className="hr"></div>
-                        <div>
-                            <small className="muted" style={{ fontSize: '10px' }}>Date Sold (Optional)</small>
-                            <input type="date" style={{ fontSize: '12px', padding: '8px' }} value={form.disposal_date || ''} onChange={e => setForm({ ...form, disposal_date: e.target.value })} />
-                        </div>
-                    </div>
-                    <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <button className="btn primary" onClick={handleSave} disabled={saving} style={{ padding: '10px', fontSize: '13px' }}>
-                            {saving ? 'Saving...' : editingAsset ? 'Update Asset' : 'Add to Locker'}
-                        </button>
-                        {editingAsset && <button className="btn secondary" style={{ fontSize: '12px' }} onClick={() => { setEditingAsset(null); setForm(BLANK); }}>Cancel</button>}
-                        {msg && <div className="muted" style={{ fontSize: '11px', textAlign: 'center', fontWeight: 800 }}>{msg}</div>}
                     </div>
                 </div>
-
-            </div>
+            )}
         </section>
     );
 }

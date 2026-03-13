@@ -102,7 +102,7 @@ export default function Mileage() {
     };
 
     return (
-        <section style={{ maxWidth: '1000px', margin: '0 auto', paddingBottom: '100px' }}>
+        <section style={{ maxWidth: '1400px', margin: '0 auto', paddingBottom: '100px' }}>
             <div className="card glass glow-blue" style={{ marginBottom: '20px', padding: '24px 30px', border: 'none' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
                     <div>

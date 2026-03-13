@@ -59,6 +59,7 @@ export default function Tax() {
     const modal = useModal();
     const [summary, setSummary] = useState([]);
     const [syncStatus, setSyncStatus] = useState('');
+    const [mileageRates, setMileageRates] = useState([]);
     const [manualRate, setManualRate] = useState({ year: new Date().getFullYear(), rate: '' });
 
     // Auditing

@@ -37,9 +37,28 @@ function PrivateRoute({ children }) {
 function AppContent() {
   const [apiStatus, setApiStatus] = useState('Checking...');
   const { user, loading, logout, subscription, settings } = useAuth();
+  const location = useLocation();
   const [showRedeem, setShowRedeem] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [newVersion, setNewVersion] = useState(false);
   const menuRef = useRef(null);
+
+  // --- Version Check Hook ---
+  useEffect(() => {
+    const CURRENT_VERSION = "3.7.0";
+    const checkVersion = async () => {
+      try {
+        const res = await fetch('/version.json?v=' + Date.now());
+        const data = await res.json();
+        if (data.version && data.version !== CURRENT_VERSION) {
+          setNewVersion(true);
+        }
+      } catch (e) { /* silent fail */ }
+    };
+    const timer = setInterval(checkVersion, 300000); // Check every 5 mins
+    checkVersion();
+    return () => clearInterval(timer);
+  }, []);
 
   // Calculate days left
   const daysLeft = subscription?.expires_at 
@@ -128,7 +147,16 @@ function AppContent() {
       )}      <header ref={menuRef} className="card glass" style={{ border: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '24px 30px', position: 'sticky', top: '15px', zIndex: 1000, margin: '15px auto', maxWidth: '1400px', cursor: 'default' }}>
         {/* Left Side: Brand */}
         <div style={{ flex: '1', display: 'flex', alignItems: 'center' }}>
-          <div className="title" style={{ fontSize: '1.2rem', fontWeight: 950, letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>STUDIO TRACKER</div>
+          <div className="title" style={{ fontSize: '2.2rem', fontWeight: 950, letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>STUDIO TRACKER</div>
+          {newVersion && (
+            <button 
+              onClick={() => window.location.reload(true)} 
+              className="tag ok glow-green" 
+              style={{ marginLeft: '12px', cursor: 'pointer', border: 'none', padding: '4px 10px', fontSize: '9px', fontWeight: 900 }}
+            >
+              🚀 REFRESH FOR UPDATES
+            </button>
+          )}
         </div>
 
         {/* Right Side: Toggle */}
@@ -146,32 +174,57 @@ function AppContent() {
             right: '15px',
             animation: 'fadeInDown 0.2s ease-out'
           }}>
-            <NavLink to="/" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`} end>
+            <NavLink to="/" end onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
               Dashboard
             </NavLink>
             <NavLink to="/transactions" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
               Transaction Ledger
             </NavLink>
+            <NavLink to="/mileage" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
+              🚗 Mileage Log
+            </NavLink>
             <NavLink to="/import" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-              Bank Import
+              📥 Bank Import
             </NavLink>
-            <NavLink to="/crm" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-              CRM Pipeline
+            <NavLink to="/crm" end onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
+              🤝 CRM Pipeline
             </NavLink>
-            <NavLink to="/crm/invoices" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-              Studio Invoices
+            <NavLink to="/crm/financials" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
+              🧾 Business Invoicing
             </NavLink>
             <NavLink to="/tax" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-              Tax Data / Sch C
+              ⚖️ Tax Data / Sch C
             </NavLink>
             <NavLink to="/equipment" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-              Camera Gear
+              📸 Camera Gear
             </NavLink>
-            <NavLink to="/mileage" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-              Mileage Log
+
+            <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '16px 12px' }} />
+            
+            <NavLink 
+                to="/StudioControlCenter?tab=profile" 
+                onClick={() => setMobileMenuOpen(false)} 
+                className={() => `dropdown-item ${location.pathname === '/StudioControlCenter' && location.search.includes('tab=profile') ? 'active' : ''}`}
+            >
+              👤 Business Profile
             </NavLink>
-            <NavLink to="/StudioControlCenter" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-              Studio Control Center
+
+            <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '16px 12px' }} />
+
+            <NavLink 
+                to="/StudioControlCenter" 
+                end 
+                onClick={() => setMobileMenuOpen(false)} 
+                className={({ isActive }) => `dropdown-item ${isActive && !location.search ? 'active' : ''}`}
+            >
+               ⚙️ Studio Control Center
+            </NavLink>
+            <NavLink 
+                to="/StudioControlCenter?tab=help" 
+                onClick={() => setMobileMenuOpen(false)} 
+                className={() => `dropdown-item ${location.pathname === '/StudioControlCenter' && location.search.includes('tab=help') ? 'active' : ''}`}
+            >
+               ❓ Studio Documentation & FAQ
             </NavLink>
             
             <div style={{ marginTop: '12px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '16px', paddingBottom: '4px' }}>
@@ -200,7 +253,7 @@ function AppContent() {
         )}
       </header>
 
-      <main style={{ marginTop: '16px', minHeight: 'calc(100vh - 160px)' }}>
+      <main style={{ marginTop: '16px', minHeight: 'calc(100vh - 160px)', animation: 'fadeIn 0.3s ease-out' }}>
         <Routes>
           <Route path="/" element={<Dashboard apiStatus={apiStatus} />} />
           <Route path="/transactions" element={<Transactions />} />

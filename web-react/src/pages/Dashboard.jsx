@@ -54,9 +54,9 @@ export default function Dashboard() {
     const [visibleCharts, setVisibleCharts] = useState(() => {
         try {
             const saved = localStorage.getItem('dashboard_charts');
-            return saved ? JSON.parse(saved) : { flow: true, trajectory: true, allocation: true, burn: true };
+            return saved ? JSON.parse(saved) : { flow: true, trajectory: true, allocation: true, recurring: true };
         } catch (e) {
-            return { flow: true, trajectory: true, allocation: true, burn: true };
+            return { flow: true, trajectory: true, allocation: true, recurring: true };
         }
     });
 
@@ -339,6 +339,63 @@ export default function Dashboard() {
         return { months, taxLiability: taxLiability > 0 ? taxLiability : 0 };
     }, [startingCash, trendStats, stats.net]);
 
+    const recurringActivity = useMemo(() => {
+        const vendorCounts = {};
+        filtered.forEach(e => {
+            if (e.vendor) vendorCounts[e.vendor] = (vendorCounts[e.vendor] || 0) + 1;
+        });
+        return Object.entries(vendorCounts)
+            .filter(([_, count]) => count >= 2)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5);
+    }, [filtered]);
+
+    const trajectoryData = useMemo(() => {
+        if (!stats.monthlyData) return null;
+        return {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            datasets: [{
+                label: 'Profit Margin %',
+                data: stats.monthlyData.map(m => m.income > 0 ? ((m.income - m.expense) / m.income * 100).toFixed(1) : 0),
+                borderColor: '#4ade80',
+                backgroundColor: 'rgba(74, 222, 128, 0.1)',
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true,
+                pointRadius: 4,
+            }]
+        };
+    }, [stats.monthlyData]);
+
+    const netIncomeData = useMemo(() => {
+        if (!stats.monthlyData) return null;
+        return {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            datasets: [{
+                label: 'Monthly Net Income ($)',
+                data: stats.monthlyData.map(m => (m.income - m.expense) / 100),
+                borderColor: '#38bdf8',
+                backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                borderWidth: 2,
+                tension: 0.4,
+                fill: true,
+                pointRadius: 4,
+            }]
+        };
+    }, [stats.monthlyData]);
+
+    const allocationData = useMemo(() => {
+        return {
+            labels: stats.topCats.map(([c]) => c),
+            datasets: [{
+                data: stats.topCats.map(([_, meta]) => meta.cents / 100),
+                backgroundColor: chartColors,
+                borderWidth: 0,
+                hoverOffset: 15
+            }]
+        };
+    }, [stats.topCats]);
+
     const trendChartData = useMemo(() => {
         if (!trendStats) return null;
         const labels = [...trendStats.actual, ...trendStats.projected].map(d => d.month);
@@ -372,28 +429,42 @@ export default function Dashboard() {
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '12px' }}>
                                 <span className="muted" style={{ fontWeight: 700, fontSize: '14px' }}>Financial Command Center</span>
                                 <span style={{ padding: '2px 8px', background: 'rgba(74, 222, 128, 0.1)', color: '#4ade80', borderRadius: '4px', fontSize: '10px', fontWeight: 900, letterSpacing: '0.05em' }}>V3.6.1-PWA</span>
+                                <span onClick={() => navigate('/StudioControlCenter?tab=help')} style={{ cursor: 'pointer', fontSize: '10px', fontWeight: 900, color: 'var(--accent)', textDecoration: 'underline', textUnderlineOffset: '3px' }}>HELP & DOCS</span>
                                 {loading && <span className="spinner-small" style={{ marginLeft: '10px' }}></span>}
                             </div>
                         </div>
-                        <div style={{ display: 'flex', gap: '12px' }}>
-                            <button className="btn secondary" onClick={() => setChartSettingsOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px' }}>
-                                <span style={{ fontSize: '16px' }}>⚙️</span>
-                                <span style={{ fontWeight: 800, fontSize: '12px', textTransform: 'uppercase' }}>CUSTOMIZE VIEW</span>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 130px)', gridAutoRows: '42px', rowGap: '24px', columnGap: '12px', minWidth: '272px' }}>
+                            {/* Control Group A: Configuration */}
+                            <button className="btn secondary sm" onClick={() => setChartSettingsOpen(true)} style={{ height: '42px', width: '130px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, borderRadius: '12px', fontWeight: 900, fontSize: '11px', letterSpacing: '0.05em' }}>
+                                CHARTS
                             </button>
                             <select 
                                 value={selectedYear} 
                                 onChange={e => setSelectedYear(Number(e.target.value))}
-                                className="btn secondary"
-                                style={{ padding: '12px 20px', fontWeight: 800, minWidth: '120px', background: 'rgba(255,255,255,0.03)' }}
+                                className="btn secondary sm"
+                                style={{ height: '42px', width: '130px', padding: '0 10px', fontWeight: 900, background: 'rgba(255,255,255,0.03)', fontSize: '12px', textAlign: 'center', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}
                             >
-                                {years.map(y => <option key={y} value={y}>{y} FISCAL</option>)}
+                                {years.map(y => <option key={y} value={y}>{y}</option>)}
                             </select>
-                        </div>
-                    </div>
 
-                    <div style={{ marginTop: '30px', display: 'flex', gap: '15px', alignItems: 'center' }}>
-                         <div style={{ color: 'var(--accent)', fontSize: '13px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={() => window.open('https://app.throughthelens.media/StudioDocs', '_blank')}>
-                            📄 STUDIO DOCUMENTATION & FAQ
+                            {/* Control Group B: Data Sync */}
+                            {(() => {
+                                const days = stats.lastImportDate ? Math.floor((new Date() - new Date(stats.lastImportDate)) / (1000 * 60 * 60 * 24)) : null;
+                                const statusColor = days === null ? 'rgba(255,255,255,0.1)' : days < 5 ? '#4ade80' : days < 7 ? '#f59e0b' : '#ff4d4d';
+                                return (
+                                    <div className="card glass sm" style={{ height: '42px', width: '130px', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.02)', border: `1px solid ${statusColor}`, borderRadius: '12px' }}>
+                                        <small style={{ fontSize: '7px', fontWeight: 950, textTransform: 'uppercase', color: statusColor, marginBottom: '1px' }}>{days === null ? 'STATUS' : `${days}D AGE`}</small>
+                                        <div style={{ fontSize: '10px', fontWeight: 900 }}>{stats.lastImportDate ? new Date(stats.lastImportDate).toLocaleDateString([], {month: '2-digit', day: '2-digit'}) : 'EMPTY'}</div>
+                                    </div>
+                                );
+                            })()}
+                            <button 
+                                className="btn primary glow-blue" 
+                                onClick={() => navigate('/import')} 
+                                style={{ height: '42px', width: '130px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: 0, fontSize: '10px', fontWeight: 950, borderRadius: '12px' }}
+                            >
+                                SYNC BANK
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -454,53 +525,51 @@ export default function Dashboard() {
                         <h2 style={{ fontSize: '1.1rem', margin: 0, opacity: 0.8 }}>FORECAST CONTROLS</h2>
                     </div>
                     
-                    <div style={{ marginTop: '25px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        <div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                <small className="muted" style={{ fontWeight: 900 }}>CURRENT STUDIO CASH</small>
-                                <span style={{ color: 'var(--accent)', fontWeight: 950 }}>{formatMoney(startingCash * 100)}</span>
-                            </div>
-                            <input type="range" min="0" max="100000" step="1000" value={startingCash} onChange={e => setStartingCash(Number(e.target.value))} style={{ width: '100%' }} />
+                    <div style={{ marginTop: '25px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                            <small className="muted" style={{ fontWeight: 900 }}>CURRENT STUDIO CASH</small>
+                            <span style={{ color: 'var(--accent)', fontWeight: 950 }}>{formatMoney(startingCash * 100)}</span>
                         </div>
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                             <div className="card" style={{ padding: '10px 15px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', flex: 1, textAlign: 'center' }}>
-                                <small className="muted" style={{ fontSize: '9px', fontWeight: 900, display: 'block', marginBottom: '4px' }}>LAST IMPORT</small>
-                                <div style={{ fontSize: '12px', fontWeight: 900 }}>{stats.lastImportDate ? new Date(stats.lastImportDate).toLocaleDateString() : 'N/A'}</div>
-                            </div>
-                            <div className="card" onClick={() => navigate('/import')} style={{ padding: '10px 15px', background: 'rgba(56, 189, 248, 0.05)', border: '1px solid rgba(56, 189, 248, 0.2)', flex: 1, textAlign: 'center', cursor: 'pointer' }}>
-                                <small style={{ color: '#38bdf8', fontSize: '9px', fontWeight: 950, display: 'block', marginBottom: '4px' }}>IMPORT PORTAL</small>
-                                <div style={{ fontSize: '12px', fontWeight: 900, color: 'white' }}>SYNC BANK 🏦</div>
-                            </div>
+                        <input type="range" min="0" max="100000" step="1000" value={startingCash} onChange={e => setStartingCash(Number(e.target.value))} style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '10px' }} />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+                            <small className="muted" style={{ fontSize: '9px' }}>$0</small>
+                            <small className="muted" style={{ fontSize: '9px' }}>$100K+</small>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Top Level KPIs */}
-            <div className="grid three mobile-single" style={{ gap: '20px' }}>
-                <div className="card glass" style={{ margin: 0, padding: '30px', border: 'none', background: 'rgba(255,255,255,0.02)' }}>
-                    <div className="muted extra-small" style={{ fontWeight: 900, letterSpacing: '0.1em', marginBottom: '10px' }}>GROSS REVENUE</div>
-                    <div style={{ fontSize: '2.5rem', fontWeight: 950, color: '#4ade80', lineHeight: 1 }}>{formatMoney(stats.income)}</div>
-                    <div style={{ marginTop: '15px' }}>
+            {/* Top Level KPIs - Single Row Adaptive */}
+            <div style={{ 
+                display: 'flex', 
+                gap: '20px', 
+                flexWrap: 'wrap',
+                width: '100%'
+            }}>
+                <div className="card glass" style={{ margin: 0, padding: '24px', border: 'none', background: 'rgba(255,255,255,0.02)', flex: '1 1 300px' }}>
+                    <div className="muted extra-small" style={{ fontWeight: 900, letterSpacing: '0.1em', marginBottom: '8px' }}>GROSS REVENUE</div>
+                    <div style={{ fontSize: '2rem', fontWeight: 950, color: '#4ade80', lineHeight: 1 }}>{formatMoney(stats.income)}</div>
+                    <div style={{ marginTop: '12px' }}>
                         {renderVariance(variances.momIncome, 'income', 'MoM')}
                         {renderVariance(variances.yoyIncome, 'income', 'YoY')}
                     </div>
                 </div>
-                <div className="card glass" style={{ margin: 0, padding: '30px', border: 'none', background: 'rgba(255,255,255,0.02)' }}>
-                    <div className="muted extra-small" style={{ fontWeight: 900, letterSpacing: '0.1em', marginBottom: '10px' }}>OPERATING EXPENSES</div>
-                    <div style={{ fontSize: '2.5rem', fontWeight: 950, color: '#ff4d4d', lineHeight: 1 }}>{formatMoney(stats.spend)}</div>
-                    <div style={{ marginTop: '15px' }}>
+                <div className="card glass" style={{ margin: 0, padding: '24px', border: 'none', background: 'rgba(255,255,255,0.02)', flex: '1 1 300px' }}>
+                    <div className="muted extra-small" style={{ fontWeight: 900, letterSpacing: '0.1em', marginBottom: '8px' }}>OPERATING EXPENSES</div>
+                    <div style={{ fontSize: '2rem', fontWeight: 950, color: '#ff4d4d', lineHeight: 1 }}>{formatMoney(stats.spend)}</div>
+                    <div style={{ marginTop: '12px' }}>
                         {renderVariance(variances.momSpend, 'spend', 'MoM')}
                         {renderVariance(variances.yoySpend, 'spend', 'YoY')}
                     </div>
                 </div>
-                <div className="card glass" style={{ margin: 0, padding: '30px', border: 'none', background: 'rgba(255,255,255,0.02)' }}>
-                    <div className="muted extra-small" style={{ fontWeight: 900, letterSpacing: '0.1em', marginBottom: '10px' }}>NET INCOME (EBITDA)</div>
-                    <div style={{ fontSize: '2.5rem', fontWeight: 950, color: '#f8fafc', lineHeight: 1 }}>{formatMoney(stats.net)}</div>
-                    <div style={{ marginTop: '15px' }}>
-                        <span style={{ fontSize: '11px', fontWeight: 900, padding: '4px 10px', borderRadius: '4px', background: 'rgba(255,255,255,0.05)' }}>
-                            {((stats.net / (stats.income || 1)) * 100).toFixed(1)}% PROFIT MARGIN
+                <div className="card glass" style={{ margin: 0, padding: '24px', border: 'none', background: 'rgba(255,255,255,0.02)', flex: '1 1 300px' }}>
+                    <div className="muted extra-small" style={{ fontWeight: 900, letterSpacing: '0.1em', marginBottom: '8px' }}>NET INCOME (EBITDA)</div>
+                    <div style={{ fontSize: '2rem', fontWeight: 950, color: '#f8fafc', lineHeight: 1 }}>{formatMoney(stats.net)}</div>
+                    <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '10px', fontWeight: 900, padding: '2px 8px', borderRadius: '4px', background: 'rgba(74, 222, 128, 0.1)', color: '#4ade80' }}>
+                            {((stats.net / (stats.income || 1)) * 100).toFixed(1)}% MARGIN
                         </span>
+                        {renderVariance(variances.yoyNet, 'income', 'YoY')}
                     </div>
                 </div>
             </div>
@@ -519,41 +588,110 @@ export default function Dashboard() {
                     </div>
                 )}
                 {visibleCharts.trajectory && (
-                    <div className="card glass" style={{ margin: 0, padding: '24px', height: '420px', background: 'rgba(15, 23, 42, 0.4)' }}>
-                        <h2 style={{ fontSize: '1.2rem', margin: 0 }}>Profit Margin Trajectory</h2>
-                        <div className="muted" style={{ fontSize: '11px', marginTop: '4px', marginBottom: '20px' }}>Net Yield Percentage by Month</div>
-                        
-                        <div style={{ textAlign: 'center', paddingTop: '40px' }}>
-                            <div style={{ fontSize: '3rem', fontWeight: 950, color: runwayIntel.taxLiability > 0 ? '#f7b955' : '#4ade80' }}>{formatMoney(runwayIntel.taxLiability)}</div>
-                            <div className="muted" style={{ fontSize: '11px', marginTop: '8px', fontWeight: 700 }}>ESTIMATED TAX LIABILITY (25%)</div>
+                    <>
+                        <div className="card glass" style={{ margin: 0, padding: '24px', height: '420px', display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ marginBottom: '20px' }}>
+                                <h2 style={{ fontSize: '1.2rem', margin: 0 }}>Profit Margin Trajectory</h2>
+                                <div className="muted" style={{ fontSize: '11px', marginTop: '4px' }}>Real-time profitability yield per month (%)</div>
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                {trajectoryData && <Line data={trajectoryData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: v => v + '%' } } } }} />}
+                            </div>
                         </div>
-                        
-                        <div style={{ marginTop: '60px' }}>
-                             <div className="muted extra-small" style={{ fontWeight: 900, marginBottom: '15px' }}>CAPITAL ALLOCATION ARCHIVE</div>
-                             {stats.topCats.slice(0, 4).map(([cat, meta]) => (
-                                <div key={cat} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '10px' }}>
-                                    <span style={{ opacity: 0.6 }}>{cat}</span>
-                                    <span style={{ fontWeight: 900 }}>{((meta.cents / (stats.spend || 1)) * 100).toFixed(0)}%</span>
-                                </div>
-                             ))}
+                        <div className="card glass" style={{ margin: 0, padding: '24px', height: '420px', display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ marginBottom: '20px' }}>
+                                <h2 style={{ fontSize: '1.2rem', margin: 0 }}>Net Income Pulse</h2>
+                                <div className="muted" style={{ fontSize: '11px', marginTop: '4px' }}>Monthly net profitability in USD</div>
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                {netIncomeData && <Line data={netIncomeData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: v => formatMoney(v * 100) } } } }} />}
+                            </div>
+                        </div>
+                    </>
+                )}
+                {visibleCharts.allocation && (
+                    <div className="card glass" style={{ margin: 0, padding: '24px', height: '420px', display: 'flex', flexDirection: 'column', background: 'rgba(15, 23, 42, 0.4)' }}>
+                        <div style={{ marginBottom: '20px' }}>
+                            <h2 style={{ fontSize: '1.2rem', margin: 0 }}>Expense Allocation</h2>
+                            <div className="muted" style={{ fontSize: '11px', marginTop: '4px' }}>Capital distribution by category</div>
+                        </div>
+                        <div style={{ flex: 1, display: 'flex', gap: '20px', alignItems: 'center' }}>
+                            <div style={{ flex: 1, maxHeight: '280px' }}>
+                                <Doughnut data={allocationData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: '75%' }} />
+                            </div>
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                 {stats.topCats.slice(0, 5).map(([cat, meta], idx) => (
+                                    <div key={cat} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: chartColors[idx % chartColors.length] }} />
+                                            <span style={{ opacity: 0.8 }}>{cat}</span>
+                                        </div>
+                                        <span style={{ fontWeight: 900 }}>{((meta.cents / (stats.spend || 1)) * 100).toFixed(0)}%</span>
+                                    </div>
+                                 ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {visibleCharts.recurring && (
+                    <div className="card glass" style={{ margin: 0, padding: '24px', height: '420px', gridColumn: 'span 2' }}>
+                        <h2 style={{ fontSize: '1.2rem', margin: '0 0 20px 0' }}>Intelligence: Recurring Activity</h2>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+                            {recurringActivity.map(([vendor, count]) => {
+                                const total = filtered.filter(f => f.vendor === vendor).reduce((s, x) => s + (x.amount_cents || 0), 0);
+                                const allocation = stats.spend > 0 ? ((total / stats.spend) * 100).toFixed(1) : 0;
+                                return (
+                                    <div key={vendor} className="card" style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                            <div className="muted extra-small" style={{ fontWeight: 900 }}>RECURRING VENDOR</div>
+                                            <div style={{ fontSize: '10px', fontWeight: 900, color: 'var(--accent)' }}>{allocation}% ALLOCATION</div>
+                                        </div>
+                                        <div style={{ fontSize: '1.2rem', fontWeight: 950, marginBottom: '4px' }}>{vendor}</div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px' }}>
+                                            <span className="tag ok" style={{ fontSize: '10px' }}>{count} transactions</span>
+                                            <span style={{ fontWeight: 800, color: '#ff4d4d' }}>{formatMoney(total)}</span>
+                                        </div>
+                                        <div style={{ marginTop: '12px', height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
+                                            <div style={{ width: `${allocation}%`, height: '100%', background: 'var(--accent)' }} />
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                            {recurringActivity.length === 0 && (
+                                <div className="muted" style={{ padding: '40px', textAlign: 'center', gridColumn: 'span 5' }}>No recurring vendors detected for {selectedYear} yet.</div>
+                            )}
                         </div>
                     </div>
                 )}
             </div>
             
-            <div className="card glass" style={{ margin: 0, padding: '24px', borderTop: stats.missing > 0 ? '3px solid #ff4d4d' : '3px solid #4ade80' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-                    <div>
-                        <h3 style={{ fontSize: '1.2rem', margin: '0 0 4px 0', color: stats.missing > 0 ? '#ff4d4d' : '#4ade80' }}>{stats.missing > 0 ? 'Mobile Audit intelligence' : 'Executive Health OK'}</h3>
-                        <div className="muted" style={{ fontSize: '12px' }}>Verification System Status</div>
-                    </div>
-                    {stats.missing > 0 && (
-                        <button className="btn secondary" onClick={() => navigate('/transactions?audit=true')} style={{ fontSize: '13px', padding: '10px 16px', borderColor: 'rgba(255, 77, 77, 0.4)', color: '#ff4d4d', fontWeight: 900 }}>
-                            PENDING: {stats.missing} RECEIPTS →
+            {/* Customize View Modal */}
+            {chartSettingsOpen && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+                    <div className="card glass" style={{ width: '100%', maxWidth: '500px', padding: '40px' }}>
+                        <h2 style={{ margin: '0 0 10px 0' }}>Dashboard Intelligence</h2>
+                        <p className="muted" style={{ marginBottom: '30px' }}>Toggle the modules you want active on your executive command center.</p>
+                        
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                            {Object.entries(visibleCharts).map(([key, val]) => (
+                                <label key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 20px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', cursor: 'pointer' }}>
+                                    <span style={{ fontWeight: 800, textTransform: 'capitalize' }}>{key} Module</span>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={val} 
+                                        onChange={() => setVisibleCharts(prev => ({ ...prev, [key]: !prev[key] }))}
+                                        style={{ width: '20px', height: '20px' }}
+                                    />
+                                </label>
+                            ))}
+                        </div>
+                        
+                        <button className="btn primary glow-blue" onClick={() => setChartSettingsOpen(false)} style={{ width: '100%', marginTop: '30px', padding: '15px' }}>
+                            APPLY LAYOUT
                         </button>
-                    )}
+                    </div>
                 </div>
-            </div>
+            )}
         </section>
     );
 }
