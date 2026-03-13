@@ -196,7 +196,7 @@ export default function Assets() {
                 </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '16px', alignItems: 'start' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '16px', alignItems: 'start' }}>
 
                 {/* Main Content Area */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>

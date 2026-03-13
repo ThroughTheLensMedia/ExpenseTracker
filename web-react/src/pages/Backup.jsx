@@ -311,7 +311,7 @@ export default function Backup() {
                     <div className="muted" style={{ fontWeight: 600, fontSize: '15px' }}>Infrastructure Management & Intelligence Engine</div>
                 </div>
 
-                <nav style={{ display: 'flex', gap: '10px' }}>
+                <nav style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                     <button className={`pill ${activeTab === 'automation' ? 'active' : ''}`} onClick={() => setActiveTab('automation')}>⚡ Automation</button>
                     <button className={`pill ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>👤 Business Profile</button>
                     <button className={`pill ${activeTab === 'infrastructure' ? 'active' : ''}`} onClick={() => setActiveTab('infrastructure')}>🔒 Infrastructure</button>
@@ -323,7 +323,7 @@ export default function Backup() {
             </div>
 
             {/* System Health Stats (Elite Centered Aesthetic) */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px', marginBottom: '40px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '16px', alignItems: 'start' }}>
                 <div className="card glass" style={{ margin: 0, borderTop: `4px solid var(--accent)`, padding: '50px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', minHeight: '220px' }}>
                     <div className="muted small" style={{ fontWeight: 800 }}>LIVE TRANSACTIONS</div>
                     <div style={{ fontSize: '3.5rem', fontWeight: 950, marginTop: '8px', lineHeight: 1 }}>{stats.expenses.toLocaleString()}</div>
@@ -831,7 +831,7 @@ export default function Backup() {
                         </div>
                      </div>
                     <div className="card glass" style={{ border: 'none', padding: '50px', background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, transparent 100%)', marginTop: '30px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '30px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
                             <div style={{ flex: 1 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
                                     <span style={{ padding: '4px 8px', background: 'rgba(99, 102, 241, 0.2)', color: '#a5b4fc', borderRadius: '4px', fontSize: '10px', fontWeight: 900 }}>ROADMAP 2026</span>

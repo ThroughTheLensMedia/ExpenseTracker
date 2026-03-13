@@ -470,7 +470,7 @@ export default function Dashboard() {
                             Executive Analytics
                         </h1>
                         <div className="muted" style={{ marginTop: '6px', fontSize: '14px' }}>
-                            Financial Command Center • <span className="tag ok" style={{ fontSize: '9px', padding: '2px 6px', verticalAlign: 'middle' }}>V3.6.0-PWA</span>
+                            Financial Command Center • <span className="tag ok" style={{ fontSize: '9px', padding: '2px 6px', verticalAlign: 'middle' }}>V3.6.1-PWA</span>
                         </div>
                     </div>
 
@@ -508,13 +508,13 @@ export default function Dashboard() {
 
             {/* Studio Docs Link Bar */}
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-10px', marginBottom: '10px' }}>
-                <a 
-                    href="#docs" 
-                    onClick={(e) => { e.preventDefault(); modal.alert("📚 Studio Docs: Found at [tracker.throughthelens.media/docs]. This portal contains your complete SOPs, FAQ, and Infrastructure Guide."); }}
-                    style={{ fontSize: '11px', fontWeight: 900, color: 'var(--accent)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', opacity: 0.8 }}
+                <div
+                    className="card glass"
+                    onClick={() => window.open('https://tracker.throughthelens.media/docs', '_blank')}
+                    style={{ flex: 1, padding: '16px 20px', cursor: 'pointer', border: '1px solid rgba(99, 102, 241, 0.2)', background: 'rgba(99, 102, 241, 0.05)', display: 'flex', alignItems: 'center', gap: '6px', opacity: 0.8, fontSize: '11px', fontWeight: 900, color: 'var(--accent)', textDecoration: 'none' }}
                 >
                     <span style={{ fontSize: '14px' }}>📄</span> STUDIO DOCUMENTATION & FAQ
-                </a>
+                </div>
             </div>
 
             {/* Mobile-Only Quick Snap Action */}
