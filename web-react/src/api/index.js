@@ -83,18 +83,30 @@ export async function fetchAllExpenses(force = false, year = null) {
     // 1. Return cache if still valid and not forced
     if (!force && _expensesCache && (now - _expensesAge < CACHE_TTL)) {
         if (!year) return _expensesCache;
-        // If year requested, filter from cache if possible
         return _expensesCache.filter(e => String(e.expense_date || '').startsWith(String(year)));
     }
+    
+    // 2. Optimization: If we have a valid cache but it's older than TTL, 
+    // we still might want to return it quickly and refresh in background, 
+    // but for now let's just fetch if force is true or cache is old.
     
     const PAGE = 1000;
     let offset = 0;
     let allRows = [];
     
+    // If we are forcing a refresh but ONLY for a specific year, we could optimize the API call,
+    // but to keep the global cache consistent, we'll fetch all.
+    // However, if the user has TONS of data, we should probably only fetch the year requested.
+    // Let's compromise: if we're forcing and have a year, only fetch that year.
+    
+    const useYearFilter = force && year;
+
     while (true) {
         const queryParams = [`limit=${PAGE}`, `offset=${offset}`];
-        // We always fetch ALL to populate the global cache, unless force is specifically for a year
-        // But for most reliability, we fetch the full set and then filter.
+        if (useYearFilter) {
+            queryParams.push(`start=${year}-01-01`);
+            queryParams.push(`end=${year}-12-31`);
+        }
         
         const data = await apiGet(`/expenses?${queryParams.join('&')}`);
         const rows = data.rows || [];
@@ -107,11 +119,13 @@ export async function fetchAllExpenses(force = false, year = null) {
         }
     }
 
-    // 2. Update global cache
-    _expensesCache = allRows;
-    _expensesAge = now;
+    // 3. Update global cache (only if we fetched everything)
+    if (!useYearFilter) {
+        _expensesCache = allRows;
+        _expensesAge = now;
+    }
 
-    if (year) {
+    if (year && !useYearFilter) {
         return allRows.filter(e => String(e.expense_date || '').startsWith(String(year)));
     }
     return allRows;

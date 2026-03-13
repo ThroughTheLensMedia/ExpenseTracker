@@ -49,6 +49,20 @@ export default function Dashboard() {
     const [snapSuccess, setSnapSuccess] = useState(false);
     const [importReminderDays, setImportReminderDays] = useState(() => Number(localStorage.getItem('studio_import_reminder') || 7));
     const [showProjections, setShowProjections] = useState(true);
+    const [chartSettingsOpen, setChartSettingsOpen] = useState(false);
+    const [visibleCharts, setVisibleCharts] = useState(() => {
+        try {
+            const saved = localStorage.getItem('dashboard_charts');
+            return saved ? JSON.parse(saved) : { flow: true, trajectory: true, allocation: true, burn: true };
+        } catch (e) {
+            return { flow: true, trajectory: true, allocation: true, burn: true };
+        }
+    });
+
+    useEffect(() => {
+        localStorage.setItem('dashboard_charts', JSON.stringify(visibleCharts));
+    }, [visibleCharts]);
+
     const fileInputRef = useRef(null);
 
     const loadData = async (targetYear = selectedYear) => {
@@ -564,7 +578,7 @@ export default function Dashboard() {
                                         <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '12px', fontWeight: 900, color: '#6366f1' }}>$</span>
                                         <input 
                                             type="number" 
-                                            value={startingCash || ''} 
+                                            value={startingCash === 0 ? '' : startingCash} 
                                             onChange={e => {
                                                 const val = e.target.value === '' ? 0 : Number(e.target.value);
                                                 setStartingCash(val);
@@ -611,39 +625,9 @@ export default function Dashboard() {
 
                         </div>
                     </div>
-                </div>
-
-                {stats.lastImportDate && (
-                    <div style={{ marginTop: '20px', borderTop: '1px dotted rgba(255,255,255,0.1)', paddingTop: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
-                        <div style={{ display: 'flex', gap: '30px' }}>
-                            <div>
-                                <small className="muted" style={{ fontWeight: 900, fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>LAST LEDGER SYNC</small>
-                                <div style={{ fontSize: '13px', fontWeight: 800, color: (Date.now() - new Date(stats.lastImportDate)) / (1000 * 3600 * 24) > importReminderDays ? '#f59e0b' : '#4ade80', marginTop: '4px' }}>
-                                    {stats.lastImportDate} ({(Math.floor((Date.now() - new Date(stats.lastImportDate)) / (1000 * 3600 * 24)))} days ago)
-                                </div>
-                            </div>
-                            <div>
-                                <small className="muted" style={{ fontWeight: 900, fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>VIGILANCE REMINDER</small>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                                    <input 
-                                        type="number" 
-                                        value={importReminderDays} 
-                                        onChange={e => setImportReminderDays(Number(e.target.value))}
-                                        style={{ width: '40px', padding: '2px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '4px', textAlign: 'center', fontSize: '10px' }}
-                                    />
-                                    days
-                                </div>
-                            </div>
-                        </div>
-                        {(Date.now() - new Date(stats.lastImportDate)) / (1000 * 3600 * 24) > importReminderDays && (
-                            <div className="btn secondary" onClick={() => navigate('/import')} style={{ fontSize: '10px', padding: '8px 16px', borderRadius: '10px', color: '#f59e0b', borderColor: 'rgba(245, 158, 11, 0.3)', fontWeight: 900 }}>
-                                🔄 REFRESH LEDGER DATA
-                            </div>
-                        )}
-                    </div>
-                )}
             </div>
-           
+        </div>
+            
             {/* ── Key Performance Indicators (KPIs) ── */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
                 <div className="card glass" style={{ margin: 0, padding: '24px', borderTop: '3px solid #4ade80', borderRadius: '16px' }}>

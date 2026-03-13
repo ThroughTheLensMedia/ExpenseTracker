@@ -198,7 +198,7 @@ export default function Backup() {
             loadData(true);
         }, 60000);
         return () => clearInterval(timer);
-    }, [activeTab]);
+    }, [activeTab, user]);
 
     const discoveryVendors = useMemo(() => {
         const counts = {};
