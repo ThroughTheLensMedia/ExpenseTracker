@@ -178,8 +178,6 @@ router.post("/subscriptions/:userId/suspend", async (req, res) => {
 
 // POST /admin/beta-codes
 // Generate a new code: { code, daysValid, assigned_to_name, assigned_to_email }
-const { sendInviteEmail } = require("../utils/mailer");
-
 router.post("/beta-codes", async (req, res) => {
     try {
         const { code, daysValid = 90, assigned_to_name, assigned_to_email } = req.body;
