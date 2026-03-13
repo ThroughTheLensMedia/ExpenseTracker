@@ -25,6 +25,7 @@ export default function Backup() {
     const [isHealthy, setIsHealthy] = useState(true);
     const [isMailerReady, setIsMailerReady] = useState(false);
     const [storageType, setStorageType] = useState('unknown');
+    const [statusMsg, setStatusMsg] = useState(null); // System health status
 
     // --- Automation States ---
     const [rules, setRules] = useState([]);

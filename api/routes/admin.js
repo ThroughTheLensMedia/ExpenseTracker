@@ -149,6 +149,7 @@ router.post("/import-all", async (req, res) => {
 router.get("/subscriptions", async (req, res) => {
     if (req.user?.email?.toLowerCase() !== 'joshua.deuermeyer@gmail.com') return res.status(403).json({ error: "Denied" });
     try {
+        if (!supabase) throw new Error("Supabase client not initialized - check environment variables.");
         const { data, error } = await supabase
             .from('user_subscriptions')
             .select('*')
@@ -163,6 +164,7 @@ router.get("/subscriptions", async (req, res) => {
 // POST /admin/subscriptions/:userId/suspend
 router.post("/subscriptions/:userId/suspend", async (req, res) => {
     try {
+        if (!supabase) throw new Error("Supabase client not initialized.");
         const { error } = await supabase
             .from('user_subscriptions')
             .update({ status: 'suspended', updated_at: new Date() })
@@ -186,6 +188,7 @@ router.post("/beta-codes", async (req, res) => {
 
         const newCode = code || Math.random().toString(36).substring(2, 10).toUpperCase();
 
+        if (!supabase) throw new Error("Supabase client not initialized.");
         const { data, error } = await supabase
             .from('beta_codes')
             .insert({

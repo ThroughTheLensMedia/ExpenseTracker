@@ -1,5 +1,5 @@
-// Load environment variables immediately
-require("dotenv").config({ path: require('path').resolve(__dirname, '.env') });
+// Load environment variables
+require("dotenv").config(); 
 
 const express = require("express");
 const cors = require("cors");
@@ -51,7 +51,8 @@ apiRouter.get("/health", async (req, res) => {
     environment: process.env.VERCEL ? "vercel" : "local",
     lockdown: "enabled",
     mailer: !!process.env.RESEND_API_KEY,
-    db: true
+    db: !!supabase,
+    timestamp: new Date().toISOString()
   });
 });
 
