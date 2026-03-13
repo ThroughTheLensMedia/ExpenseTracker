@@ -16,10 +16,15 @@ router.get("/check-status", async (req, res) => {
     try {
         const isServiceKeyValid = process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY.length > 50;
         
-        // Test connectivity using the service-level client
-        // Note: we use supabase (global) which should use the Service Role key
-        const { count: subCount, error: subError } = await supabase.from('user_subscriptions').select('*', { count: 'exact', head: true });
-        const { count: codeCount, error: codeError } = await supabase.from('beta_codes').select('*', { count: 'exact', head: true });
+        let subCount = 0, codeCount = 0, subError = null, codeError = null;
+        
+        if (supabase) {
+            const { count: sCount, error: sErr } = await supabase.from('user_subscriptions').select('*', { count: 'exact', head: true });
+            const { count: cCount, error: cErr } = await supabase.from('beta_codes').select('*', { count: 'exact', head: true });
+            subCount = sCount; codeCount = cCount; subError = sErr; codeError = cErr;
+        } else {
+            subError = { message: "Supabase client not initialized" };
+        }
         
         res.json({
             ok: true,
