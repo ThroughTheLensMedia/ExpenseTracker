@@ -93,12 +93,17 @@ export default function Backup() {
 
             // Admin Logic: If you are Joshua, load the SaaS management data
             if (user?.email?.toLowerCase() === 'joshua.deuermeyer@gmail.com') {
-                const [subs, codes] = await Promise.all([
-                    apiGet('/admin/subscriptions'),
-                    apiGet('/admin/beta-codes')
-                ]);
-                setAllSubscriptions(subs || []);
-                setBetaCodes(codes || []);
+                try {
+                    const [subs, codes] = await Promise.all([
+                        apiGet('/admin/subscriptions'),
+                        apiGet('/admin/beta-codes')
+                    ]);
+                    setAllSubscriptions(subs || []);
+                    setBetaCodes(codes || []);
+                } catch (err) {
+                    console.error("Admin data fetch failed", err);
+                    if (!silent) setStatusMsg({ type: 'bad', text: "Admin Data Fetch Failed: " + err.message });
+                }
             }
         } catch (e) {
             console.error("Master load failed", e);

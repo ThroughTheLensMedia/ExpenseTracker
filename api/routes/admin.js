@@ -4,6 +4,32 @@ const path = require("path");
 const archiver = require("archiver");
 const { supabase } = require("../db");
 const router = express.Router();
+const { sendInviteEmail } = require("../utils/mailer");
+
+// GET /admin/check-status (Diagnostics)
+router.get("/check-status", async (req, res) => {
+    // Security: Level 1 Admin Lockdown
+    if (req.user?.email?.toLowerCase() !== 'joshua.deuermeyer@gmail.com') {
+        return res.status(403).json({ error: "Access Denied: Admin Authorization Required" });
+    }
+
+    try {
+        const { count: subCount, error: subError, data: subDebug } = await supabase.from('user_subscriptions').select('*', { count: 'exact' }).limit(5);
+        const { count: codeCount, error: codeError, data: codeDebug } = await supabase.from('beta_codes').select('*', { count: 'exact' }).limit(5);
+        
+        res.json({
+            ok: true,
+            user: req.user.email,
+            has_service_key: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+            tables: {
+                user_subscriptions: subError ? subError.message : { count: subCount, sample: subDebug },
+                beta_codes: codeError ? codeError.message : { count: codeCount, sample: codeDebug }
+            }
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
 
 // HELPER: Fetch all rows from any table (request-bound)
 async function fetchAllRows(sb, tableName) {
@@ -107,6 +133,7 @@ router.post("/import-all", async (req, res) => {
 
 // GET /admin/subscriptions
 router.get("/subscriptions", async (req, res) => {
+    if (req.user?.email?.toLowerCase() !== 'joshua.deuermeyer@gmail.com') return res.status(403).json({ error: "Denied" });
     try {
         const { data, error } = await supabase
             .from('user_subscriptions')
@@ -175,6 +202,7 @@ router.post("/beta-codes", async (req, res) => {
 
 // GET /admin/beta-codes
 router.get("/beta-codes", async (req, res) => {
+    if (req.user?.email?.toLowerCase() !== 'joshua.deuermeyer@gmail.com') return res.status(403).json({ error: "Denied" });
     try {
         const { data, error } = await supabase
             .from('beta_codes')

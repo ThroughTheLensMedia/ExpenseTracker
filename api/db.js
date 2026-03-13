@@ -8,6 +8,13 @@
 
 const { createClient } = require("@supabase/supabase-js");
 
+// Load Environment Variables at the absolute entry point
+try {
+  require("dotenv").config({ path: require('path').resolve(__dirname, '../.env') });
+} catch (e) {
+  // Silent fail for production environments where dotenv isn't needed
+}
+
 const SUPABASE_URL = (process.env.SUPABASE_URL || "").trim();
 const SUPABASE_ANON_KEY = (process.env.SUPABASE_ANON_KEY || "").trim();
 const SUPABASE_SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
