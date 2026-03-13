@@ -36,6 +36,7 @@ export default function Dashboard() {
     const [expenses, setExpenses] = useState([]);
     const [leads, setLeads] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [search] = useState('');
     const [availableYears, setAvailableYears] = useState([new Date().getFullYear()]);
@@ -67,6 +68,7 @@ export default function Dashboard() {
 
     const loadData = async (targetYear = selectedYear) => {
         setLoading(true);
+        setError(null);
         try {
             const [exp, lds, yrs] = await Promise.all([
                 fetchAllExpenses(true, targetYear),
@@ -77,12 +79,11 @@ export default function Dashboard() {
             setLeads(lds.leads || []);
             if (yrs.length > 0) {
                 setAvailableYears(yrs);
-                // If current year is empty but we have other years, and this is the first load
-                if (exp.length === 0 && targetYear === new Date().getFullYear() && yrs.includes(yrs[0])) {
-                   // We don't auto-switch yet, but we'll let the user know or they can use the dropdown
-                }
             }
-        } catch (e) { console.error(e); }
+        } catch (e) { 
+            console.error(e);
+            setError(e.message);
+        }
         finally { setLoading(false); }
     };
 
@@ -298,548 +299,248 @@ export default function Dashboard() {
         if (!file) return;
 
         setSnapLoading(true);
-        const formData = new FormData();
-        formData.append('file', file);
-
         try {
-            const res = await fetch('/api/pwa/quick-capture', {
+            const formData = new FormData();
+            formData.append('receipt', file);
+            
+            const r = await fetch('/api/receipts/snap', {
                 method: 'POST',
                 body: formData,
                 credentials: 'include'
             });
-            if (!res.ok) throw new Error("Upload Failed");
-
+            
+            if (!r.ok) throw new Error('Upload failed');
+            
             setSnapSuccess(true);
             setTimeout(() => setSnapSuccess(false), 3000);
-            loadData();
+            loadData(selectedYear);
         } catch (err) {
-            modal.alert("Camera Snap Failed: " + err.message);
+            modal.alert("Snap failed: " + err.message);
         } finally {
             setSnapLoading(false);
-            if (fileInputRef.current) fileInputRef.current.value = '';
         }
     };
-
-    const profitMargin = stats.income > 0 ? ((stats.net / stats.income) * 100).toFixed(1) : 0;
-    const avgMonthlyBurn = stats.spend / 12;
-
-    const runwayIntel = useMemo(() => {
-        // Weighted Pipeline Value
-        let weightedValue = 0;
-        leads.forEach(l => {
-            const w = weights[l.status] || 0;
-            weightedValue += (l.quoted_value_cents || 0) * w;
-        });
-
-        const totalLiquidity = (startingCash * 100) + weightedValue;
-        const burnPerMonth = avgMonthlyBurn > 100 ? avgMonthlyBurn : 0; // Ignore tiny/zero burn for runway
-        const monthsRunway = burnPerMonth > 0 ? (totalLiquidity / burnPerMonth).toFixed(1) : '∞';
-
-        // Additional insights for charts
-        const monthlyProfitMargins = stats.monthlyData.map(d => d.income > 0 ? ((d.income - d.expense) / d.income * 100) : 0);
-        const taxLiability = stats.income * 0.25; // 25% reserve as estimate
-
-        return {
-            weightedValue,
-            totalLiquidity,
-            monthsRunway: isFinite(monthsRunway) ? monthsRunway : '∞',
-            monthlyProfitMargins,
-            taxLiability
-        };
-    }, [leads, weights, startingCash, avgMonthlyBurn, stats]);
 
     const barChartData = {
         labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
         datasets: [
-            { label: 'Revenue', data: stats.monthlyData.map(d => d.income / 100), backgroundColor: '#4ade80', borderRadius: 4, barPercentage: 0.6 },
-            { label: 'COGS & Opex', data: stats.monthlyData.map(d => d.expense / 100), backgroundColor: 'rgba(255, 77, 77, 0.8)', borderRadius: 4, barPercentage: 0.6 }
-        ],
+            { label: 'Revenue', data: stats.monthlyData.map(m => m.income / 100), backgroundColor: '#4ade80', borderRadius: 4 },
+            { label: 'COGS & Opex', data: stats.monthlyData.map(m => m.expense / 100), backgroundColor: '#ff4d4d', borderRadius: 4 }
+        ]
     };
+
+    const chartColors = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6'];
+
+    const runwayIntel = useMemo(() => {
+        const burn = trendStats?.projected[0].spend || 0;
+        const cashValue = startingCash * 100;
+        const months = burn > 0 ? (cashValue / burn).toFixed(1) : '∞';
+        const taxLiability = (stats.net * 0.25);
+        return { months, taxLiability: taxLiability > 0 ? taxLiability : 0 };
+    }, [startingCash, trendStats, stats.net]);
 
     const trendChartData = useMemo(() => {
         if (!trendStats) return null;
-        const labels = [...trendStats.actual.map(d => d.month), ...trendStats.projected.map(d => '*' + d.month)];
-
-        const actualNet = trendStats.actual.map(d => d.net / 100);
-        const actualIncome = trendStats.actual.map(d => d.income / 100);
-        const actualSpend = trendStats.actual.map(d => d.spend / 100);
-
-        const lastActualIdx = trendStats.actual.length - 1;
-
-        const projNet = Array(labels.length).fill(null);
-        const projIncome = Array(labels.length).fill(null);
-        const projSpend = Array(labels.length).fill(null);
-
-        if (lastActualIdx >= 0) {
-            projNet[lastActualIdx] = actualNet[lastActualIdx];
-            projIncome[lastActualIdx] = actualIncome[lastActualIdx];
-            projSpend[lastActualIdx] = actualSpend[lastActualIdx];
-        }
-
-        trendStats.projected.forEach((d, i) => {
-            projNet[lastActualIdx + 1 + i] = d.net / 100;
-            projIncome[lastActualIdx + 1 + i] = d.income / 100;
-            projSpend[lastActualIdx + 1 + i] = d.spend / 100;
-        });
-
+        const labels = [...trendStats.actual, ...trendStats.projected].map(d => d.month);
         return {
             labels,
             datasets: [
                 {
-                    label: 'Actual Revenue',
-                    data: actualIncome,
-                    borderColor: '#4ade80',
-                    fill: false,
-                    tension: 0.4,
-                    borderWidth: 2,
-                    pointBackgroundColor: '#4ade80',
-                    pointRadius: 4,
-                },
-                {
-                    label: 'Proj. Revenue',
-                    data: projIncome,
-                    borderColor: '#4ade80',
-                    borderDash: [4, 4],
-                    fill: false,
-                    tension: 0.4,
-                    borderWidth: 2,
-                    pointBackgroundColor: '#4ade80',
-                    pointRadius: 4,
-                    pointStyle: 'rectRot'
-                },
-                {
-                    label: 'Actual Opex',
-                    data: actualSpend,
-                    borderColor: '#ff4d4d',
-                    fill: false,
-                    tension: 0.4,
-                    borderWidth: 2,
-                    pointBackgroundColor: '#ff4d4d',
-                    pointRadius: 4,
-                },
-                {
-                    label: 'Proj. Opex',
-                    data: projSpend,
-                    borderColor: '#ff4d4d',
-                    borderDash: [4, 4],
-                    fill: false,
-                    tension: 0.4,
-                    borderWidth: 2,
-                    pointBackgroundColor: '#ff4d4d',
-                    pointRadius: 4,
-                    pointStyle: 'rectRot'
-                },
-                {
-                    label: 'Actual Net Income',
-                    data: actualNet,
-                    borderColor: '#2f6bff',
-                    backgroundColor: 'rgba(47, 107, 255, 0.1)',
+                    label: 'Actual / Projected Burn',
+                    data: [...trendStats.actual, ...trendStats.projected].map(d => d.spend),
+                    borderColor: '#f97316',
+                    backgroundColor: 'rgba(249, 115, 22, 0.1)',
                     fill: true,
                     tension: 0.4,
-                    borderWidth: 3,
-                    pointBackgroundColor: '#2f6bff',
                     pointRadius: 4,
-                },
-                {
-                    label: 'Proj. Net (+3Mo)',
-                    data: projNet,
-                    borderColor: '#f7b955',
-                    borderDash: [6, 6],
-                    fill: false,
-                    tension: 0.4,
-                    borderWidth: 3,
-                    pointBackgroundColor: '#f7b955',
-                    pointRadius: 5,
-                    pointStyle: 'rectRot'
+                    segment: {
+                        dash: ctx => ctx.p0DataIndex >= trendStats.actual.length - 1 ? [5, 5] : undefined
+                    }
                 }
             ]
         };
     }, [trendStats]);
 
-    // Expanded color palette for Top 10 categories
-    const chartColors = ['#2f6bff', '#4ade80', '#f7b955', '#ff4d4d', '#9333ea', '#06b6d4', '#ec4899', '#f97316', '#8b5cf6', '#14b8a6'];
-
     return (
-        <section style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '1400px', margin: '0 auto', paddingBottom: '100px' }}>
+        <section style={{ display: 'flex', flexDirection: 'column', gap: '20px', paddingBottom: '100px' }}>
+            {/* ───── Executive Header ───── */}
+            <div className="card glass glow-blue" style={{ padding: '40px', border: 'none', margin: 0, position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'relative', zIndex: 1 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px' }}>
+                        <div>
+                            <h1 style={{ margin: 0, fontSize: '2.4rem', fontWeight: 950, letterSpacing: '-0.03em', lineHeight: 1 }}>Executive Analytics</h1>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '12px' }}>
+                                <span className="muted" style={{ fontWeight: 700, fontSize: '14px' }}>Financial Command Center</span>
+                                <span style={{ padding: '2px 8px', background: 'rgba(74, 222, 128, 0.1)', color: '#4ade80', borderRadius: '4px', fontSize: '10px', fontWeight: 900, letterSpacing: '0.05em' }}>V3.6.1-PWA</span>
+                                {loading && <span className="spinner-small" style={{ marginLeft: '10px' }}></span>}
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <button className="btn secondary" onClick={() => setChartSettingsOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px' }}>
+                                <span style={{ fontSize: '16px' }}>⚙️</span>
+                                <span style={{ fontWeight: 800, fontSize: '12px', textTransform: 'uppercase' }}>CUSTOMIZE VIEW</span>
+                            </button>
+                            <select 
+                                value={selectedYear} 
+                                onChange={e => setSelectedYear(Number(e.target.value))}
+                                className="btn secondary"
+                                style={{ padding: '12px 20px', fontWeight: 800, minWidth: '120px', background: 'rgba(255,255,255,0.03)' }}
+                            >
+                                {years.map(y => <option key={y} value={y}>{y} FISCAL</option>)}
+                            </select>
+                        </div>
+                    </div>
 
-            {/* ── Dashboard Executive Header ── */}
-            <div className="card glass glow-blue" style={{ padding: '24px 30px', border: 'none', margin: 0 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
+                    <div style={{ marginTop: '30px', display: 'flex', gap: '15px', alignItems: 'center' }}>
+                         <div style={{ color: 'var(--accent)', fontSize: '13px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={() => window.open('https://app.throughthelens.media/StudioDocs', '_blank')}>
+                            📄 STUDIO DOCUMENTATION & FAQ
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {error && (
+                <div className="card glass" style={{ border: '1px solid #ff4d4d', padding: '20px', background: 'rgba(255, 77, 77, 0.05)', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <span style={{ fontSize: '24px' }}>⚠️</span>
                     <div>
-                        <h1 style={{ margin: 0, fontSize: '2rem', fontWeight: 900, background: 'linear-gradient(90deg, #fff, #818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                            Executive Analytics
-                        </h1>
-                        <div className="muted" style={{ marginTop: '6px', fontSize: '14px' }}>
-                            Financial Command Center • <span className="tag ok" style={{ fontSize: '9px', padding: '2px 6px', verticalAlign: 'middle' }}>V3.6.1-PWA</span>
+                        <div style={{ fontWeight: 900, color: '#ff4d4d' }}>SYSTEM COMMUNICATION ERROR</div>
+                        <div className="muted" style={{ fontSize: '13px' }}>{error}. This usually means the API is waking up or there is a database timeout.</div>
+                    </div>
+                    <button className="btn sm secondary" onClick={() => loadData()} style={{ marginLeft: 'auto' }}>Retry Sync</button>
+                </div>
+            )}
+
+            {/* Core Intelligence Hero */}
+            <div className="grid two mobile-single">
+                <div className="card glass" style={{ margin: 0, padding: '30px', border: 'none', background: 'linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div>
+                            <h2 style={{ fontSize: '1.4rem', margin: 0 }}>STUDIO INTELLIGENCE</h2>
+                            <p className="muted small" style={{ fontWeight: 700 }}>CFO Projection & Pipeline Velocity</p>
                         </div>
+                        <div className="tag secondary" style={{ fontSize: '9px', padding: '4px 10px' }}>PRO FORECAST</div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                         {/* Desktop Customizer Trigger */}
-                        <button className="btn secondary desktop-only" onClick={() => setChartSettingsOpen(!chartSettingsOpen)} style={{ padding: '10px 16px', borderRadius: '12px', fontSize: '13px' }}>
-                            {chartSettingsOpen ? 'CLOSE CUSTOMIZER' : '⚙️ CUSTOMIZE VIEW'}
-                        </button>
-                        <select value={selectedYear} onChange={(e) => setSelectedYear(Number(e.target.value))} className="btn secondary" style={{ padding: '10px 16px', borderRadius: '12px', fontWeight: 900, fontSize: '14px', appearance: 'none', outline: 'none', cursor: 'pointer' }}>
-                            {years.map(y => <option key={y} value={y}>FY {y}</option>)}
-                        </select>
-                        <button className="btn primary" onClick={loadData} style={{ padding: '10px 20px', fontSize: '14px' }}>
-                            {loading ? 'SYNCING...' : 'SYNC LEDGER'}
-                        </button>
+                    <div className="grid two" style={{ marginTop: '40px' }}>
+                        <div>
+                            <small className="muted" style={{ fontWeight: 900, display: 'block', marginBottom: '12px' }}>PROJECTED RUNWAY</small>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(249, 115, 22, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <span style={{ fontSize: '20px', color: '#f97316' }}>{runwayIntel.months === '∞' ? '♾️' : '⏱️'}</span>
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: '1.8rem', fontWeight: 950, lineHeight: 1 }}>{runwayIntel.months} <span style={{ fontSize: '12px', fontWeight: 900, opacity: 0.5 }}>MONTHS</span></div>
+                                    <div className="muted extra-small" style={{ fontWeight: 700 }}>Based on {formatMoney(trendStats?.projected[0].spend || 0)} avg. monthly burn</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <small className="muted" style={{ fontWeight: 900, display: 'block', marginBottom: '12px' }}>PROJECTED YIELD</small>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(56, 189, 248, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <span style={{ fontSize: '20px', color: '#38bdf8' }}>💰</span>
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: '1.8rem', fontWeight: 950, lineHeight: 1 }}>{formatMoney(leads.reduce((s, l) => s + (Number(l.estimated_value || 0) * (weights[l.status] || 0)), 0) * 100)}</div>
+                                    <div className="muted extra-small" style={{ fontWeight: 700 }}>Weighted value of active leads</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                
-                {chartSettingsOpen && (
-                    <div style={{ marginTop: '20px', padding: '20px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', animation: 'fadeInDown 0.2s ease-out' }}>
-                        <h4 style={{ margin: '0 0 12px 0', fontSize: '11px', letterSpacing: '0.1em', opacity: 0.6 }}>ACTIVE ANALYTICS MODULES (DESKTOP)</h4>
-                        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-                            {Object.keys(visibleCharts).map(k => (
-                                <label key={k} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 700 }}>
-                                    <input type="checkbox" checked={visibleCharts[k]} onChange={() => setVisibleCharts(prev => ({...prev, [k]: !prev[k]}))} />
-                                    {k === 'flow' && 'Cash Flow Velocity'}
-                                    {k === 'trajectory' && 'Profit Margin Trajectory'}
-                                    {k === 'allocation' && 'Capital Allocation'}
-                                    {k === 'burn' && 'Burn Velocity Projection'}
-                                </label>
-                            ))}
+
+                <div className="card glass" style={{ margin: 0, padding: '30px', border: 'none', background: 'rgba(15, 23, 42, 0.3)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h2 style={{ fontSize: '1.1rem', margin: 0, opacity: 0.8 }}>FORECAST CONTROLS</h2>
+                    </div>
+                    
+                    <div style={{ marginTop: '25px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                <small className="muted" style={{ fontWeight: 900 }}>CURRENT STUDIO CASH</small>
+                                <span style={{ color: 'var(--accent)', fontWeight: 950 }}>{formatMoney(startingCash * 100)}</span>
+                            </div>
+                            <input type="range" min="0" max="100000" step="1000" value={startingCash} onChange={e => setStartingCash(Number(e.target.value))} style={{ width: '100%' }} />
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                             <div className="card" style={{ padding: '10px 15px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', flex: 1, textAlign: 'center' }}>
+                                <small className="muted" style={{ fontSize: '9px', fontWeight: 900, display: 'block', marginBottom: '4px' }}>LAST IMPORT</small>
+                                <div style={{ fontSize: '12px', fontWeight: 900 }}>{stats.lastImportDate ? new Date(stats.lastImportDate).toLocaleDateString() : 'N/A'}</div>
+                            </div>
+                            <div className="card" onClick={() => navigate('/import')} style={{ padding: '10px 15px', background: 'rgba(56, 189, 248, 0.05)', border: '1px solid rgba(56, 189, 248, 0.2)', flex: 1, textAlign: 'center', cursor: 'pointer' }}>
+                                <small style={{ color: '#38bdf8', fontSize: '9px', fontWeight: 950, display: 'block', marginBottom: '4px' }}>IMPORT PORTAL</small>
+                                <div style={{ fontSize: '12px', fontWeight: 900, color: 'white' }}>SYNC BANK 🏦</div>
+                            </div>
                         </div>
                     </div>
-                )}
-            </div>
-
-            {/* Studio Docs Link Bar */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-10px', marginBottom: '10px' }}>
-                <div
-                    className="card glass"
-                    onClick={() => window.open('https://tracker.throughthelens.media/docs', '_blank')}
-                    style={{ flex: 1, padding: '16px 20px', cursor: 'pointer', border: '1px solid rgba(99, 102, 241, 0.2)', background: 'rgba(99, 102, 241, 0.05)', display: 'flex', alignItems: 'center', gap: '6px', opacity: 0.8, fontSize: '11px', fontWeight: 900, color: 'var(--accent)', textDecoration: 'none' }}
-                >
-                    <span style={{ fontSize: '14px' }}>📄</span> STUDIO DOCUMENTATION & FAQ
                 </div>
             </div>
 
-            {/* Mobile-Only Quick Snap Action */}
-            <div className="pwa-snap-bar mobile-only" style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-                <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    ref={fileInputRef}
-                    onChange={handleQuickSnap}
-                    style={{ display: 'none' }}
-                />
-                <button
-                    onClick={() => fileInputRef.current.click()}
-                    className={`btn ${snapSuccess ? 'ok' : 'glow-blue'}`}
-                    style={{ flex: 2, padding: '16px', borderRadius: '16px', fontSize: '14px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-                    disabled={snapLoading}
-                >
-                    {snapLoading ? "📤 ..." : snapSuccess ? "✅ SAVED" : "📷 QUICK SNAP"}
-                </button>
-                <button
-                    onClick={() => navigate('/crm?new=true')}
-                    className="btn secondary"
-                    style={{ flex: 1, padding: '16px', borderRadius: '16px', fontSize: '14px', fontWeight: 900, borderColor: 'rgba(56, 189, 248, 0.4)' }}
-                >
-                    + LEAD
-                </button>
-            </div>
-
-            {/* ── Studio Intelligence: Runway & Forecast ── */}
-            <div className="card glass glow-blue" style={{ display: 'block', width: '100%', padding: '24px 30px', border: 'none', margin: '0 0 20px 0', background: 'linear-gradient(135deg, rgba(47, 107, 255, 0.08) 0%, transparent 100%)', minHeight: '180px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '30px' }}>
-                    <div style={{ flex: '1', minWidth: '300px' }}>
-                        <h2 style={{ margin: '0 0 4px 0', fontSize: '1.2rem', fontWeight: 900, letterSpacing: '0.02em', color: '#fff' }}>STUDIO INTELLIGENCE</h2>
-                        <div className="muted" style={{ fontSize: '12px', marginBottom: '25px', fontWeight: 600 }}>CFO Projection & Pipeline Velocity</div>
-                        
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                            <div>
-                                <small className="muted" style={{ fontWeight: 900, fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Projected Runway</small>
-                                <div style={{ fontSize: '2.5rem', fontWeight: 950, color: runwayIntel.monthsRunway > 6 ? '#4ade80' : '#f7b955', marginTop: '4px', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                                    {runwayIntel.monthsRunway} <span style={{ fontSize: '12px', opacity: 0.6, fontWeight: 800 }}>MONTHS</span>
-                                </div>
-                                <div className="muted" style={{ fontSize: '10px', marginTop: '4px', fontWeight: 700 }}>Based on {formatMoney(avgMonthlyBurn)} avg. monthly burn</div>
-                            </div>
-                            <div>
-                                <small className="muted" style={{ fontWeight: 900, fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Projected Yield</small>
-                                <div style={{ fontSize: '2.5rem', fontWeight: 950, color: '#fff', marginTop: '4px' }}>{formatMoney(runwayIntel.weightedValue)}</div>
-                                <div className="muted" style={{ fontSize: '10px', marginTop: '4px', fontWeight: 700 }}>Weighted value of active leads</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style={{ background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '16px', minWidth: '320px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                        <h4 style={{ margin: '0 0 15px 0', fontSize: '11px', fontWeight: 900, opacity: 0.8 }}>FORECAST CONTROLS</h4>
-                        
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                            <div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                    <small className="muted" style={{ fontWeight: 800, fontSize: '10px' }}>CURRENT LIQUIDITY</small>
-                                    <div style={{ position: 'relative', width: '120px' }}>
-                                        <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '12px', fontWeight: 900, color: '#6366f1' }}>$</span>
-                                        <input 
-                                            type="number" 
-                                            value={startingCash === 0 ? '' : startingCash} 
-                                            onChange={e => {
-                                                const val = e.target.value === '' ? 0 : Number(e.target.value);
-                                                setStartingCash(val);
-                                            }}
-                                            onFocus={e => e.target.select()}
-                                            style={{ 
-                                                width: '100%', 
-                                                padding: '6px 6px 6px 20px', 
-                                                fontSize: '13px', 
-                                                fontWeight: 900, 
-                                                background: 'rgba(255,255,255,0.05)', 
-                                                border: '1px solid rgba(99, 102, 241, 0.3)', 
-                                                borderRadius: '8px',
-                                                color: '#fff',
-                                                outline: 'none'
-                                            }}
-                                        />
-                                    </div>
-                                </div>
-                                <input 
-                                    type="range" min="0" max="250000" step="1000"
-                                    value={startingCash} 
-                                    onChange={e => setStartingCash(Number(e.target.value))}
-                                    style={{ width: '100%', accentColor: '#6366f1', height: '4px', cursor: 'pointer' }}
-                                />
-                            </div>
-
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-                                {Object.keys(weights).map(k => (
-                                    <div key={k}>
-                                        <div style={{ fontSize: '8px', fontWeight: 950, opacity: 0.5, marginBottom: '4px', whiteSpace: 'nowrap' }}>{k.toUpperCase()} Prob.</div>
-                                        <select 
-                                            value={weights[k]} 
-                                            onChange={e => setWeights({...weights, [k]: Number(e.target.value)})}
-                                            style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: '6px', padding: '6px', fontSize: '10px', fontWeight: 900 }}
-                                        >
-                                            {[0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0].map(v => (
-                                                <option key={v} value={v}>{(v * 100).toFixed(0)}%</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                ))}
-                            </div>
-
-                        </div>
-                    </div>
-            </div>
-        </div>
-            
-            {/* ── Key Performance Indicators (KPIs) ── */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-                <div className="card glass" style={{ margin: 0, padding: '24px', borderTop: '3px solid #4ade80', borderRadius: '16px' }}>
-                    <div className="muted small" style={{ fontWeight: 800, letterSpacing: '0.05em', fontSize: '10px' }}>
-                        GROSS REVENUE
-                        {renderVariance(variances.yoyIncome, 'income', 'YoY')}
+            {/* Top Level KPIs */}
+            <div className="grid three mobile-single" style={{ gap: '20px' }}>
+                <div className="card glass" style={{ margin: 0, padding: '30px', border: 'none', background: 'rgba(255,255,255,0.02)' }}>
+                    <div className="muted extra-small" style={{ fontWeight: 900, letterSpacing: '0.1em', marginBottom: '10px' }}>GROSS REVENUE</div>
+                    <div style={{ fontSize: '2.5rem', fontWeight: 950, color: '#4ade80', lineHeight: 1 }}>{formatMoney(stats.income)}</div>
+                    <div style={{ marginTop: '15px' }}>
                         {renderVariance(variances.momIncome, 'income', 'MoM')}
+                        {renderVariance(variances.yoyIncome, 'income', 'YoY')}
                     </div>
-                    <div style={{ fontSize: '2.2rem', fontWeight: 950, color: '#4ade80', marginTop: '4px' }}>{formatMoney(stats.income)}</div>
                 </div>
-                <div className="card glass" style={{ margin: 0, padding: '24px', borderTop: '3px solid #ff4d4d', borderRadius: '16px' }}>
-                    <div className="muted small" style={{ fontWeight: 800, letterSpacing: '0.05em', fontSize: '10px' }}>
-                        OPERATING EXPENSES
-                        {renderVariance(variances.yoySpend, 'spend', 'YoY')}
+                <div className="card glass" style={{ margin: 0, padding: '30px', border: 'none', background: 'rgba(255,255,255,0.02)' }}>
+                    <div className="muted extra-small" style={{ fontWeight: 900, letterSpacing: '0.1em', marginBottom: '10px' }}>OPERATING EXPENSES</div>
+                    <div style={{ fontSize: '2.5rem', fontWeight: 950, color: '#ff4d4d', lineHeight: 1 }}>{formatMoney(stats.spend)}</div>
+                    <div style={{ marginTop: '15px' }}>
                         {renderVariance(variances.momSpend, 'spend', 'MoM')}
+                        {renderVariance(variances.yoySpend, 'spend', 'YoY')}
                     </div>
-                    <div style={{ fontSize: '2.2rem', fontWeight: 950, color: '#ff4d4d', marginTop: '4px' }}>{formatMoney(stats.spend)}</div>
                 </div>
-                <div className="card glass" style={{ margin: 0, padding: '24px', borderTop: '3px solid #2f6bff', borderRadius: '16px', background: 'linear-gradient(180deg, rgba(47, 107, 255, 0.05), transparent)' }}>
-                    <div className="muted small" style={{ fontWeight: 800, letterSpacing: '0.05em', fontSize: '10px' }}>
-                        NET INCOME (EBITDA)
-                        {renderVariance(variances.yoyNet, 'income', 'YoY')}
+                <div className="card glass" style={{ margin: 0, padding: '30px', border: 'none', background: 'rgba(255,255,255,0.02)' }}>
+                    <div className="muted extra-small" style={{ fontWeight: 900, letterSpacing: '0.1em', marginBottom: '10px' }}>NET INCOME (EBITDA)</div>
+                    <div style={{ fontSize: '2.5rem', fontWeight: 950, color: '#f8fafc', lineHeight: 1 }}>{formatMoney(stats.net)}</div>
+                    <div style={{ marginTop: '15px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 900, padding: '4px 10px', borderRadius: '4px', background: 'rgba(255,255,255,0.05)' }}>
+                            {((stats.net / (stats.income || 1)) * 100).toFixed(1)}% PROFIT MARGIN
+                        </span>
                     </div>
-                    <div style={{ fontSize: '2.2rem', fontWeight: 950, color: stats.net >= 0 ? '#fff' : '#ff4d4d', marginTop: '4px' }}>{formatMoney(stats.net)}</div>
                 </div>
             </div>
 
-            {/* ── Advanced Analytics Charts (Desktop) ── */}
-            <div className="desktop-only" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: '20px', alignItems: 'start' }}>
+            {/* Charts Section */}
+            <div className="grid two mobile-single" style={{ gap: '20px' }}>
                 {visibleCharts.flow && (
                     <div className="card glass" style={{ margin: 0, padding: '24px', height: '420px', display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                        <div>
+                        <div style={{ marginBottom: '20px' }}>
                             <h2 style={{ fontSize: '1.2rem', margin: 0 }}>Cash Flow Velocity</h2>
                             <div className="muted" style={{ fontSize: '11px', marginTop: '4px' }}>MoM Revenue vs COGS Analysis</div>
                         </div>
+                        <div style={{ flex: 1 }}>
+                            <Bar data={barChartData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top', align: 'end' } } }} />
+                        </div>
                     </div>
-                    <div style={{ flex: 1, position: 'relative', minHeight: '300px', width: '100%', overflow: 'hidden' }}>
-                        <Bar data={barChartData} options={{
-                            responsive: true, maintainAspectRatio: false,
-                            plugins: {
-                                legend: { position: 'top', align: 'end', labels: { color: '#a8b6dd', font: { size: 11, weight: 'bold' }, boxWidth: 12, usePointStyle: true } },
-                                tooltip: { mode: 'index', intersect: false, backgroundColor: 'rgba(15,26,51,0.95)', titleColor: '#fff', bodyColor: '#a8b6dd', bodyFont: { size: 13, weight: 'bold' }, borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, padding: 12, cornerRadius: 8 }
-                            },
-                            scales: {
-                                x: { grid: { display: false }, ticks: { color: '#a8b6dd', font: { size: 10, weight: 'bold' } } },
-                                y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#a8b6dd', font: { size: 10 }, callback: v => '$' + (v / 1000) + 'k' } }
-                            }
-                        }} />
-                    </div>
-                </div>
                 )}
-
                 {visibleCharts.trajectory && (
-                    <div className="card glass" style={{ margin: 0, padding: '24px', height: '420px', display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                        <div>
-                            <h2 style={{ fontSize: '1.2rem', margin: 0 }}>Profit Margin Trajectory</h2>
-                            <div className="muted" style={{ fontSize: '11px', marginTop: '4px' }}>Net Yield Percentage by Month</div>
-                        </div>
-                    </div>
-                    <div style={{ flex: 1, position: 'relative' }}>
-                        <Line data={{
-                            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-                            datasets: [{
-                                label: 'Margin %',
-                                data: runwayIntel.monthlyProfitMargins,
-                                borderColor: '#818cf8',
-                                backgroundColor: 'rgba(129, 140, 248, 0.1)',
-                                fill: true,
-                                tension: 0.4,
-                                borderWidth: 3,
-                                pointRadius: 4
-                            }]
-                        }} options={{
-                            responsive: true, maintainAspectRatio: false,
-                            plugins: { legend: { display: false } },
-                            scales: {
-                                y: { ticks: { callback: v => v + '%' }, grid: { color: 'rgba(255,255,255,0.05)' } },
-                                x: { grid: { display: false } }
-                            }
-                        }} />
-                    </div>
-                </div>
-                )}
-
-                {visibleCharts.allocation && (
-                    <div className="card glass" style={{ margin: 0, padding: '24px', minHeight: '420px', display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '24px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <div style={{ marginBottom: '20px' }}>
-                            <h2 style={{ fontSize: '1.2rem', margin: 0 }}>Capital Allocation</h2>
-                            <div className="muted" style={{ fontSize: '11px', marginTop: '4px' }}>Top 10 Expense Categories</div>
-                        </div>
-                        <div style={{ flex: 1, position: 'relative', minHeight: '200px' }}>
-                            {stats.topCats.length > 0 ? (
-                                <Doughnut data={{
-                                    labels: stats.topCats.map(c => c[0]),
-                                    datasets: [{
-                                        data: stats.topCats.map(c => c[1].cents / 100),
-                                        backgroundColor: chartColors,
-                                        borderWidth: 0,
-                                        hoverOffset: 15
-                                    }]
-                                }} options={{
-                                    responsive: true, maintainAspectRatio: false,
-                                    cutout: '75%',
-                                    plugins: {
-                                        legend: { display: false },
-                                        tooltip: { backgroundColor: 'rgba(15,26,51,0.95)', bodyColor: '#fff', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, padding: 12, bodyFont: { size: 13, weight: 'bold' }, callbacks: { label: function (context) { return ' $' + context.raw.toLocaleString(); } } }
-                                    }
-                                }} />
-                            ) : (
-                                <div className="muted center" style={{ paddingTop: '80px', fontSize: '12px' }}>Insufficient Data</div>
-                            )}
-                            {stats.topCats.length > 0 && (
-                                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center', pointerEvents: 'none' }}>
-                                    <div className="muted" style={{ fontSize: '10px', fontWeight: 800 }}>OPEX</div>
-                                    <div style={{ fontSize: '20px', fontWeight: 950, color: '#fff' }}>{((stats.topCats[0][1].cents / stats.spend) * 100).toFixed(0)}%</div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', borderLeft: '1px solid rgba(255,255,255,0.05)', paddingLeft: '24px' }}>
-                        <div>
-                            <small className="muted" style={{ fontWeight: 900, fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Tax Reservoir Est.</small>
-                            <div style={{ fontSize: '1.8rem', fontWeight: 950, color: '#f7b955', marginTop: '4px' }}>{formatMoney(runwayIntel.taxLiability)}</div>
-                            <div className="muted" style={{ fontSize: '10px', marginTop: '4px', fontWeight: 700 }}>25% of {selectedYear} Net Income</div>
+                    <div className="card glass" style={{ margin: 0, padding: '24px', height: '420px', background: 'rgba(15, 23, 42, 0.4)' }}>
+                        <h2 style={{ fontSize: '1.2rem', margin: 0 }}>Profit Margin Trajectory</h2>
+                        <div className="muted" style={{ fontSize: '11px', marginTop: '4px', marginBottom: '20px' }}>Net Yield Percentage by Month</div>
+                        
+                        <div style={{ textAlign: 'center', paddingTop: '40px' }}>
+                            <div style={{ fontSize: '3rem', fontWeight: 950, color: runwayIntel.taxLiability > 0 ? '#f7b955' : '#4ade80' }}>{formatMoney(runwayIntel.taxLiability)}</div>
+                            <div className="muted" style={{ fontSize: '11px', marginTop: '8px', fontWeight: 700 }}>ESTIMATED TAX LIABILITY (25%)</div>
                         </div>
                         
-                        <div style={{ marginTop: 'auto' }}>
-                             <div className="muted" style={{ fontSize: '10px', fontWeight: 800, marginBottom: '10px' }}>DISTRIBUTION ARCHIVE</div>
+                        <div style={{ marginTop: '60px' }}>
+                             <div className="muted extra-small" style={{ fontWeight: 900, marginBottom: '15px' }}>CAPITAL ALLOCATION ARCHIVE</div>
                              {stats.topCats.slice(0, 4).map(([cat, meta]) => (
-                                <div key={cat} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '8px' }}>
-                                    <span className="muted" style={{ fontWeight: 700 }}>{cat}</span>
-                                    <span style={{ fontWeight: 900 }}>{((meta.cents / stats.spend) * 100).toFixed(0)}%</span>
+                                <div key={cat} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '10px' }}>
+                                    <span style={{ opacity: 0.6 }}>{cat}</span>
+                                    <span style={{ fontWeight: 900 }}>{((meta.cents / (stats.spend || 1)) * 100).toFixed(0)}%</span>
                                 </div>
                              ))}
                         </div>
                     </div>
-                </div>
-                )}
-
-                {visibleCharts.burn && (
-                    <div className="card glass" style={{ margin: 0, padding: '24px', height: '420px', display: 'flex', flexDirection: 'column' }}>
-                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                        <div>
-                            <h2 style={{ fontSize: '1.2rem', margin: 0 }}>Burn Velocity Projection</h2>
-                            <div className="muted" style={{ fontSize: '11px', marginTop: '4px' }}>Rolling 3-Mos Operational Runrate</div>
-                        </div>
-                    </div>
-                    <div style={{ flex: 1, position: 'relative' }}>
-                        {trendChartData ? (
-                            <Line data={trendChartData} options={{
-                                responsive: true, maintainAspectRatio: false,
-                                plugins: { legend: { position: 'top', align: 'end' } },
-                                scales: {
-                                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { callback: v => '$' + (v / 1000) + 'k' } },
-                                    x: { grid: { display: false } }
-                                }
-                            }} />
-                        ) : (
-                            <div className="muted center" style={{ paddingTop: '100px', fontSize: '12px' }}>Insufficient Historical Data for Projection</div>
-                        )}
-                    </div>
-                </div>
                 )}
             </div>
-
-            {/* ── Mobile Analytics Stack (Streamlined) ── */}
-            <div className="mobile-only" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                <div className="card glass" style={{ padding: '20px' }}>
-                    <h3 style={{ fontSize: '1rem', margin: '0 0 15px 0' }}>Cash Flow Velocity</h3>
-                    <div style={{ height: '250px' }}>
-                        <Bar data={barChartData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }} />
-                    </div>
-                </div>
-                <div className="card glass" style={{ padding: '20px' }}>
-                    <h3 style={{ fontSize: '1rem', margin: '0 0 15px 0' }}>Capital Allocation</h3>
-                    <div style={{ height: '250px', position: 'relative' }}>
-                        {stats.topCats.length > 0 ? (
-                            <Doughnut data={{
-                                    labels: stats.topCats.map(c => c[0]),
-                                    datasets: [{ data: stats.topCats.map(c => c[1].cents / 100), backgroundColor: chartColors, borderWidth: 0 }]
-                                }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }} 
-                            />
-                        ) : (
-                            <div className="muted center" style={{ paddingTop: '80px', fontSize: '12px' }}>Insufficient Data</div>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            {/* ── SCC Console: AI Brain Placeholder ── */}
-            <div className="card glass" style={{ margin: 0, padding: '24px', borderTop: '3px solid #6366f1', borderRadius: '16px', background: 'linear-gradient(180deg, rgba(99, 102, 241, 0.05), transparent)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-                    <div>
-                        <h3 style={{ fontSize: '1.2rem', margin: '0 0 4px 0', color: '#6366f1' }}>SCC Console</h3>
-                        <div className="muted" style={{ fontSize: '12px' }}>AI Brain & Predictive Analytics</div>
-                    </div>
-                    <button className="btn primary" style={{ fontSize: '13px', padding: '10px 16px', borderColor: 'rgba(99, 102, 241, 0.4)', color: '#fff', fontWeight: 900, background: '#6366f1' }}>
-                        LAUNCH AI BRAIN →
-                    </button>
-                </div>
-                <div style={{ marginTop: '16px', background: 'rgba(99, 102, 241, 0.08)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(99, 102, 241, 0.15)' }}>
-                    <div style={{ fontSize: '13px', color: '#c7d2fe', lineHeight: 1.6 }}>
-                        The SCC (Studio Command Center) AI Brain provides advanced predictive analytics and strategic recommendations.
-                    </div>
-                </div>
-            </div>
-
-            {/* Trajectory Alert / Audit Intelligence */}
+            
             <div className="card glass" style={{ margin: 0, padding: '24px', borderTop: stats.missing > 0 ? '3px solid #ff4d4d' : '3px solid #4ade80' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
                     <div>
@@ -852,22 +553,7 @@ export default function Dashboard() {
                         </button>
                     )}
                 </div>
-
-                {stats.missing > 0 ? (
-                    <div style={{ marginTop: '16px', background: 'rgba(255, 77, 77, 0.08)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(255, 77, 77, 0.15)' }}>
-                        <div style={{ fontSize: '13px', color: '#ffd0d0', lineHeight: 1.6 }}>
-                            <strong>Critical Warning:</strong> You have {stats.missing} transactions without verification. Use the <strong>Mobile Quick Snap</strong> feature to secure these items immediately.
-                        </div>
-                    </div>
-                ) : (
-                    <div style={{ marginTop: '16px', background: 'rgba(25, 195, 125, 0.08)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(25, 195, 125, 0.15)' }}>
-                        <div style={{ fontSize: '13px', color: '#baf6db', lineHeight: 1.6 }}>
-                            All high-value operations for {selectedYear} are currently documented. Studio risk exposure is minimal.
-                        </div>
-                    </div>
-                )}
             </div>
         </section>
     );
 }
-
