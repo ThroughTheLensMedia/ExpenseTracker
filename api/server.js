@@ -1,10 +1,5 @@
-/**
- * server.js
- * API for Expense Tracker (SaaS Lockdown Version)
- *
- * Version: v4.0.0
- * Updated: 2026-03-12
- */
+// Load environment variables immediately
+require("dotenv").config({ path: require('path').resolve(__dirname, '.env') });
 
 const express = require("express");
 const cors = require("cors");
