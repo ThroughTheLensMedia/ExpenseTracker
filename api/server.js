@@ -1,4 +1,4 @@
-// Load environment variables
+// Load environment variables (Fails gracefully if .env is missing)
 require("dotenv").config(); 
 
 const express = require("express");
@@ -46,14 +46,24 @@ const apiRouter = express.Router();
 
 // Public Health check
 apiRouter.get("/health", async (req, res) => {
-  res.json({
-    ok: true,
-    environment: process.env.VERCEL ? "vercel" : "local",
-    lockdown: "enabled",
-    mailer: !!process.env.RESEND_API_KEY,
-    db: !!supabase,
-    timestamp: new Date().toISOString()
-  });
+  try {
+    const db = require("./db");
+    res.json({
+      ok: true,
+      environment: process.env.VERCEL ? "vercel" : "local",
+      lockdown: "enabled",
+      mailer: !!process.env.RESEND_API_KEY,
+      db: !!db.supabase,
+      diagnostics: {
+        has_url: !!(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL),
+        has_key: !!(process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY),
+        node_env: process.env.NODE_ENV
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: "Health check logic failed", detail: e.message });
+  }
 });
 
 const licensingMiddleware = require("./middleware/licensing");
