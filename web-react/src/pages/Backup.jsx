@@ -94,12 +94,23 @@ export default function Backup() {
             // Admin Logic: If you are Joshua, load the SaaS management data
             if (user?.email?.toLowerCase() === 'joshua.deuermeyer@gmail.com') {
                 try {
-                    const [subs, codes] = await Promise.all([
+                    const [subs, codes, adminStatus] = await Promise.all([
                         apiGet('/admin/subscriptions'),
-                        apiGet('/admin/beta-codes')
+                        apiGet('/admin/beta-codes'),
+                        apiGet('/admin/check-status').catch(err => {
+                            console.error("Admin status check failed", err);
+                            return { error: err.message, type: 'bad' };
+                        })
                     ]);
                     setAllSubscriptions(subs || []);
                     setBetaCodes(codes || []);
+                    if (adminStatus.error) {
+                        setStatusMsg({ type: 'bad', text: "Admin Data Fetch Failed: " + adminStatus.error });
+                    } else if (adminStatus.diagnostics?.service_key_degraded) {
+                        setStatusMsg({ type: 'bad', text: "Admin Service Key is degraded or missing. Some admin functions may not work correctly." });
+                    } else {
+                        setStatusMsg(null); // Clear any previous error messages
+                    }
                 } catch (err) {
                     console.error("Admin data fetch failed", err);
                     if (!silent) setStatusMsg({ type: 'bad', text: "Admin Data Fetch Failed: " + err.message });
@@ -534,7 +545,7 @@ export default function Backup() {
                                                             <div className="card glass" style={{ margin: 0, padding: '12px 20px', background: 'rgba(74, 222, 128, 0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                                 <span style={{ fontSize: '13px', fontWeight: 800 }}>Found {rs.preview.matchCount} historical matches.</span>
                                                                 <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-                                                                    {rs.applyMsg && <span style={{ color: '#4ade80', fontWeight: 900 }}>{rs.applyMsg}</span>}
+                                                                    {rs.applyMsg && <span style={{ color: '#4ade80', fontWeight: 900 }}> {rs.applyMsg}</span>}
                                                                     <button className="btn primary sm" onClick={() => handleApplySingleRule(r.id)} disabled={rs.applying}>
                                                                         {rs.applying ? 'Applying...' : 'Apply Correction Now'}
                                                                     </button>
@@ -719,7 +730,23 @@ export default function Backup() {
 
              {activeTab === 'saas' && user?.email?.toLowerCase() === 'joshua.deuermeyer@gmail.com' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
-                     <div className="card glass glow-blue" style={{ border: 'none', padding: '30px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                      {statusMsg && statusMsg.type === 'bad' && (
+                          <div className="card glass" style={{ border: '1px solid #ff4d4d', padding: '20px', marginBottom: '20px', background: 'rgba(255, 77, 77, 0.05)' }}>
+                              <div style={{ color: '#ff4d4d', fontWeight: 900, marginBottom: '10px' }}>⚠️ SYSTEM ALERT: DATA ACCESS BLOCKED</div>
+                              <div className="muted" style={{ fontSize: '13px', lineHeight: '1.6' }}>
+                                  {statusMsg.text}
+                                  <br /><br />
+                                  <strong>Possible Fixes:</strong>
+                                  <ul style={{ marginTop: '10px', paddingLeft: '20px' }}>
+                                      <li>Ensure <code>SUPABASE_SERVICE_ROLE_KEY</code> is set in Vercel Environment Variables.</li>
+                                      <li>Run the "Admin Unlock" SQL script in your Supabase Dashboard.</li>
+                                      <li>The database might be returning an empty list because the Service Key is missing and RLS is hiding other users' rows.</li>
+                                  </ul>
+                              </div>
+                          </div>
+                      )}
+
+                      <div className="card glass glow-blue" style={{ border: 'none', padding: '30px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
                          <h2 style={{ fontSize: '1.8rem', margin: '0 0 10px 0' }}>Active Studio Licenses</h2>
                          <p className="muted" style={{ margin: '0 0 25px 0' }}>Monitoring all registered studio sessions across the platform.</p>
                          

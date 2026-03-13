@@ -14,20 +14,29 @@ router.get("/check-status", async (req, res) => {
     }
 
     try {
-        const { count: subCount, error: subError, data: subDebug } = await supabase.from('user_subscriptions').select('*', { count: 'exact' }).limit(5);
-        const { count: codeCount, error: codeError, data: codeDebug } = await supabase.from('beta_codes').select('*', { count: 'exact' }).limit(5);
+        const isServiceKeyValid = process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY.length > 50;
+        
+        // Test connectivity using the service-level client
+        // Note: we use supabase (global) which should use the Service Role key
+        const { count: subCount, error: subError } = await supabase.from('user_subscriptions').select('*', { count: 'exact', head: true });
+        const { count: codeCount, error: codeError } = await supabase.from('beta_codes').select('*', { count: 'exact', head: true });
         
         res.json({
             ok: true,
             user: req.user.email,
-            has_service_key: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+            diagnostics: {
+                has_service_key: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+                service_key_length: process.env.SUPABASE_SERVICE_ROLE_KEY ? process.env.SUPABASE_SERVICE_ROLE_KEY.length : 0,
+                service_key_degraded: !isServiceKeyValid, 
+                db_url: process.env.SUPABASE_URL ? "CONFIGURED" : "MISSING"
+            },
             tables: {
-                user_subscriptions: subError ? subError.message : { count: subCount, sample: subDebug },
-                beta_codes: codeError ? codeError.message : { count: codeCount, sample: codeDebug }
+                user_subscriptions: subError ? { error: subError.message, code: subError.code } : { count: subCount },
+                beta_codes: codeError ? { error: codeError.message, code: codeError.code } : { count: codeCount }
             }
         });
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        res.status(500).json({ error: "Diagnostic Crash: " + e.message });
     }
 });
 
