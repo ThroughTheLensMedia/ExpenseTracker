@@ -36,7 +36,7 @@ router.get("/", async (req, res) => {
 router.post("/", async (req, res) => {
     try {
         const body = MileageSchema.parse(req.body);
-        const { data, error } = await supabase.from("mileage_logs").insert([body]).select();
+        const { data, error } = await req.sb.from("mileage_logs").insert([body]).select();
         if (error) throw error;
         res.status(201).json(data[0]);
     } catch (e) {
@@ -50,7 +50,7 @@ router.post("/", async (req, res) => {
 router.delete("/:id", async (req, res) => {
     try {
         const { id } = req.params;
-        const { error } = await supabase.from("mileage_logs").delete().eq("id", id);
+        const { error } = await req.sb.from("mileage_logs").delete().eq("id", id);
         if (error) throw error;
         res.json({ ok: true });
     } catch (e) {

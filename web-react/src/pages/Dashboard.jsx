@@ -48,6 +48,7 @@ export default function Dashboard() {
     const [snapLoading, setSnapLoading] = useState(false);
     const [snapSuccess, setSnapSuccess] = useState(false);
     const [importReminderDays, setImportReminderDays] = useState(() => Number(localStorage.getItem('studio_import_reminder') || 7));
+    const [showProjections, setShowProjections] = useState(true);
     const fileInputRef = useRef(null);
 
     const loadData = async (targetYear = selectedYear) => {
@@ -470,6 +471,17 @@ export default function Dashboard() {
                 </div>
             </div>
 
+            {/* Studio Docs Link Bar */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-10px', marginBottom: '10px' }}>
+                <a 
+                    href="#docs" 
+                    onClick={(e) => { e.preventDefault(); modal.alert("📚 Studio Docs: Found at [tracker.throughthelens.media/docs]. This portal contains your complete SOPs, FAQ, and Infrastructure Guide."); }}
+                    style={{ fontSize: '11px', fontWeight: 900, color: 'var(--accent)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', opacity: 0.8 }}
+                >
+                    <span style={{ fontSize: '14px' }}>📄</span> STUDIO DOCUMENTATION & FAQ
+                </a>
+            </div>
+
             {/* Mobile-Only Quick Snap Action */}
             <div className="pwa-snap-bar mobile-only" style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
                 <input
@@ -531,8 +543,12 @@ export default function Dashboard() {
                                         <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '12px', fontWeight: 900, color: '#6366f1' }}>$</span>
                                         <input 
                                             type="number" 
-                                            value={startingCash} 
-                                            onChange={e => setStartingCash(Number(e.target.value))}
+                                            value={startingCash || ''} 
+                                            onChange={e => {
+                                                const val = e.target.value === '' ? 0 : Number(e.target.value);
+                                                setStartingCash(val);
+                                            }}
+                                            onFocus={e => e.target.select()}
                                             style={{ 
                                                 width: '100%', 
                                                 padding: '6px 6px 6px 20px', 
@@ -572,20 +588,6 @@ export default function Dashboard() {
                                 ))}
                             </div>
 
-                            <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '15px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <small className="muted" style={{ fontWeight: 800, fontSize: '9px' }}>DATA FRESHNESS REMINDER</small>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <input 
-                                            type="number" 
-                                            value={importReminderDays} 
-                                            onChange={e => setImportReminderDays(Number(e.target.value))}
-                                            style={{ width: '40px', padding: '4px', fontSize: '11px', background: 'rgba(255,255,255,0.05)', border: 'none', color: '#fff', borderRadius: '4px', textAlign: 'center' }}
-                                        />
-                                        <span className="muted" style={{ fontSize: '9px', fontWeight: 800 }}>DAYS</span>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -594,15 +596,14 @@ export default function Dashboard() {
                     <div style={{ marginTop: '20px', borderTop: '1px dotted rgba(255,255,255,0.1)', paddingTop: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
                         <div style={{ display: 'flex', gap: '30px' }}>
                             <div>
-                                <small className="muted" style={{ fontWeight: 900, fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Last Ledger Sync</small>
+                                <small className="muted" style={{ fontWeight: 900, fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>LAST LEDGER SYNC</small>
                                 <div style={{ fontSize: '13px', fontWeight: 800, color: (Date.now() - new Date(stats.lastImportDate)) / (1000 * 3600 * 24) > importReminderDays ? '#f59e0b' : '#4ade80', marginTop: '4px' }}>
                                     {stats.lastImportDate} ({(Math.floor((Date.now() - new Date(stats.lastImportDate)) / (1000 * 3600 * 24)))} days ago)
                                 </div>
                             </div>
                             <div>
-                                <small className="muted" style={{ fontWeight: 900, fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Vigilance Alert</small>
-                                <div style={{ fontSize: '11px', fontWeight: 800, color: '#fff', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    Remind after 
+                                <small className="muted" style={{ fontWeight: 900, fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>VIGILANCE REMINDER</small>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
                                     <input 
                                         type="number" 
                                         value={importReminderDays} 

@@ -2,7 +2,7 @@ const express = require("express");
 const fs = require("fs");
 const path = require("path");
 const archiver = require("archiver");
-
+const { supabase } = require("../db");
 const router = express.Router();
 
 // HELPER: Fetch all rows from any table (request-bound)
@@ -108,7 +108,7 @@ router.post("/import-all", async (req, res) => {
 // GET /admin/subscriptions
 router.get("/subscriptions", async (req, res) => {
     try {
-        const { data, error } = await req.sb
+        const { data, error } = await supabase
             .from('user_subscriptions')
             .select('*')
             .order('created_at', { ascending: false });
@@ -122,7 +122,7 @@ router.get("/subscriptions", async (req, res) => {
 // POST /admin/subscriptions/:userId/suspend
 router.post("/subscriptions/:userId/suspend", async (req, res) => {
     try {
-        const { error } = await req.sb
+        const { error } = await supabase
             .from('user_subscriptions')
             .update({ status: 'suspended', updated_at: new Date() })
             .eq('user_id', req.params.userId);
@@ -145,7 +145,7 @@ router.post("/beta-codes", async (req, res) => {
 
         const newCode = code || Math.random().toString(36).substring(2, 10).toUpperCase();
 
-        const { data, error } = await req.sb
+        const { data, error } = await supabase
             .from('beta_codes')
             .insert({
                 code: newCode,
@@ -176,7 +176,7 @@ router.post("/beta-codes", async (req, res) => {
 // GET /admin/beta-codes
 router.get("/beta-codes", async (req, res) => {
     try {
-        const { data, error } = await req.sb
+        const { data, error } = await supabase
             .from('beta_codes')
             .select('*')
             .order('created_at', { ascending: false });
@@ -190,7 +190,7 @@ router.get("/beta-codes", async (req, res) => {
 // POST /admin/beta-codes/:code/resend
 router.post("/beta-codes/:code/resend", async (req, res) => {
     try {
-        const { data: codeData, error } = await req.sb
+        const { data: codeData, error } = await supabase
             .from('beta_codes')
             .select('*')
             .eq('code', req.params.code)
@@ -215,7 +215,7 @@ router.post("/beta-codes/:code/resend", async (req, res) => {
 // DELETE /admin/beta-codes/:code
 router.delete("/beta-codes/:code", async (req, res) => {
     try {
-        const { error } = await req.sb
+        const { error } = await supabase
             .from('beta_codes')
             .delete()
             .eq('code', req.params.code);
@@ -229,7 +229,7 @@ router.delete("/beta-codes/:code", async (req, res) => {
 // POST /admin/subscriptions/:userId/extend
 router.post("/subscriptions/:userId/extend", async (req, res) => {
     try {
-        const { data: current } = await req.sb
+        const { data: current } = await supabase
             .from('user_subscriptions')
             .select('expires_at')
             .eq('user_id', req.params.userId)
@@ -241,7 +241,7 @@ router.post("/subscriptions/:userId/extend", async (req, res) => {
         }
         newExpiry.setDate(newExpiry.getDate() + 90);
 
-        const { error } = await req.sb
+        const { error } = await supabase
             .from('user_subscriptions')
             .update({ 
                 expires_at: newExpiry.toISOString(),

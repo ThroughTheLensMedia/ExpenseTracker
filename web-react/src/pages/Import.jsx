@@ -9,6 +9,10 @@ const BANK_PROFILES = [
     { key: 'wellsfargo', label: '🟡 Wells Fargo' },
     { key: 'applecard', label: '⬛ Apple Card' },
     { key: 'capitalone', label: '🔴 Capital One' },
+    { key: 'usaa', label: '🦅 USAA' },
+    { key: 'navyfcu', label: '⚓ Navy Federal' },
+    { key: 'wise', label: '🌍 Wise Bank' },
+    { key: 'universal', label: '✨ Universal / Generic' },
 ];
 
 const BANK_TIPS = {
@@ -19,6 +23,10 @@ const BANK_TIPS = {
     wellsfargo: 'Download from Wells Fargo → Account Activity → Download Account Activity.',
     applecard: 'Export from iPhone Wallet app → Apple Card → Statements → Export Transactions.',
     capitalone: 'Download from Capital One → View Transactions → Download CSV. Uses separate Debit/Credit columns.',
+    usaa: 'Download CSV from USAA Account Activity. Typically uses Date, Description, Amount format.',
+    navyfcu: 'Export CSV from Navy Federal Online Banking. Supports both Transaction and Post date headers.',
+    wise: 'Export statement as CSV from Wise. Supports multi-currency and merchant identification headers.',
+    universal: 'For unsupported banks. We will attempt to match standard headers like "Date", "Amount", and "Vendor".',
 };
 
 export default function Import() {

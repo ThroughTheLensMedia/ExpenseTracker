@@ -171,12 +171,52 @@ const BANK_PROFILES = {
         signConvention: 'split_debit_credit',
         detectHeaders: ['debit', 'credit', 'posted date'],
     },
+    usaa: {
+        label: 'USAA',
+        dateCol: ['date'],
+        amountCol: ['amount'],
+        vendorCol: ['description'],
+        categoryCol: ['category'],
+        notesCol: [],
+        signConvention: 'negative_is_expense',
+        detectHeaders: ['description', 'post date'],
+    },
+    navyfcu: {
+        label: 'Navy Federal',
+        dateCol: ['transaction date', 'date'],
+        amountCol: ['amount'],
+        vendorCol: ['description'],
+        categoryCol: ['category'],
+        notesCol: [],
+        signConvention: 'negative_is_expense',
+        detectHeaders: ['transaction date', 'post date', 'description', 'amount'],
+    },
+    wise: {
+        label: 'Wise Bank',
+        dateCol: ['date', 'transaction date'],
+        amountCol: ['amount'],
+        vendorCol: ['description', 'merchant'],
+        categoryCol: ['category'],
+        notesCol: ['reference'],
+        signConvention: 'negative_is_expense',
+        detectHeaders: ['exchange rate', 'merchant'],
+    },
+    universal: {
+        label: 'Universal / Generic Mapper',
+        dateCol: ['date', 'transaction date', 'posted date', 'log date'],
+        amountCol: ['amount', 'transaction amount', 'value', 'price'],
+        vendorCol: ['description', 'name', 'vendor', 'payee', 'merchant'],
+        categoryCol: ['category', 'type', 'tags'],
+        notesCol: ['notes', 'memo', 'comment', 'description'],
+        signConvention: 'negative_is_expense',
+        detectHeaders: [],
+    }
 };
 
 // Auto-detect bank from CSV header row
 function detectBankProfile(headers) {
     const h = new Set(headers.map(s => String(s || '').trim().toLowerCase()));
-    const order = ['rocketmoney', 'applecard', 'capitalone', 'usbank', 'chase', 'bankofamerica', 'wellsfargo'];
+    const order = ['rocketmoney', 'applecard', 'capitalone', 'usbank', 'usaa', 'navyfcu', 'wise', 'chase', 'bankofamerica', 'wellsfargo'];
     for (const key of order) {
         const profile = BANK_PROFILES[key];
         if (profile.detectHeaders.length > 0 && profile.detectHeaders.every(sig => h.has(sig))) {

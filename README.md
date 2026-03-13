@@ -1,61 +1,58 @@
-# Freelancer Expense Tracker (Rocket Money Edition)
+# Studio Tracker Executive Dashboard (2026 Edition)
 
-Welcome to your new Freelancer Expense & Tax Tracker! This application is designed specifically for freelancers, sole proprietors, and small business owners who want to replace clunky accounting software (like QuickBooks) with a lightning-fast, Rocket Money-integrated dashboard.
-
-## Overview
-This tracker takes your raw transaction exports from Rocket Money and turns them directly into a Schedule C (Form 1040) tax report. It automatically categorizes common business expenses, tracks your deductible mileage, stores your physical receipts, and handles asset depreciation. 
-
----
+Welcome to your Financial Command Center. This application is engineered to transition from high-level "Rocket Money" snapshots to a pro-tier Revenue & Tax Ledger for media professionals.
 
 ## 🚀 How to Use
 
-### 1. Import Your Data
-1. Export your transactions from Rocket Money as a `.csv` file.
-2. Go to the **Transactions** tab in the Expense Tracker.
-3. Drag and drop your `.csv` file into the "Import Rocket Money CSV" box.
-4. *Magic:* The app will automatically scan your imports and assign obvious business expenses (like Software, Advertising, certain vendors like *Amazon*, *T-Mobile*) directly to their correct IRS Schedule C Tax Buckets.
+### 1. Unified Bank Ingestion
+1. Export your transactions from **Rocket Money**, **USAA**, **Chase**, **Apple Card**, **Navy Federal (NFCU)**, or **Wise**.
+2. Navigate to the **Import Data** tab.
+3. Drag and drop your `.csv` file. 
+4. *Intelligence:* The system auto-detects your bank format and maps headers to the unified ledger. If your bank is unsupported, use the **Universal Mapper**.
 
-### 2. Review and Categorize 
-By design, Rocket Money mixes your personal and business spending. The app filters this for you:
-1. Go to the **Tax** tab.
-2. Look for the yellow warning badge: `⚠ [Number] unclassified in [Year]`.
-3. Click the yellow badge to open the **Audit Modal**.
-4. Scroll through the transactions. If you see a business expense that wasn't auto-caught, click **Edit** and assign it a "Tax Bucket" and a "Business Use %".
-5. Leave all your personal expenses (Groceries, Personal Dining, Pets) as "Unassigned". The app will correctly ignore them for your tax calculations.
+### 2. Studio Intelligence & Runway
+- **Forecast Controls:** Adjust your "Starting Cash" and "Weighted Pipeline Probability" on the Dashboard to see your exact runway (in months).
+- **Vigilance Reminders:** Set a custom days-to-sync reminder to ensure your ledger data never goes stale.
+- **Profit Trajectory:** Monitor your quarterly margin health based on actual processed invoices vs opex.
 
-### 3. Track Your Mileage
-Stop using third-party mileage trackers that cost monthly fees. 
-1. Open the **Tax** tab.
-2. Scroll to the **Car & Truck — Standard Mileage** section.
-3. Add your trips (e.g., "75 miles - Client Photoshoot").
-4. The app automatically downloads the official IRS Standard Mileage Rates direct from `IRS.gov` for the given year and multiplies your miles by the exact legal deduction rate.
-
-### 4. Track Your Equipment Depreciation
-Did you buy a $3,000 camera or a new laptop? You need to depreciate it.
-1. Go to the **Equipment** tab.
-2. Add your gear, purchase date, cost, and business use percentage.
-3. The app calculates your legal depreciation deduction (using either Section 179 or Straight-Line methods) and pushes that total directly back to Line 13 of your Schedule C on the Tax tab.
-
-### 5. Attach Receipts to Transactions
-IRS rules require receipts for expenses over $75. 
-1. Next to any transaction over $75, you'll see a red `Needed` badge.
-2. Click **Edit**.
-3. You can either paste a link to Google Drive/Dropbox, or click **Choose File** to directly upload a PDF or image of the receipt to your server.
-4. The app will securely link it, and the badge turns into a green `View` button. 
-
-### 6. Taxes at Year End
-Come April 15th, you don't need to do any math.
-1. Go to the **Tax** tab and select the desired year.
-2. Copy the numbers directly from the screen into your digital tax software (TurboTax, FreeTaxUSA, etc) or hand them to your CPA.
-3. Click **Export Line-Item CSV** to download a finalized, accountant-ready spreadsheet proving exactly which transactions make up each of those Schedule C line items.
+### 3. Tax & SCC Governance
+- **SCC Console:** Access the **Studio Control Center** (`/StudioControlCenter`) to manage client invites, beta testing codes, and global platform settings.
+- **Schedule C Reporting:** All categorizations map directly to IRS Line Items for instant year-end filing.
 
 ---
 
-## System Architecture for Developers
-- **Backend:** Node.js + Express
-- **Database:** Supabase (PostgreSQL)
-- **Frontend:** React (Vite) + Chart.js
-- **Auth:** Cloudflare Zero Trust (JWT Validation)
-- **Deployment:** Vercel (Frontend) / Synology NAS Docker (Backend)
+## 🛠 Local Development & Testing
 
-Enjoy having complete control over your financial data!
+To test changes without affecting the production session:
+
+1. **Open Terminal** on your Mac.
+2. **Navigate to the web-folder:**
+   ```bash
+   cd "/Users/dewey/Downloads/Expense Tracker 2026 v3/web-react"
+   ```
+3. **Launch the Dev Server:**
+   ```bash
+   npm run dev
+   ```
+4. **Access the Preview:** Open `http://localhost:5173` in your browser.
+
+---
+
+## ❓ FAQ
+
+**Q: How do I categorize 50% vs 100% deduction?**
+A: Use the "Edit" function on any transaction. Standard business expenses (Software, Ads) are 100%. Meals and Van Fuel are typically 50%.
+
+**Q: Why is my revenue showing up correctly but the chart looks off?**
+A: Ensure your categories in the Bank CSV aren't being double-counted by the "Internal Transfer" filter. The dashboard ignores "Transfers" to prevent artificial income inflation.
+
+**Q: How do I export for my CPA?**
+A: Go to the **Tax** tab, select the year, and click **Download Ledger CSV**. This provides a line-item audit trail for every Schedule C bucket.
+
+---
+
+## System Architecture
+- **Backend:** Node.js / Express
+- **Database:** Supabase (PG) / RLS Enabled
+- **Intelligence:** Chart.js V4 + Pipeline Weighted Forecasting
+- **Identity:** Cloudflare Protected / Job Title Integration
