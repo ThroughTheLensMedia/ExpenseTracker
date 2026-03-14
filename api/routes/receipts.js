@@ -1,13 +1,8 @@
 const express = require("express");
 const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
 const { supabase } = require("../db");
 
 const router = express.Router();
-
-// ── STORAGE PREP ────────────────────────────────────────────────────────────
-const RECEIPT_DIR = process.env.RECEIPT_DIR || (process.env.VERCEL ? "/tmp/receipts" : path.join(__dirname, "..", "receipts"));
 
 /**
  * Helper: Organize into YYYY/MM/DD paths
@@ -20,7 +15,7 @@ function getStoragePath(filename) {
     return `${y}/${m}/${day}/${filename}`;
 }
 
-const storage = multer.memoryStorage(); // We'll process the upload based on availability
+const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 // POST /receipts/:table/:id
@@ -35,29 +30,16 @@ router.post("/:table/:id", upload.single("file"), async (req, res) => {
         const relativePath = getStoragePath(filename);
         let receipt_link = "";
 
-        // Strategy A: Use Supabase Storage
-        const canUseCloud = !!(process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY);
+        const { error: uploadError } = await supabase.storage
+            .from("receipts")
+            .upload(relativePath, req.file.buffer, { contentType: req.file.mimetype });
 
-        if (canUseCloud) {
-            const { error: uploadError } = await supabase.storage
-                .from("receipts")
-                .upload(relativePath, req.file.buffer, { contentType: req.file.mimetype });
-
-            if (!uploadError) {
-                const { data: urlData } = supabase.storage.from("receipts").getPublicUrl(relativePath);
-                receipt_link = urlData.publicUrl;
-            } else {
-                console.warn("[Storage] Cloud upload failed fallback to local:", uploadError.message);
-            }
-        }
-
-        // Strategy B: Fallback to Local Filesystem
-        if (!receipt_link) {
-            const localPath = path.join(RECEIPT_DIR, relativePath);
-            const localDir = path.dirname(localPath);
-            if (!fs.existsSync(localDir)) fs.mkdirSync(localDir, { recursive: true });
-            fs.writeFileSync(localPath, req.file.buffer);
-            receipt_link = `/receipts/${relativePath}`;
+        if (!uploadError) {
+            const { data: urlData } = supabase.storage.from("receipts").getPublicUrl(relativePath);
+            receipt_link = urlData.publicUrl;
+        } else {
+            console.error("[Storage] Cloud upload failed:", uploadError.message);
+            return res.status(500).json({ error: "Storage upload failed: " + uploadError.message });
         }
 
         // Update Database

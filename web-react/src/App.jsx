@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useActivityPulse } from "./hooks/useActivityPulse";
 import { BrowserRouter as Router, Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './components/AuthContext';
 import Dashboard from './pages/Dashboard';
@@ -35,6 +36,7 @@ function PrivateRoute({ children }) {
 }
 
 function AppContent() {
+  useActivityPulse();
   const [apiStatus, setApiStatus] = useState('Checking...');
   const { user, loading, logout, subscription, settings } = useAuth();
   const location = useLocation();

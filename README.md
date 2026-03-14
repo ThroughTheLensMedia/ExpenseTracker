@@ -40,11 +40,11 @@ To test changes without affecting the production session:
 
 ## ❓ FAQ
 
-**Q: How do I categorize 50% vs 100% deduction?**
-A: Use the "Edit" function on any transaction. Standard business expenses (Software, Ads) are 100%. Meals and Van Fuel are typically 50%.
+**Q: Is my data shared with other users?**
+A: No. We use **Supabase Row Level Security (RLS)**. Every transaction and receipt you upload is cryptographically isolated to your own personal account. Not even other studio members can see your ledger unless you explicitly invite them.
 
-**Q: Why is my revenue showing up correctly but the chart looks off?**
-A: Ensure your categories in the Bank CSV aren't being double-counted by the "Internal Transfer" filter. The dashboard ignores "Transfers" to prevent artificial income inflation.
+**Q: Where are my receipts stored?**
+A: Receipts are stored in an encrypted **Supabase Storage** bucket. We no longer use local storage or home servers (NAS) to ensure 99.9% availability and instant access on your mobile device.
 
 **Q: How do I export for my CPA?**
 A: Go to the **Tax** tab, select the year, and click **Download Ledger CSV**. This provides a line-item audit trail for every Schedule C bucket.
@@ -52,7 +52,9 @@ A: Go to the **Tax** tab, select the year, and click **Download Ledger CSV**. Th
 ---
 
 ## System Architecture
-- **Backend:** Node.js / Express
-- **Database:** Supabase (PG) / RLS Enabled
-- **Intelligence:** Chart.js V4 + Pipeline Weighted Forecasting
-- **Identity:** Cloudflare Protected / Job Title Integration
+- **Frontend:** React / Vite / PWA (Installable)
+- **Backend:** Node.js / Express (Hosted on Vercel)
+- **Database:** Supabase (PostgreSQL) + RLS
+- **Storage:** Supabase Storage (S3-Compatible)
+- **Identity:** Supabase Auth + Resend (Transactional Email)
+- **Security:** Cloudflare + Studio Access Tokens

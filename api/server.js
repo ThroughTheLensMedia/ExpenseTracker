@@ -22,6 +22,7 @@ const leadsRouter = require("./routes/leads");
 const pwaRouter = require("./routes/pwa");
 const settingsRouter = require("./routes/settings");
 const subscriptionRouter = require("./routes/subscription");
+const activityRouter = require("./routes/activity");
 
 // Initialize Database
 initDb();
@@ -31,15 +32,6 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: "10mb" }));
-
-// Serve static receipts (optional: could be moved behind auth if stored locally)
-const RECEIPT_DIR = process.env.RECEIPT_DIR || (process.env.VERCEL ? "/tmp/receipts" : path.join(__dirname, "receipts"));
-try {
-  if (!fs.existsSync(RECEIPT_DIR)) fs.mkdirSync(RECEIPT_DIR, { recursive: true });
-} catch (e) {
-  console.error("Failed to create receipts directory:", e);
-}
-app.use("/receipts", express.static(RECEIPT_DIR));
 
 // Routing
 const apiRouter = express.Router();
@@ -89,6 +81,7 @@ apiRouter.use("/leads", leadsRouter);
 apiRouter.use("/pwa", pwaRouter);
 apiRouter.use("/settings", settingsRouter);
 apiRouter.use("/subscription", subscriptionRouter);
+apiRouter.use("/activity", activityRouter);
 
 // Mount all API routes under /api
 app.use("/api", apiRouter);
