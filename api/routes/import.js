@@ -99,7 +99,7 @@ const BANK_PROFILES = {
         idCol: ['id', 'transaction id', 'transactionid'],
         taxDeductibleCol: ['tax deductible'],
         signConvention: 'positive_is_expense',
-        detectHeaders: ['tax deductible', 'custom name'],
+        detectHeaders: ['ignored from', 'custom name'],
     },
     chase: {
         label: 'Chase',
@@ -383,15 +383,35 @@ router.post("/detect", upload.single("file"), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'file required' });
     try {
         const headers = [];
-        const stream = fs.createReadStream(req.file.path)
-            .pipe(csvParser({ mapHeaders: ({ header }) => { const h = String(header || '').trim().toLowerCase(); headers.push(h); return h; } }));
+        let detected = null;
+
+        const stream = fs.createReadStream(req.file.path).pipe(csvParser());
+
+        // We listen to the 'headers' event which csv-parser emits as soon as it parses the first line
+        const headerPromise = new Promise((resolve, reject) => {
+            stream.on('headers', (headerList) => {
+                const normalized = headerList.map(h => 
+                    String(h || '').trim().toLowerCase().replace(/\s+/g, ' ')
+                );
+                headers.push(...normalized);
+                detected = detectBankProfile(normalized);
+                resolve();
+            });
+            stream.on('error', reject);
+            // Safety timeout
+            setTimeout(() => resolve(), 3000);
+        });
+
+        // Trigger the stream
         for await (const _ of stream) { break; }
+        await headerPromise;
+
         fs.unlink(req.file.path, () => { });
-        const detected = detectBankProfile(headers);
+        
         const profiles = Object.entries(BANK_PROFILES).map(([key, p]) => ({ key, label: p.label }));
         res.json({ detected, headers, profiles });
     } catch (e) {
-        fs.unlink(req.file.path, () => { });
+        if (req.file) fs.unlink(req.file.path, () => { });
         res.status(500).json({ error: String(e.message || e) });
     }
 });

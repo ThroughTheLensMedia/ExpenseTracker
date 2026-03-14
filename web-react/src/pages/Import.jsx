@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { invalidateExpensesCache } from '../api';
+import { useAuth } from '../components/AuthContext';
 
 const BANK_PROFILES = [
     { key: 'rocketmoney', label: '🟣 Rocket Money' },
@@ -30,6 +31,10 @@ const BANK_TIPS = {
 };
 
 export default function Import() {
+    // const { session } = useAuth(); // Removed
+    // const token = session?.access_token; // Removed
+    // const authHeaders = token ? { 'Authorization': `Bearer ${token}` } : {}; // Removed
+
     const fileInputRef = useRef(null);
     const [isDragging, setIsDragging] = useState(false);
     const [rmMsg, setRmMsg] = useState('');
@@ -39,6 +44,16 @@ export default function Import() {
     const [detectedSource, setDetectedSource] = useState(null);
     const [pendingFile, setPendingFile] = useState(null);
 
+    const getFreshAuthHeader = async () => {
+        try {
+            const { data: { session: currentSession } } = await supabase.auth.getSession();
+            const t = currentSession?.access_token;
+            return t ? { 'Authorization': `Bearer ${t}` } : {};
+        } catch (e) {
+            return {};
+        }
+    };
+
     const detectAndStage = async (file) => {
         if (!file) return;
         setDetecting(true);
@@ -47,10 +62,18 @@ export default function Import() {
         setRmMsg('');
         setRmErrors([]);
         try {
+            const headers = await getFreshAuthHeader();
             const fd = new FormData();
             fd.append('file', file);
-            const r = await fetch('/api/import/detect', { method: 'POST', credentials: 'include', body: fd });
+            const r = await fetch('/api/import/detect', { 
+                method: 'POST', 
+                credentials: 'include', 
+                headers,
+                body: fd 
+            });
             const data = await r.json().catch(() => ({}));
+            if (!r.ok) throw new Error(data.error || `${r.status} ${r.statusText}`);
+
             if (data.detected) {
                 setImportSource(data.detected);
                 setDetectedSource(data.detected);
@@ -60,7 +83,7 @@ export default function Import() {
                 setRmMsg('⚠️ Could not auto-detect bank format. Please select your bank from the dropdown below, then click Import.');
             }
         } catch (e) {
-            setRmMsg('⚠️ Detection failed. Select your bank manually and click Import.');
+            setRmMsg(`⚠️ Detection failed: ${e.message}`);
         } finally {
             setDetecting(false);
         }
@@ -71,10 +94,16 @@ export default function Import() {
         setRmMsg('Importing…');
         setRmErrors([]);
         try {
+            const headers = await getFreshAuthHeader();
             const fd = new FormData();
             fd.append('file', file);
             fd.append('source', source);
-            const r = await fetch('/api/import/csv', { method: 'POST', credentials: 'include', body: fd });
+            const r = await fetch('/api/import/csv', { 
+                method: 'POST', 
+                credentials: 'include', 
+                headers,
+                body: fd 
+            });
             const data = await r.json().catch(() => ({}));
             if (!r.ok) throw new Error(data?.error || `${r.status} ${r.statusText}`);
             const ins = Number(data.inserted || 0), sk = Number(data.skipped || 0);
