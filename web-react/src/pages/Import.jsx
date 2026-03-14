@@ -212,12 +212,34 @@ export default function Import() {
                 )}
 
                 {rmErrors.length > 0 && (
-                    <div className="tableWrap" style={{ marginTop: '20px', maxHeight: '250px', borderRadius: '12px', border: '1px solid rgba(255,77,77,0.2)' }}>
+                    <div className="tableWrap" style={{ 
+                        marginTop: '20px', 
+                        maxHeight: '350px', 
+                        borderRadius: '12px', 
+                        border: '1px solid var(--line)',
+                        background: 'rgba(0,0,0,0.2)'
+                    }}>
                         <table style={{ margin: 0 }}>
-                            <thead style={{ background: 'rgba(255,77,77,0.05)' }}><tr><th>Row</th><th>Error Details</th></tr></thead>
+                            <thead style={{ background: 'rgba(255,255,255,0.03)' }}>
+                                <tr>
+                                    <th style={{ width: '60px' }}>Row</th>
+                                    <th>Processing Details & Import Context</th>
+                                </tr>
+                            </thead>
                             <tbody>
-                                {rmErrors.slice(0, 50).map((e, i) => (
-                                    <tr key={i}><td>{e.row}</td><td style={{ color: '#ff7777', fontSize: '11px' }}>{e.error}</td></tr>
+                                {rmErrors.slice(0, 100).map((e, i) => (
+                                    <tr key={i}>
+                                        <td style={{ fontSize: '11px', opacity: 0.6 }}>{e.row}</td>
+                                        <td style={{ 
+                                            fontSize: '11px', 
+                                            color: e.type === 'info' ? 'var(--muted)' : '#ff7777',
+                                            fontWeight: e.type === 'info' ? 500 : 700 
+                                        }}>
+                                            {e.type === 'info' ? 'ℹ️ ' : '⚠️ '}
+                                            {e.error}
+                                            {e.type === 'info' && <span style={{ marginLeft: '8px', opacity: 0.5, fontWeight: 400 }}>(Ignored to prevent double-counting income/expenses)</span>}
+                                        </td>
+                                    </tr>
                                 ))}
                             </tbody>
                         </table>

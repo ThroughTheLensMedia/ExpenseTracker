@@ -286,7 +286,11 @@ async function parseCsvAndImport(sb, filePath, profileKey, res) {
             const vendorUp = vendor.toUpperCase();
             const TRANSFERS = ['CREDIT CARD PAYMENT', 'FUNDS TRANSFER', 'ONLINE TRANSFER', 'APPLECARD GSBANK PAYMENT', 'APPLE CARD PAYMENT', 'TRANSFER FROM', 'TRANSFER TO', 'PAYMENT - THANK YOU', 'AUTOPAY PAYMENT', 'ACH PAYMENT'];
             if (TRANSFERS.some(t => vendorUp.includes(t))) {
-                errors.push({ row: rowCount, error: `Skipped transfer: "${vendor}"` });
+                errors.push({ 
+                    row: rowCount, 
+                    type: 'info', 
+                    error: `Filtered internal transfer: "${vendor}"` 
+                });
                 continue;
             }
 
