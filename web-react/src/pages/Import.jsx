@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { invalidateExpensesCache } from '../api';
-import { useAuth } from '../components/AuthContext';
+import { useAuth, supabase } from '../components/AuthContext';
 
 const BANK_PROFILES = [
     { key: 'rocketmoney', label: '🟣 Rocket Money' },
