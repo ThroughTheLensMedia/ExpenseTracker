@@ -47,20 +47,24 @@ function AppContent() {
 
   // --- Version Check Hook ---
   useEffect(() => {
-    const CURRENT_VERSION = "3.7.0";
+    const CURRENT_VERSION = "3.8.0";
     const checkVersion = async () => {
       try {
         const res = await fetch('/version.json?v=' + Date.now());
         const data = await res.json();
         if (data.version && data.version !== CURRENT_VERSION) {
           setNewVersion(true);
+          // If on login page, just auto-update since no work will be lost
+          if (location.pathname === '/login' || !user) {
+            window.location.reload(true);
+          }
         }
       } catch (e) { /* silent fail */ }
     };
-    const timer = setInterval(checkVersion, 300000); // Check every 5 mins
+    const timer = setInterval(checkVersion, 60000); // Check every minute
     checkVersion();
     return () => clearInterval(timer);
-  }, []);
+  }, [user, location.pathname]);
 
   // Calculate days left
   const daysLeft = subscription?.expires_at 
