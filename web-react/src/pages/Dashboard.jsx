@@ -435,14 +435,14 @@ export default function Dashboard() {
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 130px)', gridAutoRows: '42px', rowGap: '24px', columnGap: '12px', minWidth: '272px' }}>
                             {/* Control Group A: Configuration */}
-                            <button className="btn secondary sm" onClick={() => setChartSettingsOpen(true)} style={{ height: '42px', width: '130px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, borderRadius: '12px', fontWeight: 900, fontSize: '11px', letterSpacing: '0.05em' }}>
+                            <button className="btn secondary sm" onClick={() => setChartSettingsOpen(true)} style={{ height: '42px', width: '130px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, borderRadius: '12px', fontWeight: 950, fontSize: '13px', letterSpacing: '0.05em' }}>
                                 CHARTS
                             </button>
                             <select 
                                 value={selectedYear} 
                                 onChange={e => setSelectedYear(Number(e.target.value))}
                                 className="btn secondary sm"
-                                style={{ height: '42px', width: '130px', padding: '0 10px', fontWeight: 900, background: 'rgba(255,255,255,0.03)', fontSize: '12px', textAlign: 'center', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}
+                                style={{ height: '42px', width: '130px', padding: '0 10px', fontWeight: 950, background: 'rgba(255,255,255,0.03)', fontSize: '14px', textAlign: 'center', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}
                             >
                                 {years.map(y => <option key={y} value={y}>{y}</option>)}
                             </select>
@@ -453,15 +453,15 @@ export default function Dashboard() {
                                 const statusColor = days === null ? 'rgba(255,255,255,0.1)' : days < 5 ? '#4ade80' : days < 7 ? '#f59e0b' : '#ff4d4d';
                                 return (
                                     <div className="card glass sm" style={{ height: '42px', width: '130px', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.02)', border: `1px solid ${statusColor}`, borderRadius: '12px' }}>
-                                        <small style={{ fontSize: '7px', fontWeight: 950, textTransform: 'uppercase', color: statusColor, marginBottom: '1px' }}>{days === null ? 'STATUS' : `${days}D AGE`}</small>
-                                        <div style={{ fontSize: '10px', fontWeight: 900 }}>{stats.lastImportDate ? new Date(stats.lastImportDate).toLocaleDateString([], {month: '2-digit', day: '2-digit'}) : 'EMPTY'}</div>
+                                         <small style={{ fontSize: '8px', fontWeight: 950, textTransform: 'uppercase', color: statusColor, marginBottom: '2px' }}>{days === null ? 'STATUS' : `${days}D AGE`}</small>
+                                        <div style={{ fontSize: '14px', fontWeight: 950 }}>{stats.lastImportDate ? new Date(stats.lastImportDate).toLocaleDateString([], {month: '2-digit', day: '2-digit'}) : 'EMPTY'}</div>
                                     </div>
                                 );
                             })()}
                             <button 
                                 className="btn primary glow-blue" 
                                 onClick={() => navigate('/import')} 
-                                style={{ height: '42px', width: '130px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: 0, fontSize: '10px', fontWeight: 950, borderRadius: '12px' }}
+                                style={{ height: '42px', width: '130px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: 0, fontSize: '12px', fontWeight: 950, borderRadius: '12px' }}
                             >
                                 SYNC BANK
                             </button>

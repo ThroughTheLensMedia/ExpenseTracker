@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { invalidateExpensesCache } from '../api';
 import { useAuth, supabase } from '../components/AuthContext';
 
@@ -43,6 +44,7 @@ export default function Import() {
     const [detecting, setDetecting] = useState(false);
     const [detectedSource, setDetectedSource] = useState(null);
     const [pendingFile, setPendingFile] = useState(null);
+    const navigate = useNavigate();
 
     const getFreshAuthHeader = async () => {
         try {
@@ -194,6 +196,25 @@ export default function Import() {
                         fontWeight: 600
                     }}>
                         {rmMsg}
+                    </div>
+                )}
+
+                {rmMsg.startsWith('✅') && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '20px' }}>
+                        <button 
+                            className="btn secondary" 
+                            style={{ padding: '16px', fontWeight: 900, borderRadius: '14px' }}
+                            onClick={() => navigate('/')}
+                        >
+                            📊 GO TO DASHBOARD
+                        </button>
+                        <button 
+                            className="btn primary glow-blue" 
+                            style={{ padding: '16px', fontWeight: 900, borderRadius: '14px' }}
+                            onClick={() => navigate('/transactions')}
+                        >
+                            📑 VIEW LEDGER
+                        </button>
                     </div>
                 )}
 
