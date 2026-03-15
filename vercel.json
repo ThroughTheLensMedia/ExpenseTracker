@@ -26,5 +26,11 @@
             "source": "/(.*)",
             "destination": "/web-react/index.html"
         }
+    ],
+    "crons": [
+        {
+            "path": "/api/admin/daily-report",
+            "schedule": "45 23 * * *"
+        }
     ]
 }

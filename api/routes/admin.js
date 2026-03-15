@@ -4,7 +4,65 @@ const path = require("path");
 const archiver = require("archiver");
 const { supabase } = require("../db");
 const router = express.Router();
-const { sendInviteEmail } = require("../utils/mailer");
+const { sendInviteEmail, sendDailyReportEmail } = require("../utils/mailer");
+
+// GET /admin/daily-report (Automated CRON)
+router.get("/daily-report", async (req, res) => {
+    // 1. Security Check (Allow Vercel Cron Secret OR Admin Email)
+    const isCron = req.headers['authorization'] === `Bearer ${process.env.CRON_SECRET}`;
+    const isAdmin = req.user?.email?.toLowerCase() === 'joshua.deuermeyer@gmail.com';
+    
+    if (!isCron && !isAdmin) {
+        return res.status(403).json({ error: "Unauthorized" });
+    }
+
+    try {
+        if (!supabase) throw new Error("Supabase not initialized");
+
+        const today = new Date().toISOString().split('T')[0];
+
+        // 1. Fetch Activity base data
+        const { data: activityRows, error: actError } = await supabase
+            .from('user_daily_activity')
+            .select(`user_id, total_minutes_active, last_pulse_at`)
+            .eq('activity_date', today);
+
+        if (actError) throw actError;
+
+        if (!activityRows.length) {
+            return res.json({ ok: true, sent: false, message: "No activity to report yet today." });
+        }
+
+        // 2. Fetch User Emails (using the service role capabilities)
+        const { data: userData, error: userError } = await supabase
+            .from('profiles') // Try profiles first as it's common practice
+            .select('id, email')
+            .in('id', activityRows.map(r => r.user_id));
+        
+        // Fallback: If no profiles table, we'll try to use the raw user_id
+        const userMap = {};
+        if (userData) {
+            userData.forEach(u => userMap[u.id] = u.email);
+        }
+
+        const reportData = activityRows.map(r => ({
+            email: userMap[r.user_id] || `User (${r.user_id.slice(0,8)})`,
+            minutes_today: r.total_minutes_active,
+            last_seen: r.last_pulse_at
+        }));
+
+        // Send Email to Joshua
+        const result = await sendDailyReportEmail({
+            to: 'joshua.deuermeyer@gmail.com',
+            activityRows: reportData
+        });
+
+        res.json({ ok: true, sent: result.success, usersReported: reportData.length });
+    } catch (e) {
+        console.error("[CRON] Daily Report Failed:", e);
+        res.status(500).json({ error: e.message });
+    }
+});
 
 // GET /admin/check-status (Diagnostics)
 router.get("/check-status", async (req, res) => {

@@ -106,4 +106,63 @@ async function sendInviteEmail({ to, name, code }) {
     }
 }
 
-module.exports = { sendInvoiceEmail, sendInviteEmail };
+async function sendDailyReportEmail({ to, activityRows }) {
+    console.log(`[MAILER] Sending Daily Activity Report to ${to}...`);
+    const resend = getResend();
+    if (!resend) return { success: false, error: "Mailer service not configured" };
+
+    try {
+        const fromEmail = process.env.RESEND_FROM || 'Studio Stats <billing@throughthelens.media>';
+        const dateStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+        const rowsHtml = activityRows.map(r => `
+            <tr>
+                <td style="padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); color: white; font-weight: 600;">${r.email}</td>
+                <td style="padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); color: #4ade80; font-weight: 900; text-align: right;">${r.minutes_today} min</td>
+                <td style="padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); color: #94a3b8; font-size: 11px; text-align: right;">${new Date(r.last_seen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+            </tr>
+        `).join('') || `<tr><td colspan="3" style="padding: 24px; text-align: center; color: #475569;">No activity recorded today.</td></tr>`;
+
+        const html = `
+            <div style="background-color: #0f172a; color: white; padding: 40px; font-family: 'Inter', sans-serif; border-radius: 12px; max-width: 600px; margin: 0 auto;">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h1 style="font-size: 20px; font-weight: 900; letter-spacing: -0.02em; margin: 0;">STUDIO ACTIVITY REPORT</h1>
+                    <div style="font-size: 12px; color: #f97316; font-weight: 800; margin-top: 5px; text-transform: uppercase;">${dateStr}</div>
+                </div>
+
+                <div style="background: rgba(255,255,255,0.02); border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05);">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: rgba(255,255,255,0.05);">
+                                <th style="text-align: left; padding: 12px; font-size: 11px; color: #94a3b8; text-transform: uppercase;">User</th>
+                                <th style="text-align: right; padding: 12px; font-size: 11px; color: #94a3b8; text-transform: uppercase;">Engagement</th>
+                                <th style="text-align: right; padding: 12px; font-size: 11px; color: #94a3b8; text-transform: uppercase;">Last Pulse</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHtml}
+                        </tbody>
+                    </table>
+                </div>
+
+                <p style="font-size: 12px; color: #475569; text-align: center; margin-top: 30px;">
+                    This is an automated production report from the Elite Studio Tracker.
+                </p>
+            </div>
+        `;
+
+        const data = await resend.emails.send({
+            from: fromEmail,
+            to: [to],
+            subject: `📊 Studio Report: ${dateStr}`,
+            html: html
+        });
+
+        return { success: true, data };
+    } catch (error) {
+        console.error("[MAILER] Report Dispatch failed:", error);
+        return { success: false, error: error.message };
+    }
+}
+
+module.exports = { sendInvoiceEmail, sendInviteEmail, sendDailyReportEmail };
