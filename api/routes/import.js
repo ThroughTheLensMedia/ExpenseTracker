@@ -95,6 +95,7 @@ const BANK_PROFILES = {
         amountCol: ['amount'],
         vendorCol: ['name', 'custom name'],
         categoryCol: ['category'],
+        accountCol: ['account name'],
         notesCol: ['note', 'notes', 'memo'],
         idCol: ['id', 'transaction id', 'transactionid'],
         taxDeductibleCol: ['tax deductible'],
@@ -107,6 +108,7 @@ const BANK_PROFILES = {
         amountCol: ['amount'],
         vendorCol: ['description'],
         categoryCol: ['category', 'type'],
+        accountCol: [],
         notesCol: ['memo', 'notes'],
         idCol: [],
         signConvention: 'negative_is_expense',
@@ -118,6 +120,7 @@ const BANK_PROFILES = {
         amountCol: ['amount'],
         vendorCol: ['description', 'payee'],
         categoryCol: [],
+        accountCol: [],
         notesCol: ['memo', 'reference number'],
         idCol: ['reference number'],
         signConvention: 'negative_is_expense',
@@ -129,6 +132,7 @@ const BANK_PROFILES = {
         amountCol: ['amount'],
         vendorCol: ['description'],
         categoryCol: [],
+        accountCol: [],
         notesCol: [],
         idCol: [],
         signConvention: 'negative_is_expense',
@@ -142,6 +146,7 @@ const BANK_PROFILES = {
         creditCol: ['credit', 'deposits', 'deposit'],
         vendorCol: ['name', 'description', 'payee', 'merchant'],
         categoryCol: ['category'],
+        accountCol: [],
         notesCol: ['memo', 'notes'],
         idCol: ['transaction id', 'reference number'],
         signConvention: 'negative_is_expense',
@@ -153,6 +158,7 @@ const BANK_PROFILES = {
         amountCol: ['amount (usd)', 'amount'],
         vendorCol: ['merchant', 'description'],
         categoryCol: ['category'],
+        accountCol: [],
         notesCol: ['type'],
         idCol: [],
         signConvention: 'negative_is_expense',
@@ -166,6 +172,7 @@ const BANK_PROFILES = {
         creditCol: ['credit'],
         vendorCol: ['description'],
         categoryCol: ['category'],
+        accountCol: [],
         notesCol: [],
         idCol: [],
         signConvention: 'split_debit_credit',
@@ -177,6 +184,7 @@ const BANK_PROFILES = {
         amountCol: ['amount'],
         vendorCol: ['description'],
         categoryCol: ['category'],
+        accountCol: [],
         notesCol: [],
         signConvention: 'negative_is_expense',
         detectHeaders: ['description', 'post date'],
@@ -187,6 +195,7 @@ const BANK_PROFILES = {
         amountCol: ['amount'],
         vendorCol: ['description'],
         categoryCol: ['category'],
+        accountCol: [],
         notesCol: [],
         signConvention: 'negative_is_expense',
         detectHeaders: ['transaction date', 'post date', 'description', 'amount'],
@@ -197,7 +206,9 @@ const BANK_PROFILES = {
         amountCol: ['amount'],
         vendorCol: ['description', 'merchant'],
         categoryCol: ['category'],
+        accountCol: [],
         notesCol: ['reference'],
+        idCol: [],
         signConvention: 'negative_is_expense',
         detectHeaders: ['exchange rate', 'merchant'],
     },
@@ -207,6 +218,7 @@ const BANK_PROFILES = {
         amountCol: ['amount', 'transaction amount', 'value', 'price'],
         vendorCol: ['description', 'name', 'vendor', 'payee', 'merchant'],
         categoryCol: ['category', 'type', 'tags'],
+        accountCol: ['account name', 'account', 'bank'],
         notesCol: ['notes', 'memo', 'comment', 'description'],
         signConvention: 'negative_is_expense',
         detectHeaders: [],
@@ -283,6 +295,10 @@ async function parseCsvAndImport(sb, filePath, profileKey, res) {
             const rm_id = pick(o, profile.idCol || []) || null;
             const notes = pick(o, profile.notesCol || ['note', 'notes', 'memo', 'description']) || '';
 
+            // Extract Account Name if available, otherwise fallback to Profile Label
+            const specificAccount = pick(o, profile.accountCol || []);
+            const source = specificAccount || profile.label || profileKey;
+
             const vendorUp = vendor.toUpperCase();
             const TRANSFERS = ['CREDIT CARD PAYMENT', 'FUNDS TRANSFER', 'ONLINE TRANSFER', 'APPLECARD GSBANK PAYMENT', 'APPLE CARD PAYMENT', 'TRANSFER FROM', 'TRANSFER TO', 'PAYMENT - THANK YOU', 'AUTOPAY PAYMENT', 'ACH PAYMENT'];
             if (TRANSFERS.some(t => vendorUp.includes(t))) {
@@ -337,7 +353,7 @@ async function parseCsvAndImport(sb, filePath, profileKey, res) {
                     }
                 }
             }
-            items.push({ expense_date, vendor, category, amount_cents, currency: 'USD', notes, source: profileKey, rm_id, tax_deductible, tax_bucket, business_use_pct });
+            items.push({ expense_date, vendor, category, amount_cents, currency: 'USD', notes, source, rm_id, tax_deductible, tax_bucket, business_use_pct });
         }
 
         fs.unlink(filePath, () => { });

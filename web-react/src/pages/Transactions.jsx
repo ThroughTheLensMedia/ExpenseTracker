@@ -178,7 +178,7 @@ export default function Transactions() {
             </div>
 
             {/* ─── Filters ─── */}
-            <div className="card glass desktop-only" style={{ margin: 0, padding: '20px' }}>
+            <div className="card glass desktop-only" style={{ margin: 0, padding: '24px' }}>
                 {isAuditMode ? (
                     <div style={{ padding: '16px 20px', background: 'rgba(255, 77, 77, 0.15)', borderRadius: '12px', border: '1px solid rgba(255, 77, 77, 0.4)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -193,43 +193,50 @@ export default function Transactions() {
                         </button>
                     </div>
                 ) : (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'flex-end' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <small className="muted">Start</small>
-                            <input type="date" value={start} onChange={e => setStart(e.target.value)} style={{ width: '150px' }} />
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <small className="muted">End</small>
-                            <input type="date" value={end} onChange={e => setEnd(e.target.value)} style={{ width: '150px' }} />
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <small className="muted">Vendor</small>
-                            <input list="vendor-options" value={searchVendor} onChange={e => setSearchVendor(e.target.value)} placeholder="Search..." style={{ width: '180px' }} autoComplete="off" />
-                            <datalist id="vendor-options">{vendorOptions.map(v => <option key={v} value={v} />)}</datalist>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <small className="muted">Category</small>
-                            <CategorySelect value={ALL_CATEGORIES.includes(searchCategory) ? searchCategory : ''} onChange={val => setSearchCategory(val)} emptyLabel="All Categories" style={{ width: '180px', padding: '10px' }} />
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <small className="muted">Account</small>
-                            <select value={searchAccount} onChange={e => setSearchAccount(e.target.value)} style={{ width: '150px', padding: '10px' }}>
-                                <option value="">All Accounts</option>
-                                {accountOptions.map(a => <option key={a} value={a}>{ACCOUNT_LABELS[a] || a}</option>)}
-                            </select>
-                        </div>
-                        <div style={{ display: 'flex', gap: '10px', alignSelf: 'flex-end', marginLeft: 'auto', alignItems: 'center' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                <button className="btn sm secondary" onClick={clearFilters} style={{ fontSize: '10px', padding: '6px 14px' }}>Reset Filters</button>
-                                <button className="btn sm secondary" onClick={exportCsv} style={{ fontSize: '10px', padding: '6px 14px' }}>Export CSV</button>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', alignItems: 'center' }}>
+                        {/* Row 1: Filters */}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', justifyContent: 'center', width: '100%' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <small className="muted" style={{ fontWeight: 800 }}>START DATE</small>
+                                <input type="date" value={start} onChange={e => setStart(e.target.value)} style={{ width: '150px' }} />
                             </div>
-                            <div style={{ width: '1px', height: '40px', background: 'rgba(255,255,255,0.05)', margin: '0 8px' }} />
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                <label className="tag" style={{ cursor: 'pointer', borderColor: deductOnly ? 'var(--accent)' : 'var(--line)', padding: '4px 8px', fontSize: '10px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <small className="muted" style={{ fontWeight: 800 }}>END DATE</small>
+                                <input type="date" value={end} onChange={e => setEnd(e.target.value)} style={{ width: '150px' }} />
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <small className="muted" style={{ fontWeight: 800 }}>VENDOR</small>
+                                <input list="vendor-options" value={searchVendor} onChange={e => setSearchVendor(e.target.value)} placeholder="Search..." style={{ width: '180px' }} autoComplete="off" />
+                                <datalist id="vendor-options">{vendorOptions.map(v => <option key={v} value={v} />)}</datalist>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <small className="muted" style={{ fontWeight: 800 }}>CATEGORY</small>
+                                <CategorySelect value={ALL_CATEGORIES.includes(searchCategory) ? searchCategory : ''} onChange={val => setSearchCategory(val)} emptyLabel="All Categories" style={{ width: '180px' }} />
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <small className="muted" style={{ fontWeight: 800 }}>ACCOUNT</small>
+                                <select value={searchAccount} onChange={e => setSearchAccount(e.target.value)} style={{ width: '180px' }}>
+                                    <option value="">All Accounts</option>
+                                    {accountOptions.map(a => <option key={a} value={a}>{ACCOUNT_LABELS[a] || a}</option>)}
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Row 2: Actions & Toggles */}
+                        <div style={{ display: 'flex', gap: '30px', alignItems: 'center', justifyContent: 'center', width: '100%', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px' }}>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <button className="btn secondary sm" onClick={clearFilters} style={{ padding: '8px 20px', fontSize: '12px', fontWeight: 800 }}>RESET FILTERS</button>
+                                <button className="btn secondary sm" onClick={exportCsv} style={{ padding: '8px 20px', fontSize: '12px', fontWeight: 800 }}>EXPORT CSV</button>
+                            </div>
+
+                            <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)' }} />
+
+                            <div style={{ display: 'flex', gap: '15px' }}>
+                                <label className="tag clickable" style={{ padding: '6px 12px', borderColor: deductOnly ? 'var(--accent)' : 'var(--line)', background: deductOnly ? 'rgba(99,102,241,0.1)' : 'transparent' }}>
                                     <input type="checkbox" checked={deductOnly} onChange={e => setDeductOnly(e.target.checked)} style={{ width: 'auto', margin: '0 8px 0 0' }} />
                                     Deductible
                                 </label>
-                                <label className="tag" style={{ cursor: 'pointer', borderColor: missingReceiptOnly ? '#fbbf24' : 'var(--line)', padding: '4px 8px', fontSize: '10px' }}>
+                                <label className="tag clickable" style={{ padding: '6px 12px', borderColor: missingReceiptOnly ? '#fbbf24' : 'var(--line)', background: missingReceiptOnly ? 'rgba(251,191,36,0.1)' : 'transparent' }}>
                                     <input type="checkbox" checked={missingReceiptOnly} onChange={e => setMissingReceiptOnly(e.target.checked)} style={{ width: 'auto', margin: '0 8px 0 0' }} />
                                     ⚠️ Missing Docs
                                 </label>
