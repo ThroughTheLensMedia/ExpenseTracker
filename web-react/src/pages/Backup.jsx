@@ -936,9 +936,8 @@ export default function Backup() {
                                 </div>
                             </div>
                             <div>
-                                <div style={{ fontWeight: 800, color: 'white', marginBottom: '8px' }}>How does the AI Brain scale?</div>
+                                <div style={{ fontWeight: 800, color: 'white', marginBottom: '8px' }}>How does the AI Brain work?</div>
                                 <div className="muted" style={{ fontSize: '14px' }}>
-                                    The "Brain" architecture is built for infinite scale—whether for 1 user or 10,000. 
                                     By using a "Bring Your Own Key" model, every studio owner has their own private intelligence instance. 
                                     This ensures your financial data is never trained on by others, your processing costs are zero for the platform, and your "First-Class" advisor analyzes ONLY your specific studio data.
                                 </div>
@@ -966,8 +965,8 @@ export default function Backup() {
                                         <div className="muted" style={{ fontSize: '12px' }}>Open "Your Assistant" (📸 icon) to ask about your largest purchases or tax burn.</div>
                                     </div>
                                 </div>
-                                <div className="tag extra-small warning" style={{ marginTop: '20px', background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', fontSize: '10px', textAlign: 'center', width: '100%' }}>
-                                    ⚠️ ARCHITECTURE SCALE: Works for 1 to 10,000+ users. Every photographer "Brings Their Own Brain".
+                                <div className="tag extra-small warning" style={{ marginTop: '20px', background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', fontSize: '10px', textAlign: 'center', width: '100%', fontWeight: 900 }}>
+                                    ⚠️ EVERY PHOTOGRAPHER "BRINGS THEIR OWN BRAIN"
                                 </div>
                             </div>
 

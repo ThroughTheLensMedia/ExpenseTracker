@@ -598,21 +598,21 @@ export default function Dashboard() {
                                 <div style={{ fontSize: '20px' }}>🔐</div>
                                 <div>
                                     <div style={{ fontWeight: 900, fontSize: '14px', marginBottom: '4px' }}>Isolated Intelligence</div>
-                                    <div className="muted" style={{ fontSize: '13px' }}>Your financial data is protected by Row Level Security and never shared or trained on by others.</div>
+                                    <div className="muted" style={{ fontSize: '13px' }}>Your financial data is protected by Row Level Security and never shared or trained on by others. Every photographer brings their own private "Brain".</div>
                                 </div>
                             </div>
                             <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
-                                <div style={{ fontSize: '20px' }}>📏</div>
+                                <div style={{ fontSize: '20px' }}>🔎</div>
                                 <div>
-                                    <div style={{ fontWeight: 900, fontSize: '14px', marginBottom: '4px' }}>Infinite Scale</div>
-                                    <div className="muted" style={{ fontSize: '13px' }}>Whether 1 user or 10,000, our architecture scales instantly because every studio brings its own API key.</div>
+                                    <div style={{ fontWeight: 900, fontSize: '14px', marginBottom: '4px' }}>Automated Expense Forensic</div>
+                                    <div className="muted" style={{ fontSize: '13px' }}>The Brain scans hundreds of historical bank entries in seconds to identify and categorize tax deductions you may have missed.</div>
                                 </div>
                             </div>
                             <div style={{ display: 'flex', gap: '15px' }}>
                                 <div style={{ fontSize: '20px' }}>💎</div>
                                 <div>
-                                    <div style={{ fontWeight: 900, fontSize: '14px', marginBottom: '4px' }}>First-Class Experience</div>
-                                    <div className="muted" style={{ fontSize: '13px' }}>Your Assistant analyzes your specific business metrics for elite advice.</div>
+                                    <div style={{ fontWeight: 900, fontSize: '14px', marginBottom: '4px' }}>First-Class Advisor</div>
+                                    <div className="muted" style={{ fontSize: '13px' }}>Ask "Your Assistant" (📸) specific questions about your burn rate, largest purchases, or tax strategies.</div>
                                 </div>
                             </div>
                         </div>
