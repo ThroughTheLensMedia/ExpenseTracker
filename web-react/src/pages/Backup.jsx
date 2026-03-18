@@ -535,7 +535,7 @@ export default function Backup() {
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px' }}>
                             <div>
                                 <small className="muted" style={{ fontWeight: 900 }}>GEMINI AI API KEY</small>
-                                <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
+                                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '8px' }}>
                                     <input 
                                         type="password"
                                         value={settings.gemini_api_key || ''} 
@@ -543,7 +543,10 @@ export default function Backup() {
                                         placeholder="AI_..." 
                                         style={{ padding: '15px', flex: 1 }} 
                                     />
-                                    <button className="btn primary" onClick={handleSaveSettings}>Save Key</button>
+                                    <button className="btn primary" onClick={(e) => handleSaveSettings(e)} style={{ height: '54px' }}>Save Key</button>
+                                </div>
+                                <div style={{ marginTop: '10px', height: '20px' }}>
+                                    {msg && <span className={`${msg.includes('Error') ? 'tag bad' : 'tag ok'}`} style={{ fontWeight: 900, fontSize: '12px' }}>{msg}</span>}
                                 </div>
                                 <div className="muted extra-small" style={{ marginTop: '10px' }}>
                                     Your key is stored securely in your private studio database and is only used to process your transactions.
@@ -889,6 +892,23 @@ export default function Backup() {
                                         <li><span style={{ color: '#ff4d4d', fontWeight: 900 }}>Red:</span> Critical (7+ days old). Keep your data synced for accurate tax forecasting!</li>
                                     </ul>
                                 </div>
+                            </div>
+                            <div>
+                                <div style={{ fontWeight: 800, color: 'white', marginBottom: '8px' }}>How does the AI Brain scale?</div>
+                                <div className="muted" style={{ fontSize: '14px' }}>
+                                    The "Brain" architecture is built for infinite scale—whether for 1 user or 10,000. 
+                                    By using a "Bring Your Own Key" model, every studio owner has their own private intelligence instance. 
+                                    This ensures your financial data is never trained on by others and your processing costs are zero for the platform.
+                                </div>
+                            </div>
+                            <div style={{ background: 'rgba(56, 189, 248, 0.05)', padding: '20px', borderRadius: '12px', border: '1px solid rgba(56, 189, 248, 0.1)' }}>
+                                <div style={{ fontWeight: 800, color: '#38bdf8', marginBottom: '12px' }}>🚀 4-Step AI Setup Guide</div>
+                                <ol className="muted" style={{ fontSize: '14px', paddingLeft: '20px', lineHeight: '1.8' }}>
+                                    <li><strong>Get a Key:</strong> Visit the <a href="https://aistudio.google.com/app/apikey" target="_blank" style={{ color: 'var(--accent)' }}>Google AI Studio</a> and generate a free API Key.</li>
+                                    <li><strong>Provision DB:</strong> Ensure your studio database has the AI rows prepared (Run the SQL snippet provided in the Control Center).</li>
+                                    <li><strong>Connect:</strong> Paste your key into the <strong>AI Intelligence</strong> tab and hit <strong>Save Key</strong>.</li>
+                                    <li><strong>Repair:</strong> Use the <strong>Retroactive Ledger Repair</strong> to scrub your history and clean up "Rocket Money" entries.</li>
+                                </ol>
                             </div>
                             <div>
                                 <div style={{ fontWeight: 800, color: 'white', marginBottom: '8px' }}>Can I export my data if I leave?</div>

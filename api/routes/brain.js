@@ -10,9 +10,13 @@ const { repairLedgerBatch } = require("../utils/gemini");
 // Retroactive cleanup of existing "Rocket Money" entries and vendor names.
 router.post("/repair-ledger", async (req, res) => {
     try {
-        const { data: settings } = await req.sb.from("settings").select("*").maybeSingle();
-        const apiKey = settings?.gemini_api_key;
+        const { data: settings } = await req.sb
+            .from("settings")
+            .select("*")
+            .eq("user_id", req.user.id)
+            .maybeSingle();
         
+        const apiKey = settings?.gemini_api_key;
         if (!apiKey) {
             return res.status(400).json({ 
                 error: "AI Brain is missing its API key.", 

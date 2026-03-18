@@ -4,7 +4,12 @@ const router = express.Router();
 // Get settings - always returns an object even if empty
 router.get("/", async (req, res) => {
     try {
-        const { data, error } = await req.sb.from("settings").select("*").limit(1).maybeSingle();
+        const { data, error } = await req.sb
+            .from("settings")
+            .select("*")
+            .eq("user_id", req.user.id)
+            .limit(1)
+            .maybeSingle();
         if (error) throw error;
         res.json(data || {});
     } catch (e) {
@@ -27,14 +32,14 @@ router.post("/", async (req, res) => {
         if (existing && existing.id) {
             result = await req.sb
                 .from("settings")
-                .update(payload)
+                .update({ ...payload, user_id: req.user.id })
                 .eq("id", existing.id)
                 .select()
                 .single();
         } else {
             result = await req.sb
                 .from("settings")
-                .insert([payload])
+                .insert([{ ...payload, user_id: req.user.id }])
                 .select()
                 .single();
         }
