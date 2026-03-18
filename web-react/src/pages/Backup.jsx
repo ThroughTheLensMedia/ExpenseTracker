@@ -557,7 +557,7 @@ export default function Backup() {
                                     <a href="https://aistudio.google.com/app/apikey" target="_blank" className="btn sm secondary" style={{ fontSize: '11px', fontWeight: 900 }}>
                                         🗝️ ROTATE KEY
                                     </a>
-                                    <a href="https://ai.google.dev/rate-limit" target="_blank" className="btn sm secondary" style={{ fontSize: '11px', fontWeight: 900 }}>
+                                    <a href="https://aistudio.google.com/app/plan" target="_blank" className="btn sm secondary" style={{ fontSize: '11px', fontWeight: 900 }}>
                                         📊 MONITOR QUOTA
                                     </a>
                                 </div>

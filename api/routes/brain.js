@@ -88,16 +88,45 @@ router.post("/ask", async (req, res) => {
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
+        // --- STEP 1: Fetch Financial Intelligence Context ---
+        const currentYear = new Date().getFullYear();
+        const startOfYear = new Date(currentYear, 0, 1).toISOString();
+        
+        // Fetch Top 10 biggest purchases this year
+        const { data: topPurchases } = await req.sb
+            .from("expenses")
+            .select("vendor, amount, date, category")
+            .gte("date", startOfYear)
+            .order("amount", { ascending: false })
+            .limit(10);
+
+        // Fetch total spending for the year
+        const { data: allSpent } = await req.sb
+            .from("expenses")
+            .select("amount")
+            .gte("date", startOfYear);
+        
+        const totalYearlySum = allSpent?.reduce((acc, curr) => acc + (curr.amount || 0), 0) || 0;
+
+        const dataContext = `
+            REAL STUDIO DATA FOR ${currentYear}:
+            - Total Annual Studio Burn: $${totalYearlySum.toFixed(2)}
+            - Your Largest Transactions:
+              ${topPurchases?.slice(0, 5).map(p => `- ${p.vendor}: $${p.amount} on ${p.date}`).join("\n")}
+        `;
+
         // Build context-aware prompt
         const systemPrompt = `
-            You are "Your Assistant", an elite financial AI for professional photographers using Studio Tracker.
-            Business context: ${context.business || 'Private Photography Studio'}.
+            You are "Your Assistant", an elite financial AI for Through The Lens Media and other professional photographers.
             Current view: ${context.page}.
+            
+            REAL-TIME ACCURATE DATA:
+            ${dataContext}
+
             The user is a creative entrepreneur. Your tone should be encouraging, analytical, and providing first-class advice. 
-            Keep answers concise but high-value.
-            Do not make up financial numbers; instead, interpret the trends they see on screen.
-            If they ask about taxes, remind them you are an AI, not a CPA.
-            If they ask about Gear, remind them to check their Assets tab.
+            When they ask about "largest purchase" or "total spend", answer using the numbers provided above. 
+            If the question asks for something more specific (e.g. rent), tell them to check the "Expenses" tab filters.
+            Keep answers concise and professional.
         `;
 
         const result = await model.generateContent([systemPrompt, prompt]);
