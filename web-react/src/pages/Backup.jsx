@@ -557,35 +557,39 @@ export default function Backup() {
                                     <a href="https://aistudio.google.com/app/apikey" target="_blank" className="btn sm secondary" style={{ fontSize: '11px', fontWeight: 900 }}>
                                         🗝️ ROTATE KEY
                                     </a>
-                                    <a href="https://aistudio.google.com/app/rate-limit?timeRange=last-1-day" target="_blank" className="btn sm secondary" style={{ fontSize: '11px', fontWeight: 900 }}>
-                                        📊 MONITOR QUOTA
-                                    </a>
+                                    {(user?.email === 'joshua.deuermeyer@gmail.com' || user?.email === 'info@throughthelens.media') && (
+                                        <a href="https://aistudio.google.com/app/rate-limit?timeRange=last-1-day" target="_blank" className="btn sm secondary" style={{ fontSize: '11px', fontWeight: 900 }}>
+                                            📊 MONITOR QUOTA
+                                        </a>
+                                    )}
                                 </div>
                                 
-                                {/* AI Studio Performance HUD */}
-                                <div style={{ marginTop: '25px', padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                                        <small style={{ fontWeight: 900, color: 'var(--accent)', fontSize: '10px' }}>GOOGLE AI STUDIO PERFORMANCE HUB</small>
-                                        <div className="tag extra-small ok">FREE TIER ACTIVE</div>
-                                    </div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px', textAlign: 'center' }}>
-                                        <div>
-                                            <div style={{ fontSize: '18px', fontWeight: 950 }}>1 / 5</div>
-                                            <div className="muted extra-small" style={{ fontWeight: 800 }}>RPM (Load)</div>
+                                {/* AI Studio Performance HUD (Admin Only) */}
+                                {(user?.email === 'joshua.deuermeyer@gmail.com' || user?.email === 'info@throughthelens.media') && (
+                                    <div style={{ marginTop: '25px', padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                                            <small style={{ fontWeight: 900, color: 'var(--accent)', fontSize: '10px' }}>GOOGLE AI STUDIO PERFORMANCE HUB</small>
+                                            <div className="tag extra-small ok">FREE TIER ACTIVE</div>
                                         </div>
-                                        <div>
-                                            <div style={{ fontSize: '18px', fontWeight: 950 }}>168 / 250K</div>
-                                            <div className="muted extra-small" style={{ fontWeight: 800 }}>TPM (Token)</div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px', textAlign: 'center' }}>
+                                            <div>
+                                                <div style={{ fontSize: '18px', fontWeight: 950 }}>1 / 5</div>
+                                                <div className="muted extra-small" style={{ fontWeight: 800 }}>RPM (Load)</div>
+                                            </div>
+                                            <div>
+                                                <div style={{ fontSize: '18px', fontWeight: 950 }}>168 / 250K</div>
+                                                <div className="muted extra-small" style={{ fontWeight: 800 }}>TPM (Token)</div>
+                                            </div>
+                                            <div>
+                                                <div style={{ fontSize: '18px', fontWeight: 950 }}>1 / 20</div>
+                                                <div className="muted extra-small" style={{ fontWeight: 800 }}>RPD (Daily)</div>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <div style={{ fontSize: '18px', fontWeight: 950 }}>1 / 20</div>
-                                            <div className="muted extra-small" style={{ fontWeight: 800 }}>RPD (Daily)</div>
+                                        <div style={{ marginTop: '15px', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden' }}>
+                                            <div style={{ width: '20%', height: '100%', background: 'var(--accent)' }}></div>
                                         </div>
                                     </div>
-                                    <div style={{ marginTop: '15px', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden' }}>
-                                        <div style={{ width: '20%', height: '100%', background: 'var(--accent)' }}></div>
-                                    </div>
-                                </div>
+                                )}
                                 <p className="muted small" style={{ marginTop: '15px', color: '#f59e0b', fontSize: '11px', lineHeight: '1.5' }}>
                                     <strong>TIP:</strong> If you see a "Rate Limit" or "Limit: 0" error, ensure your Google Cloud project has enabled the <strong>Gemini API</strong> and that your region supports the Free Tier. Linking a billing account (even if not used) often resolves "Limit: 0" issues.
                                 </p>
