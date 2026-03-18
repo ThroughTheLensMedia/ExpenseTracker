@@ -15,6 +15,7 @@ import Mileage from './pages/Mileage';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import Home from './pages/Home';
+import AssistantSidebar from './components/AssistantSidebar';
 
 
 // Higher Order Component to protect routes
@@ -137,6 +138,7 @@ function AppContent() {
 
   return (
     <div className="wrap">
+      <AssistantSidebar />
       {/* Expiration Banner */}
       {daysLeft !== null && daysLeft <= 7 && (
         <div style={{ 

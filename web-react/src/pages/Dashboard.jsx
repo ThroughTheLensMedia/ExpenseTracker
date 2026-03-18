@@ -145,10 +145,11 @@ export default function Dashboard() {
     }, [billsYear]);
 
     const operationalExpenses = useMemo(() => {
-        const ignore = ['internal transfer', 'credit card payment', 'funds transfer'];
+        const ignore = ['internal transfer', 'credit card payment', 'funds transfer', 'payment', 'transfer'];
         return expenses.filter(r => {
             const cat = String(r.category || '').toLowerCase();
-            return !ignore.some(i => cat.includes(i));
+            const vend = String(r.vendor || '').toLowerCase();
+            return !ignore.some(i => cat.includes(i) || vend.includes(i));
         });
     }, [expenses]);
 
@@ -370,16 +371,18 @@ export default function Dashboard() {
             const cents = Number(e.amount_cents || 0);
             if (e.vendor && cents > 0) { // Spending only
                 if (!vendorStats[e.vendor]) {
-                    vendorStats[e.vendor] = { count: 0, total: 0 };
+                    vendorStats[e.vendor] = { count: 0, total: 0, months: new Set() };
                 }
                 vendorStats[e.vendor].count++;
                 vendorStats[e.vendor].total += cents;
+                if (e.expense_date) vendorStats[e.vendor].months.add(e.expense_date.slice(0, 7));
             }
         });
         
         return Object.entries(vendorStats)
+            .filter(([_, meta]) => meta.months.size > 1) // Must span at least 2 different months
             .sort((a, b) => b[1].total - a[1].total) // Sort by total spend
-            .slice(0, 8); // Top 8 cards
+            .slice(0, 9); // Top 9 cards for a perfect 3x3 grid
     }, [filtered]);
 
     const projectedBills = useMemo(() => {
@@ -421,7 +424,11 @@ export default function Dashboard() {
         });
 
         const bills = Object.entries(vendors)
-            .filter(([_, data]) => data.rows.length >= 1) 
+            .filter(([_, data]) => {
+                // SMMARTER CHECK: Must happen in 2+ different months to be a "bill"
+                const months = new Set(data.rows.map(r => r.expense_date?.slice(0, 7)));
+                return months.size >= 2;
+            }) 
             .map(([_, data]) => {
                 const vendorRows = data.rows;
                 const total = vendorRows.reduce((s, x) => s + (x.amount_cents || 0), 0);

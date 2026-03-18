@@ -58,4 +58,44 @@ router.post("/repair-ledger", async (req, res) => {
     }
 });
 
+// POST /api/brain/ask
+// Chat with the Assistant
+router.post("/ask", async (req, res) => {
+    try {
+        const { prompt, context } = req.body;
+        const { data: settings } = await req.sb
+            .from("settings")
+            .select("*")
+            .eq("user_id", req.user.id)
+            .maybeSingle();
+        
+        const apiKey = settings?.gemini_api_key;
+        if (!apiKey) return res.status(400).json({ error: "No API Key" });
+
+        const { GoogleGenerativeAI } = require("@google/generative-ai");
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+        // Build context-aware prompt
+        const systemPrompt = `
+            You are "Your Assistant", an elite financial AI for professional photographers using Studio Tracker.
+            Business context: ${context.business || 'Private Photography Studio'}.
+            Current view: ${context.page}.
+            The user is a creative entrepreneur. Your tone should be encouraging, analytical, and "first-class advisor". 
+            Do not make up numbers, but guide them on how to find them in the app.
+            If they ask about taxes, remind them you are an AI, not a CPA.
+            If they ask about Gear, remind them to check their Assets tab.
+        `;
+
+        const result = await model.generateContent([systemPrompt, prompt]);
+        const response = await result.response;
+        const text = response.text().trim();
+
+        res.json({ ok: true, answer: text });
+    } catch (e) {
+        console.error("Brain Ask Error:", e);
+        res.status(500).json({ error: "The Brain is currently sleeping. Try again in a moment." });
+    }
+});
+
 module.exports = router;

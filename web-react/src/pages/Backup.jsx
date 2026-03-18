@@ -905,8 +905,8 @@ export default function Backup() {
                                 <div style={{ fontWeight: 800, color: '#38bdf8', marginBottom: '12px' }}>🚀 4-Step AI Setup Guide</div>
                                 <ol className="muted" style={{ fontSize: '14px', paddingLeft: '20px', lineHeight: '1.8' }}>
                                     <li><strong>Get a Key:</strong> Visit the <a href="https://aistudio.google.com/app/apikey" target="_blank" style={{ color: 'var(--accent)' }}>Google AI Studio</a> and generate a free API Key.</li>
-                                    <li><strong>Provision DB:</strong> Ensure your studio database has the AI rows prepared (Run the SQL snippet provided in the Control Center).</li>
-                                    <li><strong>Connect:</strong> Paste your key into the <strong>AI Intelligence</strong> tab and hit <strong>Save Key</strong>.</li>
+                                    <li><strong>Provision DB (Admin):</strong> You as the studio owner run the SQL snippet once in Supabase. It is then live for <strong>all</strong> users.</li>
+                                    <li><strong>Connect (User):</strong> Every user simply pastes their own key into the <strong>AI Intelligence</strong> tab and hits <strong>Save Key</strong>.</li>
                                     <li><strong>Repair:</strong> Use the <strong>Retroactive Ledger Repair</strong> to scrub your history and clean up "Rocket Money" entries.</li>
                                 </ol>
                             </div>
