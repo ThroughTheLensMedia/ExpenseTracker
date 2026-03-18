@@ -372,6 +372,26 @@ async function parseCsvAndImport(sb, filePath, profileKey, res) {
         const toInsert = items.filter(i => !existingKeys.has(`${i.expense_date}|${i.vendor}|${i.amount_cents}`));
         const skipped = items.length - toInsert.length;
 
+        // 🧠 AI BRAIN INTERVENTION (Silent Mode)
+        const { data: st } = await sb.from("settings").select("*").maybeSingle();
+        if (st?.ai_silent_mode && st?.gemini_api_key && toInsert.length > 0) {
+            try {
+                const { repairLedgerBatch } = require("../utils/gemini");
+                const aiCleaned = await repairLedgerBatch(st.gemini_api_key, toInsert.map((it, idx) => ({ ...it, id: idx })));
+                // Overlay AI findings onto the toInsert array
+                aiCleaned.forEach(ai => {
+                    const idx = ai.id;
+                    if (toInsert[idx]) {
+                        toInsert[idx].vendor = ai.vendor; 
+                        if (ai.source && ai.source !== 'Rocket Money') toInsert[idx].source = ai.source;
+                        toInsert[idx].category = ai.category;
+                    }
+                });
+            } catch (err) {
+                console.warn("[BRAIN] Silent optimization failed (Skipping):", err.message);
+            }
+        }
+
         let inserted = 0;
         if (toInsert.length > 0) {
             const { data: insertedData, error: insertError } = await sb

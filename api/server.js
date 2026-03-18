@@ -23,6 +23,7 @@ const pwaRouter = require("./routes/pwa");
 const settingsRouter = require("./routes/settings");
 const subscriptionRouter = require("./routes/subscription");
 const activityRouter = require("./routes/activity");
+const brainRouter = require("./routes/brain"); // AI Intelligence Engine
 
 // Initialize Database
 initDb();
@@ -84,6 +85,7 @@ apiRouter.use("/pwa", pwaRouter);
 apiRouter.use("/settings", settingsRouter);
 apiRouter.use("/subscription", subscriptionRouter);
 apiRouter.use("/activity", activityRouter);
+apiRouter.use("/brain", brainRouter);
 
 // Mount all API routes under /api
 // Mount all API routes under /api AND root (for Vercel flexibility)

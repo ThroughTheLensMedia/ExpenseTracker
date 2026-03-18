@@ -381,6 +381,7 @@ export default function Backup() {
                 <nav style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
                     <button className={`pill ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>👤 Business Profile</button>
                     <button className={`pill ${activeTab === 'automation' ? 'active' : ''}`} onClick={() => setActiveTab('automation')}>⚡ Automation</button>
+                    <button className={`pill ${activeTab === 'intelligence' ? 'active' : ''}`} onClick={() => setActiveTab('intelligence')}>🧠 AI Intelligence</button>
                     <button className={`pill ${activeTab === 'infrastructure' ? 'active' : ''}`} onClick={() => setActiveTab('infrastructure')}>🔒 Infrastructure</button>
                     <button className={`pill ${activeTab === 'help' ? 'active' : ''}`} onClick={() => setActiveTab('help')}>❓ Documentation</button>
                     {user?.email === 'joshua.deuermeyer@gmail.com' && (
@@ -519,7 +520,116 @@ export default function Backup() {
                 </div>
             )}
 
-            {/* TAB CONTENT: AUTOMATION ENGINE */}
+            {/* TAB CONTENT: AI INTELLIGENCE */}
+            {activeTab === 'intelligence' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+                    <div className="card glass glow-blue" style={{ border: 'none', padding: '40px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+                            <div>
+                                <h2 style={{ fontSize: '2rem', margin: 0 }}>Brain Connectivity & AI Engine</h2>
+                                <p className="muted" style={{ fontSize: '16px', marginTop: '6px' }}>Power your studio with Google Gemini 1.5 Flash intelligence.</p>
+                            </div>
+                            <div className="tag ok" style={{ fontWeight: 800 }}>⚡ Gemini 1.5 Flash</div>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px' }}>
+                            <div>
+                                <small className="muted" style={{ fontWeight: 900 }}>GEMINI AI API KEY</small>
+                                <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
+                                    <input 
+                                        type="password"
+                                        value={settings.gemini_api_key || ''} 
+                                        onChange={e => setSettings({ ...settings, gemini_api_key: e.target.value })} 
+                                        placeholder="AI_..." 
+                                        style={{ padding: '15px', flex: 1 }} 
+                                    />
+                                    <button className="btn primary" onClick={handleSaveSettings}>Save Key</button>
+                                </div>
+                                <div className="muted extra-small" style={{ marginTop: '10px' }}>
+                                    Your key is stored securely in your private studio database and is only used to process your transactions.
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginTop: '10px' }}>
+                                <div className="card glass" style={{ margin: 0, padding: '24px', background: 'rgba(255,255,255,0.02)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div style={{ fontWeight: 800 }}>🤫 Silent Background Optimizer</div>
+                                        <label className="switch">
+                                            <input 
+                                                type="checkbox" 
+                                                checked={!!settings.ai_silent_mode} 
+                                                onChange={e => {
+                                                    const val = e.target.checked;
+                                                    setSettings({ ...settings, ai_silent_mode: val });
+                                                    apiPost('/settings', { ...settings, ai_silent_mode: val });
+                                                }}
+                                            />
+                                            <span className="slider round"></span>
+                                        </label>
+                                    </div>
+                                    <p className="muted extra-small" style={{ marginTop: '10px' }}>The Brain works quietly in the background to clean up vendor names and fix missing accounts.</p>
+                                </div>
+
+                                <div className="card glass" style={{ margin: 0, padding: '24px', background: 'rgba(255,255,255,0.02)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div style={{ fontWeight: 800 }}>🗣️ Active Coaching Mode</div>
+                                        <label className="switch">
+                                            <input 
+                                                type="checkbox" 
+                                                checked={!!settings.ai_coaching_mode} 
+                                                onChange={e => {
+                                                    const val = e.target.checked;
+                                                    setSettings({ ...settings, ai_coaching_mode: val });
+                                                    apiPost('/settings', { ...settings, ai_coaching_mode: val });
+                                                }}
+                                            />
+                                            <span className="slider round"></span>
+                                        </label>
+                                    </div>
+                                    <p className="muted extra-small" style={{ marginTop: '10px' }}>The Brain will proactively alert you to over-spending, tax risks, and subscription savings.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="card glass" style={{ border: 'none', padding: '40px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '20px' }}>
+                            <div style={{ flex: 1 }}>
+                                <h2 style={{ fontSize: '1.8rem', margin: 0 }}>Retroactive Ledger Repair</h2>
+                                <p className="muted" style={{ fontSize: '15px', marginTop: '10px' }}>
+                                    Have messy data from older imports? This tool scans your entire history and uses AI to fix incorrect vendor names and missing accounts.
+                                </p>
+                                <div className="tag extra-small warning" style={{ marginTop: '12px', background: 'rgba(245,158,11,0.1)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.2)' }}>
+                                    ⚠️ Runs through Gemini 1.5 Flash in batches. May take 10-20 seconds.
+                                </div>
+                            </div>
+                            <button 
+                                className="btn primary glow-blue" 
+                                onClick={async () => {
+                                    if (!settings.gemini_api_key) return modal.alert("Please save your Gemini API Key first.");
+                                    const ok = await modal.confirm("This will process your historical ledger through the AI Brain to fix old 'Rocket Money' entries. Proceed?");
+                                    if (!ok) return;
+                                    setLoading(true);
+                                    try {
+                                        const res = await apiPost('/brain/repair-ledger');
+                                        modal.alert(`Success! The Brain repaired ${res.updated} transactions.`);
+                                        loadData(true);
+                                    } catch (err) {
+                                        modal.alert(err.message);
+                                    } finally {
+                                        setLoading(false);
+                                    }
+                                }} 
+                                disabled={loading}
+                                style={{ padding: '16px 40px', fontWeight: 950 }}
+                            >
+                                {loading ? '🧠 BRAIN SCANNING...' : '🧼 START RETROACTIVE REPAIR'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {activeTab === 'automation' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
 
