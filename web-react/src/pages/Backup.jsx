@@ -529,9 +529,9 @@ export default function Backup() {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
                             <div>
                                 <h2 style={{ fontSize: '2rem', margin: 0 }}>Brain Connectivity & AI Engine</h2>
-                                <p className="muted" style={{ fontSize: '16px', marginTop: '6px' }}>Power your studio with Google Gemini 1.5 Flash intelligence.</p>
+                                <p className="muted" style={{ fontSize: '16px', marginTop: '6px' }}>Power your studio with Google Gemini 2.0 Flash intelligence.</p>
                             </div>
-                            <div className="tag ok" style={{ fontWeight: 800 }}>⚡ Gemini 1.5 Flash</div>
+                            <div className="tag ok" style={{ fontWeight: 800 }}>⚡ Gemini 2.0 Flash</div>
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px' }}>

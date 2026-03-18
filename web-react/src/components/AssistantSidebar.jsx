@@ -69,7 +69,7 @@ export default function AssistantSidebar() {
                 onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
                 onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
             >
-                {isOpen ? '✕' : '🧠'}
+                {isOpen ? '✕' : '📸'}
             </button>
 
             {/* Sidebar Panel */}
@@ -93,7 +93,7 @@ export default function AssistantSidebar() {
                 <div style={{ padding: '30px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
                         <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900 }}>Your Assistant</h3>
-                        <div className="muted extra-small" style={{ letterSpacing: '0.05em', fontWeight: 800 }}>POWERED BY GEMINI 1.5 FLASH</div>
+                        <div className="muted extra-small" style={{ letterSpacing: '0.05em', fontWeight: 800 }}>POWERED BY GEMINI 2.0 FLASH</div>
                     </div>
                     <button onClick={() => setIsOpen(false)} style={{ background: 'none', border: 'none', color: 'white', opacity: 0.5, cursor: 'pointer', fontSize: '20px' }}>✕</button>
                 </div>
