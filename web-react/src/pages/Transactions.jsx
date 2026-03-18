@@ -88,6 +88,12 @@ export default function Transactions() {
         'manual': '➕ Manual'
     };
 
+    const vendorOptions = useMemo(() => {
+        const set = new Set();
+        scopedRows.forEach(r => { if (r.vendor) set.add(r.vendor); });
+        return [...set].sort();
+    }, [scopedRows]);
+
     const filtered = useMemo(() => {
         let rows = [...expenses];
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useActivityPulse } from "./hooks/useActivityPulse";
 import { BrowserRouter as Router, Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './components/AuthContext';
+import { ModalProvider } from './components/ModalContext';
 import Dashboard from './pages/Dashboard';
 import Transactions from './pages/Transactions';
 import Tax from './pages/Tax';
@@ -315,9 +316,11 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <AppContent />
-      </Router>
+      <ModalProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </ModalProvider>
     </AuthProvider>
   );
 }
