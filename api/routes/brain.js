@@ -63,14 +63,26 @@ router.post("/repair-ledger", async (req, res) => {
 router.post("/ask", async (req, res) => {
     try {
         const { prompt, context } = req.body;
-        const { data: settings } = await req.sb
+        
+        // Detailed logging for debugging
+        console.log(`[AI Brain] Processing request for User: ${req.user.id} on page: ${context.page}`);
+
+        const { data: settings, error: settingsError } = await req.sb
             .from("settings")
             .select("*")
             .eq("user_id", req.user.id)
             .maybeSingle();
         
+        if (settingsError) {
+            console.error("[AI Brain] Settings DB Error:", settingsError);
+            return res.status(500).json({ error: "Database Link Error" });
+        }
+
         const apiKey = settings?.gemini_api_key;
-        if (!apiKey) return res.status(400).json({ error: "No API Key" });
+        if (!apiKey) {
+            console.warn(`[AI Brain] No API Key found in settings for user: ${req.user.id}`);
+            return res.status(400).json({ error: "No API Key found. Please set your key in the Control Center." });
+        }
 
         const { GoogleGenerativeAI } = require("@google/generative-ai");
         const genAI = new GoogleGenerativeAI(apiKey);
@@ -81,8 +93,9 @@ router.post("/ask", async (req, res) => {
             You are "Your Assistant", an elite financial AI for professional photographers using Studio Tracker.
             Business context: ${context.business || 'Private Photography Studio'}.
             Current view: ${context.page}.
-            The user is a creative entrepreneur. Your tone should be encouraging, analytical, and "first-class advisor". 
-            Do not make up numbers, but guide them on how to find them in the app.
+            The user is a creative entrepreneur. Your tone should be encouraging, analytical, and providing first-class advice. 
+            Keep answers concise but high-value.
+            Do not make up financial numbers; instead, interpret the trends they see on screen.
             If they ask about taxes, remind them you are an AI, not a CPA.
             If they ask about Gear, remind them to check their Assets tab.
         `;
@@ -93,8 +106,13 @@ router.post("/ask", async (req, res) => {
 
         res.json({ ok: true, answer: text });
     } catch (e) {
-        console.error("Brain Ask Error:", e);
-        res.status(500).json({ error: "The Brain is currently sleeping. Try again in a moment." });
+        console.error("[AI Brain] Critical Execution Error:", e);
+        const isQuota = e.message?.toLowerCase().includes("quota") || e.status === 429;
+        res.status(500).json({ 
+            error: isQuota 
+                ? "AI Rate Limit Reached. Try again in 60 seconds." 
+                : "The Brain is currently sleeping. Try again in a moment." 
+        });
     }
 });
 

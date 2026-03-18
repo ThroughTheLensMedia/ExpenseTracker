@@ -382,9 +382,11 @@ export default function Backup() {
                     <button className={`pill ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>👤 Business Profile</button>
                     <button className={`pill ${activeTab === 'automation' ? 'active' : ''}`} onClick={() => setActiveTab('automation')}>⚡ Automation</button>
                     <button className={`pill ${activeTab === 'intelligence' ? 'active' : ''}`} onClick={() => setActiveTab('intelligence')}>🧠 AI Intelligence</button>
-                    <button className={`pill ${activeTab === 'infrastructure' ? 'active' : ''}`} onClick={() => setActiveTab('infrastructure')}>🔒 Infrastructure</button>
+                    {(user?.email === 'joshua.deuermeyer@gmail.com' || user?.email === 'info@throughthelens.media') && (
+                        <button className={`pill ${activeTab === 'infrastructure' ? 'active' : ''}`} onClick={() => setActiveTab('infrastructure')}>🔒 Infrastructure</button>
+                    )}
                     <button className={`pill ${activeTab === 'help' ? 'active' : ''}`} onClick={() => setActiveTab('help')}>❓ Documentation</button>
-                    {user?.email === 'joshua.deuermeyer@gmail.com' && (
+                    {(user?.email === 'joshua.deuermeyer@gmail.com' || user?.email === 'info@throughthelens.media') && (
                         <button className={`pill ${activeTab === 'saas' ? 'active' : ''}`} onClick={() => setActiveTab('saas')}>💎 SaaS Studio Mgmt</button>
                     )}
                 </nav>
@@ -1105,7 +1107,7 @@ export default function Backup() {
                                     <span style={{ padding: '4px 8px', background: 'rgba(99, 102, 241, 0.2)', color: '#a5b4fc', borderRadius: '4px', fontSize: '9px', fontWeight: 900 }}>AI BRAIN</span>
                                     <span style={{ fontSize: '13px', fontWeight: 800 }}>Predictive forensics and automated tax strategy engine active.</span>
                                 </div>
-                                    <div style={{ fontSize: '12px', opacity: 0.5, fontWeight: 900 }}>3.9.3-SAAS</div>
+                                    <div style={{ fontSize: '12px', opacity: 0.5, fontWeight: 900 }}>4.0.0-PRO</div>
                             </div>
                         </div>
                     )}
@@ -1184,6 +1186,20 @@ export default function Backup() {
                         
                         <div style={{ flex: 1, overflowY: 'auto', paddingRight: '20px' }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '35px' }}>
+                                <section>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>
+                                        <div style={{ fontWeight: 950, fontSize: '1.4rem', color: 'var(--accent)' }}>4.0.0-PRO</div>
+                                        <div style={{ fontWeight: 800, opacity: 0.6, fontSize: '12px' }}>MARCH 18, 2026</div>
+                                    </div>
+                                    <ul style={{ display: 'flex', flexDirection: 'column', gap: '10px', paddingLeft: '15px' }}>
+                                        <li style={{ fontSize: '14px', lineHeight: '1.5' }}><strong>Your Assistant:</strong> Initial release of the floating AI assistant for real-time financial consultation.</li>
+                                        <li style={{ fontSize: '14px', lineHeight: '1.5' }}><strong>Gemini 1.5 Flash:</strong> Migrated whole-studio intelligence to the latest Google Flash model for 2x speed.</li>
+                                        <li style={{ fontSize: '14px', lineHeight: '1.5' }}><strong>Privacy Lockdown:</strong> Implemented Row Level Security (RLS) for AI settings; bringing "your own key" now isolates data.</li>
+                                        <li style={{ fontSize: '14px', lineHeight: '1.5' }}><strong>Dashboard Grid:</strong> Precision calibration for Intelligence cards (9-card desktop grid).</li>
+                                        <li style={{ fontSize: '14px', lineHeight: '1.5' }}><strong>Smart Recurring:</strong> Improved detection patterns for operational burn that ignores one-off equipment transfers.</li>
+                                    </ul>
+                                </section>
+
                                 <section>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>
                                         <div style={{ fontWeight: 950, fontSize: '1.4rem', color: 'var(--accent)' }}>3.9.3-SAAS</div>

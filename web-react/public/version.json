@@ -1,4 +1,6 @@
 {
-  "version": "3.9.3",
-  "build_date": "2026-03-16"
+  "version": "4.0.0",
+  "release_date": "2026-03-18",
+  "codename": "Intelligence Hub",
+  "notes": "v4.0.0 released with Your Assistant AI integrated."
 }

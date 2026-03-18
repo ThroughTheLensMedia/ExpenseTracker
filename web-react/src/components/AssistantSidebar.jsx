@@ -35,7 +35,7 @@ export default function AssistantSidebar() {
             });
             setMessages(prev => [...prev, { role: 'assistant', text: res.answer }]);
         } catch (err) {
-            setMessages(prev => [...prev, { role: 'assistant', text: "I'm having trouble connecting to my brain right now. Please ensure your Gemini API key is set in the Control Center." }]);
+            setMessages(prev => [...prev, { role: 'assistant', text: `I'm having trouble: ${err.message}` }]);
         } finally {
             setLoading(false);
         }
