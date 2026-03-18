@@ -940,18 +940,37 @@ export default function Backup() {
                                 <div className="muted" style={{ fontSize: '14px' }}>
                                     The "Brain" architecture is built for infinite scale—whether for 1 user or 10,000. 
                                     By using a "Bring Your Own Key" model, every studio owner has their own private intelligence instance. 
-                                    This ensures your financial data is never trained on by others and your processing costs are zero for the platform.
+                                    This ensures your financial data is never trained on by others, your processing costs are zero for the platform, and your "First-Class" advisor analyzes ONLY your specific studio data.
                                 </div>
                             </div>
-                            <div style={{ background: 'rgba(56, 189, 248, 0.05)', padding: '20px', borderRadius: '12px', border: '1px solid rgba(56, 189, 248, 0.1)' }}>
-                                <div style={{ fontWeight: 800, color: '#38bdf8', marginBottom: '12px' }}>🚀 4-Step AI Setup Guide</div>
-                                <ol className="muted" style={{ fontSize: '14px', paddingLeft: '20px', lineHeight: '1.8' }}>
-                                    <li><strong>Get a Key:</strong> Visit the <a href="https://aistudio.google.com/app/apikey" target="_blank" style={{ color: 'var(--accent)' }}>Google AI Studio</a> and generate a free API Key.</li>
-                                    <li><strong>Provision DB (Admin):</strong> You as the studio owner run the SQL snippet once in Supabase. It is then live for <strong>all</strong> users.</li>
-                                    <li><strong>Connect (User):</strong> Every user simply pastes their own key into the <strong>AI Intelligence</strong> tab and hits <strong>Save Key</strong>.</li>
-                                    <li><strong>Repair:</strong> Use the <strong>Retroactive Ledger Repair</strong> to scrub your history and clean up "Rocket Money" entries.</li>
-                                </ol>
+
+                            <div style={{ background: 'rgba(56, 189, 248, 0.05)', padding: '25px', borderRadius: '16px', border: '1px solid rgba(56, 189, 248, 0.2)' }}>
+                                <div style={{ fontWeight: 950, color: '#38bdf8', marginBottom: '15px', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <span style={{ fontSize: '24px' }}>🚀</span> STUDIO INTELLIGENCE: 4-STEP SETUP
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+                                    <div style={{ fontSize: '13px' }}>
+                                        <div style={{ fontWeight: 900, color: 'white', marginBottom: '4px' }}>1. PROVISION KEY</div>
+                                        <div className="muted" style={{ fontSize: '12px' }}>Visit <a href="https://aistudio.google.com/app/apikey" target="_blank" style={{ color: 'var(--accent)' }}>Google AI Studio</a> and generate a free API Key.</div>
+                                    </div>
+                                    <div style={{ fontSize: '13px' }}>
+                                        <div style={{ fontWeight: 900, color: 'white', marginBottom: '4px' }}>2. CONNECT BRAIN</div>
+                                        <div className="muted" style={{ fontSize: '12px' }}>Paste your key into the <strong>AI Intelligence</strong> tab and hit <strong>Save API Key</strong>.</div>
+                                    </div>
+                                    <div style={{ fontSize: '13px' }}>
+                                        <div style={{ fontWeight: 900, color: 'white', marginBottom: '4px' }}>3. SYSTEM WARMUP</div>
+                                        <div className="muted" style={{ fontSize: '12px' }}>Use the <strong>Retroactive Ledger Repair</strong> to scrub history and clean up old "Rocket Money" entries.</div>
+                                    </div>
+                                    <div style={{ fontSize: '13px' }}>
+                                        <div style={{ fontWeight: 900, color: 'white', marginBottom: '4px' }}>4. CHAT & ANALYZE</div>
+                                        <div className="muted" style={{ fontSize: '12px' }}>Open "Your Assistant" (📸 icon) to ask about your largest purchases or tax burn.</div>
+                                    </div>
+                                </div>
+                                <div className="tag extra-small warning" style={{ marginTop: '20px', background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', fontSize: '10px', textAlign: 'center', width: '100%' }}>
+                                    ⚠️ ARCHITECTURE SCALE: Works for 1 to 10,000+ users. Every photographer "Brings Their Own Brain".
+                                </div>
                             </div>
+
                             <div>
                                 <div style={{ fontWeight: 800, color: 'white', marginBottom: '8px' }}>Can I export my data if I leave?</div>
                                 <div className="muted" style={{ fontSize: '14px' }}>Yes. You can download a "Master Business Archive" (.json) at any time from the Infrastructure tab to keep your own backups.</div>

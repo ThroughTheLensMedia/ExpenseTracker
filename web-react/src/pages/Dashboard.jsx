@@ -58,9 +58,9 @@ export default function Dashboard() {
         'negotiating': 0.6 
     });
 
-    // PWA Mobile States
     const [snapLoading, setSnapLoading] = useState(false);
     const [snapSuccess, setSnapSuccess] = useState(false);
+    const [showAIWelcome, setShowAIWelcome] = useState(false);
     const [importReminderDays, setImportReminderDays] = useState(() => Number(localStorage.getItem('studio_import_reminder') || 7));
     const [showProjections, setShowProjections] = useState(true);
     const [chartSettingsOpen, setChartSettingsOpen] = useState(false);
@@ -127,6 +127,19 @@ export default function Dashboard() {
     useEffect(() => {
         localStorage.setItem('studio_import_reminder', importReminderDays);
     }, [importReminderDays]);
+
+    useEffect(() => {
+        loadData();
+        const hasSeenAI = localStorage.getItem('has_seen_ai_welcome_v4');
+        if (!hasSeenAI) {
+            setShowAIWelcome(true);
+        }
+    }, []);
+
+    const dismissAIWelcome = () => {
+        localStorage.setItem('has_seen_ai_welcome_v4', 'true');
+        setShowAIWelcome(false);
+    };
 
     useEffect(() => {
         loadData(selectedYear);
@@ -572,6 +585,50 @@ export default function Dashboard() {
 
     return (
         <section style={{ display: 'flex', flexDirection: 'column', gap: '20px', paddingBottom: '100px' }}>
+            {/* 🧠 AI Intelligence Welcome Modal */}
+            {showAIWelcome && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(20px)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+                    <div className="card glass glow-blue" style={{ width: '100%', maxWidth: '550px', padding: '50px', position: 'relative', textAlign: 'center' }}>
+                        <div style={{ fontSize: '4rem', marginBottom: '25px' }}>📸</div>
+                        <h2 style={{ fontSize: '2.4rem', fontWeight: 950, marginBottom: '15px', letterSpacing: '-0.03em' }}>Welcome to v4.0 PRO</h2>
+                        <h3 style={{ color: 'var(--accent)', fontWeight: 800, marginBottom: '25px', fontSize: '1.2rem' }}>"EVERYONE BRINGS THEIR OWN BRAIN"</h3>
+                        
+                        <div style={{ textAlign: 'left', background: 'rgba(255,255,255,0.02)', padding: '25px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '30px' }}>
+                            <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
+                                <div style={{ fontSize: '20px' }}>🔐</div>
+                                <div>
+                                    <div style={{ fontWeight: 900, fontSize: '14px', marginBottom: '4px' }}>Isolated Intelligence</div>
+                                    <div className="muted" style={{ fontSize: '13px' }}>Your financial data is protected by Row Level Security and never shared or trained on by others.</div>
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
+                                <div style={{ fontSize: '20px' }}>📏</div>
+                                <div>
+                                    <div style={{ fontWeight: 900, fontSize: '14px', marginBottom: '4px' }}>Infinite Scale</div>
+                                    <div className="muted" style={{ fontSize: '13px' }}>Whether 1 user or 10,000, our architecture scales instantly because every studio brings its own API key.</div>
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: '15px' }}>
+                                <div style={{ fontSize: '20px' }}>💎</div>
+                                <div>
+                                    <div style={{ fontWeight: 900, fontSize: '14px', marginBottom: '4px' }}>First-Class Experience</div>
+                                    <div className="muted" style={{ fontSize: '13px' }}>Your Assistant analyzes your specific business metrics for elite advice.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '15px' }}>
+                            <button className="btn primary glow-blue" onClick={() => { dismissAIWelcome(); navigate('/StudioControlCenter?tab=intelligence'); }} style={{ flex: 2, padding: '18px', fontWeight: 950 }}>
+                                CONNECT YOUR BRAIN
+                            </button>
+                            <button className="btn secondary" onClick={dismissAIWelcome} style={{ flex: 1, padding: '18px', fontWeight: 900, opacity: 0.6 }}>
+                                LATER
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* ───── Executive Header ───── */}
             <div className="card glass glow-blue" style={{ padding: '40px', border: 'none', margin: 0, position: 'relative', overflow: 'hidden' }}>
                 <div style={{ position: 'relative', zIndex: 1 }}>
