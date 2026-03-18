@@ -529,9 +529,9 @@ export default function Backup() {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
                             <div>
                                 <h2 style={{ fontSize: '2rem', margin: 0 }}>Brain Connectivity & AI Engine</h2>
-                                <p className="muted" style={{ fontSize: '16px', marginTop: '6px' }}>Power your studio with Google Gemini 2.0 Flash intelligence.</p>
+                                <p className="muted" style={{ fontSize: '16px', marginTop: '6px' }}>Power your studio with Google Gemini 2.5 Flash intelligence.</p>
                             </div>
-                            <div className="tag ok" style={{ fontWeight: 800 }}>⚡ Gemini 2.0 Flash</div>
+                            <div className="tag ok" style={{ fontWeight: 800 }}>⚡ Gemini 2.5 Flash</div>
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px' }}>
@@ -553,6 +553,17 @@ export default function Backup() {
                                 <div className="muted extra-small" style={{ marginTop: '10px' }}>
                                     Your key is stored securely in your private studio database and is only used to process your transactions.
                                 </div>
+                                <div style={{ marginTop: '20px', display: 'flex', gap: '15px' }}>
+                                    <a href="https://aistudio.google.com/app/apikey" target="_blank" className="btn sm secondary" style={{ fontSize: '11px', fontWeight: 900 }}>
+                                        🗝️ ROTATE KEY
+                                    </a>
+                                    <a href="https://ai.google.dev/rate-limit" target="_blank" className="btn sm secondary" style={{ fontSize: '11px', fontWeight: 900 }}>
+                                        📊 MONITOR QUOTA
+                                    </a>
+                                </div>
+                                <p className="muted small" style={{ marginTop: '15px', color: '#f59e0b', fontSize: '11px', lineHeight: '1.5' }}>
+                                    <strong>TIP:</strong> If you see a "Rate Limit" or "Limit: 0" error, ensure your Google Cloud project has enabled the <strong>Gemini API</strong> and that your region supports the Free Tier. Linking a billing account (even if not used) often resolves "Limit: 0" issues.
+                                </p>
                             </div>
 
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginTop: '10px' }}>
@@ -605,7 +616,7 @@ export default function Backup() {
                                     Have messy data from older imports? This tool scans your entire history and uses AI to fix incorrect vendor names and missing accounts.
                                 </p>
                                 <div className="tag extra-small warning" style={{ marginTop: '12px', background: 'rgba(245,158,11,0.1)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.2)' }}>
-                                    ⚠️ Runs through Gemini 1.5 Flash in batches. May take 10-20 seconds.
+                                    ⚠️ Runs through Gemini 2.0 Flash in batches. May take 10-20 seconds.
                                 </div>
                             </div>
                             <button 
@@ -628,7 +639,7 @@ export default function Backup() {
                                 disabled={loading}
                                 style={{ padding: '16px 40px', fontWeight: 950 }}
                             >
-                                {loading ? '🧠 BRAIN SCANNING...' : '🧼 START RETROACTIVE REPAIR'}
+                                {loading ? '📸 BRAIN SCANNING...' : '🧼 START RETROACTIVE REPAIR'}
                             </button>
                         </div>
                     </div>
@@ -1107,7 +1118,7 @@ export default function Backup() {
                                     <span style={{ padding: '4px 8px', background: 'rgba(99, 102, 241, 0.2)', color: '#a5b4fc', borderRadius: '4px', fontSize: '9px', fontWeight: 900 }}>AI BRAIN</span>
                                     <span style={{ fontSize: '13px', fontWeight: 800 }}>Predictive forensics and automated tax strategy engine active.</span>
                                 </div>
-                                    <div style={{ fontSize: '12px', opacity: 0.5, fontWeight: 900 }}>4.0.0-PRO</div>
+                                    <div style={{ fontSize: '12px', opacity: 0.5, fontWeight: 900 }}>4.0.1-PRO</div>
                             </div>
                         </div>
                     )}

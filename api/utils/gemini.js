@@ -1,18 +1,17 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 /**
- * AI Brain Core - Google Gemini 2.0 Flash Integration
+ * AI Brain Core - Google Gemini 2.5 Flash Integration
  * 
- * Why 2.0 Flash? 
+ * Why 2.5 Flash? 
  * It is the industry standard for high-speed, cost-effective 
- * text processing in 2026. It has a massive token context window, 
- * making it perfect for scanning thousands of transactions at once.
+ * text processing in 2026.
  */
 
 async function getGeminiModel(apiKey) {
     if (!apiKey) throw new Error("Gemini API Key is required to power the AI Brain.");
     const genAI = new GoogleGenerativeAI(apiKey);
-    return genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    return genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 }
 
 /**
