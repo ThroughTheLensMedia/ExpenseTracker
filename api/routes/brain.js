@@ -108,24 +108,28 @@ router.post("/ask", async (req, res) => {
         
         const totalYearlySum = allSpent?.reduce((acc, curr) => acc + (curr.amount || 0), 0) || 0;
 
-        const dataContext = `
-            REAL STUDIO DATA FOR ${currentYear}:
-            - Total Annual Studio Burn: $${totalYearlySum.toFixed(2)}
-            - Your Largest Transactions:
-              ${topPurchases?.slice(0, 5).map(p => `- ${p.vendor}: $${p.amount} on ${p.date}`).join("\n")}
-        `;
+        // --- STEP 2: Privacy Check (Only Inject Data if User is Authorized Admin) ---
+        const isAdmin = req.user.email === 'joshua.deuermeyer@gmail.com' || req.user.email === 'info@throughthelens.media';
+        
+        let dataContext = "";
+        if (isAdmin) {
+            dataContext = `
+                REAL STUDIO DATA FOR ${currentYear}:
+                - Total Annual Studio Burn: $${totalYearlySum.toFixed(2)}
+                - Your Largest Transactions:
+                  ${topPurchases?.slice(0, 5).map(p => `- ${p.vendor}: $${p.amount} on ${p.date}`).join("\n")}
+            `;
+        }
 
         // Build context-aware prompt
         const systemPrompt = `
             You are "Your Assistant", an elite financial AI for Through The Lens Media and other professional photographers.
             Current view: ${context.page}.
             
-            REAL-TIME ACCURATE DATA:
-            ${dataContext}
+            ${isAdmin ? `REAL-TIME ACCURATE DATA:\n${dataContext}` : "Provide general first-class financial advice based on the page context."}
 
             The user is a creative entrepreneur. Your tone should be encouraging, analytical, and providing first-class advice. 
-            When they ask about "largest purchase" or "total spend", answer using the numbers provided above. 
-            If the question asks for something more specific (e.g. rent), tell them to check the "Expenses" tab filters.
+            ${isAdmin ? 'When they ask about "largest purchase" or "total spend", answer using the numbers provided above.' : 'Advise them on general trends and best practices for their studio.'}
             Keep answers concise and professional.
         `;
 
