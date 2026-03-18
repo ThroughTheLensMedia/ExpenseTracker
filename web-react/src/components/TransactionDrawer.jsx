@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { apiPatch, apiPost } from '../api';
+import { apiPatch, apiPost, apiUpload } from '../api';
 import CategorySelect from './CategorySelect.jsx';
 import { ALL_CATEGORIES } from '../constants/categories.js';
 
@@ -14,6 +14,7 @@ export default function TransactionDrawer({ transaction, onClose, onSave }) {
     const [notes, setNotes] = useState('');
     const [receiptLink, setReceiptLink] = useState('');
     const [receiptFile, setReceiptFile] = useState(null);
+    const [source, setSource] = useState('manual');
     const [msg, setMsg] = useState('');
 
     useEffect(() => {
@@ -27,6 +28,7 @@ export default function TransactionDrawer({ transaction, onClose, onSave }) {
             setDeduct(!!transaction.tax_deductible);
             setNotes(transaction.notes || '');
             setReceiptLink(transaction.receipt_link || '');
+            setSource(transaction.source || 'manual');
             setMsg('');
         }
     }, [transaction]);
@@ -42,6 +44,7 @@ export default function TransactionDrawer({ transaction, onClose, onSave }) {
                 tax_bucket: taxBucket,
                 business_use_pct: Number(bizPct),
                 notes,
+                source,
                 receipt_link: receiptLink || null,
             };
 
@@ -69,17 +72,9 @@ export default function TransactionDrawer({ transaction, onClose, onSave }) {
         try {
             const fd = new FormData();
             fd.append("file", receiptFile);
-            const r = await fetch(`/api/receipts/expenses/${transaction.id}`, {
-                method: "POST",
-                credentials: "include",
-                body: fd
-            });
-            if (!r.ok) {
-                const j = await r.json().catch(() => ({}));
-                throw new Error((j && j.error) ? j.error : `${r.status} ${r.statusText}`);
-            }
-            const updated = await r.json();
+            const updated = await apiUpload(`/receipts/expenses/${transaction.id}`, fd);
             setMsg("Receipt uploaded.");
+            setReceiptLink(updated.receipt_link); // Sync local state immediately
             if (onSave) onSave(updated);
         } catch (err) {
             setMsg(`Upload failed: ${err.message}`);
@@ -208,6 +203,25 @@ export default function TransactionDrawer({ transaction, onClose, onSave }) {
 
                     <div className="row" style={{ marginTop: '10px' }}>
                         <div>
+                            <small className="muted">Account / Source</small>
+                            <select value={source} onChange={e => setSource(e.target.value)} style={{ width: '100%', padding: '8px' }}>
+                                <option value="manual">➕ Manual Entry</option>
+                                <option value="rocketmoney">🟣 Rocket Money</option>
+                                <option value="chase">🔵 Chase Bank</option>
+                                <option value="usbank">🔵 US Bank</option>
+                                <option value="bankofamerica">🔴 Bank of America</option>
+                                <option value="wellsfargo">🟡 Wells Fargo</option>
+                                <option value="applecard">⬛ Apple Card</option>
+                                <option value="capitalone">🔴 Capital One</option>
+                                <option value="usaa">🦅 USAA</option>
+                                <option value="navyfcu">⚓ Navy Federal</option>
+                                <option value="wise">🌍 Wise</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="row" style={{ marginTop: '10px' }}>
+                        <div>
                             <small className="muted">Upload local receipt</small>
                             <input type="file" onChange={e => setReceiptFile(e.target.files[0])} />
                             <div className="muted" style={{ marginTop: '6px' }}>If uploaded, the tracker auto-links it to this transaction.</div>
@@ -216,7 +230,9 @@ export default function TransactionDrawer({ transaction, onClose, onSave }) {
 
                     <div className="controls" style={{ marginTop: '12px' }}>
                         <button className="btn" onClick={handleSave}>Save</button>
-                        <button className="btn secondary" onClick={handleUpload}>Upload receipt</button>
+                        {transaction.id && (
+                            <button className="btn secondary" onClick={handleUpload}>Upload receipt</button>
+                        )}
                     </div>
 
                     <div className="muted" style={{ marginTop: '10px', minHeight: '18px' }}>{msg}</div>

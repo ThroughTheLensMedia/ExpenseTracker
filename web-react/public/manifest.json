@@ -1,7 +1,7 @@
 {
-  "name": "TTL Studio Admin",
-  "short_name": "TTL Admin",
-  "description": "Through The Lens Studio Financial Command Center",
+  "name": "Studio Tracker",
+  "short_name": "Studio Tracker",
+  "description": "Premier Financial Intelligence for Creative Studios",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0b1220",
@@ -9,14 +9,9 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/vite.svg",
-      "sizes": "192x192",
-      "type": "image/svg+xml"
-    },
-    {
-      "src": "/vite.svg",
+      "src": "/icon.png",
       "sizes": "512x512",
-      "type": "image/svg+xml"
+      "type": "image/png"
     }
   ],
   "capture_links": "existing-client-navigate"

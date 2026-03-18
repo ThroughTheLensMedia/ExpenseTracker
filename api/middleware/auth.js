@@ -8,6 +8,19 @@ async function authMiddleware(req, res, next) {
   }
 
   const token = authHeader.split(" ")[1];
+  const isLocalDev = process.env.NODE_ENV !== 'production' || !process.env.VERCEL;
+
+  // 1. Local Developer Bypass
+  if (isLocalDev && token === "mock-session") {
+    req.user = { 
+        id: "f129a00b-333e-4d43-98b7-08ca1161d765", 
+        email: "joshua.deuermeyer@gmail.com", 
+        user_metadata: { display_name: "Developer Mode" } 
+    };
+    req.sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+    return next();
+  }
+
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const anonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 

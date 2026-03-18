@@ -64,9 +64,10 @@ router.post("/redeem", async (req, res) => {
         const { data: updatedSub, error: subError } = await req.sb
             .from('user_subscriptions')
             .update({
-                plan_type: 'beta_tester',
+                plan_type: betaCode.plan_type || 'beta_tester',
                 status: 'active',
                 email: req.user.email,
+                display_name: betaCode.assigned_to_name || null,
                 expires_at: newExpiry.toISOString(),
                 beta_code_used: betaCode.code,
                 updated_at: new Date().toISOString()

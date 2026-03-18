@@ -1,5 +1,5 @@
 /**
- * Elite Mailer Bridge
+ * Studio Tracker Mailer Bridge
  * Connects the Expense Tracker to external transactional email services.
  * 
  * RECOMMENDED: Use Resend (resend.com) for high-delivery studio emails.
@@ -29,7 +29,7 @@ async function sendInvoiceEmail({ to, subject, body, attachments }) {
     }
 
     try {
-        const fromEmail = process.env.RESEND_FROM || 'Studio Tracker <billing@throughthelens.media>';
+        const fromEmail = process.env.RESEND_FROM || 'Studio Tracker <studiotracker@throughthelens.media>';
         
         const payload = {
             from: fromEmail,
@@ -60,7 +60,7 @@ async function sendInviteEmail({ to, name, code }) {
     if (!resend) return { success: false, error: "Mailer service not configured" };
 
     try {
-        const fromEmail = process.env.RESEND_FROM || 'Studio <billing@throughthelens.media>';
+        const fromEmail = process.env.RESEND_FROM || 'Studio <studiotracker@throughthelens.media>';
         const signupUrl = `${process.env.APP_URL || 'https://app.throughthelens.media'}/login?code=${code}&email=${encodeURIComponent(to)}`;
 
         const html = `
@@ -73,7 +73,7 @@ async function sendInviteEmail({ to, name, code }) {
                 <p style="font-size: 16px; line-height: 1.6; color: #94a3b8;">Hello ${name || 'Photographer'},</p>
                 
                 <p style="font-size: 16px; line-height: 1.6; color: #94a3b8;">
-                    You've been invited to join the <strong>Elite Studio Tracker</strong>. 
+                    You've been invited to join the <strong>Studio Tracker</strong>. 
                     Manage your transactions, track gear depreciation, and automate your tax workflow with ease.
                 </p>
 
@@ -95,7 +95,7 @@ async function sendInviteEmail({ to, name, code }) {
         const data = await resend.emails.send({
             from: fromEmail,
             to: [to],
-            subject: 'Invite: Welcome to the Elite Studio Tracker',
+            subject: 'Invite: Welcome to the Studio Tracker',
             html: html
         });
 
@@ -112,7 +112,7 @@ async function sendDailyReportEmail({ to, activityRows }) {
     if (!resend) return { success: false, error: "Mailer service not configured" };
 
     try {
-        const fromEmail = process.env.RESEND_FROM || 'Studio Stats <billing@throughthelens.media>';
+        const fromEmail = process.env.RESEND_FROM || 'Studio Stats <studiotracker@throughthelens.media>';
         const dateStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
         const rowsHtml = activityRows.map(r => `
@@ -146,7 +146,7 @@ async function sendDailyReportEmail({ to, activityRows }) {
                 </div>
 
                 <p style="font-size: 12px; color: #475569; text-align: center; margin-top: 30px;">
-                    This is an automated production report from the Elite Studio Tracker.
+                    This is an automated production report from the Studio Tracker.
                 </p>
             </div>
         `;
@@ -165,4 +165,146 @@ async function sendDailyReportEmail({ to, activityRows }) {
     }
 }
 
-module.exports = { sendInvoiceEmail, sendInviteEmail, sendDailyReportEmail };
+async function sendPromoEmail({ to, subject }) {
+    console.log(`[MAILER] Sending Promo Email to ${to}...`);
+    const resend = getResend();
+    if (!resend) return { success: false, error: "Mailer service not configured" };
+
+    try {
+        const fromEmail = process.env.RESEND_FROM || 'Studio Tracker <studiotracker@throughthelens.media>';
+        const subjectLine = subject || '📸 Level Up Your Photography Business with Studio Tracker';
+
+        const html = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #0b1220; color: #e9eefc; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
+                    .header { text-align: center; margin-bottom: 40px; }
+                    .logo { font-size: 28px; font-weight: 950; letter-spacing: -0.04em; color: #fff; text-transform: uppercase; }
+                    .hero { background: linear-gradient(135deg, #1f4fd6 0%, #2f6bff 100%); border-radius: 24px; padding: 40px; text-align: center; margin-bottom: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+                    .hero h1 { font-size: 32px; font-weight: 900; margin: 0 0 16px 0; color: #fff; line-height: 1.1; }
+                    .hero p { font-size: 18px; opacity: 0.9; margin: 0 0 24px 0; line-height: 1.5; }
+                    .btn { display: inline-block; background: #fff; color: #1f4fd6; padding: 16px 32px; border-radius: 12px; font-weight: 800; text-decoration: none; font-size: 16px; transition: transform 0.2s; }
+                    .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 40px; }
+                    .feature-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 18px; padding: 24px; }
+                    .feature-card h3 { font-size: 16px; font-weight: 800; margin: 0 0 8px 0; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.05em; }
+                    .feature-card p { font-size: 14px; opacity: 0.7; margin: 0; line-height: 1.5; }
+                    .testimonial { border-left: 4px solid #f7b955; padding-left: 20px; margin: 40px 0; font-style: italic; opacity: 0.8; }
+                    .footer { text-align: center; font-size: 12px; opacity: 0.4; margin-top: 60px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 30px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <div class="logo">Through The Lens <span style="color: #2f6bff;">Media</span></div>
+                    </div>
+                    
+                    <div class="hero">
+                        <h1>Stop Tracking.<br/>Start Operating.</h1>
+                        <p>The elite financial command center designed exclusively for photography studios.</p>
+                        <a href="https://throughthelens.media" class="btn">Experience Studio Tracker</a>
+                    </div>
+                    
+                    <div style="text-align: center; margin-bottom: 40px;">
+                        <h2 style="font-size: 24px; font-weight: 800;">Built for the High-End Pro</h2>
+                        <p style="opacity: 0.6;">One dashboard to manage your entire business lifecycle.</p>
+                    </div>
+
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>Lead Pipeline</h3>
+                            <p>Track leads from inquiry to booking with our visual CRM console.</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3>Gear Portfolio</h3>
+                            <p>Automated depreciation tracking for your entire photography kit.</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3>Cash Flow</h3>
+                            <p>Real-time revenue and expense analytics with PWA mobile snap.</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3>Smart Tax</h3>
+                            <p>Automated classification rules that save you hours every month.</p>
+                        </div>
+                    </div>
+
+                    <div class="testimonial">
+                        "Studio Tracker transformed how I view my business profitability. It's not just an expense tracker; it's a growth engine."
+                    </div>
+                    
+                    <div style="background: rgba(47, 107, 255, 0.1); border-radius: 18px; padding: 30px; text-align: center;">
+                        <h3 style="margin-top: 0;">Special Beta Access</h3>
+                        <p style="font-size: 14px; opacity: 0.8;">Join the inner circle of photographers streamlining their operations.</p>
+                        <a href="https://throughthelens.media/signup" style="color: #38bdf8; font-weight: 800; text-decoration: none;">Request Invitation &rarr;</a>
+                    </div>
+
+                    <div class="footer">
+                        &copy; 2026 Through The Lens Media. All rights reserved.<br/>
+                        Designed for elite photographers.
+                    </div>
+                </div>
+            </body>
+            </html>
+        `;
+
+        const data = await resend.emails.send({
+            from: fromEmail,
+            to: [to],
+            subject: subjectLine,
+            html: html
+        });
+
+        return { success: true, data };
+    } catch (error) {
+        console.error("[MAILER] Promo Dispatch failed:", error);
+        return { success: false, error: error.message };
+    }
+}
+
+async function sendContactRelayEmail({ senderName, senderEmail, messageContent }) {
+    console.log(`[MAILER] Relaying inquiry from ${senderEmail} to Admin...`);
+    const resend = getResend();
+    if (!resend) return { success: false, error: "Mailer service not configured" };
+
+    try {
+        const fromEmail = 'Studio Tracker Inbound <studiotracker@throughthelens.media>';
+        const adminEmail = 'joshua.deuermeyer@gmail.com';
+
+        const html = `
+            <div style="background-color: #0f172a; color: white; padding: 30px; font-family: sans-serif; border-radius: 12px; max-width: 600px;">
+                <h2 style="color: #2f6bff; margin-top: 0;">New Inquiry from Facebook / Studio Tracker</h2>
+                <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <p><strong>From:</strong> ${senderName || 'Anonymous'} (${senderEmail})</p>
+                    <p style="white-space: pre-wrap; line-height: 1.6; color: #e9eefc;">${messageContent}</p>
+                </div>
+                <div style="font-size: 12px; color: #64748b;">
+                    This inquiry was relayed via Resend from studiotracker@throughthelens.media
+                </div>
+            </div>
+        `;
+
+        const data = await resend.emails.send({
+            from: fromEmail,
+            to: [adminEmail],
+            reply_to: senderEmail,
+            subject: `📬 New Customer Inquiry: ${senderName || 'Inquiry'}`,
+            html: html
+        });
+
+        return { success: true, data };
+    } catch (error) {
+        console.error("[MAILER] Relay Dispatch failed:", error);
+        return { success: false, error: error.message };
+    }
+}
+
+module.exports = { 
+    sendInvoiceEmail, 
+    sendInviteEmail, 
+    sendDailyReportEmail, 
+    sendPromoEmail,
+    sendContactRelayEmail 
+};

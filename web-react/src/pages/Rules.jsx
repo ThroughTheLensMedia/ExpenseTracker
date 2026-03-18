@@ -152,7 +152,7 @@ export default function Rules() {
     return (
         <section style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '1200px', margin: '0 auto' }}>
 
-            {/* Elite Rule Header */}
+            {/* Studio Rule Header */}
             <div className="card glass glow-blue" style={{ padding: '24px', border: 'none', margin: 0, position: 'relative', overflow: 'hidden' }}>
                 {/* Progress Bar Overlay */}
                 {applying && (

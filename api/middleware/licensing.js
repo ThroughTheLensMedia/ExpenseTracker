@@ -4,8 +4,9 @@
  */
 
 async function licensingMiddleware(req, res, next) {
-    // 1. Skip check for health or auth routes if needed
+    // 1. Skip check for health or admin
     if (req.path === '/health') return next();
+    if (req.user?.email?.toLowerCase() === 'joshua.deuermeyer@gmail.com') return next();
 
     try {
         const userId = req.user.id;

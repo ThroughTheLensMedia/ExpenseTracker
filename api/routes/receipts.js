@@ -18,6 +18,51 @@ function getStoragePath(filename) {
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
+// POST /receipts/snap (Quick capture for PWA/Dashboard)
+router.post("/snap", upload.single("file"), async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+
+        const filename = `snap_${Date.now()}_${req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+        const relativePath = getStoragePath(filename);
+        let receipt_link = "";
+
+        const { error: uploadError } = await supabase.storage
+            .from("receipts")
+            .upload(relativePath, req.file.buffer, { contentType: req.file.mimetype });
+
+        if (!uploadError) {
+            const { data: urlData } = supabase.storage.from("receipts").getPublicUrl(relativePath);
+            receipt_link = urlData.publicUrl;
+        } else {
+            console.error("[Snap] Storage failure:", uploadError.message);
+            return res.status(500).json({ error: "Storage failure: " + uploadError.message });
+        }
+
+        // Create a pending expense record
+        const { data, error } = await req.sb
+            .from("expenses")
+            .insert({
+                expense_date: new Date().toISOString().slice(0, 10),
+                vendor: "Quick Snap Capture",
+                category: "Uncategorized",
+                amount_cents: 0,
+                notes: "Captured via Dashboard Quick Snap. Value and category pending review.",
+                source: "dashboard",
+                receipt_link: receipt_link,
+                tax_deductible: true
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+        res.json({ success: true, data });
+    } catch (e) {
+        console.error("[Snap] Fatal Error:", e);
+        res.status(500).json({ error: String(e.message || e) });
+    }
+});
+
 // POST /receipts/:table/:id
 router.post("/:table/:id", upload.single("file"), async (req, res) => {
     try {
@@ -50,12 +95,15 @@ router.post("/:table/:id", upload.single("file"), async (req, res) => {
             .select()
             .single();
 
-        if (error) throw error;
-        if (!data) return res.status(404).json({ error: "Record not found" });
+        if (error) {
+            console.error(`[Receipts] DB Update Error on ${table}:`, error.message);
+            throw new Error(`Database update failed: ${error.message}`);
+        }
+        if (!data) return res.status(404).json({ error: "Record not found (Check if RLS permits table updates)" });
 
         res.json(data);
     } catch (e) {
-        console.error("[Receipts] Upload Failure:", e);
+        console.error("[Receipts] Fatal Upload Failure:", e.message);
         res.status(500).json({ error: String(e.message || e) });
     }
 });

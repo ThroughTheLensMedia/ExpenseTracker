@@ -4,7 +4,7 @@ import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { useModal } from '../components/ModalContext.jsx';
 
-// Elite Invoice Branding
+// Studio Invoice Branding
 const BRAND_ORANGE = '#f97316';
 
 function InvoiceItemRow({ item, index, onChange, onRemove }) {

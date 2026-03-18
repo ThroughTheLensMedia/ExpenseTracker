@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { useAuth } from '../components/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, NavLink } from 'react-router-dom';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, signup } = useAuth();
-  const [isLogin, setIsLogin] = useState(true);
-
+  const { login, signup, loginWithGoogle } = useAuth();
   // Auto-fill from URL
   const params = new URLSearchParams(window.location.search);
+  const [isLogin, setIsLogin] = useState(!params.get('code'));
   
   const [email, setEmail] = useState(params.get('email') || '');
   const [password, setPassword] = useState('');
@@ -56,15 +55,16 @@ export default function Login() {
         textAlign: 'center'
       }}>
         <div style={{ marginBottom: '40px' }}>
+          <img src="/icon.png" alt="Studio Tracker Icon" style={{ height: '120px', marginBottom: '20px', borderRadius: '24px', filter: 'drop-shadow(0 0 20px rgba(249, 115, 22, 0.2))' }} />
           <h1 style={{ 
-            fontSize: '2.4rem', 
-            fontWeight: 950, 
+            fontSize: '1.5rem', 
+            fontWeight: 900, 
             margin: 0,
-            background: 'linear-gradient(90deg, #fff, #f97316)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent'
-          }}>Studio {isLogin ? 'Access' : 'Onboarding'}</h1>
-          <p className="muted" style={{ marginTop: '8px', fontWeight: 600 }}>Expense Tracker & CRM • Elite v3</p>
+            color: 'white',
+            letterSpacing: '0.05em',
+            textTransform: 'uppercase'
+          }}>Studio Tracker</h1>
+          <p className="muted" style={{ marginTop: '8px', fontWeight: 600 }}>Financial Intelligence for Today's Photographer</p>
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -73,7 +73,7 @@ export default function Login() {
             <input 
               type="email" 
               value={email} 
-              onChange={(e) => setEmail(e.target.value)} 
+              onChange={(e) => setEmail(e.target.value.trim())} 
               placeholder=" Joshua@studio.com"
               style={{ marginTop: '8px', width: '100%' }}
               required
@@ -122,11 +122,50 @@ export default function Login() {
           <button 
             type="submit" 
             className="btn primary glow-orange" 
-            style={{ padding: '16px', fontSize: '16px', marginTop: '10px' }}
+            style={{ padding: '16px', fontSize: '16px', marginTop: '10px', borderRadius: '12px' }}
             disabled={loading}
           >
             {loading ? 'PROCESSING...' : isLogin ? 'ENTER THE STUDIO' : 'CREATE STUDIO ACCOUNT'}
           </button>
+
+          {isLogin && (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '15px', margin: '10px 0' }}>
+                <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.05)' }} />
+                <span className="muted" style={{ fontSize: '10px', fontWeight: 900 }}>OR</span>
+                <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.05)' }} />
+              </div>
+
+              <button 
+                type="button" 
+                onClick={async () => {
+                  try {
+                    setLoading(true);
+                    await loginWithGoogle();
+                  } catch (e) {
+                    setError(e.message);
+                    setLoading(false);
+                  }
+                }}
+                className="btn secondary" 
+                style={{ 
+                  padding: '16px', 
+                  fontSize: '14px', 
+                  borderRadius: '12px', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  gap: '12px',
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.1)'
+                }}
+                disabled={loading}
+              >
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style={{ width: '18px' }} />
+                CONTINUE WITH GOOGLE
+              </button>
+            </>
+          )}
         </form>
 
         <div style={{ marginTop: '20px' }}>
@@ -138,8 +177,12 @@ export default function Login() {
           </button>
         </div>
 
-        <div className="muted" style={{ marginTop: '40px', fontSize: '11px', fontWeight: 800 }}>
-          SECURE ENCRYPTED SESSION • STUDIO TRACKER © 2026
+        <div className="muted" style={{ marginTop: '40px', fontSize: '10px', fontWeight: 900, textAlign: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginBottom: '15px' }}>
+            <NavLink to="/privacy" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none', letterSpacing: '0.05em', fontWeight: 900 }}>PRIVACY POLICY</NavLink>
+            <NavLink to="/terms" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none', letterSpacing: '0.05em', fontWeight: 900 }}>TERMS OF SERVICE</NavLink>
+          </div>
+          SECURE ENCRYPTED SESSION • STUDIO TRACKER © 2026 • PROFESSIONAL EDITION
         </div>
       </div>
     </div>

@@ -48,6 +48,8 @@ apiRouter.get("/health", async (req, res) => {
       diagnostics: {
         has_url: !!(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL),
         has_key: !!(process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY),
+        has_service_key: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+        key_mode: process.env.SUPABASE_SERVICE_ROLE_KEY ? "ADMIN_PRIVILEGED" : "STANDARD_USER",
         node_env: process.env.NODE_ENV
       },
       timestamp: new Date().toISOString()
@@ -84,10 +86,13 @@ apiRouter.use("/subscription", subscriptionRouter);
 apiRouter.use("/activity", activityRouter);
 
 // Mount all API routes under /api
+// Mount all API routes under /api AND root (for Vercel flexibility)
 app.use("/api", apiRouter);
+app.use("/", apiRouter);
 
 // Top-level health check
 app.get("/health", (_req, res) => res.json({ ok: true }));
+app.get("/api/test-direct", (req, res) => res.json({ ok: true, source: "direct-server-hit" }));
 
 // Global Error Handler
 app.use((err, req, res, next) => {

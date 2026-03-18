@@ -29,7 +29,7 @@
     ],
     "crons": [
         {
-            "path": "/api/admin/daily-report",
+            "path": "/api/admin/daily-report?email=true",
             "schedule": "45 23 * * *"
         }
     ]

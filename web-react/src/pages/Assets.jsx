@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { apiGet, apiPost, apiPatch, apiDelete, formatMoney, fetchExpenseYears } from '../api';
+import { apiGet, apiPost, apiPatch, apiDelete, formatMoney, fetchExpenseYears, apiUpload } from '../api';
 import { useModal } from '../components/ModalContext.jsx';
 
 const CATEGORIES = [
@@ -83,11 +83,7 @@ export default function Assets() {
                 setMsg('📂 Uploading receipt...');
                 const fd = new FormData();
                 fd.append("file", receiptFile);
-                await fetch(`/api/receipts/equipment_assets/${result.id}`, {
-                    method: "POST",
-                    credentials: "include",
-                    body: fd
-                });
+                await apiUpload(`/receipts/equipment_assets/${result.id}`, fd);
             }
 
             setForm(BLANK); 
@@ -139,6 +135,62 @@ export default function Assets() {
         return { totalCost, totalDepr };
     }, [assets, deprData]);
 
+    const downloadCSV = (headers, rows, filename) => {
+        const content = [
+            headers.join(','),
+            ...rows.map(r => r.map(cell => `"${String(cell || '').replace(/"/g, '""')}"`).join(','))
+        ].join('\n');
+        const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    const handleExportFullCSV = () => {
+        if (!assets || assets.length === 0) return;
+        const filename = `StudioTracker_CameraGear_FullExport_${new Date().toISOString().slice(0, 10)}.csv`;
+        const headers = ["ID", "Purchase Date", "Vendor", "Description", "Category", "Cost (Cents)", "Serial Number", "Useful Life (Yrs)", "Method", "Disposal Date", "Disposal Value", "Receipt Link", "Notes"];
+        const rows = assets.map(a => [
+            a.id, a.purchase_date, a.vendor, a.description, a.category, a.cost_cents, a.serial_number, a.useful_life_years, a.depreciation_method, a.disposal_date, a.disposal_value_cents, a.receipt_link, a.notes
+        ]);
+        downloadCSV(headers, rows, filename);
+    };
+
+    const handleExportInventoryTable = () => {
+        const list = deprData?.assets || [];
+        if (!list.length) return;
+        const filename = `StudioTracker_InventoryTable_${selectedYear}_${new Date().toISOString().slice(0, 10)}.csv`;
+        const headers = ["Item / Description", "Purchase Date", "Total Basis Cost ($)", `${selectedYear} Deduction Amt`, "Full Depreciation Year", "Current Status"];
+        const rows = list.map(a => [
+            a.description, a.purchase_date, a.cost.toFixed(2), a.deduction_this_year.toFixed(2), a.full_depreciation_date, a.status.toUpperCase()
+        ]);
+        // Add total row
+        const totalCost = list.reduce((s, a) => s + a.cost, 0);
+        const totalDed = list.reduce((s, a) => s + a.deduction_this_year, 0);
+        rows.push(["TOTALS", "", totalCost.toFixed(2), totalDed.toFixed(2), "", ""]);
+        downloadCSV(headers, rows, filename);
+    };
+
+    const handleExportSchC = () => {
+        const totalDed = deprData?.total_deduction_cents ? (deprData.total_deduction_cents / 100).toFixed(2) : "0.00";
+        const filename = `StudioTracker_SchC_Line13_${selectedYear}.csv`;
+        const headers = ["IRS Form/Schedule", "Line Item", "Description", "Calculated Value", "Tax Year"];
+        const rows = [
+            ["Schedule C", "Part II, Line 13", "Depreciation and section 179 expense", `$${totalDed}`, selectedYear],
+            ["", "", "", "", ""],
+            ["EQUIPMENT BREAKDOWN", "Original Cost", `Year Deduction (${selectedYear})`, "Method", "Purchase Date"],
+            ...(deprData?.assets || []).map(a => [
+                a.description, `$${a.cost.toFixed(2)}`, `$${a.deduction_this_year.toFixed(2)}`, a.depreciation_method.toUpperCase(), a.purchase_date
+            ])
+        ];
+        downloadCSV(headers, rows, filename);
+    };
+
     const STATUS_UI = {
         active: { color: '#6366f1', label: 'Locker', bg: 'rgba(99,102,241,0.1)' },
         fully_depreciated: { color: '#4ade80', label: 'Depreciated', bg: 'rgba(74,222,128,0.1)' },
@@ -149,7 +201,7 @@ export default function Assets() {
     return (
         <section style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '1200px', margin: '0 auto' }}>
 
-            {/* Elite Compact Header */}
+            {/* Studio Compact Header */}
             <div className="card glass glow-blue" style={{ padding: '20px 24px', border: 'none', margin: '0' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                     <div>
@@ -193,7 +245,7 @@ export default function Assets() {
                 {/* Main Content Area */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <div className="card glass" style={{ padding: '16px 20px', margin: '0' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '15px' }}>
                             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                                 <h2 style={{ margin: 0, fontSize: '1.2rem' }}>Inventory</h2>
                                 <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', padding: '3px' }}>
@@ -209,12 +261,20 @@ export default function Assets() {
                                     >Table</button>
                                 </div>
                             </div>
-                            <input
-                                placeholder="Search..."
-                                value={searchTerm}
-                                onChange={e => setSearchTerm(e.target.value)}
-                                style={{ width: '180px', fontSize: '12px', padding: '6px 10px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px' }}
-                            />
+
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', gap: '8px', marginRight: '15px' }}>
+                                    <button className="btn secondary sm" onClick={handleExportFullCSV} style={{ fontSize: '9px', height: '32px', letterSpacing: '0.05em', fontWeight: 900 }}>📦 FULL CSV</button>
+                                    <button className="btn secondary sm" onClick={handleExportInventoryTable} style={{ fontSize: '9px', height: '32px', letterSpacing: '0.05em', fontWeight: 900 }}>📄 INVENTORY EXPORT</button>
+                                    <button className="btn secondary sm" onClick={handleExportSchC} style={{ fontSize: '9px', height: '32px', letterSpacing: '0.05em', fontWeight: 900, border: '1px solid rgba(74, 222, 128, 0.3)' }}>🏛️ SCH C L13</button>
+                                </div>
+                                <input
+                                    placeholder="Search..."
+                                    value={searchTerm}
+                                    onChange={e => setSearchTerm(e.target.value)}
+                                    style={{ width: '180px', fontSize: '12px', padding: '6px 10px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px' }}
+                                />
+                            </div>
                         </div>
 
                         {viewMode === 'table' ? (

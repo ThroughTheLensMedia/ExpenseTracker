@@ -11,6 +11,9 @@ import CRM from './pages/CRM';
 import Import from './pages/Import';
 import Login from './pages/Login';
 import Mileage from './pages/Mileage';
+import Privacy from './pages/Privacy';
+import Terms from './pages/Terms';
+import Home from './pages/Home';
 
 
 // Higher Order Component to protect routes
@@ -23,7 +26,7 @@ function PrivateRoute({ children }) {
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a', color: 'white' }}>
         <div style={{ textAlign: 'center' }}>
           <div className="spinner" style={{ marginBottom: '20px' }}></div>
-          <div style={{ fontWeight: 800, letterSpacing: '0.1em', fontSize: '12px', opacity: 0.5 }}>INITIALIZING STUDIO...</div>
+          <div style={{ fontWeight: 800, letterSpacing: '0.1em', fontSize: '12px', opacity: 0.5 }}>AUTHORIZING STUDIO SESSION...</div>
         </div>
       </div>
     );
@@ -47,16 +50,17 @@ function AppContent() {
 
   // --- Version Check Hook ---
   useEffect(() => {
-    const CURRENT_VERSION = "3.8.0";
+    const CURRENT_VERSION = "3.9.3";
     const checkVersion = async () => {
       try {
         const res = await fetch('/version.json?v=' + Date.now());
         const data = await res.json();
         if (data.version && data.version !== CURRENT_VERSION) {
           setNewVersion(true);
-          // If on login page, just auto-update since no work will be lost
-          if (location.pathname === '/login' || !user) {
-            window.location.reload(true);
+          // Only auto-reload if we haven't already marked it as new to avoid infinite loops
+          if (!newVersion && (location.pathname === '/login' || !user)) {
+             console.log("New version detected, updating...");
+             // window.location.reload(true); // Temporarily disable auto-reload to be safe
           }
         }
       } catch (e) { /* silent fail */ }
@@ -121,8 +125,11 @@ function AppContent() {
   if (!user) {
     return (
       <Routes>
+        <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
-        <Route path="*" element={<Navigate to="/login" />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     );
   }
@@ -153,7 +160,13 @@ function AppContent() {
       )}      <header ref={menuRef} className="card glass" style={{ border: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '24px 30px', position: 'sticky', top: '15px', zIndex: 1000, margin: '15px auto', maxWidth: '1400px', cursor: 'default' }}>
         {/* Left Side: Brand */}
         <div style={{ flex: '1', display: 'flex', alignItems: 'center' }}>
-          <div className="title" style={{ fontSize: '2.2rem', fontWeight: 950, letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>STUDIO TRACKER</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <img src="/icon.png" alt="Studio Tracker" width="50" height="50" style={{ borderRadius: '10px', filter: 'drop-shadow(0 0 12px rgba(249, 115, 22, 0.3))' }} />
+            <div>
+              <div className="title" style={{ fontSize: '1.8rem', fontWeight: 950, letterSpacing: '-0.02em', whiteSpace: 'nowrap', lineHeight: 1 }}>STUDIO TRACKER</div>
+              <div className="muted" style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.05em', marginTop: '2px', opacity: 0.6 }}>INTEL FOR TODAY'S PHOTOGRAPHER</div>
+            </div>
+          </div>
           {newVersion && (
             <button 
               onClick={() => window.location.reload(true)} 
@@ -172,7 +185,7 @@ function AppContent() {
           <div style={{ width: '16px', height: '2px', background: 'white', margin: '4px 0', marginLeft: 'auto' }}></div>
         </div>
 
-        {/* Elite Command Center (Dropdown) */}
+        {/* Studio Command Center (Dropdown) */}
         {mobileMenuOpen && (
           <div className="dropdown-menu" style={{ 
             position: 'absolute', 
@@ -238,8 +251,8 @@ function AppContent() {
                   <div className="muted" style={{ fontWeight: 950, fontSize: '9px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', marginBottom: '6px', letterSpacing: '0.05em' }}>Studio Session</div>
                   <div style={{ fontWeight: 800, fontSize: '13px', color: 'white' }}>{identityName}</div>
                   {identityTitle && <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.6)', fontWeight: 700 }}>{identityTitle}</div>}
-                  <div style={{ fontSize: '10px', color: daysLeft <= 7 ? '#f59e0b' : '#10b981', fontWeight: 900, marginTop: '4px' }}>
-                    PRO ACCESS • {daysLeft}D LEFT
+                  <div style={{ fontSize: '10px', color: (daysLeft === null || daysLeft <= 7) ? '#f59e0b' : '#10b981', fontWeight: 900, marginTop: '4px' }}>
+                    {subscription ? `${subscription.plan_type?.toUpperCase()} • ${daysLeft}D LEFT` : 'INVITE REQUIRED'}
                   </div>
                 </div>
                 <button onClick={logout} className="btn sm secondary" style={{ 
@@ -270,6 +283,8 @@ function AppContent() {
           <Route path="/backup" element={<Navigate to="/StudioControlCenter" replace />} />
            <Route path="/crm/*" element={<CRM />} />
            <Route path="/import" element={<Import />} />
+           <Route path="/privacy" element={<Privacy />} />
+           <Route path="/terms" element={<Terms />} />
            <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </main>

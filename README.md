@@ -47,7 +47,11 @@ A: No. We use **Supabase Row Level Security (RLS)**. Every transaction and recei
 A: Receipts are stored in an encrypted **Supabase Storage** bucket. We no longer use local storage or home servers (NAS) to ensure 99.9% availability and instant access on your mobile device.
 
 **Q: How do I export for my CPA?**
-A: Go to the **Tax** tab, select the year, and click **Download Ledger CSV**. This provides a line-item audit trail for every Schedule C bucket.
+**Q: How do I invite a new member to the studio?**
+A: Admins can generate single-use **Access Keys** in the Studio Control Center. You can specify the recipient's name, email, and account type (Beta, Pro, Lifetime). The system will automatically email them an invite link.
+
+**Q: My beta access is expiring soon, what do I do?**
+A: The system provides visual alerts (Yellow at 7 days, Red at 3 days) as you approach expiration. You can redeem a new Access Key or contact the admin to extend your session.
 
 ---
 

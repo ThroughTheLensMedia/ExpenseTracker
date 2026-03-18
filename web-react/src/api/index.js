@@ -18,9 +18,9 @@ export async function apiGet(path) {
     });
     if (!r.ok) {
         if (r.status === 401) {
-             // Session expired - could trigger a logout/redirect here if needed
+             // Session expired
         }
-        throw new Error(`${r.status} ${r.statusText}`);
+        throw new Error(`${r.status} ${r.statusText} (Path: ${path})`);
     }
     return r.json();
 }
@@ -49,6 +49,31 @@ export async function apiPost(path, payload) {
         credentials: "include",
         body: JSON.stringify(payload)
     });
+    if (!r.ok) {
+        let msg = `${r.status} ${r.statusText}`;
+        try { const j = await r.json(); if (j && j.error) msg = j.error; } catch (_) { }
+        throw new Error(msg);
+    }
+    return r.json();
+}
+
+export async function apiUpload(path, formData) {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    
+    // NOTE: Don't set Content-Type header manual for FormData, 
+    // fetch will set the correct boundary automatically.
+    const headers = {
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    };
+
+    const r = await fetch("/api" + path, {
+        method: "POST",
+        headers,
+        credentials: "include",
+        body: formData
+    });
+    
     if (!r.ok) {
         let msg = `${r.status} ${r.statusText}`;
         try { const j = await r.json(); if (j && j.error) msg = j.error; } catch (_) { }

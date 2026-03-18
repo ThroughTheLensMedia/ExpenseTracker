@@ -50,6 +50,20 @@ export function AuthProvider({ children }) {
       return;
     }
 
+    // 0. Developer Bypass (Safe for Localhost)
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const hasDevBypass = localStorage.getItem('studio_tracker_dev_mode') === 'true' || window.location.search.includes('bypass_login=true');
+
+    if (isLocal && hasDevBypass) {
+        console.warn("[AUTH] Developer Bypass Enabled");
+        const mockUser = { id: 'f129a00b-333e-4d43-98b7-08ca1161d765', email: 'joshua.deuermeyer@gmail.com' };
+        setSession({ access_token: 'mock-session', user: mockUser });
+        setUser(mockUser);
+        fetchSubscription(mockUser.id);
+        setLoading(false);
+        return;
+    }
+
     // 1. Initial Session Check
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
@@ -99,6 +113,16 @@ export function AuthProvider({ children }) {
     if (error) throw error;
   };
 
+  const loginWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin
+      }
+    });
+    if (error) throw error;
+  };
+
   const refreshSubscription = () => {
     if (user) fetchSubscription(user.id);
   };
@@ -112,6 +136,7 @@ export function AuthProvider({ children }) {
     login,
     signup,
     logout,
+    loginWithGoogle,
     refreshSubscription
   };
 

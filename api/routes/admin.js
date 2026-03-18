@@ -6,10 +6,14 @@ const { supabase } = require("../db");
 const router = express.Router();
 const { sendInviteEmail, sendDailyReportEmail } = require("../utils/mailer");
 
+router.get("/", (req, res) => res.json({ ok: true, module: "admin", user: req.user?.email }));
+router.get("/test", (req, res) => res.json({ ok: true, test: "admin-reachable" }));
+
 // GET /admin/daily-report (Automated CRON)
 router.get("/daily-report", async (req, res) => {
     // 1. Security Check (Allow Vercel Cron Secret OR Admin Email)
-    const isCron = req.headers['authorization'] === `Bearer ${process.env.CRON_SECRET}`;
+    const cronSecret = process.env.CRON_SECRET;
+    const isCron = cronSecret && req.headers['authorization'] === `Bearer ${cronSecret}`;
     const isAdmin = req.user?.email?.toLowerCase() === 'joshua.deuermeyer@gmail.com';
     
     if (!isCron && !isAdmin) {
@@ -17,69 +21,131 @@ router.get("/daily-report", async (req, res) => {
     }
 
     try {
-        if (!supabase) throw new Error("Supabase not initialized");
+        const { supabase: serviceClient } = require("../db");
+        if (!serviceClient) throw new Error("Supabase service client not initialized");
 
         const today = new Date().toISOString().split('T')[0];
 
-        // 1. Fetch Activity base data
-        const { data: activityRows, error: actError } = await supabase
-            .from('user_daily_activity')
-            .select(`user_id, total_minutes_active, last_pulse_at`)
-            .eq('activity_date', today);
-
-        if (actError) throw actError;
-
-        if (!activityRows.length) {
-            return res.json({ ok: true, sent: false, message: "No activity to report yet today." });
-        }
-
-        // 2. Fetch User Emails (using the service role capabilities)
-        const { data: userData, error: userError } = await supabase
-            .from('profiles') // Try profiles first as it's common practice
-            .select('id, email')
-            .in('id', activityRows.map(r => r.user_id));
+        // 1. Fetch Activity base data using service client
+        // Check both today and yesterday (UTC) to handle evening timezone overlaps
+        const yesterday = new Date(new Date().getTime() - 86400000).toISOString().split('T')[0];
         
-        // Fallback: If no profiles table, we'll try to use the raw user_id
-        const userMap = {};
-        if (userData) {
-            userData.forEach(u => userMap[u.id] = u.email);
+        const { data: activityRows, error: actError } = await serviceClient
+            .from('user_daily_activity')
+            .select(`user_id, total_minutes_active, last_pulse_at, activity_date`)
+            .in('activity_date', [today, yesterday]);
+
+        if (actError) {
+            console.error("[Daily Report] Activity Query Error:", actError);
+            throw actError;
         }
 
-        const reportData = activityRows.map(r => ({
-            email: userMap[r.user_id] || `User (${r.user_id.slice(0,8)})`,
-            minutes_today: r.total_minutes_active,
-            last_seen: r.last_pulse_at
-        }));
+        if (!activityRows || !activityRows.length) {
+            return res.json({ ok: true, sent: false, message: "No activity to report yet today.", data: [] });
+        }
 
-        // Send Email to Joshua
-        const result = await sendDailyReportEmail({
-            to: 'joshua.deuermeyer@gmail.com',
-            activityRows: reportData
+        // 2. Fetch User Identities
+        const userIds = [...new Set(activityRows.map(r => r.user_id))];
+        let subRes = { data: [] }, profRes = { data: [] };
+        
+        try {
+            const results = await Promise.all([
+                serviceClient.from('user_subscriptions').select('*').in('user_id', userIds),
+                serviceClient.from('profiles').select('*').in('id', userIds)
+            ]);
+            subRes = results[0];
+            profRes = results[1];
+        } catch (identErr) {
+            console.warn("[Daily Report] Identity Resolve Failed (Partial Content Mode):", identErr);
+        }
+        
+        const userMap = {};
+        if (profRes?.data) profRes.data.forEach(p => {
+            if (p.id) userMap[p.id] = { email: p.email, name: p.display_name };
+        });
+        if (subRes?.data) subRes.data.forEach(u => {
+            if (u.user_id) {
+                const fallbackName = userMap[u.user_id]?.name || u.email?.split('@')[0];
+                userMap[u.user_id] = { email: u.email, name: u.display_name || fallbackName };
+            }
         });
 
-        res.json({ ok: true, sent: result.success, usersReported: reportData.length });
+        const mapping = {
+            'joshua.deuermeyer@gmail.com': 'Joshua D.',
+            '49e7efcb-6775-4927-9436-1e9674989669': 'Joshua D.',
+            'f129a00b-333e-4d43-98b7-08ca1161d765': 'Joshua D.'
+        };
+
+        const reportData = activityRows.map(r => {
+            const identity = userMap[r.user_id];
+            const identityEmail = (identity?.email || 'unknown@studio.internal').toLowerCase();
+            const identityName = mapping[identityEmail] || mapping[r.user_id] || identity?.name || identityEmail.split('@')[0] || "User";
+            
+            return {
+                email: identityEmail,
+                name: identityName,
+                minutes_today: r.total_minutes_active || 0,
+                last_seen: r.last_pulse_at || new Date().toISOString()
+            };
+        });
+        
+        // Aggregate by user
+        const aggregated = {};
+        reportData.forEach(item => {
+            if (!aggregated[item.email]) {
+                aggregated[item.email] = { ...item };
+            } else {
+                aggregated[item.email].minutes_today += item.minutes_today;
+                if (new Date(item.last_seen) > new Date(aggregated[item.email].last_seen)) {
+                    aggregated[item.email].last_seen = item.last_seen;
+                }
+            }
+        });
+
+        const finalData = Object.values(aggregated).sort((a,b) => b.minutes_today - a.minutes_today);
+
+        // Send Email
+        let result = { success: false };
+        const secureTrigger = req.query.email === 'true' && req.query.auth === 'SECURE_V3';
+        if (secureTrigger || isCron) {
+            result = await sendDailyReportEmail({ to: 'joshua.deuermeyer@gmail.com', activityRows: finalData }).catch(() => ({ success: false }));
+        }
+
+        res.json({ ok: true, sent: result.success, usersReported: finalData.length, data: finalData });
     } catch (e) {
-        console.error("[CRON] Daily Report Failed:", e);
-        res.status(500).json({ error: e.message });
+        console.error("[CRON] Daily Report Fatal Error:", e);
+        res.status(500).json({ error: e.message, status: "500-Internal-Crash" });
     }
 });
 
-// GET /admin/check-status (Diagnostics)
+// (Duplicate route block removed)
+
 router.get("/check-status", async (req, res) => {
-    // Security: Level 1 Admin Lockdown
     if (req.user?.email?.toLowerCase() !== 'joshua.deuermeyer@gmail.com') {
-        return res.status(403).json({ error: "Access Denied: Admin Authorization Required" });
+        return res.status(403).json({ error: "Access Denied" });
     }
 
     try {
-        const isServiceKeyValid = process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY.length > 50;
+        const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+        const isServiceKeyValid = serviceKey.length > 50;
         
-        let subCount = 0, codeCount = 0, subError = null, codeError = null;
-        
+        let subCount = 0, codeCount = 0, activityCount = 0;
+        let subError = null, codeError = null, activityError = null;
+
         if (supabase) {
-            const { count: sCount, error: sErr } = await supabase.from('user_subscriptions').select('*', { count: 'exact', head: true });
-            const { count: cCount, error: cErr } = await supabase.from('beta_codes').select('*', { count: 'exact', head: true });
-            subCount = sCount; codeCount = cCount; subError = sErr; codeError = cErr;
+            try {
+                const [s, c, a] = await Promise.all([
+                    supabase.from('user_subscriptions').select('*', { count: 'exact', head: true }),
+                    supabase.from('beta_codes').select('*', { count: 'exact', head: true }),
+                    supabase.from('user_daily_activity').select('*', { count: 'exact', head: true })
+                ]);
+                subCount = s.count || 0; subError = s.error;
+                codeCount = c.count || 0; codeError = c.error;
+                activityCount = a.count || 0; activityError = a.error;
+            } catch (err) {
+                console.error("[Admin Diagnostics] Promise.all failed", err);
+                subError = { message: err.message };
+            }
         } else {
             subError = { message: "Supabase client not initialized" };
         }
@@ -91,11 +157,13 @@ router.get("/check-status", async (req, res) => {
                 has_service_key: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
                 service_key_length: process.env.SUPABASE_SERVICE_ROLE_KEY ? process.env.SUPABASE_SERVICE_ROLE_KEY.length : 0,
                 service_key_degraded: !isServiceKeyValid, 
-                db_url: process.env.SUPABASE_URL ? "CONFIGURED" : "MISSING"
+                db_url: process.env.SUPABASE_URL ? "CONFIGURED" : "MISSING",
+                timezone_info: new Date().toString()
             },
             tables: {
                 user_subscriptions: subError ? { error: subError.message, code: subError.code } : { count: subCount },
-                beta_codes: codeError ? { error: codeError.message, code: codeError.code } : { count: codeCount }
+                beta_codes: codeError ? { error: codeError.message, code: codeError.code } : { count: codeCount },
+                user_daily_activity: activityError ? { error: activityError.message, code: activityError.code } : { count: activityCount }
             }
         });
     } catch (e) {
@@ -207,9 +275,141 @@ router.post("/import-all", async (req, res) => {
 router.get("/subscriptions", async (req, res) => {
     if (req.user?.email?.toLowerCase() !== 'joshua.deuermeyer@gmail.com') return res.status(403).json({ error: "Denied" });
     try {
-        if (!supabase) throw new Error("Supabase client not initialized - check environment variables.");
-        const { data, error } = await supabase
+        const { supabase: serviceClient } = require("../db");
+        if (!serviceClient) throw new Error("Service client required for SaaS dashboard");
+        
+        const { data, error } = await serviceClient
             .from('user_subscriptions')
+            .select('*')
+            .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+
+        // Enrich with profile names
+        const userIds = (data || []).map(d => d.user_id);
+        const { data: profiles } = await serviceClient.from('profiles').select('id, display_name').in('id', userIds);
+        const profMap = {};
+        if (profiles) profiles.forEach(p => { if (p.display_name) profMap[p.id] = p.display_name; });
+        
+        const enriched = data.map(d => ({ 
+            ...d, 
+            display_name: profMap[d.user_id] || (d.email ? d.email.split('@')[0] : 'Unknown') 
+        }));
+        
+        res.json(enriched);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// PATCH /admin/subscriptions/:userId (Edit Session)
+router.patch("/subscriptions/:userId", async (req, res) => {
+    if (req.user?.email?.toLowerCase() !== 'joshua.deuermeyer@gmail.com') return res.status(403).json({ error: "Denied" });
+    try {
+        const { supabase: serviceClient } = require("../db");
+        if (!serviceClient) throw new Error("Service client required");
+
+        const { display_name, plan_type, expires_at, status } = req.body;
+        const update = { updated_at: new Date().toISOString() };
+        
+        if (plan_type !== undefined) {
+            update.plan_type = plan_type;
+            // AUTO-CALCULATE EXPIRATION BASED ON PLAN
+            const now = new Date();
+            if (plan_type === 'annual') now.setDate(now.getDate() + 365);
+            else if (plan_type === 'pro' || plan_type === 'lifetime' || plan_type === 'elite') now.setDate(now.getDate() + 999);
+            else if (plan_type === 'monthly') now.setDate(now.getDate() + 31);
+            else if (plan_type === 'beta_tester') now.setDate(now.getDate() + 90);
+            update.expires_at = now.toISOString();
+        }
+
+        if (expires_at !== undefined) update.expires_at = expires_at;
+        if (status !== undefined) update.status = status;
+
+        // 1. Update Profiles (Upsert logic to ensure it exists)
+        if (display_name !== undefined) {
+            await serviceClient.from('profiles').upsert({ 
+                id: req.params.userId, 
+                display_name,
+                updated_at: new Date().toISOString()
+            });
+        }
+
+        // 2. Update Subscription
+        const { error } = await serviceClient
+            .from('user_subscriptions')
+            .update(update)
+            .eq('user_id', req.params.userId);
+
+        if (error) throw error;
+        res.json({ ok: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// GET /admin/weekly-report
+router.get("/weekly-report", async (req, res) => {
+    if (req.user?.email?.toLowerCase() !== 'joshua.deuermeyer@gmail.com') return res.status(403).json({ error: "Denied" });
+    try {
+        const { supabase: serviceClient } = require("../db");
+        if (!serviceClient) throw new Error("DB client uninit");
+
+        const { data, error } = await serviceClient
+            .from('user_daily_activity')
+            .select(`user_id, total_minutes_active, activity_date`)
+            .gte('activity_date', new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]);
+
+        if (error) throw error;
+        
+        // Fetch All Users to resolve names
+        const userIds = [...new Set(data.map(d => d.user_id))];
+        const [subRes, profRes] = await Promise.all([
+            serviceClient.from('user_subscriptions').select('*').in('user_id', userIds).catch(() => ({ data: [] })),
+            serviceClient.from('profiles').select('*').in('id', userIds).catch(() => ({ data: [] }))
+        ]);
+
+        const userNames = {};
+        if (profRes?.data) profRes.data.forEach(p => userNames[p.id] = p.display_name || p.email?.split('@')[0]);
+        if (subRes?.data) subRes.data.forEach(u => userNames[u.user_id] = u.display_name || userNames[u.user_id] || u.email?.split('@')[0]);
+
+        const mapping = {
+            'joshua.deuermeyer@gmail.com': 'Joshua D.',
+            '49e7efcb-6775-4927-9436-1e9674989669': 'Joshua D.',
+            'f129a00b-333e-4d43-98b7-08ca1161d765': 'Joshua D.'
+        };
+
+        const summary = {};
+        data.forEach(r => {
+            const userId = r.user_id;
+            const sub = subRes.data?.find(s => s.user_id === userId);
+            const prof = profRes.data?.find(p => p.id === userId);
+            
+            const email = (prof?.email || sub?.email || `user_${userId.slice(0,8)}`).toLowerCase();
+            const rawName = userNames[userId] || email.split('@')[0];
+            const name = mapping[email] || mapping[userId] || rawName;
+            
+            if (!summary[name]) summary[name] = 0;
+            summary[name] += r.total_minutes_active;
+        });
+
+        const sorted = Object.entries(summary)
+            .map(([name, total_min]) => ({ name, total_min }))
+            .sort((a,b) => b.total_min - a.total_min);
+
+        res.json(sorted);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// GET /admin/beta-codes
+router.get("/beta-codes", async (req, res) => {
+    if (req.user?.email?.toLowerCase() !== 'joshua.deuermeyer@gmail.com') return res.status(403).json({ error: "Denied" });
+    try {
+        if (!supabase) throw new Error("Supabase client not initialized.");
+        const { data, error } = await supabase
+            .from('beta_codes')
             .select('*')
             .order('created_at', { ascending: false });
         if (error) throw error;
@@ -219,26 +419,11 @@ router.get("/subscriptions", async (req, res) => {
     }
 });
 
-// POST /admin/subscriptions/:userId/suspend
-router.post("/subscriptions/:userId/suspend", async (req, res) => {
-    try {
-        if (!supabase) throw new Error("Supabase client not initialized.");
-        const { error } = await supabase
-            .from('user_subscriptions')
-            .update({ status: 'suspended', updated_at: new Date() })
-            .eq('user_id', req.params.userId);
-        if (error) throw error;
-        res.json({ ok: true });
-    } catch (e) {
-        res.status(500).json({ error: e.message });
-    }
-});
-
 // POST /admin/beta-codes
-// Generate a new code: { code, daysValid, assigned_to_name, assigned_to_email }
+// Generate a new code: { code, daysValid, assigned_to_name, assigned_to_email, plan_type }
 router.post("/beta-codes", async (req, res) => {
     try {
-        const { code, daysValid = 90, assigned_to_name, assigned_to_email } = req.body;
+        const { code, daysValid = 90, assigned_to_name, assigned_to_email, plan_type = 'beta_tester' } = req.body;
         const validUntil = new Date();
         validUntil.setDate(validUntil.getDate() + (daysValid || 90));
 
@@ -273,16 +458,21 @@ router.post("/beta-codes", async (req, res) => {
     }
 });
 
-// GET /admin/beta-codes
-router.get("/beta-codes", async (req, res) => {
+// PATCH /admin/beta-codes/:code (Edit Invite)
+router.patch("/beta-codes/:code", async (req, res) => {
     if (req.user?.email?.toLowerCase() !== 'joshua.deuermeyer@gmail.com') return res.status(403).json({ error: "Denied" });
     try {
-        const { data, error } = await supabase
+        const { assigned_to_name, assigned_to_email, plan_type } = req.body;
+        const update = {};
+        if (assigned_to_name !== undefined) update.assigned_to_name = assigned_to_name;
+        if (assigned_to_email !== undefined) update.assigned_to_email = assigned_to_email;
+
+        const { error } = await supabase
             .from('beta_codes')
-            .select('*')
-            .order('created_at', { ascending: false });
+            .update(update)
+            .eq('code', req.params.code);
         if (error) throw error;
-        res.json(data);
+        res.json({ ok: true });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
@@ -330,7 +520,8 @@ router.delete("/beta-codes/:code", async (req, res) => {
 // POST /admin/subscriptions/:userId/extend
 router.post("/subscriptions/:userId/extend", async (req, res) => {
     try {
-        const { data: current } = await supabase
+        const { supabase: serviceClient } = require("../db");
+        const { data: current } = await serviceClient
             .from('user_subscriptions')
             .select('expires_at')
             .eq('user_id', req.params.userId)
@@ -342,12 +533,12 @@ router.post("/subscriptions/:userId/extend", async (req, res) => {
         }
         newExpiry.setDate(newExpiry.getDate() + 90);
 
-        const { error } = await supabase
+        const { error } = await serviceClient
             .from('user_subscriptions')
             .update({ 
                 expires_at: newExpiry.toISOString(),
                 status: 'active',
-                updated_at: new Date() 
+                updated_at: new Date().toISOString()
             })
             .eq('user_id', req.params.userId);
             
@@ -356,6 +547,35 @@ router.post("/subscriptions/:userId/extend", async (req, res) => {
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
+});
+
+// POST /admin/subscriptions/:userId/suspend
+router.post("/subscriptions/:userId/suspend", async (req, res) => {
+    try {
+        const { supabase: serviceClient } = require("../db");
+        const { error } = await serviceClient
+            .from('user_subscriptions')
+            .update({ 
+                status: 'suspended', 
+                updated_at: new Date().toISOString()
+            })
+            .eq('user_id', req.params.userId);
+        if (error) throw error;
+        res.json({ ok: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// CATCH-ALL for /admin 404 debugging
+router.all("*", (req, res) => {
+    console.warn(`[ADMIN 404] Unhandled admin route: ${req.method} ${req.originalUrl} (base: ${req.baseUrl})`);
+    res.status(404).json({ 
+        error: "Admin route not found", 
+        path: req.originalUrl, 
+        base: req.baseUrl,
+        method: req.method
+    });
 });
 
 module.exports = router;

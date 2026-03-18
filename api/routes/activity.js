@@ -11,19 +11,18 @@ router.post("/pulse", async (req, res) => {
         // Upsert logic: If row exists for (user, date), increment minutes. Else insert.
         // We use a raw RPC or a manual select/update flow if upsert with increment isn't available in standard RLS
         
-        const { data: existing, error: fetchError } = await req.sb
+        const { supabase: serviceClient } = require("../db");
+        if (!serviceClient) throw new Error("DB Client unavailable");
+
+        const { data: existing, error: fetchError } = await serviceClient
             .from('user_daily_activity')
             .select('id, total_minutes_active')
             .eq('user_id', userId)
             .eq('activity_date', today)
-            .single();
-
-        if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 is 'not found'
-            throw fetchError;
-        }
+            .maybeSingle(); // maybeSingle() is cleaner than fetchError check
 
         if (existing) {
-            const { data, error } = await req.sb
+            const { data, error } = await serviceClient
                 .from('user_daily_activity')
                 .update({ 
                     total_minutes_active: (existing.total_minutes_active || 0) + 1,
@@ -35,7 +34,7 @@ router.post("/pulse", async (req, res) => {
             if (error) throw error;
             return res.json({ ok: true, session_minutes: data.total_minutes_active });
         } else {
-            const { data, error } = await req.sb
+            const { data, error } = await serviceClient
                 .from('user_daily_activity')
                 .insert({
                     user_id: userId,

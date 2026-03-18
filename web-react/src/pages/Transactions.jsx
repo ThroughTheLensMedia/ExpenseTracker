@@ -22,6 +22,7 @@ export default function Transactions() {
     const [searchNotes, setSearchNotes] = useState('');
     const [deductOnly, setDeductOnly] = useState(false);
     const [missingReceiptOnly, setMissingReceiptOnly] = useState(false);
+    const [searchAccount, setSearchAccount] = useState('');
     const [sortCol, setSortCol] = useState('expense_date');
     const [sortDir, setSortDir] = useState('desc');
 
@@ -67,11 +68,25 @@ export default function Transactions() {
         return rows;
     }, [expenses, start, end]);
 
-    const vendorOptions = useMemo(() => {
+    const accountOptions = useMemo(() => {
         const set = new Set();
-        scopedRows.forEach(r => { if (r.vendor) set.add(r.vendor); });
+        scopedRows.forEach(r => { if (r.source) set.add(r.source); });
         return [...set].sort();
     }, [scopedRows]);
+
+    const ACCOUNT_LABELS = {
+        'rocketmoney': '🟣 Rocket Money',
+        'chase': '🔵 Chase Bank',
+        'usbank': '🔵 US Bank',
+        'bankofamerica': '🔴 Bank of America',
+        'wellsfargo': '🟡 Wells Fargo',
+        'applecard': '⬛ Apple Card',
+        'capitalone': '🔴 Capital One',
+        'usaa': '🦅 USAA',
+        'navyfcu': '⚓ Navy Federal',
+        'wise': '🌍 Wise',
+        'manual': '➕ Manual'
+    };
 
     const filtered = useMemo(() => {
         let rows = [...expenses];
@@ -87,6 +102,7 @@ export default function Transactions() {
             if (end) rows = rows.filter(r => formatDate(r.expense_date) <= end);
             if (searchVendor) rows = rows.filter(r => (r.vendor || '').toLowerCase() === searchVendor.toLowerCase() || (r.vendor || '').toLowerCase().includes(searchVendor.toLowerCase()));
             if (searchCategory) rows = rows.filter(r => (r.category || '').toLowerCase() === searchCategory.toLowerCase() || (r.category || '').toLowerCase().includes(searchCategory.toLowerCase()));
+            if (searchAccount) rows = rows.filter(r => (r.source || '') === searchAccount);
             if (searchNotes) rows = rows.filter(r => (r.notes || '').toLowerCase().includes(searchNotes.toLowerCase()));
             if (deductOnly) rows = rows.filter(r => r.tax_deductible);
             if (missingReceiptOnly) rows = rows.filter(r => !r.receipt_link && r.tax_deductible);
@@ -111,7 +127,7 @@ export default function Transactions() {
     };
 
     const clearFilters = () => {
-        setStart(''); setEnd(''); setSearchVendor(''); setSearchCategory(''); setSearchNotes('');
+        setStart(''); setEnd(''); setSearchVendor(''); setSearchCategory(''); setSearchAccount(''); setSearchNotes('');
         setDeductOnly(false); setMissingReceiptOnly(false);
         setToast({ ok: true, msg: 'All filters cleared. Showing full ledger.' });
         setTimeout(() => setToast(null), 3000);
@@ -189,6 +205,13 @@ export default function Transactions() {
                             <small className="muted">Category</small>
                             <CategorySelect value={ALL_CATEGORIES.includes(searchCategory) ? searchCategory : ''} onChange={val => setSearchCategory(val)} emptyLabel="All Categories" style={{ width: '180px', padding: '10px' }} />
                         </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <small className="muted">Account</small>
+                            <select value={searchAccount} onChange={e => setSearchAccount(e.target.value)} style={{ width: '150px', padding: '10px' }}>
+                                <option value="">All Accounts</option>
+                                {accountOptions.map(a => <option key={a} value={a}>{ACCOUNT_LABELS[a] || a}</option>)}
+                            </select>
+                        </div>
                         <div style={{ display: 'flex', gap: '10px', alignSelf: 'flex-end', marginLeft: 'auto', alignItems: 'center' }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                 <button className="btn sm secondary" onClick={clearFilters} style={{ fontSize: '10px', padding: '6px 14px' }}>Reset Filters</button>
@@ -240,9 +263,10 @@ export default function Transactions() {
                         <thead style={{ position: 'sticky', top: 0, zIndex: 10, background: '#0b1220' }}>
                             <tr>
                                 <th style={{ width: '45px' }}></th>
-                                <th onClick={() => handleSort('expense_date')} style={{ cursor: 'pointer', width: '10%' }}>Date<SortIcon col="expense_date" /></th>
-                                <th onClick={() => handleSort('vendor')} style={{ cursor: 'pointer', width: '32%' }}>Vendor<SortIcon col="vendor" /></th>
-                                <th onClick={() => handleSort('category')} style={{ cursor: 'pointer', width: '22%' }}>Category<SortIcon col="category" /></th>
+                                <th onClick={() => handleSort('expense_date')} style={{ cursor: 'pointer', width: '9%' }}>Date<SortIcon col="expense_date" /></th>
+                                <th onClick={() => handleSort('source')} style={{ cursor: 'pointer', width: '13%' }}>Account<SortIcon col="source" /></th>
+                                <th onClick={() => handleSort('vendor')} style={{ cursor: 'pointer', width: '27%' }}>Vendor<SortIcon col="vendor" /></th>
+                                <th onClick={() => handleSort('category')} style={{ cursor: 'pointer', width: '20%' }}>Category<SortIcon col="category" /></th>
                                 <th onClick={() => handleSort('amount_cents')} style={{ cursor: 'pointer', width: '14%', textAlign: 'right' }}>Amount<SortIcon col="amount_cents" /></th>
                                 <th style={{ textAlign: 'center', width: '8%' }}>Doc</th>
                                 <th style={{ width: '10%' }}>Type</th>
@@ -255,6 +279,7 @@ export default function Transactions() {
                                     <tr key={r.id}>
                                         <td><button className="btn secondary" style={{ fontSize: '11px', padding: '4px 8px' }} onClick={() => setEditingId(r.id)}>Edit</button></td>
                                         <td style={{ opacity: 0.8 }}>{formatDate(r.expense_date)}</td>
+                                        <td style={{ fontSize: '11px', fontWeight: 700 }}>{ACCOUNT_LABELS[r.source] || r.source || 'manual'}</td>
                                         <td style={{ fontWeight: 600 }} className="text-truncate" title={r.vendor}>{r.vendor}</td>
                                         <td className="text-truncate" style={{ opacity: 0.9 }} title={r.category}>{r.category || <span className="muted">—</span>}</td>
                                         <td style={{ fontWeight: 700, textAlign: 'right' }}>{formatMoney(r.amount_cents)}</td>
