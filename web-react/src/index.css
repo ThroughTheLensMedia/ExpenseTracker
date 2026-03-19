@@ -235,6 +235,11 @@ textarea {
   resize: vertical;
 }
 
+input::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+}
+
 small {
   display: block;
   margin-bottom: 6px;

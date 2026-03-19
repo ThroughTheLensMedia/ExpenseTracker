@@ -108,11 +108,11 @@ export default function TransactionDrawer({ transaction, onClose, onSave }) {
                     <div className="row two">
                         <div>
                             <small className="muted">Date</small>
-                            <input value={date} onChange={e => setDate(e.target.value)} placeholder="YYYY-MM-DD" />
+                            <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ colorScheme: 'dark' }} />
                         </div>
                         <div>
                             <small className="muted">Amount</small>
-                            <input value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" />
+                            <input type="text" inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" />
                         </div>
                     </div>
 
@@ -176,7 +176,7 @@ export default function TransactionDrawer({ transaction, onClose, onSave }) {
                         </div>
                         <div>
                             <small className="muted">Business use %</small>
-                            <input type="number" min="0" max="100" step="1" value={bizPct} onChange={e => setBizPct(e.target.value)} />
+                            <input type="number" inputMode="numeric" min="0" max="100" step="1" value={bizPct} onChange={e => setBizPct(e.target.value)} />
                         </div>
                     </div>
 
