@@ -657,7 +657,8 @@ export default function Backup() {
                                     setLoading(true);
                                     try {
                                         const res = await apiPost('/brain/repair-ledger');
-                                        modal.alert(`Success! The Brain repaired ${res.updated} transactions.`);
+                                        const nextBatch = res.scanned === 50 ? "\n\n(Batch Limit: 50. Run again for next batch)" : "";
+                                        modal.alert(`Success! The Brain scanned ${res.scanned} transactions and repaired ${res.updated} of them.${nextBatch}`);
                                         loadData(true);
                                     } catch (err) {
                                         modal.alert(err.message);

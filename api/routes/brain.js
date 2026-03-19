@@ -51,7 +51,7 @@ router.post("/repair-ledger", async (req, res) => {
             updatedCount++;
         }
 
-        res.json({ ok: true, updated: updatedCount, detail: cleaned });
+        res.json({ ok: true, scanned: items.length, updated: updatedCount, detail: cleaned });
     } catch (e) {
         console.error("AI Brain Error:", e);
         res.status(500).json({ error: e.message || "Something went wrong in the Brain." });
