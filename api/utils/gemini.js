@@ -35,13 +35,25 @@ async function repairLedgerBatch(apiKey, transactions) {
         ${JSON.stringify(transactions)}
     `;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text().trim();
-    
-    // Clean markdown if present
-    const cleanedText = text.replace(/```json|```/g, "").trim();
-    return JSON.parse(cleanedText);
+    let attempt = 0;
+    while (attempt < 2) {
+        try {
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+            const text = response.text().trim();
+            const cleanedText = text.replace(/```json|```/g, "").trim();
+            return JSON.parse(cleanedText);
+        } catch (err) {
+            attempt++;
+            const isBusy = err.message?.toLowerCase().includes("503") || err.message?.toLowerCase().includes("high demand") || err.status === 503;
+            if (isBusy && attempt < 2) {
+                console.warn(`[AI BRAIN] Gemini is busy (503). Retrying in 1.2s... (Attempt ${attempt})`);
+                await new Promise(r => setTimeout(r, 1200));
+                continue;
+            }
+            throw err;
+        }
+    }
 }
 
 module.exports = {

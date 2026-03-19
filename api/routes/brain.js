@@ -55,7 +55,15 @@ router.post("/repair-ledger", async (req, res) => {
         res.json({ ok: true, scanned: items.length, updated: updatedCount, detail: cleaned });
     } catch (e) {
         console.error("AI Brain Error:", e);
-        res.status(500).json({ error: e.message || "Something went wrong in the Brain." });
+        const msg = String(e.message || "");
+        const isQuota = msg.includes("429") || msg.toLowerCase().includes("quota");
+        const isBusy = msg.includes("503") || msg.toLowerCase().includes("high demand") || msg.toLowerCase().includes("overloaded");
+
+        let userFeedback = "The forensic scan encountered a temporary hiccup. Please try again in a moment.";
+        if (isQuota) userFeedback = "AI Quota Reached. Please wait exactly 60 seconds before your next Forensic Scan.";
+        if (isBusy) userFeedback = "The Intelligence Engine is currently experiencing high global demand. Please wait a few seconds and try again.";
+
+        res.status(500).json({ error: userFeedback });
     }
 });
 
@@ -136,12 +144,15 @@ router.post("/ask", async (req, res) => {
         res.json({ ok: true, answer: text });
     } catch (e) {
         console.error("[AI Brain] Critical Execution Error:", e);
-        const isQuota = e.message?.toLowerCase().includes("quota") || e.status === 429;
-        res.status(500).json({ 
-            error: isQuota 
-                ? "AI Rate Limit Reached. Try again in 60 seconds." 
-                : "The Brain is currently sleeping. Try again in a moment." 
-        });
+        const msg = String(e.message || "");
+        const isQuota = msg.includes("429") || msg.toLowerCase().includes("quota");
+        const isBusy = msg.includes("503") || msg.toLowerCase().includes("high demand") || msg.toLowerCase().includes("overloaded");
+
+        let userFeedback = "The Brain is currently recharging. Please try your search again in a moment.";
+        if (isQuota) userFeedback = "AI Quota Reached. Please wait exactly 60 seconds before your next Forensic Scan.";
+        if (isBusy) userFeedback = "The Intelligence Engine is currently experiencing high global demand. Please wait a few seconds and try again.";
+
+        res.status(500).json({ error: userFeedback });
     }
 });
 
