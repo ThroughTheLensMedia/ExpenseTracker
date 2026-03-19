@@ -13,7 +13,7 @@ export default function Backup() {
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const t = params.get('tab');
-        if (t && ['automation', 'profile', 'infrastructure', 'help', 'saas'].includes(t)) {
+        if (t && ['automation', 'profile', 'infrastructure', 'help', 'saas', 'intelligence'].includes(t)) {
             setActiveTab(t);
         }
     }, [window.location.search]);

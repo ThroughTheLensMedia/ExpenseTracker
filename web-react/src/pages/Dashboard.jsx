@@ -130,14 +130,14 @@ export default function Dashboard() {
 
     useEffect(() => {
         loadData();
-        const hasSeenAI = localStorage.getItem('has_seen_ai_welcome_v4');
+        const hasSeenAI = localStorage.getItem('has_seen_ai_welcome_v4_3');
         if (!hasSeenAI) {
             setShowAIWelcome(true);
         }
     }, []);
 
     const dismissAIWelcome = () => {
-        localStorage.setItem('has_seen_ai_welcome_v4', 'true');
+        localStorage.setItem('has_seen_ai_welcome_v4_3', 'true');
         setShowAIWelcome(false);
     };
 
