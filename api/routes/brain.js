@@ -27,9 +27,9 @@ router.post("/repair-ledger", async (req, res) => {
         // Fetch "Rocket Money" entries to fix (Targeted Scan)
         const { data: items, error } = await req.sb
             .from("expenses")
-            .select("id, vendor, notes, source, category, date")
+            .select("id, vendor, notes, source, category, expense_date")
             .eq("source", "rocketmoney")
-            .order("date", { ascending: false })
+            .order("expense_date", { ascending: false })
             .limit(50); 
 
         if (error) throw error;
@@ -96,8 +96,8 @@ router.post("/ask", async (req, res) => {
         // Fetch Top 10 biggest purchases this year
         const { data: topPurchases } = await req.sb
             .from("expenses")
-            .select("vendor, amount, date, category")
-            .gte("date", startOfYear)
+            .select("vendor, amount, expense_date, category")
+            .gte("expense_date", startOfYear)
             .order("amount", { ascending: false })
             .limit(10);
 
@@ -105,7 +105,7 @@ router.post("/ask", async (req, res) => {
         const { data: allSpent } = await req.sb
             .from("expenses")
             .select("amount")
-            .gte("date", startOfYear);
+            .gte("expense_date", startOfYear);
         
         const totalYearlySum = allSpent?.reduce((acc, curr) => acc + (curr.amount || 0), 0) || 0;
 
@@ -113,7 +113,7 @@ router.post("/ask", async (req, res) => {
             REAL STUDIO DATA FOR ${currentYear}:
             - Total Annual Studio Burn: $${totalYearlySum.toFixed(2)}
             - Your Largest Transactions:
-              ${topPurchases?.slice(0, 5).map(p => `- ${p.vendor}: $${p.amount} on ${p.date}`).join("\n")}
+              ${topPurchases?.slice(0, 5).map(p => `- ${p.vendor}: $${p.amount} on ${p.expense_date}`).join("\n")}
         `;
 
         // Build context-aware prompt
