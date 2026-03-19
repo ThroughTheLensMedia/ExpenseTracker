@@ -27,8 +27,9 @@ router.post("/repair-ledger", async (req, res) => {
         // Fetch "Rocket Money" entries to fix (Targeted Scan)
         const { data: items, error } = await req.sb
             .from("expenses")
-            .select("id, vendor, notes, source, category")
+            .select("id, vendor, notes, source, category, date")
             .eq("source", "rocketmoney")
+            .order("date", { ascending: false })
             .limit(50); 
 
         if (error) throw error;
