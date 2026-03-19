@@ -130,14 +130,14 @@ export default function Dashboard() {
 
     useEffect(() => {
         loadData();
-        const hasSeenAI = localStorage.getItem('has_seen_ai_welcome_v4_3');
+        const hasSeenAI = localStorage.getItem('has_seen_ai_welcome_v4_4');
         if (!hasSeenAI) {
             setShowAIWelcome(true);
         }
     }, []);
 
     const dismissAIWelcome = () => {
-        localStorage.setItem('has_seen_ai_welcome_v4_3', 'true');
+        localStorage.setItem('has_seen_ai_welcome_v4_4', 'true');
         setShowAIWelcome(false);
     };
 
@@ -587,8 +587,8 @@ export default function Dashboard() {
         <section style={{ display: 'flex', flexDirection: 'column', gap: '20px', paddingBottom: '100px' }}>
             {/* 🧠 AI Intelligence Welcome Modal */}
             {showAIWelcome && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(20px)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-                    <div className="card glass glow-blue" style={{ width: '100%', maxWidth: '550px', padding: '50px', position: 'relative', textAlign: 'center' }}>
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(20px)', zIndex: 10000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '20px', overflowY: 'auto' }}>
+                    <div className="card glass glow-blue" style={{ width: '100%', maxWidth: '550px', padding: '40px 24px', position: 'relative', textAlign: 'center', margin: 'auto' }}>
                         <div style={{ fontSize: '4rem', marginBottom: '25px' }}>📸</div>
                         <h2 style={{ fontSize: '2.4rem', fontWeight: 950, marginBottom: '15px', letterSpacing: '-0.03em' }}>Welcome to v4.1.3 PRO</h2>
                         <h3 style={{ color: 'var(--accent)', fontWeight: 800, marginBottom: '25px', fontSize: '1.2rem' }}>"EVERYONE BRINGS THEIR OWN BRAIN"</h3>
