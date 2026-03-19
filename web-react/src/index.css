@@ -235,8 +235,8 @@ textarea {
   resize: vertical;
 }
 
-input::-webkit-calendar-picker-indicator {
-  filter: invert(1);
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(200%) !important;
   cursor: pointer;
 }
 
