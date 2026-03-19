@@ -123,7 +123,7 @@ export default function Transactions() {
             return 0;
         });
         return rows;
-    }, [expenses, start, end, searchVendor, searchCategory, searchNotes, deductOnly, missingReceiptOnly, sortCol, sortDir, isAuditMode]);
+    }, [expenses, start, end, searchVendor, searchCategory, searchAccount, searchNotes, deductOnly, missingReceiptOnly, sortCol, sortDir, isAuditMode]);
 
     const exportCsv = () => {
         const qs = new URLSearchParams();
