@@ -590,7 +590,7 @@ export default function Dashboard() {
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(20px)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
                     <div className="card glass glow-blue" style={{ width: '100%', maxWidth: '550px', padding: '50px', position: 'relative', textAlign: 'center' }}>
                         <div style={{ fontSize: '4rem', marginBottom: '25px' }}>📸</div>
-                        <h2 style={{ fontSize: '2.4rem', fontWeight: 950, marginBottom: '15px', letterSpacing: '-0.03em' }}>Welcome to v4.0 PRO</h2>
+                        <h2 style={{ fontSize: '2.4rem', fontWeight: 950, marginBottom: '15px', letterSpacing: '-0.03em' }}>Welcome to v4.1.3 PRO</h2>
                         <h3 style={{ color: 'var(--accent)', fontWeight: 800, marginBottom: '25px', fontSize: '1.2rem' }}>"EVERYONE BRINGS THEIR OWN BRAIN"</h3>
                         
                         <div style={{ textAlign: 'left', background: 'rgba(255,255,255,0.02)', padding: '25px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '30px' }}>
@@ -637,7 +637,7 @@ export default function Dashboard() {
                             <h1 style={{ margin: 0, fontSize: '2.4rem', fontWeight: 950, letterSpacing: '-0.03em', lineHeight: 1 }}>Executive Analytics</h1>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '12px' }}>
                                 <span className="muted" style={{ fontWeight: 700, fontSize: '14px' }}>Financial Command Center</span>
-                                <span style={{ padding: '2px 8px', background: 'rgba(74, 222, 128, 0.1)', color: '#4ade80', borderRadius: '4px', fontSize: '10px', fontWeight: 900, letterSpacing: '0.05em' }}>V4.0.0-PRO</span>
+                                <span style={{ padding: '2px 8px', background: 'rgba(74, 222, 128, 0.1)', color: '#4ade80', borderRadius: '4px', fontSize: '10px', fontWeight: 900, letterSpacing: '0.05em' }}>V4.1.3-PRO</span>
                                 <span onClick={() => navigate('/StudioControlCenter?tab=help')} style={{ cursor: 'pointer', fontSize: '10px', fontWeight: 900, color: 'var(--accent)', textDecoration: 'underline', textUnderlineOffset: '3px' }}>HELP & DOCS</span>
                                 {loading && <span className="spinner-small" style={{ marginLeft: '10px' }}></span>}
                             </div>
