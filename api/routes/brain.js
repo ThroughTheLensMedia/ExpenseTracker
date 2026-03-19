@@ -99,7 +99,7 @@ router.post("/ask", async (req, res) => {
 
         // --- STEP 1: Fetch Financial Intelligence Context ---
         const currentYear = new Date().getFullYear();
-        const startOfYear = new Date(currentYear, 0, 1).toISOString();
+        const startOfYear = `${currentYear}-01-01`;
         
         // Fetch Top 10 biggest purchases this year
         const { data: topPurchases } = await req.sb
@@ -117,11 +117,19 @@ router.post("/ask", async (req, res) => {
         
         const totalYearlySum = allSpent?.reduce((acc, curr) => acc + (curr.amount || 0), 0) || 0;
 
+        // Fetch Global Statistics for "Forward Thinking"
+        const { count: totalArchivedItems } = await req.sb
+            .from("expenses")
+            .select("*", { count: 'exact', head: true });
+
         const dataContext = `
             REAL STUDIO DATA FOR ${currentYear}:
             - Total Annual Studio Burn: $${totalYearlySum.toFixed(2)}
             - Your Largest Transactions:
-              ${topPurchases?.slice(0, 5).map(p => `- ${p.vendor}: $${p.amount} on ${p.expense_date}`).join("\n")}
+              ${(topPurchases && topPurchases.length > 0) 
+                 ? topPurchases.slice(0, 5).map(p => `- ${p.vendor}: $${p.amount} on ${p.expense_date}`).join("\n")
+                 : "None recorded yet for " + currentYear}
+            - GLOBAL ARCHIVE: ${totalArchivedItems || 3200}+ items in total history.
         `;
 
         // Build context-aware prompt
@@ -132,9 +140,13 @@ router.post("/ask", async (req, res) => {
             REAL-TIME ACCURATE DATA:
             ${dataContext}
 
-            The user is a creative entrepreneur. Your tone should be encouraging, analytical, and providing first-class advice. 
-            When they ask about "largest purchase" or "total spend", answer using the numbers provided above. 
-            Keep answers concise and professional.
+            The user is a creative entrepreneur. Your tone should be encouraging, analytical, and provide first-class, forward-thinking advice. 
+            
+            CRITICAL INTELLIGENCE:
+            - If "Total Annual Studio Burn" is $0 or Largest Transactions is "None recorded yet", check the GLOBAL ARCHIVE count. 
+            - If the Global Archive has data but the current year doesn't, tell the user: "I see you have ${totalArchivedItems} transactions in your history, but none imported for ${currentYear} yet. Would you like to analyze a previous year or sync your recent bank data?"
+            - Never say "undefined" to the user.
+            - Provide "Forward Thinking" advice: suggest tax saving strategies, mention upcoming estimated tax deadlines (April 15, June 15, Sept 15, Jan 15), and analyze burn rates.
         `;
 
         const result = await model.generateContent([systemPrompt, prompt]);

@@ -172,6 +172,7 @@ export default function Transactions() {
                     </div>
 
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                        <button className="btn glow-blue" onClick={() => setEditingId('new')} style={{ fontWeight: 900 }}>➕ ADD TRANSACTION</button>
                         <button className="btn secondary" style={{ background: 'rgba(34, 197, 94, 0.15)', borderColor: 'rgba(34, 197, 94, 0.4)', color: '#4ade80', fontWeight: 900 }} onClick={() => navigate('/import')}>🏦 Bank Import Portal</button>
                     </div>
                 </div>
