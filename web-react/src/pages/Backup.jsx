@@ -593,6 +593,33 @@ export default function Backup() {
                                 <p className="muted small" style={{ marginTop: '15px', color: '#f59e0b', fontSize: '11px', lineHeight: '1.5' }}>
                                     <strong>TIP:</strong> If you see a "Rate Limit" or "Limit: 0" error, ensure your Google Cloud project has enabled the <strong>Gemini API</strong> and that your region supports the Free Tier. Linking a billing account (even if not used) often resolves "Limit: 0" issues.
                                 </p>
+
+                                <div style={{ background: 'rgba(56, 189, 248, 0.05)', padding: '25px', borderRadius: '16px', border: '1px solid rgba(56, 189, 248, 0.2)', marginTop: '25px' }}>
+                                    <div style={{ fontWeight: 950, color: '#38bdf8', marginBottom: '15px', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <span style={{ fontSize: '24px' }}>🚀</span> STUDIO INTELLIGENCE: 4-STEP SETUP
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+                                        <div style={{ fontSize: '13px' }}>
+                                            <div style={{ fontWeight: 900, color: 'white', marginBottom: '4px' }}>1. PROVISION KEY</div>
+                                            <div className="muted" style={{ fontSize: '12px' }}>Visit <a href="https://aistudio.google.com/app/apikey" target="_blank" style={{ color: 'var(--accent)' }}>Google AI Studio</a> and generate a free API Key.</div>
+                                        </div>
+                                        <div style={{ fontSize: '13px' }}>
+                                            <div style={{ fontWeight: 900, color: 'white', marginBottom: '4px' }}>2. CONNECT BRAIN</div>
+                                            <div className="muted" style={{ fontSize: '12px' }}>Paste your key into the input above and hit <strong>Save Key</strong>.</div>
+                                        </div>
+                                        <div style={{ fontSize: '13px' }}>
+                                            <div style={{ fontWeight: 900, color: 'white', marginBottom: '4px' }}>3. SYSTEM WARMUP</div>
+                                            <div className="muted" style={{ fontSize: '12px' }}>Use the <strong>Retroactive Ledger Repair</strong> below to scrub history and fix old entries.</div>
+                                        </div>
+                                        <div style={{ fontSize: '13px' }}>
+                                            <div style={{ fontWeight: 900, color: 'white', marginBottom: '4px' }}>4. CHAT & ANALYZE</div>
+                                            <div className="muted" style={{ fontSize: '12px' }}>Open "Your Assistant" (📸 icon) to ask about your largest purchases or tax burn.</div>
+                                        </div>
+                                    </div>
+                                    <div className="tag extra-small warning" style={{ marginTop: '20px', background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', fontSize: '10px', textAlign: 'center', width: '100%', fontWeight: 900 }}>
+                                        ⚠️ EVERY PHOTOGRAPHER "BRINGS THEIR OWN BRAIN"
+                                    </div>
+                                </div>
                             </div>
 
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginTop: '10px' }}>
@@ -944,32 +971,6 @@ export default function Backup() {
                                 </div>
                             </div>
 
-                            <div style={{ background: 'rgba(56, 189, 248, 0.05)', padding: '25px', borderRadius: '16px', border: '1px solid rgba(56, 189, 248, 0.2)' }}>
-                                <div style={{ fontWeight: 950, color: '#38bdf8', marginBottom: '15px', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                    <span style={{ fontSize: '24px' }}>🚀</span> STUDIO INTELLIGENCE: 4-STEP SETUP
-                                </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
-                                    <div style={{ fontSize: '13px' }}>
-                                        <div style={{ fontWeight: 900, color: 'white', marginBottom: '4px' }}>1. PROVISION KEY</div>
-                                        <div className="muted" style={{ fontSize: '12px' }}>Visit <a href="https://aistudio.google.com/app/apikey" target="_blank" style={{ color: 'var(--accent)' }}>Google AI Studio</a> and generate a free API Key.</div>
-                                    </div>
-                                    <div style={{ fontSize: '13px' }}>
-                                        <div style={{ fontWeight: 900, color: 'white', marginBottom: '4px' }}>2. CONNECT BRAIN</div>
-                                        <div className="muted" style={{ fontSize: '12px' }}>Paste your key into the <strong>AI Intelligence</strong> tab and hit <strong>Save API Key</strong>.</div>
-                                    </div>
-                                    <div style={{ fontSize: '13px' }}>
-                                        <div style={{ fontWeight: 900, color: 'white', marginBottom: '4px' }}>3. SYSTEM WARMUP</div>
-                                        <div className="muted" style={{ fontSize: '12px' }}>Use the <strong>Retroactive Ledger Repair</strong> to scrub history and clean up old "Rocket Money" entries.</div>
-                                    </div>
-                                    <div style={{ fontSize: '13px' }}>
-                                        <div style={{ fontWeight: 900, color: 'white', marginBottom: '4px' }}>4. CHAT & ANALYZE</div>
-                                        <div className="muted" style={{ fontSize: '12px' }}>Open "Your Assistant" (📸 icon) to ask about your largest purchases or tax burn.</div>
-                                    </div>
-                                </div>
-                                <div className="tag extra-small warning" style={{ marginTop: '20px', background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', fontSize: '10px', textAlign: 'center', width: '100%', fontWeight: 900 }}>
-                                    ⚠️ EVERY PHOTOGRAPHER "BRINGS THEIR OWN BRAIN"
-                                </div>
-                            </div>
 
                             <div>
                                 <div style={{ fontWeight: 800, color: 'white', marginBottom: '8px' }}>Can I export my data if I leave?</div>
