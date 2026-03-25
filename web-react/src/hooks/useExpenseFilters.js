@@ -1,0 +1,90 @@
+import { useMemo } from 'react';
+import { formatDate } from '../api';
+
+/**
+ * Shared expense filtering & sorting hook.
+ * Used by Transactions, Dashboard, and Tax pages.
+ *
+ * @param {Array} expenses - Raw expense rows
+ * @param {Object} filters - Filter criteria
+ * @param {string} [filters.start] - Start date (YYYY-MM-DD)
+ * @param {string} [filters.end] - End date (YYYY-MM-DD)
+ * @param {string} [filters.vendor] - Vendor search (partial match)
+ * @param {string} [filters.category] - Category search (partial match)
+ * @param {string} [filters.account] - Source/account (exact match)
+ * @param {string} [filters.notes] - Notes search (partial match)
+ * @param {boolean} [filters.deductOnly] - Only tax-deductible
+ * @param {boolean} [filters.missingReceiptOnly] - Deductible + no receipt
+ * @param {number|string} [filters.year] - Filter by year
+ * @param {string} [filters.taxBucket] - Filter by tax bucket
+ * @param {string} [sortCol] - Column to sort by
+ * @param {string} [sortDir] - 'asc' or 'desc'
+ * @returns {{ filtered: Array, totals: { count: number, sum: number } }}
+ */
+export default function useExpenseFilters(expenses, filters = {}, sortCol = 'expense_date', sortDir = 'desc') {
+    const filtered = useMemo(() => {
+        let rows = [...expenses];
+        const { start, end, vendor, category, account, notes, deductOnly, missingReceiptOnly, year, taxBucket } = filters;
+
+        if (year) rows = rows.filter(r => String(r.expense_date || '').startsWith(String(year)));
+        if (start) rows = rows.filter(r => formatDate(r.expense_date) >= start);
+        if (end) rows = rows.filter(r => formatDate(r.expense_date) <= end);
+        if (vendor) rows = rows.filter(r => (r.vendor || '').toLowerCase().includes(vendor.toLowerCase()));
+        if (category) rows = rows.filter(r => (r.category || '').toLowerCase().includes(category.toLowerCase()));
+        if (account) rows = rows.filter(r => (r.source || '') === account);
+        if (notes) rows = rows.filter(r => (r.notes || '').toLowerCase().includes(notes.toLowerCase()));
+        if (taxBucket) rows = rows.filter(r => (r.tax_bucket || '') === taxBucket);
+        if (deductOnly) rows = rows.filter(r => r.tax_deductible);
+        if (missingReceiptOnly) rows = rows.filter(r => !r.receipt_link && r.tax_deductible);
+
+        rows.sort((a, b) => {
+            let av = a[sortCol] ?? '';
+            let bv = b[sortCol] ?? '';
+            if (sortCol === 'amount_cents') { av = Number(av); bv = Number(bv); }
+            if (av < bv) return sortDir === 'asc' ? -1 : 1;
+            if (av > bv) return sortDir === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        return rows;
+    }, [expenses, filters, sortCol, sortDir]);
+
+    const totals = useMemo(() => ({
+        count: filtered.length,
+        sum: filtered.reduce((acc, r) => acc + Number(r.amount_cents || 0), 0),
+    }), [filtered]);
+
+    return { filtered, totals };
+}
+
+/**
+ * Extract unique values for filter dropdowns from a set of expenses.
+ */
+export function useFilterOptions(expenses, start, end) {
+    const scopedRows = useMemo(() => {
+        let rows = [...expenses];
+        if (start) rows = rows.filter(r => formatDate(r.expense_date) >= start);
+        if (end) rows = rows.filter(r => formatDate(r.expense_date) <= end);
+        return rows;
+    }, [expenses, start, end]);
+
+    const vendors = useMemo(() => {
+        const set = new Set();
+        scopedRows.forEach(r => { if (r.vendor) set.add(r.vendor); });
+        return [...set].sort();
+    }, [scopedRows]);
+
+    const accounts = useMemo(() => {
+        const set = new Set();
+        scopedRows.forEach(r => { if (r.source) set.add(r.source); });
+        return [...set].sort();
+    }, [scopedRows]);
+
+    const categories = useMemo(() => {
+        const set = new Set();
+        scopedRows.forEach(r => { if (r.category) set.add(r.category); });
+        return [...set].sort();
+    }, [scopedRows]);
+
+    return { vendors, accounts, categories, scopedRows };
+}

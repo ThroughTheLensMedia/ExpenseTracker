@@ -5,6 +5,7 @@ import TransactionDrawer from '../components/TransactionDrawer';
 import { useModal } from '../components/ModalContext.jsx';
 import CategorySelect from '../components/CategorySelect.jsx';
 import { ALL_CATEGORIES } from '../constants/categories.js';
+import useExpenseFilters, { useFilterOptions } from '../hooks/useExpenseFilters';
 
 export default function Transactions() {
     const [searchParams] = useSearchParams();
@@ -60,20 +61,6 @@ export default function Transactions() {
         return <span>{sortDir === 'asc' ? ' ↑' : ' ↓'}</span>;
     };
 
-    // Date-scoped rows for vendor/category dropdowns
-    const scopedRows = useMemo(() => {
-        let rows = [...expenses];
-        if (start) rows = rows.filter(r => formatDate(r.expense_date) >= start);
-        if (end) rows = rows.filter(r => formatDate(r.expense_date) <= end);
-        return rows;
-    }, [expenses, start, end]);
-
-    const accountOptions = useMemo(() => {
-        const set = new Set();
-        scopedRows.forEach(r => { if (r.source) set.add(r.source); });
-        return [...set].sort();
-    }, [scopedRows]);
-
     const ACCOUNT_LABELS = {
         'rocketmoney': '🟣 Rocket Money',
         'chase': '🔵 Chase Bank',
@@ -85,45 +72,24 @@ export default function Transactions() {
         'usaa': '🦅 USAA',
         'navyfcu': '⚓ Navy Federal',
         'wise': '🌍 Wise',
+        'plaid': '🏦 Plaid',
         'manual': '➕ Manual'
     };
 
-    const vendorOptions = useMemo(() => {
-        const set = new Set();
-        scopedRows.forEach(r => { if (r.vendor) set.add(r.vendor); });
-        return [...set].sort();
-    }, [scopedRows]);
+    const { vendors: vendorOptions, accounts: accountOptions } = useFilterOptions(expenses, start, end);
 
-    const filtered = useMemo(() => {
-        let rows = [...expenses];
+    // Audit mode applies a special pre-filter before the shared hook
+    const auditBase = useMemo(() => {
+        if (!isAuditMode) return expenses;
+        return expenses.filter(r => Number(r.amount_cents || 0) > 7500 && !r.receipt_link);
+    }, [expenses, isAuditMode]);
 
-        if (isAuditMode) {
-            // Strict Audit Liability focus: Opex > $75 and no receipt attached
-            rows = rows.filter(r => {
-                const cents = Number(r.amount_cents || 0);
-                return cents > 7500 && !r.receipt_link;
-            });
-        } else {
-            if (start) rows = rows.filter(r => formatDate(r.expense_date) >= start);
-            if (end) rows = rows.filter(r => formatDate(r.expense_date) <= end);
-            if (searchVendor) rows = rows.filter(r => (r.vendor || '').toLowerCase() === searchVendor.toLowerCase() || (r.vendor || '').toLowerCase().includes(searchVendor.toLowerCase()));
-            if (searchCategory) rows = rows.filter(r => (r.category || '').toLowerCase() === searchCategory.toLowerCase() || (r.category || '').toLowerCase().includes(searchCategory.toLowerCase()));
-            if (searchAccount) rows = rows.filter(r => (r.source || '') === searchAccount);
-            if (searchNotes) rows = rows.filter(r => (r.notes || '').toLowerCase().includes(searchNotes.toLowerCase()));
-            if (deductOnly) rows = rows.filter(r => r.tax_deductible);
-            if (missingReceiptOnly) rows = rows.filter(r => !r.receipt_link && r.tax_deductible);
-        }
+    const filters = useMemo(() => isAuditMode ? {} : {
+        start, end, vendor: searchVendor, category: searchCategory,
+        account: searchAccount, notes: searchNotes, deductOnly, missingReceiptOnly,
+    }, [isAuditMode, start, end, searchVendor, searchCategory, searchAccount, searchNotes, deductOnly, missingReceiptOnly]);
 
-        rows.sort((a, b) => {
-            let av = a[sortCol] ?? '';
-            let bv = b[sortCol] ?? '';
-            if (sortCol === 'amount_cents') { av = Number(av); bv = Number(bv); }
-            if (av < bv) return sortDir === 'asc' ? -1 : 1;
-            if (av > bv) return sortDir === 'asc' ? 1 : -1;
-            return 0;
-        });
-        return rows;
-    }, [expenses, start, end, searchVendor, searchCategory, searchAccount, searchNotes, deductOnly, missingReceiptOnly, sortCol, sortDir, isAuditMode]);
+    const { filtered } = useExpenseFilters(auditBase, filters, sortCol, sortDir);
 
     const exportCsv = () => {
         const qs = new URLSearchParams();

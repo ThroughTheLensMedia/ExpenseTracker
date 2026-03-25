@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { invalidateExpensesCache } from '../api';
 import { useAuth, supabase } from '../components/AuthContext';
+import PlaidLink from '../components/PlaidLink';
 
 const BANK_PROFILES = [
     { key: 'rocketmoney', label: '🟣 Rocket Money' },
@@ -132,7 +133,16 @@ export default function Import() {
         <section style={{ maxWidth: '800px', margin: '0 auto', paddingBottom: '100px' }}>
             <div className="card glass glow-blue" style={{ padding: '24px 30px', border: 'none', marginBottom: '20px' }}>
                 <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 950, letterSpacing: '-0.02em' }}>Bank Data Import</h1>
-                <div className="muted" style={{ fontWeight: 600 }}>Sync External Accounts via CSV</div>
+                <div className="muted" style={{ fontWeight: 600 }}>Auto-Sync via Plaid or Import via CSV</div>
+            </div>
+
+            {/* Plaid Auto-Sync Section */}
+            <div className="card glass" style={{ padding: '30px', marginBottom: '20px' }}>
+                <PlaidLink onSync={() => invalidateExpensesCache()} />
+            </div>
+
+            <div style={{ textAlign: 'center', padding: '10px 0', marginBottom: '10px' }}>
+                <div className="muted" style={{ fontSize: '12px', fontWeight: 800, letterSpacing: '0.1em' }}>— OR IMPORT MANUALLY —</div>
             </div>
 
             <div className="card glass" style={{ padding: '30px' }}>

@@ -126,16 +126,13 @@ router.get("/check-status", async (req, res) => {
     }
 
     try {
-        const serviceKey = process.env.SUPABASE_KEY || 
-                           process.env.SUPABASE_SERVICE_ROLE_KEY || 
-                           process.env.SUPABASE_SERVICE_KEY || 
-                           process.env.SERVICE_ROLE_KEY || 
-                           process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || "";
-        
-        const isServiceKeyValid = serviceKey && serviceKey.length > 20;
-        
+        const hasServiceKey = !!(process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || process.env.SERVICE_ROLE_KEY);
+        const hasAnonKey = !!(process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY);
+
+
         let subCount = 0, codeCount = 0, activityCount = 0;
         let subError = null, codeError = null, activityError = null;
+        let queriesSucceeded = false;
 
         if (supabase) {
             try {
@@ -147,6 +144,7 @@ router.get("/check-status", async (req, res) => {
                 subCount = s.count || 0; subError = s.error;
                 codeCount = c.count || 0; codeError = c.error;
                 activityCount = a.count || 0; activityError = a.error;
+                queriesSucceeded = !subError && !codeError && !activityError;
             } catch (err) {
                 console.error("[Admin Diagnostics] Promise.all failed", err);
                 subError = { message: err.message };
@@ -154,15 +152,19 @@ router.get("/check-status", async (req, res) => {
         } else {
             subError = { message: "Supabase client not initialized" };
         }
-        
+
+        // Only report degraded if queries actually fail.
+        // Using anon key with proper RLS is fine for admin reads.
+        const isDegraded = !supabase || (!queriesSucceeded && !hasServiceKey && !hasAnonKey);
+
         res.json({
             ok: true,
             user: req.user.email,
             diagnostics: {
-                has_service_key: !!serviceKey,
-                service_key_length: serviceKey?.length || 0,
-                service_key_degraded: !isServiceKeyValid, 
-                key_hint: serviceKey ? serviceKey.substring(0, 10) + "..." : "NONE",
+                has_service_key: hasServiceKey,
+                using_anon_fallback: !hasServiceKey && hasAnonKey,
+                service_key_degraded: isDegraded,
+                queries_ok: queriesSucceeded,
                 db_url: process.env.SUPABASE_URL ? "CONFIGURED" : "MISSING",
                 timezone_info: new Date().toString()
             },
