@@ -103,46 +103,49 @@ router.post("/ask", async (req, res) => {
             { data: equipmentAssets },
         ] = await Promise.all([
             // Top 10 biggest purchases this year
-            req.sb.from("expenses").select("vendor, amount, expense_date, category")
-                .gte("expense_date", startOfYear).order("amount", { ascending: false }).limit(10),
+            req.sb.from("expenses").select("vendor, amount_cents, expense_date, category")
+                .gte("expense_date", startOfYear).order("amount_cents", { ascending: false }).limit(10),
             // All spending for the year
-            req.sb.from("expenses").select("amount, category, expense_date, tax_bucket, tax_deductible")
+            req.sb.from("expenses").select("amount_cents, category, expense_date, tax_bucket, tax_deductible")
                 .gte("expense_date", startOfYear),
             // Global archive count
             req.sb.from("expenses").select("*", { count: 'exact', head: true }),
             // Last 15 transactions (for recency context)
-            req.sb.from("expenses").select("vendor, amount, expense_date, category")
+            req.sb.from("expenses").select("vendor, amount_cents, expense_date, category")
                 .order("expense_date", { ascending: false }).limit(15),
             // Category spending breakdown YTD
-            req.sb.from("expenses").select("category, amount")
+            req.sb.from("expenses").select("category, amount_cents")
                 .gte("expense_date", startOfYear),
             // Tax deductible total
-            req.sb.from("expenses").select("amount, tax_bucket")
+            req.sb.from("expenses").select("amount_cents, tax_bucket")
                 .gte("expense_date", startOfYear).eq("tax_deductible", true),
             // Mileage logs this year
-            req.sb.from("mileage_logs").select("miles, trip_date")
-                .gte("trip_date", startOfYear),
+            req.sb.from("mileage_logs").select("miles, log_date")
+                .gte("log_date", startOfYear),
             // Equipment assets
-            req.sb.from("equipment_assets").select("name, purchase_price, purchase_date, depreciation_method, useful_life_years")
+            req.sb.from("equipment_assets").select("description, cost_cents, purchase_date, depreciation_method, useful_life_years")
                 .limit(20),
         ]);
 
+        // Helper: cents to dollars
+        const toDollars = (cents) => (Number(cents) || 0) / 100;
+
         // --- Compute Analytics ---
-        const totalYearlySpend = (allSpentRows || []).reduce((acc, r) => acc + (r.amount || 0), 0);
-        const totalDeductible = (taxDeductibleRows || []).reduce((acc, r) => acc + (r.amount || 0), 0);
+        const totalYearlySpend = (allSpentRows || []).reduce((acc, r) => acc + toDollars(r.amount_cents), 0);
+        const totalDeductible = (taxDeductibleRows || []).reduce((acc, r) => acc + toDollars(r.amount_cents), 0);
 
         // Monthly spend breakdown
         const monthlySpend = {};
         (allSpentRows || []).forEach(r => {
             const month = String(r.expense_date || '').slice(0, 7); // YYYY-MM
-            monthlySpend[month] = (monthlySpend[month] || 0) + (r.amount || 0);
+            monthlySpend[month] = (monthlySpend[month] || 0) + toDollars(r.amount_cents);
         });
         const avgMonthlyBurn = currentMonth > 0 ? totalYearlySpend / currentMonth : 0;
 
         // Category totals
         const categoryTotals = {};
         (categoryBreakdown || []).forEach(r => {
-            if (r.category) categoryTotals[r.category] = (categoryTotals[r.category] || 0) + (r.amount || 0);
+            if (r.category) categoryTotals[r.category] = (categoryTotals[r.category] || 0) + toDollars(r.amount_cents);
         });
         const topCategories = Object.entries(categoryTotals)
             .sort((a, b) => b[1] - a[1])
@@ -152,7 +155,7 @@ router.post("/ask", async (req, res) => {
         // Tax bucket breakdown
         const taxBuckets = {};
         (taxDeductibleRows || []).forEach(r => {
-            if (r.tax_bucket) taxBuckets[r.tax_bucket] = (taxBuckets[r.tax_bucket] || 0) + (r.amount || 0);
+            if (r.tax_bucket) taxBuckets[r.tax_bucket] = (taxBuckets[r.tax_bucket] || 0) + toDollars(r.amount_cents);
         });
 
         // Mileage totals
@@ -183,12 +186,12 @@ ${topCategories.length > 0 ? topCategories.join("\n") : "No categorized spending
 
 TOP 5 LARGEST TRANSACTIONS (YTD):
 ${(topPurchases && topPurchases.length > 0)
-    ? topPurchases.slice(0, 5).map(p => `- ${p.vendor}: $${p.amount} on ${p.expense_date} [${p.category || 'Uncategorized'}]`).join("\n")
+    ? topPurchases.slice(0, 5).map(p => `- ${p.vendor}: $${toDollars(p.amount_cents).toFixed(2)} on ${p.expense_date} [${p.category || 'Uncategorized'}]`).join("\n")
     : "None recorded yet for " + currentYear}
 
 LAST 5 TRANSACTIONS (Most Recent Activity):
 ${(recentTransactions && recentTransactions.length > 0)
-    ? recentTransactions.slice(0, 5).map(p => `- ${p.vendor}: $${p.amount} on ${p.expense_date}`).join("\n")
+    ? recentTransactions.slice(0, 5).map(p => `- ${p.vendor}: $${toDollars(p.amount_cents).toFixed(2)} on ${p.expense_date}`).join("\n")
     : "No recent activity."}
 
 MONTHLY BURN TREND:
@@ -203,7 +206,7 @@ MILEAGE:
 
 EQUIPMENT ASSETS:
 ${(equipmentAssets && equipmentAssets.length > 0)
-    ? equipmentAssets.slice(0, 10).map(a => `- ${a.name}: $${a.purchase_price} (${a.depreciation_method}, ${a.useful_life_years}yr life)`).join("\n")
+    ? equipmentAssets.slice(0, 10).map(a => `- ${a.description}: $${toDollars(a.cost_cents).toFixed(2)} (${a.depreciation_method}, ${a.useful_life_years}yr life)`).join("\n")
     : "No equipment tracked yet."}
 
 GLOBAL ARCHIVE: ${totalArchivedItems || 0}+ total historical items.
