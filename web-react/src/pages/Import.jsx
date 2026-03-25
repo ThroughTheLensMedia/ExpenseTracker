@@ -33,10 +33,6 @@ const BANK_TIPS = {
 };
 
 export default function Import() {
-    // const { session } = useAuth(); // Removed
-    // const token = session?.access_token; // Removed
-    // const authHeaders = token ? { 'Authorization': `Bearer ${token}` } : {}; // Removed
-
     const fileInputRef = useRef(null);
     const [isDragging, setIsDragging] = useState(false);
     const [rmMsg, setRmMsg] = useState('');
@@ -45,6 +41,7 @@ export default function Import() {
     const [detecting, setDetecting] = useState(false);
     const [detectedSource, setDetectedSource] = useState(null);
     const [pendingFile, setPendingFile] = useState(null);
+    const [showPlaid, setShowPlaid] = useState(false);
     const navigate = useNavigate();
 
     const getFreshAuthHeader = async () => {
@@ -133,16 +130,27 @@ export default function Import() {
         <section style={{ maxWidth: '800px', margin: '0 auto', paddingBottom: '100px' }}>
             <div className="card glass glow-blue" style={{ padding: '24px 30px', border: 'none', marginBottom: '20px' }}>
                 <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 950, letterSpacing: '-0.02em' }}>Bank Data Import</h1>
-                <div className="muted" style={{ fontWeight: 600 }}>Auto-Sync via Plaid or Import via CSV</div>
+                <div className="muted" style={{ fontWeight: 600 }}>Import transactions from your bank via CSV</div>
             </div>
 
-            {/* Plaid Auto-Sync Section */}
-            <div className="card glass" style={{ padding: '30px', marginBottom: '20px' }}>
-                <PlaidLink onSync={() => invalidateExpensesCache()} />
-            </div>
-
-            <div style={{ textAlign: 'center', padding: '10px 0', marginBottom: '10px' }}>
-                <div className="muted" style={{ fontSize: '12px', fontWeight: 800, letterSpacing: '0.1em' }}>— OR IMPORT MANUALLY —</div>
+            {/* Plaid Auto-Sync — Collapsed by default */}
+            <div className="card glass" style={{ margin: '0 0 20px 0', padding: 0, overflow: 'hidden' }}>
+                <button
+                    onClick={() => setShowPlaid(!showPlaid)}
+                    style={{
+                        width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '16px 24px', background: 'transparent', border: 'none', color: 'var(--muted)',
+                        cursor: 'pointer', fontSize: '13px', fontWeight: 800, letterSpacing: '0.03em'
+                    }}
+                >
+                    <span>🏦 Bank Auto-Sync via Plaid {!showPlaid && <span style={{ opacity: 0.4, fontWeight: 500, marginLeft: '8px' }}>Coming Soon</span>}</span>
+                    <span style={{ fontSize: '11px', transition: 'transform 0.2s', transform: showPlaid ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+                </button>
+                {showPlaid && (
+                    <div style={{ padding: '0 24px 24px' }}>
+                        <PlaidLink onSync={() => invalidateExpensesCache()} />
+                    </div>
+                )}
             </div>
 
             <div className="card glass" style={{ padding: '30px' }}>
