@@ -364,13 +364,56 @@ async function parseCsvAndImport(sb, filePath, profileKey, res) {
         const dates = items.map(i => i.expense_date).sort();
         const { data: existing } = await sb
             .from('expenses')
-            .select('expense_date, vendor, amount_cents')
+            .select('expense_date, vendor, amount_cents, source')
             .gte('expense_date', dates[0])
             .lte('expense_date', dates[dates.length - 1]);
 
-        const existingKeys = new Set((existing || []).map(e => `${e.expense_date}|${e.vendor}|${e.amount_cents}`));
-        const toInsert = items.filter(i => !existingKeys.has(`${i.expense_date}|${i.vendor}|${i.amount_cents}`));
-        const skipped = items.length - toInsert.length;
+        // Exact match: same date + vendor + amount (identical duplicate)
+        const exactKeys = new Set((existing || []).map(e => `${e.expense_date}|${e.vendor}|${e.amount_cents}`));
+
+        // Fuzzy match: same date + amount (cross-source duplicate, e.g. manual "Terrible Herbst" vs bank "C-Store")
+        // Track how many times each date+amount pair appears in existing data
+        const dateAmountCounts = {};
+        for (const e of existing || []) {
+            const key = `${e.expense_date}|${e.amount_cents}`;
+            dateAmountCounts[key] = (dateAmountCounts[key] || 0) + 1;
+        }
+
+        const toInsert = [];
+        let skipped = 0;
+        const importDateAmountUsed = {};
+
+        for (const item of items) {
+            const exactKey = `${item.expense_date}|${item.vendor}|${item.amount_cents}`;
+            const fuzzyKey = `${item.expense_date}|${item.amount_cents}`;
+
+            if (exactKeys.has(exactKey)) {
+                // Exact duplicate — skip silently
+                skipped++;
+                continue;
+            }
+
+            // Check fuzzy: same date + amount already exists from a different source
+            const existingCount = dateAmountCounts[fuzzyKey] || 0;
+            const importUsed = importDateAmountUsed[fuzzyKey] || 0;
+
+            if (existingCount > importUsed) {
+                // Likely cross-source duplicate (e.g. manual entry vs bank import)
+                skipped++;
+                importDateAmountUsed[fuzzyKey] = importUsed + 1;
+                errors.push({
+                    row: items.indexOf(item) + 1,
+                    type: 'info',
+                    error: `Skipped likely duplicate: "${item.vendor}" $${(Math.abs(item.amount_cents) / 100).toFixed(2)} on ${item.expense_date} (already exists from another source)`
+                });
+                continue;
+            }
+
+            toInsert.push(item);
+            // Track this import's date+amount so two genuinely different imports with same date+amount aren't both skipped
+            importDateAmountUsed[fuzzyKey] = importUsed + 1;
+            dateAmountCounts[fuzzyKey] = (dateAmountCounts[fuzzyKey] || 0) + 1;
+        }
 
         // 🧠 AI BRAIN INTERVENTION (Silent Mode)
         const { data: st } = await sb.from("settings").select("*").maybeSingle();
