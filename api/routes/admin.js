@@ -126,8 +126,8 @@ router.get("/check-status", async (req, res) => {
     }
 
     try {
-        const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-        const isServiceKeyValid = serviceKey.length > 50;
+        const serviceKey = process.env.SUPABASE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+        const isServiceKeyValid = serviceKey && serviceKey.length > 50;
         
         let subCount = 0, codeCount = 0, activityCount = 0;
         let subError = null, codeError = null, activityError = null;

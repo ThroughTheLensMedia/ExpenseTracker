@@ -130,7 +130,9 @@ router.get("/export.csv", async (req, res) => {
 // POST /expenses
 router.post("/", async (req, res) => {
   try {
-    const data = ExpenseBaseSchema.parse(req.body);
+    const rawData = ExpenseBaseSchema.parse(req.body);
+    const data = { ...rawData, user_id: req.user.id };
+    
     if (!data.expense_date) data.expense_date = new Date().toISOString().slice(0, 10);
 
     const { data: inserted, error } = await req.sb
@@ -178,6 +180,7 @@ router.patch("/:id", async (req, res) => {
       .from("expenses")
       .update(data)
       .eq("id", id)
+      .eq("user_id", req.user.id)
       .select()
       .single();
 
