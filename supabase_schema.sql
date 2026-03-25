@@ -125,9 +125,7 @@ CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category);
 CREATE INDEX IF NOT EXISTS idx_expenses_tax_bucket ON expenses(tax_bucket);
 CREATE INDEX IF NOT EXISTS idx_mileage_logs_date ON mileage_logs(log_date);
 
--- 5. Enable Row Level Security (RLS) - Optional but recommended for Supabase
--- ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE classification_rules ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE mileage_logs ENABLE ROW LEVEL SECURITY;
-
--- Note: In a production Supabase app, you'd add policies here to restrict access to authenticated users.
+-- 5. Row Level Security (RLS)
+-- RLS policies are defined in supabase_schema_rls.sql
+-- Run that migration to enforce per-user data isolation on all tables.
+-- Plaid integration tables are in supabase_schema_plaid.sql

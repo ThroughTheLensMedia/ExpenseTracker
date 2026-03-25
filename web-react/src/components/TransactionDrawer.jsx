@@ -1,40 +1,59 @@
-import React, { useState, useEffect } from 'react';
+import React, { useReducer, useEffect } from 'react';
 import { apiPatch, apiPost, apiUpload } from '../api';
 import CategorySelect from './CategorySelect.jsx';
 import { ALL_CATEGORIES } from '../constants/categories.js';
 
+const initialState = {
+    date: '', amount: '', vendor: '', category: '', taxBucket: '',
+    bizPct: 100, deduct: false, notes: '', receiptLink: '',
+    receiptFile: null, source: 'manual', msg: '', savedId: null,
+};
+
+function reducer(state, action) {
+    switch (action.type) {
+        case 'SET_FIELD':
+            return { ...state, [action.field]: action.value };
+        case 'LOAD_TRANSACTION':
+            return {
+                ...initialState,
+                date: String(action.tx.expense_date || '').slice(0, 10),
+                amount: (Number(action.tx.amount_cents || 0) / 100).toFixed(2),
+                vendor: action.tx.vendor || '',
+                category: action.tx.category || '',
+                taxBucket: action.tx.tax_bucket || '',
+                bizPct: action.tx.business_use_pct == null ? 100 : action.tx.business_use_pct,
+                deduct: !!action.tx.tax_deductible,
+                notes: action.tx.notes || '',
+                receiptLink: action.tx.receipt_link || '',
+                source: action.tx.source || 'manual',
+                savedId: action.tx.id || null,
+            };
+        case 'SET_MSG':
+            return { ...state, msg: action.value };
+        case 'SAVED_NEW':
+            return { ...state, savedId: action.id, msg: 'Saved! You can now attach a receipt below.' };
+        case 'RECEIPT_UPLOADED':
+            return { ...state, receiptLink: action.link, msg: 'Receipt uploaded.' };
+        default:
+            return state;
+    }
+}
+
 export default function TransactionDrawer({ transaction, onClose, onSave }) {
-    const [date, setDate] = useState('');
-    const [amount, setAmount] = useState('');
-    const [vendor, setVendor] = useState('');
-    const [category, setCategory] = useState('');
-    const [taxBucket, setTaxBucket] = useState('');
-    const [bizPct, setBizPct] = useState(100);
-    const [deduct, setDeduct] = useState(false);
-    const [notes, setNotes] = useState('');
-    const [receiptLink, setReceiptLink] = useState('');
-    const [receiptFile, setReceiptFile] = useState(null);
-    const [source, setSource] = useState('manual');
-    const [msg, setMsg] = useState('');
+    const [state, dispatch] = useReducer(reducer, initialState);
+    const { date, amount, vendor, category, taxBucket, bizPct, deduct, notes,
+            receiptLink, receiptFile, source, msg, savedId } = state;
+
+    const field = (name, value) => dispatch({ type: 'SET_FIELD', field: name, value });
 
     useEffect(() => {
-        if (transaction) {
-            setDate(String(transaction.expense_date || '').slice(0, 10));
-            setAmount((Number(transaction.amount_cents || 0) / 100).toFixed(2));
-            setVendor(transaction.vendor || '');
-            setCategory(transaction.category || '');
-            setTaxBucket(transaction.tax_bucket || '');
-            setBizPct(transaction.business_use_pct == null ? 100 : transaction.business_use_pct);
-            setDeduct(!!transaction.tax_deductible);
-            setNotes(transaction.notes || '');
-            setReceiptLink(transaction.receipt_link || '');
-            setSource(transaction.source || 'manual');
-            setMsg('');
-        }
+        if (transaction) dispatch({ type: 'LOAD_TRANSACTION', tx: transaction });
     }, [transaction]);
 
+    const effectiveId = savedId || transaction?.id;
+
     const handleSave = async () => {
-        setMsg("Saving...");
+        dispatch({ type: 'SET_MSG', value: 'Saving...' });
         try {
             const payload = {
                 expense_date: date,
@@ -43,41 +62,40 @@ export default function TransactionDrawer({ transaction, onClose, onSave }) {
                 tax_deductible: deduct,
                 tax_bucket: taxBucket,
                 business_use_pct: Number(bizPct),
-                notes,
-                source,
+                notes, source,
                 receipt_link: receiptLink || null,
             };
 
             let updated;
-            if (transaction.id) {
-                updated = await apiPatch(`/expenses/${transaction.id}`, payload);
+            if (effectiveId) {
+                updated = await apiPatch(`/expenses/${effectiveId}`, payload);
             } else {
                 updated = await apiPost('/expenses', payload);
             }
 
-            setMsg("Saved.");
             if (onSave) onSave(updated);
-            if (!transaction.id) {
-                // For new transactions, close after a brief delay so user sees "Saved"
-                setTimeout(onClose, 800);
+            if (!transaction.id && !savedId) {
+                dispatch({ type: 'SAVED_NEW', id: updated.id });
+            } else {
+                dispatch({ type: 'SET_MSG', value: 'Saved.' });
             }
         } catch (err) {
-            setMsg(`Save failed: ${err.message}`);
+            dispatch({ type: 'SET_MSG', value: `Save failed: ${err.message}` });
         }
     };
 
     const handleUpload = async () => {
-        if (!receiptFile) { setMsg("Choose a file first."); return; }
-        setMsg("Uploading...");
+        if (!receiptFile) { dispatch({ type: 'SET_MSG', value: 'Choose a file first.' }); return; }
+        if (!effectiveId) { dispatch({ type: 'SET_MSG', value: 'Save the transaction first before uploading.' }); return; }
+        dispatch({ type: 'SET_MSG', value: 'Uploading...' });
         try {
             const fd = new FormData();
-            fd.append("file", receiptFile);
-            const updated = await apiUpload(`/receipts/expenses/${transaction.id}`, fd);
-            setMsg("Receipt uploaded.");
-            setReceiptLink(updated.receipt_link); // Sync local state immediately
+            fd.append('file', receiptFile);
+            const updated = await apiUpload(`/receipts/expenses/${effectiveId}`, fd);
+            dispatch({ type: 'RECEIPT_UPLOADED', link: updated.receipt_link });
             if (onSave) onSave(updated);
         } catch (err) {
-            setMsg(`Upload failed: ${err.message}`);
+            dispatch({ type: 'SET_MSG', value: `Upload failed: ${err.message}` });
         }
     };
 
@@ -99,7 +117,7 @@ export default function TransactionDrawer({ transaction, onClose, onSave }) {
                     gap: '10px',
                     alignItems: 'center'
                 }}>
-                    <h3 style={{ margin: 0 }}>{transaction.id ? 'Edit Transaction' : 'New Transaction'}</h3>
+                    <h3 style={{ margin: 0 }}>{effectiveId ? 'Edit Transaction' : 'New Transaction'}</h3>
                     <button className="btn secondary" onClick={onClose}>Close</button>
                 </div>
 
@@ -108,31 +126,30 @@ export default function TransactionDrawer({ transaction, onClose, onSave }) {
                     <div className="row two">
                         <div>
                             <small className="muted">Date</small>
-                            <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ colorScheme: 'dark' }} />
+                            <input type="date" value={date} onChange={e => field('date', e.target.value)} style={{ colorScheme: 'dark' }} />
                         </div>
                         <div>
                             <small className="muted">Amount</small>
-                            <input type="text" inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" />
+                            <input type="text" inputMode="decimal" value={amount} onChange={e => field('amount', e.target.value)} placeholder="0.00" />
                         </div>
                     </div>
 
                     <div className="row" style={{ marginTop: '10px' }}>
                         <div>
                             <small className="muted">Vendor</small>
-                            <input value={vendor} onChange={e => setVendor(e.target.value)} placeholder="Vendor" />
+                            <input value={vendor} onChange={e => field('vendor', e.target.value)} placeholder="Vendor" />
                         </div>
                         <div style={{ marginTop: '10px' }}>
                             <small className="muted">Category</small>
                             <CategorySelect
                                 value={ALL_CATEGORIES.includes(category) ? category : (category ? '__custom__' : '')}
                                 onChange={val => {
-                                    if (val === '__custom__') setCategory('');
+                                    if (val === '__custom__') field('category', '');
                                     else {
-                                        setCategory(val);
-                                        // If income category, auto-check business income (Line 1) logic
+                                        field('category', val);
                                         const INCOME_CATS = ['Photo Income', 'Freelance Income', 'Contract Income', 'Side Income'];
                                         if (INCOME_CATS.includes(val) && Number(amount || 0) < 0) {
-                                            setDeduct(true);
+                                            field('deduct', true);
                                         }
                                     }
                                 }}
@@ -140,11 +157,10 @@ export default function TransactionDrawer({ transaction, onClose, onSave }) {
                                 showCustom
                                 style={{ padding: '10px' }}
                             />
-                            {/* Free-text when value is custom / unknown */}
                             {!ALL_CATEGORIES.includes(category) && (
                                 <input
                                     value={category}
-                                    onChange={e => setCategory(e.target.value)}
+                                    onChange={e => field('category', e.target.value)}
                                     placeholder="Type custom category…"
                                     style={{ marginTop: '8px' }}
                                 />
@@ -159,8 +175,8 @@ export default function TransactionDrawer({ transaction, onClose, onSave }) {
                                 value={taxBucket}
                                 onChange={e => {
                                     const newBucket = e.target.value;
-                                    setTaxBucket(newBucket);
-                                    if (newBucket === 'Personal Expense') setDeduct(false);
+                                    field('taxBucket', newBucket);
+                                    if (newBucket === 'Personal Expense') field('deduct', false);
                                 }}
                                 style={{ width: '100%', padding: '8px' }}
                             >
@@ -176,13 +192,13 @@ export default function TransactionDrawer({ transaction, onClose, onSave }) {
                         </div>
                         <div>
                             <small className="muted">Business use %</small>
-                            <input type="number" inputMode="numeric" min="0" max="100" step="1" value={bizPct} onChange={e => setBizPct(e.target.value)} />
+                            <input type="number" inputMode="numeric" min="0" max="100" step="1" value={bizPct} onChange={e => field('bizPct', e.target.value)} />
                         </div>
                     </div>
 
                     <div className="row" style={{ marginTop: '10px' }}>
                         <label className="tag" style={{ display: 'flex', gap: '10px', alignItems: 'center', width: 'max-content' }}>
-                            <input type="checkbox" checked={deduct} onChange={e => setDeduct(e.target.checked)} style={{ width: 'auto', margin: 0 }} />
+                            <input type="checkbox" checked={deduct} onChange={e => field('deduct', e.target.checked)} style={{ width: 'auto', margin: 0 }} />
                             {Number(amount || 0) < 0 ? 'Business Income (Schedule C Line 1)' : 'Tax deductible business expense'}
                         </label>
                     </div>
@@ -190,22 +206,23 @@ export default function TransactionDrawer({ transaction, onClose, onSave }) {
                     <div className="row" style={{ marginTop: '10px' }}>
                         <div>
                             <small className="muted">Notes</small>
-                            <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Notes..." />
+                            <textarea value={notes} onChange={e => field('notes', e.target.value)} placeholder="Notes..." />
                         </div>
                     </div>
 
                     <div className="row" style={{ marginTop: '10px' }}>
                         <div>
                             <small className="muted">Receipt link - Google Drive, etc. (optional override)</small>
-                            <input value={receiptLink} onChange={e => setReceiptLink(e.target.value)} placeholder="https://..." />
+                            <input value={receiptLink} onChange={e => field('receiptLink', e.target.value)} placeholder="https://..." />
                         </div>
                     </div>
 
                     <div className="row" style={{ marginTop: '10px' }}>
                         <div>
                             <small className="muted">Account / Source</small>
-                            <select value={source} onChange={e => setSource(e.target.value)} style={{ width: '100%', padding: '8px' }}>
+                            <select value={source} onChange={e => field('source', e.target.value)} style={{ width: '100%', padding: '8px' }}>
                                 <option value="manual">➕ Manual Entry</option>
+                                <option value="plaid">🏦 Plaid (Auto-Sync)</option>
                                 <option value="rocketmoney">🟣 Rocket Money</option>
                                 <option value="chase">🔵 Chase Bank</option>
                                 <option value="usbank">🔵 US Bank</option>
@@ -223,20 +240,20 @@ export default function TransactionDrawer({ transaction, onClose, onSave }) {
                     <div className="row" style={{ marginTop: '10px' }}>
                         <div>
                             <small className="muted">Upload local receipt</small>
-                            <input type="file" onChange={e => setReceiptFile(e.target.files[0])} />
+                            <input type="file" accept="image/*,.pdf" capture="environment" onChange={e => field('receiptFile', e.target.files[0])} />
                             <div className="muted" style={{ marginTop: '6px' }}>If uploaded, the tracker auto-links it to this transaction.</div>
                         </div>
                     </div>
 
                     <div className="controls" style={{ marginTop: '12px' }}>
                         <button className="btn" onClick={handleSave}>Save</button>
-                        {transaction.id && (
+                        {effectiveId && (
                             <button className="btn secondary" onClick={handleUpload}>Upload receipt</button>
                         )}
                     </div>
 
                     <div className="muted" style={{ marginTop: '10px', minHeight: '18px' }}>{msg}</div>
-                </div> {/* end drawer-content */}
+                </div>
             </div>
         </div>
     );

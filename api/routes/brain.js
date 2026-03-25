@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { repairLedgerBatch } = require("../utils/gemini");
+const { repairLedgerBatch, getGeminiModel } = require("../utils/gemini");
 
 /**
  * AI Brain Entry Point - Intelligence Actions
@@ -15,12 +15,12 @@ router.post("/repair-ledger", async (req, res) => {
             .select("*")
             .eq("user_id", req.user.id)
             .maybeSingle();
-        
+
         const apiKey = settings?.gemini_api_key;
         if (!apiKey) {
-            return res.status(400).json({ 
-                error: "AI Brain is missing its API key.", 
-                detail: "Go to Studio Control Center → AI Settings to set your Gemini API Key." 
+            return res.status(400).json({
+                error: "AI Brain is missing its API key.",
+                detail: "Go to Studio Control Center → AI Settings to set your Gemini API Key."
             });
         }
 
@@ -30,7 +30,7 @@ router.post("/repair-ledger", async (req, res) => {
             .select("id, vendor, notes, source, category, expense_date")
             .eq("source", "rocketmoney")
             .order("expense_date", { ascending: false })
-            .limit(50); 
+            .limit(50);
 
         if (error) throw error;
         if (!items || items.length === 0) return res.json({ ok: true, message: "Ledger is already clean." });
@@ -43,10 +43,10 @@ router.post("/repair-ledger", async (req, res) => {
         for (const item of cleaned) {
             await req.sb
                 .from("expenses")
-                .update({ 
-                    vendor: item.vendor, 
-                    source: item.source, 
-                    category: item.category 
+                .update({
+                    vendor: item.vendor,
+                    source: item.source,
+                    category: item.category
                 })
                 .eq("id", item.id);
             updatedCount++;
@@ -55,25 +55,16 @@ router.post("/repair-ledger", async (req, res) => {
         res.json({ ok: true, scanned: items.length, updated: updatedCount, detail: cleaned });
     } catch (e) {
         console.error("AI Brain Error:", e);
-        const msg = String(e.message || "");
-        const isQuota = msg.includes("429") || msg.toLowerCase().includes("quota");
-        const isBusy = msg.includes("503") || msg.toLowerCase().includes("high demand") || msg.toLowerCase().includes("overloaded");
-
-        let userFeedback = "The forensic scan encountered a temporary hiccup. Please try again in a moment.";
-        if (isQuota) userFeedback = "AI Quota Reached. Please wait exactly 60 seconds before your next Forensic Scan.";
-        if (isBusy) userFeedback = "The Intelligence Engine is currently experiencing high global demand. Please wait a few seconds and try again.";
-
-        res.status(500).json({ error: userFeedback });
+        res.status(500).json({ error: formatAIError(e) });
     }
 });
 
 // POST /api/brain/ask
-// Chat with the Assistant
+// Chat with the Assistant — Enhanced with deep financial intelligence
 router.post("/ask", async (req, res) => {
     try {
         const { prompt, context } = req.body;
-        
-        // Detailed logging for debugging
+
         console.log(`[AI Brain] Processing request for User: ${req.user.id} on page: ${context.page}`);
 
         const { data: settings, error: settingsError } = await req.sb
@@ -81,7 +72,7 @@ router.post("/ask", async (req, res) => {
             .select("*")
             .eq("user_id", req.user.id)
             .maybeSingle();
-        
+
         if (settingsError) {
             console.error("[AI Brain] Settings DB Error:", settingsError);
             return res.status(500).json({ error: "Database Link Error" });
@@ -89,64 +80,164 @@ router.post("/ask", async (req, res) => {
 
         const apiKey = settings?.gemini_api_key;
         if (!apiKey) {
-            console.warn(`[AI Brain] No API Key found in settings for user: ${req.user.id}`);
             return res.status(400).json({ error: "No API Key found. Please set your key in the Control Center." });
         }
 
-        const { GoogleGenerativeAI } = require("@google/generative-ai");
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+        const model = await getGeminiModel(apiKey);
 
-        // --- STEP 1: Fetch Financial Intelligence Context ---
+        // --- Gather Rich Financial Intelligence Context ---
         const currentYear = new Date().getFullYear();
+        const currentMonth = new Date().getMonth() + 1;
         const startOfYear = `${currentYear}-01-01`;
-        
-        // Fetch Top 10 biggest purchases this year
-        const { data: topPurchases } = await req.sb
-            .from("expenses")
-            .select("vendor, amount, expense_date, category")
-            .gte("expense_date", startOfYear)
-            .order("amount", { ascending: false })
-            .limit(10);
+        const today = new Date().toISOString().slice(0, 10);
 
-        // Fetch total spending for the year
-        const { data: allSpent } = await req.sb
-            .from("expenses")
-            .select("amount")
-            .gte("expense_date", startOfYear);
-        
-        const totalYearlySum = allSpent?.reduce((acc, curr) => acc + (curr.amount || 0), 0) || 0;
+        // Parallel data fetches for speed
+        const [
+            { data: topPurchases },
+            { data: allSpentRows },
+            { count: totalArchivedItems },
+            { data: recentTransactions },
+            { data: categoryBreakdown },
+            { data: taxDeductibleRows },
+            { data: mileageLogs },
+            { data: equipmentAssets },
+        ] = await Promise.all([
+            // Top 10 biggest purchases this year
+            req.sb.from("expenses").select("vendor, amount, expense_date, category")
+                .gte("expense_date", startOfYear).order("amount", { ascending: false }).limit(10),
+            // All spending for the year
+            req.sb.from("expenses").select("amount, category, expense_date, tax_bucket, tax_deductible")
+                .gte("expense_date", startOfYear),
+            // Global archive count
+            req.sb.from("expenses").select("*", { count: 'exact', head: true }),
+            // Last 15 transactions (for recency context)
+            req.sb.from("expenses").select("vendor, amount, expense_date, category")
+                .order("expense_date", { ascending: false }).limit(15),
+            // Category spending breakdown YTD
+            req.sb.from("expenses").select("category, amount")
+                .gte("expense_date", startOfYear),
+            // Tax deductible total
+            req.sb.from("expenses").select("amount, tax_bucket")
+                .gte("expense_date", startOfYear).eq("tax_deductible", true),
+            // Mileage logs this year
+            req.sb.from("mileage_logs").select("miles, trip_date")
+                .gte("trip_date", startOfYear),
+            // Equipment assets
+            req.sb.from("equipment_assets").select("name, purchase_price, purchase_date, depreciation_method, useful_life_years")
+                .limit(20),
+        ]);
 
-        // Fetch Global Statistics for "Forward Thinking"
-        const { count: totalArchivedItems } = await req.sb
-            .from("expenses")
-            .select("*", { count: 'exact', head: true });
+        // --- Compute Analytics ---
+        const totalYearlySpend = (allSpentRows || []).reduce((acc, r) => acc + (r.amount || 0), 0);
+        const totalDeductible = (taxDeductibleRows || []).reduce((acc, r) => acc + (r.amount || 0), 0);
+
+        // Monthly spend breakdown
+        const monthlySpend = {};
+        (allSpentRows || []).forEach(r => {
+            const month = String(r.expense_date || '').slice(0, 7); // YYYY-MM
+            monthlySpend[month] = (monthlySpend[month] || 0) + (r.amount || 0);
+        });
+        const avgMonthlyBurn = currentMonth > 0 ? totalYearlySpend / currentMonth : 0;
+
+        // Category totals
+        const categoryTotals = {};
+        (categoryBreakdown || []).forEach(r => {
+            if (r.category) categoryTotals[r.category] = (categoryTotals[r.category] || 0) + (r.amount || 0);
+        });
+        const topCategories = Object.entries(categoryTotals)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 8)
+            .map(([cat, total]) => `${cat}: $${total.toFixed(2)}`);
+
+        // Tax bucket breakdown
+        const taxBuckets = {};
+        (taxDeductibleRows || []).forEach(r => {
+            if (r.tax_bucket) taxBuckets[r.tax_bucket] = (taxBuckets[r.tax_bucket] || 0) + (r.amount || 0);
+        });
+
+        // Mileage totals
+        const totalMiles = (mileageLogs || []).reduce((acc, r) => acc + (r.miles || 0), 0);
+
+        // Projected year-end burn
+        const projectedAnnualBurn = avgMonthlyBurn * 12;
+
+        // --- Estimate Quarterly Tax Deadlines ---
+        const taxDeadlines = getTaxDeadlines(currentYear);
+        const upcomingDeadlines = taxDeadlines
+            .filter(d => d.date >= today)
+            .slice(0, 2)
+            .map(d => `${d.label}: ${d.date}`);
 
         const dataContext = `
-            REAL STUDIO DATA FOR ${currentYear}:
-            - Total Annual Studio Burn: $${totalYearlySum.toFixed(2)}
-            - Your Largest Transactions:
-              ${(topPurchases && topPurchases.length > 0) 
-                 ? topPurchases.slice(0, 5).map(p => `- ${p.vendor}: $${p.amount} on ${p.expense_date}`).join("\n")
-                 : "None recorded yet for " + currentYear}
-            - GLOBAL ARCHIVE: ${totalArchivedItems || 3200}+ items in total history.
+REAL STUDIO DATA FOR ${currentYear} (as of ${today}):
+
+FINANCIAL SUMMARY:
+- Total YTD Spend: $${totalYearlySpend.toFixed(2)}
+- Total Tax-Deductible: $${totalDeductible.toFixed(2)}
+- Average Monthly Burn Rate: $${avgMonthlyBurn.toFixed(2)}/mo
+- Projected Annual Burn: $${projectedAnnualBurn.toFixed(2)}
+- Months Elapsed: ${currentMonth} of 12
+
+TOP SPENDING CATEGORIES (YTD):
+${topCategories.length > 0 ? topCategories.join("\n") : "No categorized spending yet."}
+
+TOP 5 LARGEST TRANSACTIONS (YTD):
+${(topPurchases && topPurchases.length > 0)
+    ? topPurchases.slice(0, 5).map(p => `- ${p.vendor}: $${p.amount} on ${p.expense_date} [${p.category || 'Uncategorized'}]`).join("\n")
+    : "None recorded yet for " + currentYear}
+
+LAST 5 TRANSACTIONS (Most Recent Activity):
+${(recentTransactions && recentTransactions.length > 0)
+    ? recentTransactions.slice(0, 5).map(p => `- ${p.vendor}: $${p.amount} on ${p.expense_date}`).join("\n")
+    : "No recent activity."}
+
+MONTHLY BURN TREND:
+${Object.entries(monthlySpend).sort().map(([m, v]) => `${m}: $${v.toFixed(2)}`).join("\n") || "No monthly data."}
+
+TAX DEDUCTION BUCKETS (Schedule C):
+${Object.entries(taxBuckets).sort((a,b) => b[1] - a[1]).slice(0, 10).map(([b, v]) => `${b}: $${v.toFixed(2)}`).join("\n") || "No tax assignments yet."}
+
+MILEAGE:
+- Total Miles Logged (YTD): ${totalMiles} miles
+- Estimated Mileage Deduction: $${(totalMiles * 0.70).toFixed(2)} (at $0.70/mile IRS rate)
+
+EQUIPMENT ASSETS:
+${(equipmentAssets && equipmentAssets.length > 0)
+    ? equipmentAssets.slice(0, 10).map(a => `- ${a.name}: $${a.purchase_price} (${a.depreciation_method}, ${a.useful_life_years}yr life)`).join("\n")
+    : "No equipment tracked yet."}
+
+GLOBAL ARCHIVE: ${totalArchivedItems || 0}+ total historical items.
+
+UPCOMING TAX DEADLINES:
+${upcomingDeadlines.length > 0 ? upcomingDeadlines.join("\n") : "No upcoming deadlines in the near term."}
         `;
 
-        // Build context-aware prompt
+        // Build context-aware prompt with forward-thinking persona
         const systemPrompt = `
-            You are "Your Assistant", an elite financial AI for professional photographers using Studio Tracker.
-            Current view: ${context.page}.
-            
-            REAL-TIME ACCURATE DATA:
-            ${dataContext}
+You are "Your Assistant", an elite financial AI advisor for professional photographers using Studio Tracker.
+Current view: ${context.page}. Today's date: ${today}.
 
-            The user is a creative entrepreneur. Your tone should be encouraging, analytical, and provide first-class, forward-thinking advice. 
-            
-            CRITICAL INTELLIGENCE:
-            - If "Total Annual Studio Burn" is $0 or Largest Transactions is "None recorded yet", check the GLOBAL ARCHIVE count. 
-            - If the Global Archive has data but the current year doesn't, tell the user: "I see you have ${totalArchivedItems} transactions in your history, but none imported for ${currentYear} yet. Would you like to analyze a previous year or sync your recent bank data?"
-            - Never say "undefined" to the user.
-            - Provide "Forward Thinking" advice: suggest tax saving strategies, mention upcoming estimated tax deadlines (April 15, June 15, Sept 15, Jan 15), and analyze burn rates.
+${dataContext}
+
+PERSONA & BEHAVIOR:
+- You are an expert CPA-level advisor who specializes in creative entrepreneurs and photographers.
+- Your tone is confident, encouraging, analytical, and actionable. Never generic. Always reference the user's REAL data above.
+- Format responses with clear headers and bullet points for readability.
+- Use dollar amounts from the data. Never say "I don't have access to your data" — you DO.
+
+FORWARD-THINKING INTELLIGENCE:
+- Proactively analyze burn rate trends. If spending is accelerating month-over-month, flag it.
+- Suggest tax-saving strategies: home office deduction, Section 179 for equipment, mileage optimization, meal deduction tips.
+- Reference upcoming estimated tax deadlines and remind them to set aside ~25-30% of net profit.
+- If they have uncategorized or unassigned expenses, suggest running the Automation Rules Engine.
+- If equipment is approaching end of useful life, mention replacement planning.
+- Compare their current year pace to projected annual totals.
+
+CRITICAL RULES:
+- If "Total YTD Spend" is $0, check the GLOBAL ARCHIVE count. If it has data, tell the user: "I see you have ${totalArchivedItems} transactions in your history, but none imported for ${currentYear} yet. Would you like to analyze a previous year or sync your recent bank data?"
+- Never say "undefined" or "NaN" to the user.
+- Never fabricate data. Only reference what's in the context above.
+- Keep responses focused and under 500 words unless a detailed breakdown is requested.
         `;
 
         const result = await model.generateContent([systemPrompt, prompt]);
@@ -156,16 +247,29 @@ router.post("/ask", async (req, res) => {
         res.json({ ok: true, answer: text });
     } catch (e) {
         console.error("[AI Brain] Critical Execution Error:", e);
-        const msg = String(e.message || "");
-        const isQuota = msg.includes("429") || msg.toLowerCase().includes("quota");
-        const isBusy = msg.includes("503") || msg.toLowerCase().includes("high demand") || msg.toLowerCase().includes("overloaded");
-
-        let userFeedback = "The Brain is currently recharging. Please try your search again in a moment.";
-        if (isQuota) userFeedback = "AI Quota Reached. Please wait exactly 60 seconds before your next Forensic Scan.";
-        if (isBusy) userFeedback = "The Intelligence Engine is currently experiencing high global demand. Please wait a few seconds and try again.";
-
-        res.status(500).json({ error: userFeedback });
+        res.status(500).json({ error: formatAIError(e) });
     }
 });
+
+// --- Helpers ---
+
+function formatAIError(e) {
+    const msg = String(e.message || "");
+    const isQuota = msg.includes("429") || msg.toLowerCase().includes("quota");
+    const isBusy = msg.includes("503") || msg.toLowerCase().includes("high demand") || msg.toLowerCase().includes("overloaded");
+
+    if (isQuota) return "AI Quota Reached. Please wait exactly 60 seconds before your next request.";
+    if (isBusy) return "The Intelligence Engine is currently experiencing high global demand. Please wait a few seconds and try again.";
+    return "The Brain is currently recharging. Please try your search again in a moment.";
+}
+
+function getTaxDeadlines(year) {
+    return [
+        { date: `${year}-01-15`, label: `Q4 ${year - 1} Estimated Tax Payment` },
+        { date: `${year}-04-15`, label: `Q1 ${year} Estimated Tax Payment & Tax Filing Deadline` },
+        { date: `${year}-06-15`, label: `Q2 ${year} Estimated Tax Payment` },
+        { date: `${year}-09-15`, label: `Q3 ${year} Estimated Tax Payment` },
+    ];
+}
 
 module.exports = router;

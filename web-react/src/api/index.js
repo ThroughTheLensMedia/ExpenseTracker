@@ -97,9 +97,28 @@ export async function apiDelete(path) {
     return r.json();
 }
 
+// ─── Generic Cache Layer ───
+const CACHE_TTL = 30000; // 30 seconds
+const _cache = {};
+
+function getCached(key) {
+    const entry = _cache[key];
+    if (entry && (Date.now() - entry.age < CACHE_TTL)) return entry.data;
+    return null;
+}
+
+function setCache(key, data) {
+    _cache[key] = { data, age: Date.now() };
+}
+
+export function invalidateCache(key) {
+    if (key) { delete _cache[key]; }
+    else { Object.keys(_cache).forEach(k => delete _cache[k]); }
+}
+
+// Back-compat alias
 let _expensesCache = null;
 let _expensesAge = 0;
-const CACHE_TTL = 30000; // 30 seconds
 
 // Fetch expenses, optionally filtered by year
 export async function fetchAllExpenses(force = false, year = null) {
@@ -170,10 +189,55 @@ export async function fetchExpenseYears() {
     }
 }
 
-export async function fetchAllMileage(year) {
+export async function fetchAllMileage(year, force = false) {
+    const key = `mileage_${year || 'all'}`;
+    if (!force) {
+        const cached = getCached(key);
+        if (cached) return cached;
+    }
     const path = year ? `/mileage?year=${year}` : '/mileage';
-    return apiGet(path);
+    const data = await apiGet(path);
+    setCache(key, data);
+    return data;
 }
+
+export async function fetchAllAssets(force = false) {
+    const key = 'assets';
+    if (!force) {
+        const cached = getCached(key);
+        if (cached) return cached;
+    }
+    const data = await apiGet('/assets');
+    setCache(key, data);
+    return data;
+}
+
+export async function fetchAllInvoices(force = false) {
+    const key = 'invoices';
+    if (!force) {
+        const cached = getCached(key);
+        if (cached) return cached;
+    }
+    const data = await apiGet('/invoices');
+    setCache(key, data);
+    return data;
+}
+
+export async function fetchAllLeads(force = false) {
+    const key = 'leads';
+    if (!force) {
+        const cached = getCached(key);
+        if (cached) return cached;
+    }
+    const data = await apiGet('/leads');
+    setCache(key, data);
+    return data;
+}
+
+export function invalidateMileageCache() { invalidateCache('mileage_all'); }
+export function invalidateAssetsCache() { invalidateCache('assets'); }
+export function invalidateInvoicesCache() { invalidateCache('invoices'); }
+export function invalidateLeadsCache() { invalidateCache('leads'); }
 
 export function formatMoney(cents) {
     const n = Number(cents || 0) / 100;
