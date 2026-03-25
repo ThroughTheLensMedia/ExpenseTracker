@@ -126,8 +126,13 @@ router.get("/check-status", async (req, res) => {
     }
 
     try {
-        const serviceKey = process.env.SUPABASE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-        const isServiceKeyValid = serviceKey && serviceKey.length > 50;
+        const serviceKey = process.env.SUPABASE_KEY || 
+                           process.env.SUPABASE_SERVICE_ROLE_KEY || 
+                           process.env.SUPABASE_SERVICE_KEY || 
+                           process.env.SERVICE_ROLE_KEY || 
+                           process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || "";
+        
+        const isServiceKeyValid = serviceKey && serviceKey.length > 20;
         
         let subCount = 0, codeCount = 0, activityCount = 0;
         let subError = null, codeError = null, activityError = null;
@@ -154,9 +159,10 @@ router.get("/check-status", async (req, res) => {
             ok: true,
             user: req.user.email,
             diagnostics: {
-                has_service_key: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-                service_key_length: process.env.SUPABASE_SERVICE_ROLE_KEY ? process.env.SUPABASE_SERVICE_ROLE_KEY.length : 0,
+                has_service_key: !!serviceKey,
+                service_key_length: serviceKey?.length || 0,
                 service_key_degraded: !isServiceKeyValid, 
+                key_hint: serviceKey ? serviceKey.substring(0, 10) + "..." : "NONE",
                 db_url: process.env.SUPABASE_URL ? "CONFIGURED" : "MISSING",
                 timezone_info: new Date().toString()
             },
