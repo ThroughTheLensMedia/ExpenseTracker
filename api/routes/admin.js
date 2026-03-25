@@ -290,8 +290,12 @@ router.get("/subscriptions", async (req, res) => {
             .from('user_subscriptions')
             .select('*')
             .order('created_at', { ascending: false });
-        
-        if (error) throw error;
+
+        if (error) {
+            console.error("[Admin] user_subscriptions query error:", error.message, error.code);
+            throw error;
+        }
+        console.log(`[Admin] user_subscriptions returned ${(data || []).length} rows`);
 
         // Enrich with profile names
         const userIds = (data || []).map(d => d.user_id);
@@ -420,8 +424,12 @@ router.get("/beta-codes", async (req, res) => {
             .from('beta_codes')
             .select('*')
             .order('created_at', { ascending: false });
-        if (error) throw error;
-        res.json(data);
+        if (error) {
+            console.error("[Admin] beta_codes query error:", error.message, error.code);
+            throw error;
+        }
+        console.log(`[Admin] beta_codes returned ${(data || []).length} rows`);
+        res.json(data || []);
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
