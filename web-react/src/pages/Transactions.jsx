@@ -292,6 +292,10 @@ export default function Transactions() {
                         invalidateExpensesCache();
                         loadData(true);
                     }}
+                    onDelete={() => {
+                        invalidateExpensesCache();
+                        loadData(true);
+                    }}
                 />
             )}
 
