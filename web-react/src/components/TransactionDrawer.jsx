@@ -1,5 +1,5 @@
 import React, { useReducer, useEffect } from 'react';
-import { apiPatch, apiPost, apiUpload } from '../api';
+import { apiPatch, apiPost, apiUpload, apiDelete } from '../api';
 import CategorySelect from './CategorySelect.jsx';
 import { ALL_CATEGORIES } from '../constants/categories.js';
 
@@ -39,7 +39,7 @@ function reducer(state, action) {
     }
 }
 
-export default function TransactionDrawer({ transaction, onClose, onSave }) {
+export default function TransactionDrawer({ transaction, onClose, onSave, onDelete }) {
     const [state, dispatch] = useReducer(reducer, initialState);
     const { date, amount, vendor, category, taxBucket, bizPct, deduct, notes,
             receiptLink, receiptFile, source, msg, savedId } = state;
@@ -81,6 +81,19 @@ export default function TransactionDrawer({ transaction, onClose, onSave }) {
             }
         } catch (err) {
             dispatch({ type: 'SET_MSG', value: `Save failed: ${err.message}` });
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!effectiveId) return;
+        if (!window.confirm('Delete this transaction? This cannot be undone.')) return;
+        dispatch({ type: 'SET_MSG', value: 'Deleting...' });
+        try {
+            await apiDelete(`/expenses/${effectiveId}`);
+            if (onDelete) onDelete(effectiveId);
+            onClose();
+        } catch (err) {
+            dispatch({ type: 'SET_MSG', value: `Delete failed: ${err.message}` });
         }
     };
 
