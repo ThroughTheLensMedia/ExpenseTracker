@@ -250,6 +250,9 @@ export default function TransactionDrawer({ transaction, onClose, onSave }) {
                         {effectiveId && (
                             <button className="btn secondary" onClick={handleUpload}>Upload receipt</button>
                         )}
+                        {effectiveId && (
+                            <button className="btn secondary" onClick={handleDelete} style={{ background: 'rgba(255,60,60,0.15)', color: '#ff4d4d', borderColor: 'rgba(255,60,60,0.3)' }}>Delete</button>
+                        )}
                     </div>
 
                     <div className="muted" style={{ marginTop: '10px', minHeight: '18px' }}>{msg}</div>

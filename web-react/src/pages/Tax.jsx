@@ -806,6 +806,11 @@ export default function Tax() {
                         setExpenses(prev => prev.map(x => x.id === updated.id ? updated : x));
                         loadSummary(selectedYear); // Re-calculate schedule C totals
                     }}
+                    onDelete={(deletedId) => {
+                        invalidateExpensesCache();
+                        setExpenses(prev => prev.filter(x => x.id !== deletedId));
+                        loadSummary(selectedYear);
+                    }}
                 />
             )}
         </section>
