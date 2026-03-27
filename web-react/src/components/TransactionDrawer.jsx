@@ -1,5 +1,6 @@
 import React, { useReducer, useEffect } from 'react';
 import { apiPatch, apiPost, apiUpload, apiDelete } from '../api';
+import { useModal } from './ModalContext.jsx';
 import CategorySelect from './CategorySelect.jsx';
 import { ALL_CATEGORIES } from '../constants/categories.js';
 
@@ -40,6 +41,7 @@ function reducer(state, action) {
 }
 
 export default function TransactionDrawer({ transaction, onClose, onSave, onDelete }) {
+    const modal = useModal();
     const [state, dispatch] = useReducer(reducer, initialState);
     const { date, amount, vendor, category, taxBucket, bizPct, deduct, notes,
             receiptLink, receiptFile, source, msg, savedId } = state;
@@ -86,7 +88,8 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
 
     const handleDelete = async () => {
         if (!effectiveId) return;
-        if (!window.confirm('Delete this transaction? This cannot be undone.')) return;
+        const ok = await modal.confirm('Delete this transaction? This cannot be undone.');
+        if (!ok) return;
         dispatch({ type: 'SET_MSG', value: 'Deleting...' });
         try {
             await apiDelete(`/expenses/${effectiveId}`);

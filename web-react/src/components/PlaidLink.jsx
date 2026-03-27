@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { apiPost, apiGet, apiDelete, invalidateExpensesCache } from '../api';
+import { useModal } from './ModalContext.jsx';
 
 /**
  * PlaidLink component - Handles bank connection via Plaid Link.
@@ -9,6 +10,7 @@ import { apiPost, apiGet, apiDelete, invalidateExpensesCache } from '../api';
  *   <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
  */
 export default function PlaidLink({ onSync }) {
+    const modal = useModal();
     const [accounts, setAccounts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [syncing, setSyncing] = useState(false);
@@ -87,7 +89,8 @@ export default function PlaidLink({ onSync }) {
     };
 
     const handleDisconnect = async (id, name) => {
-        if (!window.confirm(`Disconnect ${name}? Existing transactions will remain.`)) return;
+        const ok = await modal.confirm(`Disconnect ${name}? Existing transactions will remain.`);
+        if (!ok) return;
         try {
             await apiDelete(`/plaid/accounts/${id}`);
             setMsg({ ok: true, text: `${name} disconnected.` });
