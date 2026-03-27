@@ -1,6 +1,6 @@
 {
-  "version": "4.0.1",
-  "release_date": "2026-03-18",
-  "codename": "Intelligence Hub Plus",
-  "notes": "v4.0.1 released with Gemini 2.5 Flash as standard."
+  "version": "4.3.0",
+  "release_date": "2026-03-27",
+  "codename": "Security Hardening",
+  "notes": "CORS locked, support email, IRS rates auto-seed, Supabase RLS hardening."
 }

@@ -1,28 +1,35 @@
 import React from 'react';
 
 const RELEASES = [
-    { version: '4.0.0-PRO', date: 'MARCH 18, 2026', color: 'var(--accent)', items: [
+    { version: '4.3.0', date: 'MARCH 27, 2026', color: 'var(--accent)', items: [
+        '<strong>CORS Hardened:</strong> API now restricted to app.throughthelens.media only.',
+        '<strong>Support Email:</strong> All outbound mail now routes through support@throughthelens.media.',
+        '<strong>IRS Rates Auto-Seeded:</strong> Mileage rates 2020–2026 auto-populate on first load — no manual entry needed.',
+        '<strong>Mileage Intelligence:</strong> Brain AI now reads real IRS rate from DB per year instead of hardcoded value.',
+        '<strong>Supabase RLS Hardening:</strong> Enabled Row Level Security on all unprotected tables; function search_paths locked.',
+    ]},
+    { version: '4.0.0', date: 'MARCH 18, 2026', color: 'var(--accent)', items: [
         '<strong>Your Assistant:</strong> Initial release of the floating AI assistant for real-time financial consultation.',
         '<strong>Gemini 1.5 Flash:</strong> Migrated whole-studio intelligence to the latest Google Flash model for 2x speed.',
         '<strong>Privacy Lockdown:</strong> Implemented Row Level Security (RLS) for AI settings; bringing "your own key" now isolates data.',
         '<strong>Dashboard Grid:</strong> Precision calibration for Intelligence cards (9-card desktop grid).',
         '<strong>Smart Recurring:</strong> Improved detection patterns for operational burn that ignores one-off equipment transfers.',
     ]},
-    { version: '3.9.3-SAAS', date: 'MARCH 16, 2026', color: 'var(--accent)', items: [
+    { version: '3.9.3', date: 'MARCH 16, 2026', color: 'var(--accent)', items: [
         '<strong>Pro Entry Integrated:</strong> Released Google OAuth (One-Tap login) as the primary studio entry method.',
         '<strong>Automated Expiration Logic:</strong> Studio licenses now auto-recalculate (Annual 365D, Pro 999D) upon plan change.',
         '<strong>Identity Fix:</strong> Resolved sync issue between License Records and Profiles; display names now persist correctly.',
         '<strong>Pulse Resilience:</strong> Switched engagement telemetry to Service Layer to ensure 100% visibility in SaaS Dashboard regardless of RLS.',
         '<strong>Smarter Bills:</strong> Improved detection patterns for operational overhead (Fitness, Software, Licenses).',
     ]},
-    { version: '3.8-SAAS', date: 'MARCH 14, 2026', color: 'var(--accent)', items: [
+    { version: '3.8', date: 'MARCH 14, 2026', color: 'var(--accent)', items: [
         '<strong>SaaS Control Center:</strong> Integrated real-time engagement pulse and user activity reporting.',
         '<strong>Enhanced User Mgmt:</strong> Added ability to edit invites and active session details (name, plan type).',
         '<strong>License Health:</strong> Visual color-coded alerts (Green/Yellow/Red) for expiring access sessions.',
         '<strong>Auto-Update Core:</strong> Aggressive cache-busting and version synchronization for all users.',
         '<strong>Cloud Parity:</strong> Fully decommissioned NAS modules in favor of Supabase/Vercel resilience.',
     ]},
-    { version: '3.7-ELITE', date: 'MARCH 13, 2026', color: '#fff', items: [
+    { version: '3.7', date: 'MARCH 13, 2026', color: '#fff', items: [
         '<strong>Documentation Refresh:</strong> Integrated the "Change Log" repository for real-time feature tracking.',
         '<strong>Widescreen Optimization:</strong> Expanded Onboarding and FAQ containers to 1400px for better data density.',
         '<strong>Branding Evolution:</strong> Increased "STUDIO TRACKER" brand presence in the primary command bar.',
@@ -30,7 +37,7 @@ const RELEASES = [
         '<strong>Dual Trajectory:</strong> Split profitability tracking into dual modules for "Margin %" and "Net Income Pulse".',
         '<strong>Inventory Density:</strong> Optimized Equipment Locker for 40% higher visibility per scroll.',
     ]},
-    { version: '3.6.1-PWA', date: 'MARCH 12, 2026', color: '#fff', items: [
+    { version: '3.6.1', date: 'MARCH 12, 2026', color: '#fff', items: [
         '<strong>Mobile Command Bar:</strong> Initial release of the PWA bottom navigation for field usage.',
         '<strong>Visual Pulse:</strong> Added color-coded "Data Age" indicators to ensure sync health.',
         '<strong>Performance:</strong> Global implementation of <code>fadeIn</code> page transitions.',
