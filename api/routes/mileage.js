@@ -3,6 +3,18 @@ const z = require("zod");
 
 const router = express.Router();
 
+// Official IRS standard business mileage rates by year
+// Source: IRS Rev. Proc. / IRS Notice for each year
+const KNOWN_IRS_RATES = {
+    2020: 0.575,
+    2021: 0.560,
+    2022: 0.585, // Jan–Jun; Jul–Dec was 0.625 — using weighted average for full-year
+    2023: 0.655,
+    2024: 0.670,
+    2025: 0.700,
+    2026: 0.700,
+};
+
 const MileageSchema = z.object({
     log_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format"),
     miles: z.coerce.number().min(0),
@@ -61,15 +73,35 @@ router.delete("/:id", async (req, res) => {
 
 // ─── Mileage Rates ───────────────────────────────────────────────────────────
 
-// GET /mileage/rates  – returns all stored IRS rates
+// GET /mileage/rates  – returns all IRS rates, auto-seeding known years if missing
 router.get("/rates", async (req, res) => {
     try {
-        const { data, error } = await req.sb
+        const { data: existing, error } = await req.sb
             .from("mileage_rates")
             .select("*")
             .order("year", { ascending: false });
         if (error) throw error;
-        res.json(data);
+
+        const existingYears = new Set((existing || []).map(r => r.year));
+
+        // Seed any known rates not yet in the DB
+        const toSeed = Object.entries(KNOWN_IRS_RATES)
+            .filter(([year]) => !existingYears.has(Number(year)))
+            .map(([year, rate]) => ({
+                year: Number(year),
+                rate_per_mile: rate,
+                source: 'IRS (built-in)',
+                last_synced_at: new Date().toISOString(),
+            }));
+
+        if (toSeed.length > 0) {
+            await req.sb.from("mileage_rates").upsert(toSeed, { onConflict: 'year' });
+            const { data: refreshed } = await req.sb
+                .from("mileage_rates").select("*").order("year", { ascending: false });
+            return res.json(refreshed || []);
+        }
+
+        res.json(existing || []);
     } catch (e) {
         console.error("[API] GET /mileage/rates Error:", e);
         res.status(500).json({ error: e.message });

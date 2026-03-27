@@ -29,7 +29,7 @@ async function sendInvoiceEmail({ to, subject, body, attachments }) {
     }
 
     try {
-        const fromEmail = process.env.RESEND_FROM || 'Studio Tracker <studiotracker@throughthelens.media>';
+        const fromEmail = process.env.RESEND_FROM || 'Studio Tracker <support@throughthelens.media>';
         
         const payload = {
             from: fromEmail,
@@ -60,7 +60,7 @@ async function sendInviteEmail({ to, name, code }) {
     if (!resend) return { success: false, error: "Mailer service not configured" };
 
     try {
-        const fromEmail = process.env.RESEND_FROM || 'Studio <studiotracker@throughthelens.media>';
+        const fromEmail = process.env.RESEND_FROM || 'Studio <support@throughthelens.media>';
         const signupUrl = `${process.env.APP_URL || 'https://app.throughthelens.media'}/login?code=${code}&email=${encodeURIComponent(to)}`;
 
         const html = `
@@ -112,7 +112,7 @@ async function sendDailyReportEmail({ to, activityRows }) {
     if (!resend) return { success: false, error: "Mailer service not configured" };
 
     try {
-        const fromEmail = process.env.RESEND_FROM || 'Studio Stats <studiotracker@throughthelens.media>';
+        const fromEmail = process.env.RESEND_FROM || 'Studio Stats <support@throughthelens.media>';
         const dateStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
         const rowsHtml = activityRows.map(r => `
@@ -171,7 +171,7 @@ async function sendPromoEmail({ to, subject }) {
     if (!resend) return { success: false, error: "Mailer service not configured" };
 
     try {
-        const fromEmail = process.env.RESEND_FROM || 'Studio Tracker <studiotracker@throughthelens.media>';
+        const fromEmail = process.env.RESEND_FROM || 'Studio Tracker <support@throughthelens.media>';
         const subjectLine = subject || '📸 Level Up Your Photography Business with Studio Tracker';
 
         const html = `
@@ -270,7 +270,7 @@ async function sendContactRelayEmail({ senderName, senderEmail, messageContent }
     if (!resend) return { success: false, error: "Mailer service not configured" };
 
     try {
-        const fromEmail = 'Studio Tracker Inbound <studiotracker@throughthelens.media>';
+        const fromEmail = 'Studio Tracker Inbound <support@throughthelens.media>';
         const adminEmail = 'joshua.deuermeyer@gmail.com';
 
         const html = `
@@ -281,7 +281,7 @@ async function sendContactRelayEmail({ senderName, senderEmail, messageContent }
                     <p style="white-space: pre-wrap; line-height: 1.6; color: #e9eefc;">${messageContent}</p>
                 </div>
                 <div style="font-size: 12px; color: #64748b;">
-                    This inquiry was relayed via Resend from studiotracker@throughthelens.media
+                    This inquiry was relayed via Resend from support@throughthelens.media
                 </div>
             </div>
         `;

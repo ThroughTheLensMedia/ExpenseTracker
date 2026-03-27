@@ -120,7 +120,7 @@ export default function Mileage() {
                             className="btn secondary" 
                             style={{ padding: '10px 16px', borderRadius: '12px', fontWeight: 900, fontSize: '14px' }}
                         >
-                            {[2023, 2024, 2025, 2026].map(y => <option key={y} value={y}>FY {y}</option>)}
+                            {Array.from({ length: new Date().getFullYear() - 2019 }, (_, i) => new Date().getFullYear() - i).map(y => <option key={y} value={y}>FY {y}</option>)}
                         </select>
                     </div>
                 </div>

@@ -101,6 +101,7 @@ router.post("/ask", async (req, res) => {
             { data: taxDeductibleRows },
             { data: mileageLogs },
             { data: equipmentAssets },
+            { data: mileageRateRows },
         ] = await Promise.all([
             // Top 10 biggest purchases this year
             req.sb.from("expenses").select("vendor, amount_cents, expense_date, category")
@@ -125,10 +126,13 @@ router.post("/ask", async (req, res) => {
             // Equipment assets
             req.sb.from("equipment_assets").select("description, cost_cents, purchase_date, depreciation_method, useful_life_years")
                 .limit(20),
+            // IRS mileage rate for current year
+            req.sb.from("mileage_rates").select("rate_per_mile").eq("year", currentYear).maybeSingle(),
         ]);
 
         // Helper: cents to dollars
         const toDollars = (cents) => (Number(cents) || 0) / 100;
+        const irsRate = mileageRateRows?.rate_per_mile ?? 0.70;
 
         // --- Compute Analytics ---
         const totalYearlySpend = (allSpentRows || []).reduce((acc, r) => acc + toDollars(r.amount_cents), 0);
@@ -202,7 +206,7 @@ ${Object.entries(taxBuckets).sort((a,b) => b[1] - a[1]).slice(0, 10).map(([b, v]
 
 MILEAGE:
 - Total Miles Logged (YTD): ${totalMiles} miles
-- Estimated Mileage Deduction: $${(totalMiles * 0.70).toFixed(2)} (at $0.70/mile IRS rate)
+- Estimated Mileage Deduction: $${(totalMiles * irsRate).toFixed(2)} (at $${irsRate.toFixed(3)}/mile — ${currentYear} IRS rate)
 
 EQUIPMENT ASSETS:
 ${(equipmentAssets && equipmentAssets.length > 0)
