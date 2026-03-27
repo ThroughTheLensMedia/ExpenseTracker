@@ -86,7 +86,7 @@ export default function Dashboard() {
         setError(null);
         try {
             const [exp, lds, yrs] = await Promise.all([
-                fetchAllExpenses(true, targetYear),
+                fetchAllExpenses(false, targetYear),
                 apiGet('/leads'),
                 fetchExpenseYears()
             ]);

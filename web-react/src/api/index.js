@@ -94,11 +94,12 @@ export async function apiDelete(path) {
         try { const j = await r.json(); if (j && j.error) msg = j.error; } catch (_) { }
         throw new Error(msg);
     }
+    if (r.status === 204 || r.headers.get('content-length') === '0') return {};
     return r.json();
 }
 
 // ─── Generic Cache Layer ───
-const CACHE_TTL = 30000; // 30 seconds
+const CACHE_TTL = 300000; // 5 minutes
 const _cache = {};
 
 function getCached(key) {
