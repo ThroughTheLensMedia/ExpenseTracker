@@ -8,6 +8,7 @@ import { useModal } from '../components/ModalContext.jsx';
 const BRAND_ORANGE = '#f97316';
 
 function InvoiceItemRow({ item, index, onChange, onRemove }) {
+    const hasQty = item.quantity && Number(item.quantity) > 0;
     return (
         <div key={index} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 80px 120px 40px', gap: '12px', alignItems: 'center', marginBottom: '12px' }}>
             <input
@@ -23,13 +24,17 @@ function InvoiceItemRow({ item, index, onChange, onRemove }) {
                 onChange={e => onChange(index, 'quantity', Number(e.target.value))}
                 style={{ background: 'rgba(255,255,255,0.05)', fontSize: '13px', textAlign: 'center' }}
             />
-            <input
-                type="number"
-                placeholder="Price"
-                value={item.unit_price || ''}
-                onChange={e => onChange(index, 'unit_price', e.target.value)}
-                style={{ background: 'rgba(255,255,255,0.05)', fontSize: '13px', textAlign: 'right' }}
-            />
+            {hasQty ? (
+                <input
+                    type="number"
+                    placeholder="Price"
+                    value={item.unit_price || ''}
+                    onChange={e => onChange(index, 'unit_price', e.target.value)}
+                    style={{ background: 'rgba(255,255,255,0.05)', fontSize: '13px', textAlign: 'right' }}
+                />
+            ) : (
+                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.2)', textAlign: 'center', fontStyle: 'italic' }}>set qty first</div>
+            )}
             <button type="button" className="btn sm danger" onClick={() => onRemove(index)} style={{ padding: '8px' }}>✕</button>
         </div>
     );
@@ -50,9 +55,11 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
             unit_price: it.unit_price_cents ? (it.unit_price_cents / 100) : (parseFloat(it.unit_price) || 0)
         }));
 
-        // Work in cents to match ledger logic exactly
-        const subtotalCents = items.reduce((s, it) => s + Math.round(it.unit_price * 100 * it.quantity), 0);
-        
+        // Only include items with qty > 0 in financial calculations.
+        // Items with no qty still appear as description-only rows on the invoice.
+        const billedItems = items.filter(it => it.quantity > 0);
+        const subtotalCents = billedItems.reduce((s, it) => s + Math.round(it.unit_price * 100 * it.quantity), 0);
+
         // Treat discount correctly
         let discountPercent = 0;
         if (invoice.discount_cents !== undefined) {
@@ -73,7 +80,7 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
             clientName: invoice.clientName || invoice.clients?.name || '---',
             clientEmail: invoice.clientEmail || invoice.clients?.email || '',
             clientPhone: invoice.clientPhone || invoice.clients?.phone || '',
-            items,
+            items,       // All items — for display (description-only rows included)
             subtotal: subtotalCents / 100,
             taxVal: taxCents / 100,
             discount: discountCents / 100,
@@ -195,14 +202,23 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
                         <div style={{ marginBottom: '60px' }}>
                             {data.items.length === 0 ? (
                                 <div style={{ padding: '30px', textAlign: 'center', color: '#999', fontSize: '13px' }}>No line items generated for this snapshot.</div>
-                            ) : data.items.map((it, idx) => (
-                                <div key={idx} style={{ display: 'flex', borderBottom: '1px solid #f9f9f9', fontSize: '14px', alignItems: 'center', padding: '10px 0' }}>
-                                    <div style={{ flex: 1, padding: '10px 20px', fontWeight: 500 }}>{it.description || '---'}</div>
-                                    <div style={{ width: '80px', padding: '10px', textAlign: 'center' }}>{it.quantity}</div>
-                                    <div style={{ width: '120px', padding: '10px', textAlign: 'right' }}>{formatMoney(Number(it.unit_price) * 100)}</div>
-                                    <div style={{ width: '120px', padding: '10px 20px', textAlign: 'right', fontWeight: 700 }}>{formatMoney(Number(it.unit_price) * it.quantity * 100)}</div>
-                                </div>
-                            ))}
+                            ) : data.items.map((it, idx) => {
+                                const hasBillableQty = it.quantity > 0;
+                                return (
+                                    <div key={idx} style={{ display: 'flex', borderBottom: '1px solid #f9f9f9', fontSize: '14px', alignItems: 'center', padding: '10px 0', background: hasBillableQty ? 'transparent' : '#fafafa' }}>
+                                        <div style={{ flex: 1, padding: '10px 20px', fontWeight: 500, fontStyle: hasBillableQty ? 'normal' : 'italic', color: hasBillableQty ? '#1a1a1a' : '#888' }}>{it.description || '---'}</div>
+                                        <div style={{ width: '80px', padding: '10px', textAlign: 'center', color: '#999' }}>
+                                            {hasBillableQty ? it.quantity : '—'}
+                                        </div>
+                                        <div style={{ width: '120px', padding: '10px', textAlign: 'right', color: '#999' }}>
+                                            {hasBillableQty ? formatMoney(Number(it.unit_price) * 100) : ''}
+                                        </div>
+                                        <div style={{ width: '120px', padding: '10px 20px', textAlign: 'right', fontWeight: 700, color: '#999' }}>
+                                            {hasBillableQty ? formatMoney(Number(it.unit_price) * it.quantity * 100) : ''}
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
 
                         {/* TOTALS BOX */}
