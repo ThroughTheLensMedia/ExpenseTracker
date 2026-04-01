@@ -30,10 +30,10 @@ function PipelineView() {
     const [formValue, setFormValue] = useState('');
     const [formNotes, setFormNotes] = useState('');
 
-    const loadLeads = async () => {
+    const loadLeads = async (force = false) => {
         setLoading(true);
         try {
-            const res = await fetchAllLeads();
+            const res = await fetchAllLeads(force);
             setLeads(res.leads || []);
         } catch (e) {
             console.error("Failed to load leads:", e);
@@ -85,7 +85,7 @@ function PipelineView() {
             setIsDrawerOpen(false);
             setEditingLead(null);
             clearForm();
-            loadLeads();
+            loadLeads(true);
         } catch (err) {
             modal.alert(err.message);
         }
@@ -96,7 +96,7 @@ function PipelineView() {
             setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, status: newStatus } : l));
             await apiPatch(`/leads/${lead.id}`, { status: newStatus });
         } catch (err) {
-            loadLeads();
+            loadLeads(true);
             modal.alert(err.message);
         }
     };
@@ -251,13 +251,13 @@ function PipelineView() {
                                 <div style={{ flex: 1 }}>
                                     <label className="muted" style={{ display: 'block', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', marginBottom: '8px' }}>Type</label>
                                     <select value={formType} onChange={e => setFormType(e.target.value)} style={{ padding: '12px' }}>
-                                        <option value="Wedding">Wedding</option>
-                                        <option value="Videography">Videography</option>
-                                        <option value="Portrait">Portrait</option>
-                                        <option value="Commercial">Commercial</option>
                                         <option value="Airbnb">Airbnb</option>
-                                        <option value="Running Event">Running Event</option>
                                         <option value="Bike Event">Bike Event</option>
+                                        <option value="Commercial">Commercial</option>
+                                        <option value="Portrait">Portrait</option>
+                                        <option value="Running Event">Running Event</option>
+                                        <option value="Videography">Videography</option>
+                                        <option value="Wedding">Wedding</option>
                                         <option value="Other">Other</option>
                                     </select>
                                 </div>

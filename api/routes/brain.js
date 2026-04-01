@@ -102,6 +102,8 @@ router.post("/ask", async (req, res) => {
             { data: mileageLogs },
             { data: equipmentAssets },
             { data: mileageRateRows },
+            { data: allLeads },
+            { data: allInvoices },
         ] = await Promise.all([
             // Top 10 biggest purchases this year
             req.sb.from("expenses").select("vendor, amount_cents, expense_date, category")
@@ -128,6 +130,10 @@ router.post("/ask", async (req, res) => {
                 .limit(20),
             // IRS mileage rate for current year
             req.sb.from("mileage_rates").select("rate_per_mile").eq("year", currentYear).maybeSingle(),
+            // CRM Leads pipeline
+            req.sb.from("leads").select("name, status, quoted_value_cents, project_type, created_at"),
+            // Invoices pipeline
+            req.sb.from("invoices").select("status, total_cents, amount_paid_cents, issue_date"),
         ]);
 
         // Helper: cents to dollars
@@ -164,6 +170,13 @@ router.post("/ask", async (req, res) => {
 
         // Mileage totals
         const totalMiles = (mileageLogs || []).reduce((acc, r) => acc + (r.miles || 0), 0);
+
+        // CRM & Invoice Totals
+        const bookedLeads = (allLeads || []).filter(l => l.status === 'Booked');
+        const totalPipelineValue = (allLeads || []).reduce((acc, r) => acc + toDollars(r.quoted_value_cents), 0);
+        const totalBookedValue = bookedLeads.reduce((acc, r) => acc + toDollars(r.quoted_value_cents), 0);
+        
+        const openInvoicesValue = (allInvoices || []).filter(i => i.status !== 'Paid').reduce((acc, r) => acc + toDollars(r.total_cents - (r.amount_paid_cents || 0)), 0);
 
         // Projected year-end burn
         const projectedAnnualBurn = avgMonthlyBurn * 12;
@@ -214,6 +227,14 @@ ${(equipmentAssets && equipmentAssets.length > 0)
     : "No equipment tracked yet."}
 
 GLOBAL ARCHIVE: ${totalArchivedItems || 0}+ total historical items.
+
+CRM PIPELINE (SALES & BOOKINGS):
+- Total Active Leads: ${(allLeads || []).length} leads
+- Total Booked Projects: ${bookedLeads.length} booked
+- Pipeline Value (Total): $${totalPipelineValue.toFixed(2)}
+- Pipeline Value (Booked): $${totalBookedValue.toFixed(2)}
+- Outstanding Invoices (Unpaid): $${openInvoicesValue.toFixed(2)}
+- Latest Bookings: ${bookedLeads.slice(0, 3).map(l => `${l.name} ($${toDollars(l.quoted_value_cents)})`).join(", ") || "None"}
 
 UPCOMING TAX DEADLINES:
 ${upcomingDeadlines.length > 0 ? upcomingDeadlines.join("\n") : "No upcoming deadlines in the near term."}
