@@ -259,6 +259,19 @@ function resolveAmount(row, profile) {
     return cents;
 }
 
+// Helper: add days to a YYYY-MM-DD string
+function addDays(dateStr, days) {
+    const d = new Date(dateStr);
+    d.setDate(d.getDate() + days);
+    return d.toISOString().slice(0, 10);
+}
+
+// Helper: absolute day difference between two YYYY-MM-DD strings
+function dayDiff(a, b) {
+    const msPerDay = 86400000;
+    return Math.abs((new Date(a) - new Date(b)) / msPerDay);
+}
+
 // ── Shared CSV parse + import logic ────────────────────────────────────────
 async function parseCsvAndImport(sb, filePath, profileKey, res) {
     const profile = BANK_PROFILES[profileKey] || BANK_PROFILES.rocketmoney;
@@ -295,18 +308,13 @@ async function parseCsvAndImport(sb, filePath, profileKey, res) {
             const rm_id = pick(o, profile.idCol || []) || null;
             const notes = pick(o, profile.notesCol || ['note', 'notes', 'memo', 'description']) || '';
 
-            // Extract Account Name if available, otherwise fallback to Profile Label
             const specificAccount = pick(o, profile.accountCol || []);
             const source = specificAccount || profile.label || profileKey;
 
             const vendorUp = vendor.toUpperCase();
             const TRANSFERS = ['CREDIT CARD PAYMENT', 'FUNDS TRANSFER', 'ONLINE TRANSFER', 'APPLECARD GSBANK PAYMENT', 'APPLE CARD PAYMENT', 'TRANSFER FROM', 'TRANSFER TO', 'PAYMENT - THANK YOU', 'AUTOPAY PAYMENT', 'ACH PAYMENT'];
             if (TRANSFERS.some(t => vendorUp.includes(t))) {
-                errors.push({ 
-                    row: rowCount, 
-                    type: 'info', 
-                    error: `Filtered internal transfer: "${vendor}"` 
-                });
+                errors.push({ row: rowCount, type: 'info', error: `Filtered internal transfer: "${vendor}"` });
                 continue;
             }
 
@@ -362,70 +370,96 @@ async function parseCsvAndImport(sb, filePath, profileKey, res) {
         }
 
         const dates = items.map(i => i.expense_date).sort();
+        // Fetch a ±2 day window to catch weekend/bank-posting lag
+        const windowStart = addDays(dates[0], -2);
+        const windowEnd   = addDays(dates[dates.length - 1], 2);
+
         const { data: existing } = await sb
             .from('expenses')
-            .select('expense_date, vendor, amount_cents, source')
-            .gte('expense_date', dates[0])
-            .lte('expense_date', dates[dates.length - 1]);
+            .select('id, expense_date, vendor, amount_cents, source, category, notes, receipt_link, tax_deductible, tax_bucket, business_use_pct')
+            .gte('expense_date', windowStart)
+            .lte('expense_date', windowEnd);
 
-        // Exact match: same date + vendor + amount (identical duplicate)
-        const exactKeys = new Set((existing || []).map(e => `${e.expense_date}|${e.vendor}|${e.amount_cents}`));
+        // Exact match key: skip silently (genuine same-source re-import)
+        const exactKeys = new Set((existing || []).map(e => `${e.expense_date}|${e.vendor.toLowerCase()}|${e.amount_cents}`));
 
-        // Fuzzy match: same date + amount (cross-source duplicate, e.g. manual "Terrible Herbst" vs bank "C-Store")
-        // Track how many times each date+amount pair appears in existing data
-        const dateAmountCounts = {};
+        // Merge candidate index: amount_cents → array of existing rows
+        const mergeIndex = {};
         for (const e of existing || []) {
-            const key = `${e.expense_date}|${e.amount_cents}`;
-            dateAmountCounts[key] = (dateAmountCounts[key] || 0) + 1;
+            const k = String(e.amount_cents);
+            if (!mergeIndex[k]) mergeIndex[k] = [];
+            mergeIndex[k].push(e);
         }
 
-        const toInsert = [];
+        const toInsert  = [];
+        const toMerge   = []; // { existingId, updates }
+        const mergedIds = new Set(); // prevent one existing row from absorbing two imports
         let skipped = 0;
-        const importDateAmountUsed = {};
 
         for (const item of items) {
-            const exactKey = `${item.expense_date}|${item.vendor}|${item.amount_cents}`;
-            const fuzzyKey = `${item.expense_date}|${item.amount_cents}`;
+            const exactKey = `${item.expense_date}|${item.vendor.toLowerCase()}|${item.amount_cents}`;
 
+            // 1. Exact duplicate — skip
             if (exactKeys.has(exactKey)) {
-                // Exact duplicate — skip silently
                 skipped++;
                 continue;
             }
 
-            // Check fuzzy: same date + amount already exists from a different source
-            const existingCount = dateAmountCounts[fuzzyKey] || 0;
-            const importUsed = importDateAmountUsed[fuzzyKey] || 0;
+            // 2. Look for a merge candidate: same amount_cents, date within ±2 days, not already claimed
+            const candidates = (mergeIndex[String(item.amount_cents)] || [])
+                .filter(e => !mergedIds.has(e.id) && dayDiff(e.expense_date, item.expense_date) <= 2);
 
-            if (existingCount > importUsed) {
-                // Likely cross-source duplicate (e.g. manual entry vs bank import)
-                skipped++;
-                importDateAmountUsed[fuzzyKey] = importUsed + 1;
+            if (candidates.length > 0) {
+                // Prefer manual entries as merge targets (most likely hand-entered with rich data)
+                const target = candidates.find(e => e.source === 'manual' || e.source === 'Manual') || candidates[0];
+                mergedIds.add(target.id);
+
+                // Build merge history note
+                const historyNote = `[Merged from ${target.source || 'Manual'} on ${target.expense_date}]`;
+                const mergedNotes = target.notes
+                    ? `${target.notes} | ${historyNote}`
+                    : historyNote;
+
+                toMerge.push({
+                    existingId: target.id,
+                    updates: {
+                        // Bank wins: authoritative financial data
+                        vendor:           item.vendor,
+                        expense_date:     item.expense_date,
+                        amount_cents:     item.amount_cents,
+                        source:           item.source,
+                        // Manual wins: your enrichment data
+                        category:         target.category && target.category !== 'Uncategorized' ? target.category : item.category,
+                        tax_deductible:   target.tax_deductible,
+                        tax_bucket:       target.tax_bucket || item.tax_bucket,
+                        business_use_pct: target.business_use_pct,
+                        receipt_link:     target.receipt_link || null,
+                        notes:            mergedNotes,
+                        updated_at:       new Date().toISOString(),
+                    }
+                });
+
                 errors.push({
                     row: items.indexOf(item) + 1,
-                    type: 'info',
-                    error: `Skipped likely duplicate: "${item.vendor}" $${(Math.abs(item.amount_cents) / 100).toFixed(2)} on ${item.expense_date} (already exists from another source)`
+                    type: 'merged',
+                    error: `Merged "${item.vendor}" $${(Math.abs(item.amount_cents) / 100).toFixed(2)} on ${item.expense_date} → absorbed into existing entry from ${target.expense_date} (kept your category, notes & receipt)`
                 });
                 continue;
             }
 
             toInsert.push(item);
-            // Track this import's date+amount so two genuinely different imports with same date+amount aren't both skipped
-            importDateAmountUsed[fuzzyKey] = importUsed + 1;
-            dateAmountCounts[fuzzyKey] = (dateAmountCounts[fuzzyKey] || 0) + 1;
         }
 
-        // 🧠 AI BRAIN INTERVENTION (Silent Mode)
+        // 🧠 AI BRAIN INTERVENTION (Silent Mode) — only on new inserts
         const { data: st } = await sb.from("settings").select("*").maybeSingle();
         if (st?.ai_silent_mode && st?.gemini_api_key && toInsert.length > 0) {
             try {
                 const { repairLedgerBatch } = require("../utils/gemini");
                 const aiCleaned = await repairLedgerBatch(st.gemini_api_key, toInsert.map((it, idx) => ({ ...it, id: idx })));
-                // Overlay AI findings onto the toInsert array
                 aiCleaned.forEach(ai => {
                     const idx = ai.id;
                     if (toInsert[idx]) {
-                        toInsert[idx].vendor = ai.vendor; 
+                        toInsert[idx].vendor = ai.vendor;
                         if (ai.source && ai.source !== 'Rocket Money') toInsert[idx].source = ai.source;
                         toInsert[idx].category = ai.category;
                     }
@@ -435,6 +469,18 @@ async function parseCsvAndImport(sb, filePath, profileKey, res) {
             }
         }
 
+        // Execute merges
+        let merged = 0;
+        for (const { existingId, updates } of toMerge) {
+            const { error: mergeErr } = await sb.from('expenses').update(updates).eq('id', existingId);
+            if (mergeErr) {
+                console.error(`[IMPORT] Merge failed for id ${existingId}:`, mergeErr.message);
+            } else {
+                merged++;
+            }
+        }
+
+        // Execute inserts
         let inserted = 0;
         if (toInsert.length > 0) {
             const { data: insertedData, error: insertError } = await sb
@@ -442,7 +488,8 @@ async function parseCsvAndImport(sb, filePath, profileKey, res) {
             if (insertError) throw insertError;
             inserted = insertedData?.length || 0;
         }
-        res.json({ ok: true, inserted, updated: 0, skipped, errors, source: profile.label, rowsScanned: rowCount });
+
+        res.json({ ok: true, inserted, merged, updated: 0, skipped, errors, source: profile.label, rowsScanned: rowCount });
 
     } catch (e) {
         fs.unlink(filePath, () => { });
@@ -507,6 +554,158 @@ router.get("/profiles", (req, res) => {
 router.post("/rocketmoney", upload.single("file"), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'file required' });
     return parseCsvAndImport(req.sb, req.file.path, 'rocketmoney', res);
+});
+
+// ── POST /import/find-duplicates ──────────────────────────────────────────
+// Retroactive duplicate scan across the full ledger.
+// Body: { auto_merge: true|false }
+// Returns: { merged, pending: [{rowA, rowB, confidence}] }
+router.post('/find-duplicates', async (req, res) => {
+    try {
+        const autoMerge = req.body?.auto_merge === true;
+
+        // Fetch all expenses (paginated)
+        let allExpenses = [];
+        let page = 0;
+        const PAGE = 1000;
+        while (true) {
+            const { data, error } = await req.sb
+                .from('expenses')
+                .select('id, expense_date, vendor, amount_cents, source, category, notes, receipt_link, tax_deductible, tax_bucket, business_use_pct')
+                .range(page * PAGE, (page + 1) * PAGE - 1);
+            if (error) throw error;
+            if (!data || data.length === 0) break;
+            allExpenses = allExpenses.concat(data);
+            if (data.length < PAGE) break;
+            page++;
+        }
+
+        // Group by amount_cents
+        const byAmount = {};
+        for (const e of allExpenses) {
+            const k = String(e.amount_cents);
+            if (!byAmount[k]) byAmount[k] = [];
+            byAmount[k].push(e);
+        }
+
+        const highConfidence = []; // auto-merge candidates
+        const pending        = []; // review list
+        const seen           = new Set();
+
+        for (const group of Object.values(byAmount)) {
+            if (group.length < 2) continue;
+            // Compare all pairs within the amount group
+            for (let i = 0; i < group.length; i++) {
+                for (let j = i + 1; j < group.length; j++) {
+                    const a = group[i], b = group[j];
+                    const pairKey = [a.id, b.id].sort().join('|');
+                    if (seen.has(pairKey)) continue;
+                    if (dayDiff(a.expense_date, b.expense_date) > 2) continue;
+
+                    seen.add(pairKey);
+
+                    const vendorA = normalizeVendor(a.vendor || '').toLowerCase();
+                    const vendorB = normalizeVendor(b.vendor || '').toLowerCase();
+                    const vendorsMatch = vendorA === vendorB;
+                    const oneIsManual = a.source === 'manual' || b.source === 'manual';
+
+                    if (vendorsMatch || oneIsManual) {
+                        const confidence = vendorsMatch ? 'high' : 'medium';
+                        if (confidence === 'high' && autoMerge) {
+                            highConfidence.push({ rowA: a, rowB: b });
+                        } else {
+                            pending.push({ rowA: a, rowB: b, confidence });
+                        }
+                    }
+                }
+            }
+        }
+
+        // Auto-merge high confidence pairs if requested
+        let merged = 0;
+        if (autoMerge && highConfidence.length > 0) {
+            for (const { rowA, rowB } of highConfidence) {
+                // Keep the one with more data; bank source wins for financial fields
+                const manual = rowA.source === 'manual' ? rowA : (rowB.source === 'manual' ? rowB : null);
+                const bank   = manual ? (manual === rowA ? rowB : rowA) : rowA;
+                const keep   = manual || rowA;  // ID to keep
+                const drop   = keep === rowA ? rowB : rowA; // ID to delete
+
+                const historyNote = `[Merged from ${drop.source || 'Manual'} on ${drop.expense_date}]`;
+                const mergedNotes = keep.notes ? `${keep.notes} | ${historyNote}` : historyNote;
+
+                const updates = {
+                    vendor:           normalizeVendor(bank.vendor),
+                    expense_date:     bank.expense_date,
+                    amount_cents:     bank.amount_cents,
+                    source:           bank.source,
+                    category:         keep.category && keep.category !== 'Uncategorized' ? keep.category : bank.category,
+                    tax_deductible:   keep.tax_deductible,
+                    tax_bucket:       keep.tax_bucket || bank.tax_bucket,
+                    business_use_pct: keep.business_use_pct,
+                    receipt_link:     keep.receipt_link || null,
+                    notes:            mergedNotes,
+                    updated_at:       new Date().toISOString(),
+                };
+
+                const { error: upErr } = await req.sb.from('expenses').update(updates).eq('id', keep.id);
+                if (!upErr) {
+                    await req.sb.from('expenses').delete().eq('id', drop.id);
+                    merged++;
+                }
+            }
+        }
+
+        res.json({ ok: true, merged, pending, total_scanned: allExpenses.length });
+    } catch (e) {
+        console.error('[FIND-DUPLICATES]', e);
+        res.status(500).json({ error: String(e.message || e) });
+    }
+});
+
+// ── POST /import/confirm-merge ──────────────────────────────────────────
+// Confirm a specific merge from the review list.
+// Body: { keepId, dropId }
+router.post('/confirm-merge', async (req, res) => {
+    try {
+        const { keepId, dropId } = req.body;
+        if (!keepId || !dropId) return res.status(400).json({ error: 'keepId and dropId required' });
+
+        const [{ data: keep }, { data: drop }] = await Promise.all([
+            req.sb.from('expenses').select('*').eq('id', keepId).single(),
+            req.sb.from('expenses').select('*').eq('id', dropId).single(),
+        ]);
+
+        if (!keep || !drop) return res.status(404).json({ error: 'One or both rows not found' });
+
+        // Bank row = whichever isn't manual; fallback to keep as bank
+        const bank = drop.source !== 'manual' ? drop : keep;
+        const historyNote = `[Merged from ${drop.source || 'Manual'} on ${drop.expense_date}]`;
+        const mergedNotes = keep.notes ? `${keep.notes} | ${historyNote}` : historyNote;
+
+        const updates = {
+            vendor:           normalizeVendor(bank.vendor),
+            expense_date:     bank.expense_date,
+            amount_cents:     bank.amount_cents,
+            source:           bank.source,
+            category:         keep.category && keep.category !== 'Uncategorized' ? keep.category : bank.category,
+            tax_deductible:   keep.tax_deductible,
+            tax_bucket:       keep.tax_bucket || bank.tax_bucket,
+            business_use_pct: keep.business_use_pct,
+            receipt_link:     keep.receipt_link || null,
+            notes:            mergedNotes,
+            updated_at:       new Date().toISOString(),
+        };
+
+        const { error: upErr } = await req.sb.from('expenses').update(updates).eq('id', keepId);
+        if (upErr) throw upErr;
+        await req.sb.from('expenses').delete().eq('id', dropId);
+
+        res.json({ ok: true, merged: keep });
+    } catch (e) {
+        console.error('[CONFIRM-MERGE]', e);
+        res.status(500).json({ error: String(e.message || e) });
+    }
 });
 
 async function fetchAllRows(sb, tableName, selectStr = "*") {
