@@ -115,8 +115,41 @@ export default function ProfileTab({ settings, setSettings, onReload }) {
                     </div>
                     <div style={{ gridColumn: 'span 2' }}>
                         <small className="muted" style={{ fontWeight: 900 }}>ACCEPTED METHODS OF PAYMENT</small>
-                        <textarea value={settings.payment_methods || ''} onChange={e => field('payment_methods', e.target.value)} placeholder="Zelle: hello@example.com, Bank Transfer info..." style={{ marginTop: '8px', padding: '15px', minHeight: '80px' }} />
-                        <div className="muted small" style={{ marginTop: '8px' }}>Payment instructions for the client.</div>
+                        <div className="muted extra-small" style={{ marginTop: '4px', marginBottom: '8px' }}>Custom payment instructions or additional details shown on invoices.</div>
+                        <textarea value={settings.payment_methods || ''} onChange={e => field('payment_methods', e.target.value)} placeholder="e.g. Payment due within 14 days. Checks payable to..." style={{ marginTop: '0px', padding: '15px', minHeight: '80px' }} />
+                    </div>
+                    <div style={{ gridColumn: 'span 2', marginTop: '10px' }}>
+                        <div style={{ padding: '20px 24px', background: 'rgba(56,189,248,0.04)', borderRadius: '14px', border: '1px solid rgba(56,189,248,0.12)' }}>
+                            <div style={{ fontWeight: 950, fontSize: '13px', color: '#38bdf8', marginBottom: '20px', letterSpacing: '0.05em' }}>⚡ INSTANT PAYMENT HANDLES</div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                <div>
+                                    <small className="muted" style={{ fontWeight: 900 }}>VENMO HANDLE</small>
+                                    <input value={settings.venmo_handle || ''} onChange={e => field('venmo_handle', e.target.value)} placeholder="@YourStudio" style={{ marginTop: '8px', padding: '13px' }} />
+                                </div>
+                                <div>
+                                    <small className="muted" style={{ fontWeight: 900 }}>ZELLE (EMAIL OR PHONE)</small>
+                                    <input value={settings.zelle_handle || ''} onChange={e => field('zelle_handle', e.target.value)} placeholder="studio@email.com" style={{ marginTop: '8px', padding: '13px' }} />
+                                </div>
+                                <div>
+                                    <small className="muted" style={{ fontWeight: 900 }}>CASHAPP TAG</small>
+                                    <input value={settings.cashapp_tag || ''} onChange={e => field('cashapp_tag', e.target.value)} placeholder="$YourCashTag" style={{ marginTop: '8px', padding: '13px' }} />
+                                </div>
+                                <div>
+                                    <small className="muted" style={{ fontWeight: 900 }}>STRIPE PUBLISHABLE KEY</small>
+                                    <input
+                                        type="password"
+                                        value={settings.stripe_publishable_key || ''}
+                                        onChange={e => field('stripe_publishable_key', e.target.value)}
+                                        placeholder="pk_live_..."
+                                        style={{ marginTop: '8px', padding: '13px' }}
+                                    />
+                                    <div className="muted extra-small" style={{ marginTop: '6px' }}>Publishable key only. Never enter your secret key here.</div>
+                                </div>
+                            </div>
+                            <div className="muted extra-small" style={{ marginTop: '16px', padding: '10px 14px', background: 'rgba(249,115,22,0.06)', borderRadius: '8px', border: '1px solid rgba(249,115,22,0.15)', color: '#f97316' }}>
+                                💡 These handles are shown on your client payment portal when you send an invoice.
+                            </div>
+                        </div>
                     </div>
                     <div style={{ gridColumn: 'span 2' }}>
                         <small className="muted" style={{ fontWeight: 900 }}>PERSONALIZED SIGNATURE & SOCIALS</small>

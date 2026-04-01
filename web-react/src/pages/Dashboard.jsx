@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchAllExpenses, fetchExpenseYears, formatMoney, apiGet, apiUpload } from '../api';
+import { useAuth } from '../components/AuthContext';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -32,6 +33,7 @@ ChartJS.register(
 
 export default function Dashboard() {
     const modal = useModal();
+    const { settings: authSettings } = useAuth();
     const navigate = useNavigate();
     const [expenses, setExpenses] = useState([]);
     const [leads, setLeads] = useState([]);
@@ -130,14 +132,16 @@ export default function Dashboard() {
 
     useEffect(() => {
         loadData();
-        const hasSeenAI = localStorage.getItem('has_seen_ai_welcome_v4_4');
-        if (!hasSeenAI) {
+        // Don't show if already dismissed, or if user already has their own AI Brain key connected
+        const hasDismissed = localStorage.getItem('studio_ai_welcome_dismissed');
+        const hasOwnKey = !!authSettings?.gemini_api_key;
+        if (!hasDismissed && !hasOwnKey) {
             setShowAIWelcome(true);
         }
-    }, []);
+    }, [authSettings]);
 
     const dismissAIWelcome = () => {
-        localStorage.setItem('has_seen_ai_welcome_v4_4', 'true');
+        localStorage.setItem('studio_ai_welcome_dismissed', 'true');
         setShowAIWelcome(false);
     };
 
@@ -585,41 +589,45 @@ export default function Dashboard() {
 
     return (
         <section style={{ display: 'flex', flexDirection: 'column', gap: '20px', paddingBottom: '100px' }}>
-            {/* 🧠 AI Intelligence Welcome Modal */}
+            {/* 🧠 AI Intelligence Welcome Modal — only shown to users who have not yet connected their own Brain */}
             {showAIWelcome && (
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(20px)', zIndex: 10000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '20px', overflowY: 'auto' }}>
                     <div className="card glass glow-blue" style={{ width: '100%', maxWidth: '550px', padding: '40px 24px', position: 'relative', textAlign: 'center', margin: 'auto' }}>
-                        <div style={{ fontSize: '4rem', marginBottom: '25px' }}>📸</div>
-                        <h2 style={{ fontSize: '2.4rem', fontWeight: 950, marginBottom: '15px', letterSpacing: '-0.03em' }}>Welcome to v4.1.3 PRO</h2>
-                        <h3 style={{ color: 'var(--accent)', fontWeight: 800, marginBottom: '25px', fontSize: '1.2rem' }}>"EVERYONE BRINGS THEIR OWN BRAIN"</h3>
-                        
-                        <div style={{ textAlign: 'left', background: 'rgba(255,255,255,0.02)', padding: '25px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '30px' }}>
+                        <div style={{ fontSize: '4rem', marginBottom: '20px' }}>🧠</div>
+                        <h2 style={{ fontSize: '2.2rem', fontWeight: 950, marginBottom: '12px', letterSpacing: '-0.03em' }}>Activate Your AI Brain</h2>
+                        <h3 style={{ color: 'var(--accent)', fontWeight: 800, marginBottom: '25px', fontSize: '1.1rem', opacity: 0.9 }}>EVERY PHOTOGRAPHER BRINGS THEIR OWN BRAIN</h3>
+
+                        <div style={{ textAlign: 'left', background: 'rgba(255,255,255,0.02)', padding: '25px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)', marginBottom: '30px' }}>
                             <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
                                 <div style={{ fontSize: '20px' }}>🔐</div>
                                 <div>
-                                    <div style={{ fontWeight: 900, fontSize: '14px', marginBottom: '4px' }}>Isolated Intelligence</div>
-                                    <div className="muted" style={{ fontSize: '13px' }}>Your financial data is protected by Row Level Security and never shared or trained on by others. Every photographer brings their own private "Brain".</div>
+                                    <div style={{ fontWeight: 900, fontSize: '14px', marginBottom: '4px' }}>Your Key. Your Data. Your Brain.</div>
+                                    <div className="muted" style={{ fontSize: '13px' }}>Studio Tracker uses a "Bring Your Own Key" model powered by Google Gemini. Your data is never shared or trained on — it's isolated to only your studio.</div>
                                 </div>
                             </div>
                             <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
                                 <div style={{ fontSize: '20px' }}>🔎</div>
                                 <div>
-                                    <div style={{ fontWeight: 900, fontSize: '14px', marginBottom: '4px' }}>Automated Expense Forensic</div>
-                                    <div className="muted" style={{ fontSize: '13px' }}>The Brain scans hundreds of historical bank entries in seconds to identify and categorize tax deductions you may have missed.</div>
+                                    <div style={{ fontWeight: 900, fontSize: '14px', marginBottom: '4px' }}>Automated Expense Intelligence</div>
+                                    <div className="muted" style={{ fontSize: '13px' }}>Once connected, the Brain scans your entire transaction history to identify tax deductions, flag misclassifications, and clean vendor names — in seconds.</div>
                                 </div>
                             </div>
                             <div style={{ display: 'flex', gap: '15px' }}>
-                                <div style={{ fontSize: '20px' }}>💎</div>
+                                <div style={{ fontSize: '20px' }}>💬</div>
                                 <div>
-                                    <div style={{ fontWeight: 900, fontSize: '14px', marginBottom: '4px' }}>First-Class Advisor</div>
-                                    <div className="muted" style={{ fontSize: '13px' }}>Ask "Your Assistant" (📸) specific questions about your burn rate, largest purchases, or tax strategies.</div>
+                                    <div style={{ fontWeight: 900, fontSize: '14px', marginBottom: '4px' }}>Ask Anything. Get Studio-Specific Answers.</div>
+                                    <div className="muted" style={{ fontSize: '13px' }}>Open "Your Assistant" (camera icon) to ask questions like "What's my biggest expense this year?" or "Am I on track for my income goals?"</div>
                                 </div>
                             </div>
                         </div>
 
+                        <div style={{ marginBottom: '20px', padding: '12px 16px', background: 'rgba(249,115,22,0.08)', borderRadius: '10px', border: '1px solid rgba(249,115,22,0.2)', fontSize: '12px', color: '#f97316', fontWeight: 700, textAlign: 'left' }}>
+                            🗝️ A free Google Gemini API key is all you need. Visit <a href="https://aistudio.google.com/app/apikey" target="_blank" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>aistudio.google.com</a> to get yours — takes about 60 seconds.
+                        </div>
+
                         <div style={{ display: 'flex', gap: '15px' }}>
                             <button className="btn primary glow-blue" onClick={() => { dismissAIWelcome(); navigate('/StudioControlCenter?tab=intelligence'); }} style={{ flex: 2, padding: '18px', fontWeight: 950 }}>
-                                CONNECT YOUR BRAIN
+                                CONNECT MY BRAIN →
                             </button>
                             <button className="btn secondary" onClick={dismissAIWelcome} style={{ flex: 1, padding: '18px', fontWeight: 900, opacity: 0.6 }}>
                                 LATER

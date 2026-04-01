@@ -318,6 +318,7 @@ export default function Invoice() {
         clientPhone: '',
         items: [{ description: '', quantity: 1, unit_price: '' }],
         tax_percent: '',
+        taxExempt: false,
         discount: '',
         leadId: '',
         notes: ''
@@ -334,6 +335,7 @@ export default function Invoice() {
             clientPhone: '',
             items: [{ description: '', quantity: 1, unit_price: '' }],
             tax_percent: '',
+            taxExempt: false,
             discount: '',
             leadId: '',
             notes: ''
@@ -436,6 +438,7 @@ export default function Invoice() {
                     unit_price: (it.unit_price_cents / 100).toFixed(2)
                 })) : [{ description: '', quantity: 1, unit_price: '' }],
                 tax_percent: fullInv.tax_percent !== undefined ? fullInv.tax_percent : '',
+                taxExempt: Number(fullInv.tax_percent) === 0 && fullInv.tax_percent !== null ? false : false,
                 discount: fullInv.discount_cents !== undefined ? (fullInv.discount_cents / 100) : '',
                 leadId: fullInv.lead_id || '',
                 notes: fullInv.notes || ''
@@ -501,7 +504,7 @@ export default function Invoice() {
                 due_date: formData.dueDate || null,
                 status: editingId ? undefined : 'draft', // Preserve status on edit, default to draft on new
                 notes: formData.notes,
-                tax_percent: Number(formData.tax_percent),
+                tax_percent: formData.taxExempt ? 0 : Number(formData.tax_percent),
                 discount_cents: Math.round(Number(formData.discount) * 100),
                 items: formData.items.map(it => ({
                     description: it.description,
@@ -836,18 +839,38 @@ export default function Invoice() {
 
                             <div className="grid two">
                                 <div>
-                                    <small className="muted" style={{ fontWeight: 800 }}>TAX RATE (%)</small>
-                                    <input type="number" placeholder="0" value={formData.tax_percent} onChange={e => setFormData({ ...formData, tax_percent: e.target.value })} />
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                        <small className="muted" style={{ fontWeight: 800 }}>TAX RATE (%)</small>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: 800, color: formData.taxExempt ? 'var(--accent)' : 'rgba(255,255,255,0.4)' }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={!!formData.taxExempt}
+                                                onChange={e => setFormData({ ...formData, taxExempt: e.target.checked, tax_percent: e.target.checked ? '0' : '' })}
+                                                style={{ accentColor: 'var(--accent)', width: '14px', height: '14px' }}
+                                            />
+                                            TAX EXEMPT
+                                        </label>
+                                    </div>
+                                    <input
+                                        type="number"
+                                        placeholder="0"
+                                        value={formData.taxExempt ? '0' : formData.tax_percent}
+                                        onChange={e => setFormData({ ...formData, tax_percent: e.target.value })}
+                                        disabled={!!formData.taxExempt}
+                                        style={{ opacity: formData.taxExempt ? 0.4 : 1 }}
+                                    />
+                                    {formData.taxExempt && <div className="muted extra-small" style={{ marginTop: '6px', color: 'var(--accent)' }}>✓ Project marked as tax exempt</div>}
                                 </div>
                                 <div>
                                     <small className="muted" style={{ fontWeight: 800 }}>DISCOUNT (%)</small>
-                                    <input type="number" placeholder="0" value={formData.discount} onChange={e => setFormData({ ...formData, discount: e.target.value })} />
+                                    <input type="number" placeholder="0" value={formData.discount} onChange={e => setFormData({ ...formData, discount: e.target.value })} style={{ marginTop: '8px' }} />
                                 </div>
                             </div>
 
                             <div>
-                                <small className="muted" style={{ fontWeight: 800 }}>PERSONALIZED SIGNATURE & TERMS</small>
-                                <textarea value={formData.notes || ''} onChange={e => setFormData({ ...formData, notes: e.target.value })} style={{ minHeight: '120px' }} />
+                                <small className="muted" style={{ fontWeight: 800 }}>NOTES FOR CUSTOMER</small>
+                                <div className="muted extra-small" style={{ marginBottom: '8px', marginTop: '4px' }}>These notes appear on the invoice PDF sent to the client (e.g. thank you messages, shoot details, or special instructions).</div>
+                                <textarea value={formData.notes || ''} onChange={e => setFormData({ ...formData, notes: e.target.value })} style={{ minHeight: '120px' }} placeholder="e.g. Thank you for booking! Please arrive 15 minutes early..." />
                                 <div style={{ height: '100px' }} /> {/* Spacing for fixed footer */}
                             </div>
                         </form>
