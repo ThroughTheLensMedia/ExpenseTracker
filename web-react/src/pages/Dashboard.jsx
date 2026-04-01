@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchAllExpenses, fetchExpenseYears, formatMoney, apiGet, apiUpload, fetchAllLeads } from '../api';
+import { fetchAllExpenses, fetchExpenseYears, formatMoney, apiGet, apiUpload, fetchAllLeads, invalidateExpensesCache } from '../api';
 import { useAuth } from '../components/AuthContext';
+import TransactionDrawer from '../components/TransactionDrawer';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -44,6 +45,8 @@ export default function Dashboard() {
     const [availableYears, setAvailableYears] = useState([new Date().getFullYear()]);
     const [billsYear, setBillsYear] = useState(new Date().getFullYear());
     const [billsExpenses, setBillsExpenses] = useState([]);
+    const [editingRecurringVendor, setEditingRecurringVendor] = useState(null);
+    const [editingId, setEditingId] = useState(null);
     
     // Intelligence States
     const [startingCash, setStartingCash] = useState(() => Number(localStorage.getItem('studio_cash') || 25000));
@@ -697,13 +700,49 @@ export default function Dashboard() {
                 </div>
             )}
 
+            {/* Top Level KPIs - Single Row Adaptive */}
+            <div style={{ 
+                display: 'flex', 
+                gap: '20px', 
+                flexWrap: 'wrap',
+                width: '100%',
+                marginBottom: '20px'
+            }}>
+                <div className="card glass" style={{ margin: 0, padding: '24px', border: 'none', background: 'rgba(255,255,255,0.02)', flex: '1 1 300px' }}>
+                    <div className="muted extra-small" style={{ fontWeight: 900, letterSpacing: '0.1em', marginBottom: '8px' }}>GROSS REVENUE</div>
+                    <div style={{ fontSize: '2rem', fontWeight: 950, color: '#4ade80', lineHeight: 1 }}>{formatMoney(stats.income)}</div>
+                    <div style={{ marginTop: '12px' }}>
+                        {renderVariance(variances.momIncome, 'income', 'MoM')}
+                        {renderVariance(variances.yoyIncome, 'income', 'YoY')}
+                    </div>
+                </div>
+                <div className="card glass" style={{ margin: 0, padding: '24px', border: 'none', background: 'rgba(255,255,255,0.02)', flex: '1 1 300px' }}>
+                    <div className="muted extra-small" style={{ fontWeight: 900, letterSpacing: '0.1em', marginBottom: '8px' }}>OPERATING EXPENSES</div>
+                    <div style={{ fontSize: '2rem', fontWeight: 950, color: '#ff4d4d', lineHeight: 1 }}>{formatMoney(stats.spend)}</div>
+                    <div style={{ marginTop: '12px' }}>
+                        {renderVariance(variances.momSpend, 'spend', 'MoM')}
+                        {renderVariance(variances.yoySpend, 'spend', 'YoY')}
+                    </div>
+                </div>
+                <div className="card glass" style={{ margin: 0, padding: '24px', border: 'none', background: 'rgba(255,255,255,0.02)', flex: '1 1 300px' }}>
+                    <div className="muted extra-small" style={{ fontWeight: 900, letterSpacing: '0.1em', marginBottom: '8px' }}>NET INCOME (EBITDA)</div>
+                    <div style={{ fontSize: '2rem', fontWeight: 950, color: '#f8fafc', lineHeight: 1 }}>{formatMoney(stats.net)}</div>
+                    <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '10px', fontWeight: 900, padding: '2px 8px', borderRadius: '4px', background: 'rgba(74, 222, 128, 0.1)', color: '#4ade80' }}>
+                            {((stats.net / (stats.income || 1)) * 100).toFixed(1)}% MARGIN
+                        </span>
+                        {renderVariance(variances.yoyNet, 'income', 'YoY')}
+                    </div>
+                </div>
+            </div>
+
             {/* Core Intelligence Hero */}
             <div className="grid two mobile-single">
                 <div className="card glass glow-blue" style={{ margin: 0, padding: '30px', border: 'none' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div>
                             <h2 style={{ fontSize: '1.4rem', margin: 0 }}>STUDIO INTELLIGENCE</h2>
-                            <p className="muted small" style={{ fontWeight: 700 }}>MBA-Level Analysis & Pipeline Forecast</p>
+                            <p className="muted small" style={{ fontWeight: 700 }}>Analysis & Pipeline Forecast</p>
                         </div>
                         <div className="tag secondary" style={{ fontSize: '9px', padding: '4px 10px' }}>DYNAMIC AI FORECAST</div>
                     </div>
@@ -748,8 +787,8 @@ export default function Dashboard() {
                                         {formatMoney(
                                             leads.reduce((s, l) => {
                                                 const statusKey = String(l.status || '').toLowerCase();
-                                                return s + (Number(l.estimated_value || 0) * (weights[statusKey] || 0));
-                                            }, 0) * 100 * (pipelineConversion / 100)
+                                                return s + (Number(l.quoted_value_cents || 0) * (weights[statusKey] || 0));
+                                            }, 0) * (pipelineConversion / 100)
                                         )}
                                     </div>
                                     <div className="muted extra-small" style={{ fontWeight: 700 }}>Weighted at {pipelineConversion}% efficiency</div>
@@ -795,39 +834,7 @@ export default function Dashboard() {
             </div>
 
             {/* Top Level KPIs - Single Row Adaptive */}
-            <div style={{ 
-                display: 'flex', 
-                gap: '20px', 
-                flexWrap: 'wrap',
-                width: '100%'
-            }}>
-                <div className="card glass" style={{ margin: 0, padding: '24px', border: 'none', background: 'rgba(255,255,255,0.02)', flex: '1 1 300px' }}>
-                    <div className="muted extra-small" style={{ fontWeight: 900, letterSpacing: '0.1em', marginBottom: '8px' }}>GROSS REVENUE</div>
-                    <div style={{ fontSize: '2rem', fontWeight: 950, color: '#4ade80', lineHeight: 1 }}>{formatMoney(stats.income)}</div>
-                    <div style={{ marginTop: '12px' }}>
-                        {renderVariance(variances.momIncome, 'income', 'MoM')}
-                        {renderVariance(variances.yoyIncome, 'income', 'YoY')}
-                    </div>
-                </div>
-                <div className="card glass" style={{ margin: 0, padding: '24px', border: 'none', background: 'rgba(255,255,255,0.02)', flex: '1 1 300px' }}>
-                    <div className="muted extra-small" style={{ fontWeight: 900, letterSpacing: '0.1em', marginBottom: '8px' }}>OPERATING EXPENSES</div>
-                    <div style={{ fontSize: '2rem', fontWeight: 950, color: '#ff4d4d', lineHeight: 1 }}>{formatMoney(stats.spend)}</div>
-                    <div style={{ marginTop: '12px' }}>
-                        {renderVariance(variances.momSpend, 'spend', 'MoM')}
-                        {renderVariance(variances.yoySpend, 'spend', 'YoY')}
-                    </div>
-                </div>
-                <div className="card glass" style={{ margin: 0, padding: '24px', border: 'none', background: 'rgba(255,255,255,0.02)', flex: '1 1 300px' }}>
-                    <div className="muted extra-small" style={{ fontWeight: 900, letterSpacing: '0.1em', marginBottom: '8px' }}>NET INCOME (EBITDA)</div>
-                    <div style={{ fontSize: '2rem', fontWeight: 950, color: '#f8fafc', lineHeight: 1 }}>{formatMoney(stats.net)}</div>
-                    <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '10px', fontWeight: 900, padding: '2px 8px', borderRadius: '4px', background: 'rgba(74, 222, 128, 0.1)', color: '#4ade80' }}>
-                            {((stats.net / (stats.income || 1)) * 100).toFixed(1)}% MARGIN
-                        </span>
-                        {renderVariance(variances.yoyNet, 'income', 'YoY')}
-                    </div>
-                </div>
-            </div>
+
 
             {/* Charts Section */}
             <div className="grid two" style={{ gap: '20px', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 500px), 1fr))' }}>
@@ -842,34 +849,6 @@ export default function Dashboard() {
                         </div>
                     </div>
                 )}
-                {visibleCharts.trajectory && (
-                    <>
-                        <div className="card glass" style={{ margin: 0, padding: '24px', height: '400px', display: 'flex', flexDirection: 'column' }}>
-                            <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                <div>
-                                    <h2 style={{ fontSize: '1.2rem', margin: 0 }}>Profit Margin Trajectory</h2>
-                                    <div className="muted" style={{ fontSize: '11px', marginTop: '4px' }}>3-Month Projection ({pipelineConversion}% Conversion)</div>
-                                </div>
-                                <button onClick={() => modal.alert("FORECAST DATA SOURCE:\n\n1. Historical: Real-time calculation of EBITDA / Gross Revenue.\n2. Projected: Projected Monthly Yield (Weighted CRM Pipeline) minus Average Operational Burn (rolling 3-month avg).")} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: 'white', borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer' }}>?</button>
-                            </div>
-                            <div style={{ flex: 1 }}>
-                                {rollingFinancials && <Line data={rollingFinancials.marginDataset} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: v => v + '%' } } } }} />}
-                            </div>
-                        </div>
-                        <div className="card glass" style={{ margin: 0, padding: '24px', height: '400px', display: 'flex', flexDirection: 'column' }}>
-                            <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                <div>
-                                    <h2 style={{ fontSize: '1.2rem', margin: 0 }}>Net Income Pulse</h2>
-                                    <div className="muted" style={{ fontSize: '11px', marginTop: '4px' }}>Cash Velocity Outlook</div>
-                                </div>
-                                <button onClick={() => modal.alert("NET INCOME PULSE DATA SOURCE:\n\n1. Historical: Total Monthly Revenue minus total COGS/Expenses.\n2. Projected: Sum of Weighted CRM Inflows distributed over 90 days, minus standard operational burn (adjusted for Growth Mode velocity).")} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: 'white', borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer' }}>?</button>
-                            </div>
-                            <div style={{ flex: 1 }}>
-                                {rollingFinancials && <Line data={rollingFinancials.incomeDataset} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: v => formatMoney(v * 100) } } } }} />}
-                            </div>
-                        </div>
-                    </>
-                )}
                 {visibleCharts.allocation && (
                     <div className="card glass" style={{ margin: 0, padding: '24px', height: '400px', display: 'flex', flexDirection: 'column', background: 'rgba(15, 23, 42, 0.4)' }}>
                         <div style={{ marginBottom: '20px' }}>
@@ -880,8 +859,8 @@ export default function Dashboard() {
                             <div style={{ flex: 1, maxHeight: '280px' }}>
                                 <Doughnut data={allocationData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: '75%' }} />
                             </div>
-                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                 {stats.topCats.slice(0, 5).map(([cat, meta], idx) => (
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px', overflowY: 'auto' }}>
+                                 {stats.topCats.slice(0, 10).map(([cat, meta], idx) => (
                                     <div key={cat} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                             <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: chartColors[idx % chartColors.length] }} />
@@ -894,6 +873,34 @@ export default function Dashboard() {
                         </div>
                     </div>
                 )}
+                {visibleCharts.trajectory && (
+                    <>
+                        <div className="card glass" style={{ margin: 0, padding: '24px', height: '400px', display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <div>
+                                    <h2 style={{ fontSize: '1.2rem', margin: 0 }}>Net Income Pulse</h2>
+                                    <div className="muted" style={{ fontSize: '11px', marginTop: '4px' }}>Cash Velocity Outlook</div>
+                                </div>
+                                <button onClick={() => modal.alert("NET INCOME PULSE DATA SOURCE:\n\n1. Historical: Total Monthly Revenue minus total COGS/Expenses.\n2. Projected: Sum of Weighted CRM Inflows distributed over 90 days, minus standard operational burn (adjusted for Growth Mode velocity).")} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: 'white', borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer' }}>?</button>
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                {rollingFinancials && <Line data={rollingFinancials.incomeDataset} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: v => formatMoney(v * 100) } } } }} />}
+                            </div>
+                        </div>
+                        <div className="card glass" style={{ margin: 0, padding: '24px', height: '400px', display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <div>
+                                    <h2 style={{ fontSize: '1.2rem', margin: 0 }}>Profit Margin Trajectory</h2>
+                                    <div className="muted" style={{ fontSize: '11px', marginTop: '4px' }}>3-Month Projection ({pipelineConversion}% Conversion)</div>
+                                </div>
+                                <button onClick={() => modal.alert("FORECAST DATA SOURCE:\n\n1. Historical: Real-time calculation of EBITDA / Gross Revenue.\n2. Projected: Projected Monthly Yield (Weighted CRM Pipeline) minus Average Operational Burn (rolling 3-month avg).")} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: 'white', borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer' }}>?</button>
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                {rollingFinancials && <Line data={rollingFinancials.marginDataset} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: v => v + '%' } } } }} />}
+                            </div>
+                        </div>
+                    </>
+                )}
                 {visibleCharts.recurring && (
                     <div className="card glass desktop-only" style={{ margin: 0, padding: '24px', minHeight: '420px', gridColumn: 'span 2' }}>
                         <h2 style={{ fontSize: '1.2rem', margin: '0 0 20px 0' }}>Intelligence: Recurring Vendor Activity</h2>
@@ -903,7 +910,7 @@ export default function Dashboard() {
                                 const total = meta.total;
                                 const allocation = stats.spend > 0 ? ((total / stats.spend) * 100).toFixed(1) : 0;
                                 return (
-                                    <div key={vendor} className="card" style={{ padding: '24px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                                    <div key={vendor} className="card" onClick={() => setEditingRecurringVendor(vendor)} style={{ padding: '24px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer' }}>
                                         <div>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                                                 <div className="muted extra-small" style={{ fontWeight: 900, color: '#6366f1' }}>RECURRING VENDOR</div>
@@ -1010,6 +1017,47 @@ export default function Dashboard() {
                         </button>
                     </div>
                 </div>
+            )}
+            {editingRecurringVendor && (
+                <div style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(15,23,42,0.9)', backdropFilter: 'blur(10px)', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ padding: '24px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                            <h2 style={{ margin: 0 }}>Transactions for {editingRecurringVendor}</h2>
+                            <div className="muted small">Select a transaction to edit details.</div>
+                        </div>
+                        <button className="btn secondary" onClick={() => setEditingRecurringVendor(null)}>Close X</button>
+                    </div>
+                    <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+                        {expenses.filter(e => e.vendor === editingRecurringVendor).map(e => (
+                             <div key={e.id} onClick={() => setEditingId(e.id)} className="card glass" style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', marginBottom: '10px' }}>
+                                 <div>
+                                     <div style={{ fontWeight: 900 }}>{e.expense_date}</div>
+                                     <div className="muted">{e.category}</div>
+                                 </div>
+                                 <div style={{ fontWeight: 950, color: e.amount_cents < 0 ? '#4ade80' : '#f8fafc' }}>
+                                     {formatMoney(e.amount_cents)}
+                                 </div>
+                             </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {editingId && (
+                <TransactionDrawer
+                    transaction={expenses.find(x => x.id === editingId)}
+                    onClose={() => setEditingId(null)}
+                    onSave={(updated) => {
+                        invalidateExpensesCache();
+                        setExpenses(prev => prev.map(x => x.id === updated.id ? updated : x));
+                        loadData(selectedYear);
+                    }}
+                    onDelete={(deletedId) => {
+                        invalidateExpensesCache();
+                        setExpenses(prev => prev.filter(x => x.id !== deletedId));
+                        loadData(selectedYear);
+                    }}
+                />
             )}
         </section>
     );
