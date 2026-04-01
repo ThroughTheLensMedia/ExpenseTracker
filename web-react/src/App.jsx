@@ -15,6 +15,7 @@ import Mileage from './pages/Mileage';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import Home from './pages/Home';
+import PayInvoice from './pages/PayInvoice';
 import AssistantSidebar from './components/AssistantSidebar';
 
 
@@ -131,6 +132,8 @@ function AppContent() {
         <Route path="/login" element={<Login />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
+        {/* Public: no login required — client payment portal */}
+        <Route path="/pay/:token" element={<PayInvoice />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     );
@@ -288,6 +291,8 @@ function AppContent() {
            <Route path="/import" element={<Import />} />
            <Route path="/privacy" element={<Privacy />} />
            <Route path="/terms" element={<Terms />} />
+           {/* Public: client payment portal, also accessible when logged in */}
+           <Route path="/pay/:token" element={<PayInvoice />} />
            <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </main>

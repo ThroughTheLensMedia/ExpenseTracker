@@ -25,6 +25,7 @@ const subscriptionRouter = require("./routes/subscription");
 const activityRouter = require("./routes/activity");
 const brainRouter = require("./routes/brain"); // AI Intelligence Engine
 const plaidRouter = require("./routes/plaid"); // Plaid Bank Sync
+const payRouter = require("./routes/pay");    // Public Payment Portal (no auth)
 
 // Initialize Database
 initDb();
@@ -70,6 +71,10 @@ apiRouter.get("/health", async (req, res) => {
 });
 
 const licensingMiddleware = require("./middleware/licensing");
+
+// --- PUBLIC ROUTES (no auth required) ---
+// Must be mounted BEFORE authMiddleware
+apiRouter.use("/pay", payRouter);
 
 // --- ATTACH LOCKDOWN MIDDLEWARE ---
 // Every route below this line is protected by Supabase Auth

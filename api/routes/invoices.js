@@ -1,5 +1,6 @@
 const express = require("express");
 const z = require("zod");
+const { randomUUID } = require('crypto');
 
 const router = express.Router();
 const { sendInvoiceEmail } = require("../utils/mailer");
@@ -147,27 +148,138 @@ router.patch("/:id", async (req, res) => {
 
         // 3. Trigger Email if status changed to 'sent'
         if (invoiceData.status === 'sent') {
+            // Generate a unique payment token if one doesn't exist yet
+            let paymentToken = invoice.payment_token;
+            if (!paymentToken) {
+                paymentToken = randomUUID();
+                await req.sb
+                    .from('invoices')
+                    .update({ payment_token: paymentToken })
+                    .eq('id', req.params.id);
+            }
+
             const [{ data: fullInvoice }, { data: settings }] = await Promise.all([
-                supabase
-                    .from("invoices")
-                    .select("*, clients(*), invoice_items(*)")
-                    .eq("id", req.params.id)
+                req.sb
+                    .from('invoices')
+                    .select('*, clients(*), invoice_items(*)')
+                    .eq('id', req.params.id)
                     .single(),
-                supabase
-                    .from("settings")
-                    .select("business_name")
-                    .limit(1)
+                req.sb
+                    .from('settings')
+                    .select('business_name, email, logo_url, phone, website')
                     .maybeSingle()
             ]);
 
-            const studioName = settings?.business_name || 'Studio Tracker';
+            const studioName = settings?.business_name || 'Your Photographer';
+            const studioEmail = settings?.email || null;
+            const appUrl = process.env.APP_URL || 'https://app.throughthelens.media';
+            const payUrl = `${appUrl}/pay/${paymentToken}`;
 
             if (fullInvoice && fullInvoice.clients?.email) {
-                const subtotal = (fullInvoice.invoice_items || []).reduce((s, it) => s + (it.unit_price_cents * it.quantity), 0);
-                const tax = Math.round(subtotal * (fullInvoice.tax_percent / 100));
-                const discountPercent = (fullInvoice.discount_cents || 0) / 100;
-                const discountAmount = Math.round(subtotal * (discountPercent / 100));
-                const total = (subtotal + tax - discountAmount) / 100;
+                const allItems = fullInvoice.invoice_items || [];
+                const subtotalCents = allItems.reduce((s, it) => s + (it.unit_price_cents * it.quantity), 0);
+                const taxCents = Math.round(subtotalCents * ((fullInvoice.tax_percent || 0) / 100));
+                const discountAmt = Math.round(subtotalCents * ((fullInvoice.discount_cents || 0) / 100));
+                const totalCents = subtotalCents + taxCents - discountAmt;
+                const totalDollars = (totalCents / 100).toFixed(2);
+
+                const formatMoney = cents => '$' + (cents / 100).toFixed(2);
+                const formatDate = d => d ? new Date(d).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Day of Shoot';
+
+                // Build inline line items table — skip items with no qty
+                const itemRowsHtml = allItems
+                    .filter(it => it.quantity > 0)
+                    .map(it => `
+                        <tr>
+                          <td style="padding:10px 0; border-bottom:1px solid #f1f5f9; font-size:14px; color:#1e293b;">${it.description}</td>
+                          <td style="padding:10px 0; border-bottom:1px solid #f1f5f9; font-size:14px; color:#64748b; text-align:center;">${it.quantity}</td>
+                          <td style="padding:10px 0; border-bottom:1px solid #f1f5f9; font-size:14px; color:#64748b; text-align:right;">${formatMoney(it.unit_price_cents)}</td>
+                          <td style="padding:10px 0; border-bottom:1px solid #f1f5f9; font-size:14px; font-weight:700; color:#1e293b; text-align:right;">${formatMoney(it.unit_price_cents * it.quantity)}</td>
+                        </tr>`).join('');
+
+                const notesHtml = fullInvoice.notes
+                    ? `<div style="margin-top:24px; padding:20px; background:#f8fafc; border-radius:10px; border-left:3px solid #f97316;">
+                         <div style="font-size:11px; font-weight:800; color:#f97316; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px;">Notes from Your Photographer</div>
+                         <p style="margin:0; font-size:14px; color:#475569; line-height:1.6;">${fullInvoice.notes}</p>
+                       </div>`
+                    : '';
+
+                const logoHtml = settings?.logo_url
+                    ? `<img src="${settings.logo_url}" alt="${studioName}" style="max-height:60px; max-width:180px; object-fit:contain; margin-bottom:8px;">`
+                    : `<div style="font-size:20px; font-weight:900; color:#1e293b; letter-spacing:-0.02em;">${studioName}</div>`;
+
+                const emailBody = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+<body style="margin:0; padding:0; background:#f8fafc; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <div style="max-width:620px; margin:0 auto; padding:40px 20px;">
+
+    <!-- Studio header -->
+    <div style="text-align:center; margin-bottom:32px;">
+      ${logoHtml}
+      <div style="height:2px; width:40px; background:#f97316; margin:12px auto 0;"></div>
+    </div>
+
+    <!-- Greeting -->
+    <p style="font-size:16px; color:#334155; margin:0 0 20px;">Hi ${fullInvoice.clients.name},</p>
+    <p style="font-size:15px; color:#475569; margin:0 0 28px; line-height:1.6;">
+      Your invoice from <strong>${studioName}</strong> is ready. Please review the details below and click <strong>Pay Now</strong> to submit your approval and payment.
+    </p>
+
+    <!-- Invoice card -->
+    <div style="background:#fff; border-radius:16px; padding:28px; box-shadow:0 2px 12px rgba(0,0,0,0.06); margin-bottom:24px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:16px; border-bottom:2px solid #f1f5f9;">
+        <div>
+          <div style="font-size:11px; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:0.08em;">Invoice Number</div>
+          <div style="font-size:20px; font-weight:900; color:#1e293b;">#${fullInvoice.invoice_number}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:11px; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:0.08em;">Due Date</div>
+          <div style="font-size:15px; font-weight:700; color:#1e293b;">${formatDate(fullInvoice.due_date)}</div>
+        </div>
+      </div>
+
+      <!-- Line items -->
+      <table style="width:100%; border-collapse:collapse;">
+        <thead>
+          <tr style="background:#f8fafc;">
+            <th style="text-align:left; padding:8px 0; font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; font-weight:800;">Description</th>
+            <th style="text-align:center; padding:8px 0; font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; font-weight:800;">Qty</th>
+            <th style="text-align:right; padding:8px 0; font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; font-weight:800;">Price</th>
+            <th style="text-align:right; padding:8px 0; font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; font-weight:800;">Total</th>
+          </tr>
+        </thead>
+        <tbody>${itemRowsHtml}</tbody>
+      </table>
+
+      <!-- Totals -->
+      <div style="margin-top:20px; padding-top:16px; border-top:2px solid #f1f5f9;">
+        ${taxCents > 0 ? `<div style="display:flex; justify-content:space-between; font-size:13px; color:#94a3b8; margin-bottom:6px;"><span>Tax (${fullInvoice.tax_percent}%)</span><span>${formatMoney(taxCents)}</span></div>` : ''}
+        ${discountAmt > 0 ? `<div style="display:flex; justify-content:space-between; font-size:13px; color:#94a3b8; margin-bottom:6px;"><span>Discount</span><span>-${formatMoney(discountAmt)}</span></div>` : ''}
+        <div style="display:flex; justify-content:space-between; font-size:18px; font-weight:900; color:#1e293b; margin-top:8px;">
+          <span>Total Due</span>
+          <span style="color:#f97316;">$${totalDollars}</span>
+        </div>
+      </div>
+
+      ${notesHtml}
+    </div>
+
+    <!-- Pay Now CTA -->
+    <div style="text-align:center; margin-bottom:32px;">
+      <a href="${payUrl}" style="display:inline-block; background:#f97316; color:#fff; padding:18px 48px; border-radius:12px; font-weight:900; font-size:16px; text-decoration:none; letter-spacing:0.02em;">Pay Now &rarr;</a>
+      <p style="font-size:12px; color:#94a3b8; margin:12px 0 0;">Or paste this link in your browser:<br><span style="color:#64748b;">${payUrl}</span></p>
+    </div>
+
+    <!-- Footer -->
+    <div style="text-align:center; padding-top:24px; border-top:1px solid #e2e8f0;">
+      <p style="font-size:12px; color:#94a3b8; margin:0;">${studioName}${settings?.email ? ` &middot; ${settings.email}` : ''}${settings?.phone ? ` &middot; ${settings.phone}` : ''}</p>
+      <p style="font-size:11px; color:#cbd5e1; margin:8px 0 0;">This invoice was sent via Studio Tracker</p>
+    </div>
+  </div>
+</body>
+</html>`;
 
                 const emailAttachments = [];
                 if (req.body.pdf_base64) {
@@ -179,28 +291,16 @@ router.patch("/:id", async (req, res) => {
 
                 const result = await sendInvoiceEmail({
                     to: fullInvoice.clients.email,
-                    subject: `Invoice #${fullInvoice.invoice_number} from ${studioName}`,
-                    body: `
-                        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 12px;">
-                            <h2 style="color: #f97316;">Invoice #${fullInvoice.invoice_number}</h2>
-                            <p>Hi ${fullInvoice.clients.name},</p>
-                            <p>Your invoice from <strong>${studioName}</strong> is ready for review.</p>
-                            <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-                            <div style="font-size: 24px; font-weight: bold; margin-bottom: 20px;">
-                                Total Due: $${total.toFixed(2)}
-                            </div>
-                            <p>Please review the attached PDF for details and arrange for payment at your earliest convenience. Thank you!</p>
-                            <br>
-                            <p style="color: #666; font-size: 12px;">This is an automated delivery from ${studioName}.</p>
-                        </div>
-                    `,
+                    subject: `Invoice #${fullInvoice.invoice_number} from ${studioName} — $${totalDollars} Due`,
+                    body: emailBody,
                     attachments: emailAttachments
                 });
+
                 if (!result.success) {
                     throw new Error(`Email failed: ${result.error}`);
                 }
             } else if (invoiceData.status === 'sent') {
-                throw new Error("Cannot send invoice: Client email is missing.");
+                throw new Error('Cannot send invoice: Client email is missing.');
             }
         }
 

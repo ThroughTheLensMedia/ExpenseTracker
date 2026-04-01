@@ -337,7 +337,8 @@ export default function Invoice() {
         taxExempt: false,
         discount: '',
         leadId: '',
-        notes: ''
+        notes: '',
+        photographerSigned: false,
     });
 
     const resetFormData = () => {
@@ -354,7 +355,8 @@ export default function Invoice() {
             taxExempt: false,
             discount: '',
             leadId: '',
-            notes: ''
+            notes: '',
+            photographerSigned: false,
         });
         setEditingId(null);
     };
@@ -457,7 +459,8 @@ export default function Invoice() {
                 taxExempt: Number(fullInv.tax_percent) === 0 && fullInv.tax_percent !== null ? false : false,
                 discount: fullInv.discount_cents !== undefined ? (fullInv.discount_cents / 100) : '',
                 leadId: fullInv.lead_id || '',
-                notes: fullInv.notes || ''
+                notes: fullInv.notes || '',
+                photographerSigned: !!fullInv.photographer_signed,
             });
             setIsCreatorOpen(true);
         } catch (e) {
@@ -518,10 +521,11 @@ export default function Invoice() {
                 invoice_number: formData.number,
                 issue_date: formData.date,
                 due_date: formData.dueDate || null,
-                status: editingId ? undefined : 'draft', // Preserve status on edit, default to draft on new
+                status: editingId ? undefined : 'draft',
                 notes: formData.notes,
                 tax_percent: formData.taxExempt ? 0 : Number(formData.tax_percent),
                 discount_cents: Math.round(Number(formData.discount) * 100),
+                photographer_signed: !!formData.photographerSigned,
                 items: formData.items.map(it => ({
                     description: it.description,
                     quantity: Number(it.quantity),
@@ -887,8 +891,30 @@ export default function Invoice() {
                                 <small className="muted" style={{ fontWeight: 800 }}>NOTES FOR CUSTOMER</small>
                                 <div className="muted extra-small" style={{ marginBottom: '8px', marginTop: '4px' }}>These notes appear on the invoice PDF sent to the client (e.g. thank you messages, shoot details, or special instructions).</div>
                                 <textarea value={formData.notes || ''} onChange={e => setFormData({ ...formData, notes: e.target.value })} style={{ minHeight: '120px' }} placeholder="e.g. Thank you for booking! Please arrive 15 minutes early..." />
-                                <div style={{ height: '100px' }} /> {/* Spacing for fixed footer */}
                             </div>
+
+                            {/* Photographer Signature */}
+                            <div style={{ padding: '20px', borderRadius: '14px', border: `2px solid ${formData.photographerSigned ? 'rgba(74,222,128,0.4)' : 'rgba(255,255,255,0.07)'}`, background: formData.photographerSigned ? 'rgba(74,222,128,0.04)' : 'rgba(255,255,255,0.01)', transition: 'all 0.2s' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer' }}>
+                                    <input
+                                        type="checkbox"
+                                        id="photographer-signed-checkbox"
+                                        checked={!!formData.photographerSigned}
+                                        onChange={e => setFormData({ ...formData, photographerSigned: e.target.checked })}
+                                        style={{ accentColor: '#4ade80', width: '18px', height: '18px', flexShrink: 0 }}
+                                    />
+                                    <div>
+                                        <div style={{ fontWeight: 900, fontSize: '13px', color: formData.photographerSigned ? '#4ade80' : 'rgba(255,255,255,0.7)' }}>
+                                            ✍️ I authorize this invoice as the photographer
+                                        </div>
+                                        <div className="muted extra-small" style={{ marginTop: '4px' }}>
+                                            Checking this confirms your signature. The client will see a verification badge on their payment portal.
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <div style={{ height: '100px' }} /> {/* Spacing for fixed footer */}
                         </form>
 
                         <div style={{ position: 'sticky', bottom: 0, background: '#121c32', padding: '24px 32px', borderTop: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 -10px 40px rgba(0,0,0,0.3)', zIndex: 10 }}>
