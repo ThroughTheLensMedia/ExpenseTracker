@@ -29,6 +29,7 @@ router.post("/", async (req, res) => {
         const { data, error } = await req.sb
             .from("leads")
             .insert({
+                user_id: req.user.id,
                 client_id: payload.client_id || null,
                 name: payload.name || "New Lead",
                 email: payload.email || "",

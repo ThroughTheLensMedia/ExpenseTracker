@@ -255,6 +255,9 @@ function PipelineView() {
                                         <option value="Videography">Videography</option>
                                         <option value="Portrait">Portrait</option>
                                         <option value="Commercial">Commercial</option>
+                                        <option value="Airbnb">Airbnb</option>
+                                        <option value="Running Event">Running Event</option>
+                                        <option value="Bike Event">Bike Event</option>
                                         <option value="Other">Other</option>
                                     </select>
                                 </div>
