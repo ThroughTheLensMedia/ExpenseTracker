@@ -1,6 +1,19 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '5.0.0', date: 'APRIL 1, 2026', color: '#f97316', items: [
+        '<strong>Pay Now Portal:</strong> Clients receive a branded payment link (<code>/pay/:token</code>) — no login required. Shows invoice summary, payment handles, and e-signature capture.',
+        '<strong>Dual E-Signatures:</strong> Photographers check "I authorize this invoice" in the creator. Clients type their full name to approve on the Pay Portal — timestamp and signature stored permanently.',
+        '<strong>Premium Invoice Email:</strong> Fully redesigned client email with inline line-item table, studio logo, conditional notes, orange Pay Now CTA button, and PDF attachment.',
+        '<strong>Photographer Approval Notification:</strong> When a client signs, the photographer receives a dark-mode branded email with signature details, payment handles shown to client, and a deep-link back into Studio Tracker.',
+        '<strong>Payment Handles:</strong> Business Profile now stores Venmo, Zelle, CashApp, and Stripe Publishable Key — surfaced on the Pay Portal with tap-to-open links.',
+        '<strong>Tax Exempt Toggle:</strong> Invoice creator now includes a one-click toggle to zero out tax for exempt projects.',
+        '<strong>Customer Notes:</strong> Dedicated notes section on invoices for shoot details, thank-you messages, and special instructions — only appears in email and Pay Portal when filled in.',
+        '<strong>Qty Guard:</strong> Line items without a quantity no longer show unit price or total — but still contribute to subtotal calculations.',
+        '<strong>Smart Dedup Merge Engine:</strong> CSV import now merges bank transactions with matching manual entries (±2 day window, same amount) instead of skipping — keeps your category, notes, and receipt; updates source to the bank.',
+        '<strong>Retroactive Duplicate Scanner:</strong> New tool in Bank Data Import — scan your entire ledger for existing duplicates with side-by-side review, one-click merge, or auto-merge high-confidence pairs.',
+        '<strong>AI Brain Modal:</strong> Welcome popup is now evergreen (no version number) and suppressed automatically if you have already configured your own Gemini API key.',
+    ]},
     { version: '4.3.0', date: 'MARCH 27, 2026', color: 'var(--accent)', items: [
         '<strong>CORS Hardened:</strong> API now restricted to app.throughthelens.media only.',
         '<strong>Support Email:</strong> All outbound mail now routes through support@throughthelens.media.',
