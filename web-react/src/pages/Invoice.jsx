@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { apiGet, apiPost, apiPatch, apiDelete, formatMoney, invalidateExpensesCache } from '../api';
+import { apiGet, apiPost, apiPatch, apiDelete, formatMoney, invalidateExpensesCache, fetchAllInvoices, fetchAllLeads } from '../api';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { useModal } from '../components/ModalContext.jsx';
@@ -365,9 +365,9 @@ export default function Invoice() {
         setLoading(true);
         try {
             const [invs, cls, lds, st] = await Promise.all([
-                apiGet('/invoices'),
+                fetchAllInvoices(),
                 apiGet('/invoices/clients'),
-                apiGet('/leads'),
+                fetchAllLeads().catch(() => ({ leads: [] })),
                 apiGet('/settings').catch(() => ({}))
             ]);
             setInvoices(invs);

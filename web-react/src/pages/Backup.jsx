@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { apiGet, fetchAllExpenses } from '../api';
+import { apiGet, fetchAllExpenses, fetchAllAssets, fetchAllInvoices, fetchAllLeads } from '../api';
 import { useAuth } from '../components/AuthContext';
 
 // Tab Components
@@ -50,9 +50,9 @@ export default function Backup() {
         try {
             const [exps, eq, inv, lds, rls, hlth, st] = await Promise.all([
                 fetchAllExpenses().catch(() => []),
-                apiGet('/assets').catch(() => []),
-                apiGet('/invoices').catch(() => []),
-                apiGet('/leads').catch(() => ({ leads: [] })),
+                fetchAllAssets().catch(() => []),
+                fetchAllInvoices().catch(() => []),
+                fetchAllLeads().catch(() => ({ leads: [] })),
                 apiGet('/rules').catch(() => ({ rules: [] })),
                 apiGet('/health').catch(() => ({ ok: false })),
                 apiGet('/settings').catch(() => ({}))
@@ -108,7 +108,10 @@ export default function Backup() {
             <div style={{ marginBottom: '30px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', textAlign: 'center' }}>
                 <div>
                     <h1 style={{ fontSize: '2.4rem', fontWeight: 950, marginBottom: '6px', color: '#38bdf8' }}>Studio Control Center</h1>
-                    <div className="muted" style={{ fontWeight: 600, fontSize: '15px' }}>Infrastructure Management & Intelligence Engine</div>
+                    <div className="muted" style={{ fontWeight: 600, fontSize: '15px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
+                        <span>Infrastructure Management & Intelligence Engine</span>
+                        <span style={{ padding: '2px 8px', background: 'rgba(74, 222, 128, 0.1)', color: '#4ade80', borderRadius: '4px', fontSize: '10px', fontWeight: 900, letterSpacing: '0.05em' }}>V5.0.0</span>
+                    </div>
                 </div>
 
                 <nav style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>

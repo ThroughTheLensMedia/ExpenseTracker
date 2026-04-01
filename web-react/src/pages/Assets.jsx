@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { apiGet, apiPost, apiPatch, apiDelete, formatMoney, fetchExpenseYears, apiUpload } from '../api';
+import { apiGet, apiPost, apiPatch, apiDelete, formatMoney, fetchExpenseYears, apiUpload, fetchAllAssets } from '../api';
 import { useModal } from '../components/ModalContext.jsx';
 
 const CATEGORIES = [
@@ -45,7 +45,7 @@ export default function Assets() {
         setLoading(true);
         try {
             const [a, d, y] = await Promise.all([
-                apiGet('/assets'),
+                fetchAllAssets(),
                 apiGet(`/assets/depreciation?year=${selectedYear}`),
                 fetchExpenseYears()
             ]);

@@ -181,10 +181,17 @@ export function invalidateExpensesCache() {
     _expensesAge = 0;
 }
 
-export async function fetchExpenseYears() {
+export async function fetchExpenseYears(force = false) {
+    const key = 'expense_years';
+    if (!force) {
+        const cached = getCached(key);
+        if (cached) return cached;
+    }
     try {
         const data = await apiGet('/expenses/years');
-        return data.years || [];
+        const years = data.years || [];
+        setCache(key, years);
+        return years;
     } catch (_) {
         return [];
     }

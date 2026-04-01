@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Routes, Route, NavLink, useSearchParams } from 'react-router-dom';
-import { apiGet, apiPost, apiPatch, formatMoney } from '../api';
+import { apiGet, apiPost, apiPatch, formatMoney, fetchAllLeads } from '../api';
 import { useModal } from '../components/ModalContext.jsx';
 import Invoice from './Invoice';
 
@@ -33,7 +33,7 @@ function PipelineView() {
     const loadLeads = async () => {
         setLoading(true);
         try {
-            const res = await apiGet('/leads');
+            const res = await fetchAllLeads();
             setLeads(res.leads || []);
         } catch (e) {
             console.error("Failed to load leads:", e);

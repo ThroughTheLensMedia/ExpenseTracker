@@ -1,6 +1,6 @@
 {
-  "version": "4.3.0",
-  "release_date": "2026-03-27",
-  "codename": "Security Hardening",
-  "notes": "CORS locked, support email, IRS rates auto-seed, Supabase RLS hardening."
+  "version": "5.0.0",
+  "release_date": "2026-04-01",
+  "codename": "Pay Portal & Smart Dedup",
+  "notes": "Pay Now Portal, E-Signatures, Smart Merge Dedup Engine, Retroactive Dupe Scanner"
 }
