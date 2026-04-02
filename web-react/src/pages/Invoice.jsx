@@ -114,7 +114,19 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
 
     const handleDownloadPDF = async () => {
         const element = previewRef.current;
-        const canvas = await html2canvas(element, { scale: 2, useCORS: true });
+        // Scroll element to top to prevent html2canvas capturing a scrolled/cut-off window
+        const originalScroll = element.parentElement.scrollTop;
+        element.parentElement.scrollTop = 0;
+        const canvas = await html2canvas(element, { 
+            scale: 2, 
+            useCORS: true,
+            scrollY: 0,
+            x: 0,
+            y: 0,
+            width: element.scrollWidth,
+            height: element.scrollHeight
+        });
+        element.parentElement.scrollTop = originalScroll;
         const imgData = canvas.toDataURL('image/jpeg', 0.8);
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -141,7 +153,19 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
         setIsProcessing(true);
         try {
             const element = previewRef.current;
-            const canvas = await html2canvas(element, { scale: 2, useCORS: true });
+            // Scroll element to top to prevent html2canvas capturing a scrolled/cut-off window
+            const originalScroll = element.parentElement.scrollTop;
+            element.parentElement.scrollTop = 0;
+            const canvas = await html2canvas(element, { 
+                scale: 2, 
+                useCORS: true,
+                scrollY: 0,
+                x: 0,
+                y: 0,
+                width: element.scrollWidth,
+                height: element.scrollHeight
+            });
+            element.parentElement.scrollTop = originalScroll;
             const imgData = canvas.toDataURL('image/jpeg', 0.8);
             const pdf = new jsPDF('p', 'mm', 'a4', true); // Use compression
             const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -449,13 +473,14 @@ export default function Invoice() {
                 let max = 1000;
                 let prefix = 'INV-';
                 invs.forEach(inv => {
-                    const match = inv.invoice_number.match(/(\d+)/);
+                    if (!inv.invoice_number) return;
+                    // Match the LAST sequence of digits in the string
+                    const match = inv.invoice_number.match(/(\d+)(?!.*\d)/);
                     if (match) {
                         const val = parseInt(match[1], 10);
                         if (val > max) max = val;
-                        // Extract prefix if it varies, otherwise default to INV-
-                        const pMatch = inv.invoice_number.match(/^([A-Za-z0-9]+-)/);
-                        if (pMatch) prefix = pMatch[1];
+                        // Everything before the last number sequence is the prefix
+                        prefix = inv.invoice_number.replace(/(\d+)(?!.*\d)/, '');
                     }
                 });
                 const nextNum = max + 1;
@@ -582,12 +607,12 @@ export default function Invoice() {
             let max = 1000;
             let prefix = 'INV-';
             invoices.forEach(i => {
-                const m = i.invoice_number.match(/(\d+)/);
+                if (!i.invoice_number) return;
+                const m = i.invoice_number.match(/(\d+)(?!.*\d)/);
                 if (m) {
                     const val = parseInt(m[1], 10);
                     if (val > max) max = val;
-                    const pm = i.invoice_number.match(/^([A-Za-z0-9]+-)/);
-                    if (pm) prefix = pm[1];
+                    prefix = i.invoice_number.replace(/(\d+)(?!.*\d)/, '');
                 }
             });
             const nextUniqueNumber = `${prefix}${max + 1}`;
