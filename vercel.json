@@ -20,6 +20,11 @@
         },
         {
             "source": "/(.*)",
+            "destination": "/web-react/$1",
+            "check": true
+        },
+        {
+            "source": "/(.*)",
             "destination": "/web-react/index.html"
         }
     ],
