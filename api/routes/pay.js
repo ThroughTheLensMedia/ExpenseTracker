@@ -146,12 +146,20 @@ router.post('/:token', async (req, res) => {
         const studioEmail = settings?.email;
 
         if (studioEmail) {
+            let extEventName = '';
+            const displayNotes = invoice.notes || '';
+            const metaMatch = displayNotes.match(/---METADATA---\nEventName: (.*)\nEventType: (.*)/);
+            if (metaMatch) {
+                extEventName = metaMatch[1];
+            }
+
             await sendInvoiceApprovalEmail({
                 to: studioEmail,
                 studioName: settings?.business_name || 'Studio Tracker',
                 clientName: invoice.clients?.name || 'Your Client',
                 clientEmail: invoice.clients?.email || '',
                 invoiceNumber: invoice.invoice_number,
+                eventName: extEventName,
                 totalCents,
                 signedAt,
                 customerSignature: signature.trim(),

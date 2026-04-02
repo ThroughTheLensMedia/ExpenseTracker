@@ -314,7 +314,7 @@ async function sendContactRelayEmail({ senderName, senderEmail, messageContent }
  */
 async function sendInvoiceApprovalEmail({
     to, studioName, clientName, clientEmail,
-    invoiceNumber, totalCents, signedAt, customerSignature,
+    invoiceNumber, eventName, totalCents, signedAt, customerSignature,
     paymentHandles, invoiceId
 }) {
     console.log(`[MAILER] Sending approval notification for Invoice #${invoiceNumber} to ${to}...`);
@@ -398,10 +398,14 @@ async function sendInvoiceApprovalEmail({
 </body>
 </html>`;
 
+        const displaySubject = eventName 
+            ? `✅ ${clientName} approved Invoice #${invoiceNumber} for ${eventName} — $${totalDollars}`
+            : `✅ ${clientName} approved Invoice #${invoiceNumber} — $${totalDollars}`;
+
         const data = await resend.emails.send({
             from: fromEmail,
             to: [to],
-            subject: `✅ ${clientName} approved Invoice #${invoiceNumber} — $${totalDollars}`,
+            subject: displaySubject,
             html,
         });
 

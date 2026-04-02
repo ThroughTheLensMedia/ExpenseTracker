@@ -195,6 +195,18 @@ export default function PayInvoice() {
     const billedItems = (inv.items || []).filter(it => it.quantity > 0);
     const descOnlyItems = (inv.items || []).filter(it => it.quantity === 0);
 
+    let displayNotes = inv.notes || '';
+    let attachment = null;
+    const attachmentMatch = displayNotes.match(/---ATTACHMENT---\nName: (.*)\nURL: (.*)/);
+    if (attachmentMatch) {
+        displayNotes = displayNotes.replace(attachmentMatch[0], '').trim();
+        attachment = { name: attachmentMatch[1], url: attachmentMatch[2] };
+    }
+    const metaMatch = displayNotes.match(/---METADATA---\nEventName: (.*)\nEventType: (.*)/);
+    if (metaMatch) {
+        displayNotes = displayNotes.replace(metaMatch[0], '').trim();
+    }
+
     return (
         <div style={styles.page}>
             {/* Studio header */}
@@ -232,15 +244,15 @@ export default function PayInvoice() {
                     <thead>
                         <tr>
                             <th style={styles.th}>Description</th>
-                            <th style={{ ...styles.th, textAlign: 'center', width: '60px' }}>Qty</th>
-                            <th style={{ ...styles.th, textAlign: 'right', width: '90px' }}>Price</th>
-                            <th style={{ ...styles.th, textAlign: 'right', width: '90px' }}>Total</th>
+                            <th style={{ ...styles.th, textAlign: 'center', width: '40px' }}>Qty</th>
+                            <th style={{ ...styles.th, textAlign: 'right', width: '70px' }}>Price</th>
+                            <th style={{ ...styles.th, textAlign: 'right', width: '80px' }}>Total</th>
                         </tr>
                     </thead>
                     <tbody>
                         {billedItems.map((it, i) => (
                             <tr key={i}>
-                                <td style={styles.td}>{it.description}</td>
+                                <td style={{ ...styles.td, wordBreak: 'break-word', minWidth: '100px' }}>{it.description}</td>
                                 <td style={{ ...styles.td, textAlign: 'center', color: '#64748b' }}>{it.quantity}</td>
                                 <td style={{ ...styles.td, textAlign: 'right', color: '#64748b' }}>{formatMoney(it.unit_price_cents)}</td>
                                 <td style={{ ...styles.td, textAlign: 'right', fontWeight: 700 }}>{formatMoney(it.unit_price_cents * it.quantity)}</td>
@@ -274,10 +286,17 @@ export default function PayInvoice() {
                 </div>
 
                 {/* Notes */}
-                {inv.notes && (
+                {(displayNotes || attachment) && (
                     <div style={styles.notes}>
                         <div style={styles.notesLabel}>Notes from {studio.business_name}</div>
-                        <p style={{ margin: 0, fontSize: '14px', color: '#475569', lineHeight: 1.6 }}>{inv.notes}</p>
+                        {displayNotes && <p style={{ margin: 0, fontSize: '14px', color: '#475569', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{displayNotes}</p>}
+                        {attachment && (
+                            <div style={{ marginTop: '16px' }}>
+                                <a href={attachment.url} target="_blank" rel="noreferrer" style={{ display: 'inline-block', background: '#fff', color: '#f97316', padding: '10px 16px', borderRadius: '8px', fontWeight: 700, fontSize: '13px', textDecoration: 'none', border: '1px solid #f97316' }}>
+                                    📄 View {attachment.name}
+                                </a>
+                            </div>
+                        )}
                     </div>
                 )}
 

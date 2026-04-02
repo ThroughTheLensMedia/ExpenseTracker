@@ -204,15 +204,28 @@ router.patch("/:id", async (req, res) => {
                 let rawInvoiceNotes = fullInvoice.notes || '';
                 let extAttName = '';
                 let extAttUrl = '';
+                let extEventName = '';
+                
                 const match = rawInvoiceNotes.match(/---ATTACHMENT---\nName: (.*)\nURL: (.*)/);
                 if (match) {
                     rawInvoiceNotes = rawInvoiceNotes.replace(match[0], '').trim();
                     extAttName = match[1];
                     extAttUrl = match[2];
                 }
+                
+                const metaMatch = rawInvoiceNotes.match(/---METADATA---\nEventName: (.*)\nEventType: (.*)/);
+                if (metaMatch) {
+                    rawInvoiceNotes = rawInvoiceNotes.replace(metaMatch[0], '').trim();
+                    extEventName = metaMatch[1];
+                }
+
+                let sysNotes = settings?.invoice_notes || '';
+                if (sysNotes && rawInvoiceNotes.includes(sysNotes)) {
+                    sysNotes = ''; // Prevent duplication
+                }
 
                 const formatNotes = text => text ? text.replace(/\n/g, '<br/>') : '';
-                const combinedNotes = [settings?.invoice_notes, rawInvoiceNotes].filter(Boolean).map(formatNotes).join('<br/><br/>');
+                const combinedNotes = [sysNotes, rawInvoiceNotes].filter(Boolean).map(formatNotes).join('<br/><br/>');
 
                 const attachmentHtml = extAttUrl 
                     ? `<div style="margin-top:16px;">
@@ -234,6 +247,12 @@ router.patch("/:id", async (req, res) => {
                 if (logoUrlImg && logoUrlImg.startsWith('/')) {
                     logoUrlImg = appUrl + logoUrlImg;
                 }
+                
+                // Prevent Gmail 102kb message clipping by removing large base64 logos
+                if (logoUrlImg && logoUrlImg.startsWith('data:')) {
+                    logoUrlImg = null;
+                }
+
                 const logoHtml = logoUrlImg
                     ? `<img src="${logoUrlImg}" alt="${studioName}" style="max-height:60px; max-width:180px; object-fit:contain; margin-bottom:8px;">`
                     : `<div style="font-size:20px; font-weight:900; color:#1e293b; letter-spacing:-0.02em;">${studioName}</div>`;
@@ -321,9 +340,13 @@ router.patch("/:id", async (req, res) => {
                     });
                 }
 
+                const displaySubject = extEventName 
+                    ? `Invoice #${fullInvoice.invoice_number} from ${studioName} for ${extEventName} — $${totalDollars} Due`
+                    : `Invoice #${fullInvoice.invoice_number} from ${studioName} — $${totalDollars} Due`;
+                
                 const result = await sendInvoiceEmail({
                     to: fullInvoice.clients.email,
-                    subject: `Invoice #${fullInvoice.invoice_number} from ${studioName} — $${totalDollars} Due`,
+                    subject: displaySubject,
                     body: emailBody,
                     attachments: emailAttachments,
                     fromName: studioName,

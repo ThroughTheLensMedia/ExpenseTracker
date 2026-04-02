@@ -113,39 +113,7 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
     }, [invoice]);
 
     const handleDownloadPDF = async () => {
-        const element = previewRef.current;
-        // Scroll element to top to prevent html2canvas capturing a scrolled/cut-off window
-        const originalScroll = element.parentElement.scrollTop;
-        element.parentElement.scrollTop = 0;
-        const canvas = await html2canvas(element, { 
-            scale: 2, 
-            useCORS: true,
-            scrollY: 0,
-            x: 0,
-            y: 0,
-            width: element.scrollWidth,
-            height: element.scrollHeight
-        });
-        element.parentElement.scrollTop = originalScroll;
-        const imgData = canvas.toDataURL('image/jpeg', 0.8);
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-        let heightLeft = pdfHeight;
-        let position = 0;
-
-        pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, pdfHeight);
-        heightLeft -= pageHeight;
-
-        while (heightLeft > 0) {
-            position = heightLeft - pdfHeight;
-            pdf.addPage();
-            pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, pdfHeight);
-            heightLeft -= pageHeight;
-        }
-        
-        pdf.save(`Invoice_${data.number}.pdf`);
+        window.print();
     };
 
     const handleSendWithPDF = async () => {
@@ -211,7 +179,7 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
                                 {isProcessing ? '⏳ Preparing PDF...' : (invoice.status === 'sent' ? 'Resend to Client' : 'Email to Client')}
                             </button>
                         )}
-                        <button className="btn secondary" onClick={handleDownloadPDF} style={{ padding: '10px 24px', color: '#fff' }}>Capture PDF Assets</button>
+                        <button className="btn secondary" onClick={handleDownloadPDF} style={{ padding: '10px 24px', color: '#fff' }}>Print / Save PDF</button>
                         <button className="btn secondary" onClick={onClose} style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.2)' }}>Return to Studio</button>
                     </div>
                 </div>
@@ -451,7 +419,7 @@ export default function Invoice() {
         setLoading(true);
         try {
             const [invs, cls, lds, st] = await Promise.all([
-                fetchAllInvoices(),
+                fetchAllInvoices(true),
                 apiGet('/invoices/clients'),
                 fetchAllLeads().catch(() => ({ leads: [] })),
                 apiGet('/settings').catch(() => ({}))
@@ -896,7 +864,7 @@ export default function Invoice() {
                             <table style={{ width: '100%' }}>
                                 <thead>
                                     <tr>
-                                        <th># & Event</th>
+                                        <th>Inv / Date, Event</th>
                                         <th>Client</th>
                                         <th style={{ textAlign: 'right' }}>Amount</th>
                                         <th style={{ textAlign: 'center' }}>Status</th>
