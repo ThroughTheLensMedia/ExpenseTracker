@@ -324,7 +324,9 @@ router.patch("/:id", async (req, res) => {
                     to: fullInvoice.clients.email,
                     subject: `Invoice #${fullInvoice.invoice_number} from ${studioName} — $${totalDollars} Due`,
                     body: emailBody,
-                    attachments: emailAttachments
+                    attachments: emailAttachments,
+                    fromName: studioName,
+                    replyTo: studioEmail
                 });
 
                 if (!result.success) {

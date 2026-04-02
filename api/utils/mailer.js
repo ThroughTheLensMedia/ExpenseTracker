@@ -18,7 +18,7 @@ function getResend() {
     return resendClient;
 }
 
-async function sendInvoiceEmail({ to, subject, body, attachments }) {
+async function sendInvoiceEmail({ to, subject, body, attachments, fromName, replyTo }) {
     console.log(`[MAILER] Preparing email to ${to}...`);
     console.log(`[MAILER] Subject: ${subject}`);
 
@@ -29,7 +29,10 @@ async function sendInvoiceEmail({ to, subject, body, attachments }) {
     }
 
     try {
-        const fromEmail = process.env.RESEND_FROM || 'Studio Tracker <support@throughthelens.media>';
+        const baseDomainEmail = process.env.RESEND_FROM || 'Studio Tracker <support@throughthelens.media>';
+        const matches = baseDomainEmail.match(/<([^>]+)>/);
+        const emailOnly = matches ? matches[1] : baseDomainEmail;
+        const fromEmail = fromName ? `${fromName} <${emailOnly}>` : baseDomainEmail;
         
         const payload = {
             from: fromEmail,
@@ -37,6 +40,10 @@ async function sendInvoiceEmail({ to, subject, body, attachments }) {
             subject: subject,
             html: body
         };
+        
+        if (replyTo) {
+            payload.reply_to = replyTo;
+        }
 
         if (attachments && Array.isArray(attachments)) {
             payload.attachments = attachments.map(a => ({

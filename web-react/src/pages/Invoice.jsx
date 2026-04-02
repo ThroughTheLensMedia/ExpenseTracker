@@ -522,9 +522,53 @@ export default function Invoice() {
                 photographerSigned: !!fullInv.photographer_signed,
             });
             setIsCreatorOpen(true);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDuplicate = async (inv) => {
+        setLoading(true);
+        try {
+            const fullInv = await apiGet(`/invoices/${inv.id}`);
+            const invItems = fullInv.invoice_items || [];
+            let loadNotes = fullInv.notes || '';
+            let loadAttName = '';
+            let loadAttUrl = '';
+            const match = loadNotes.match(/---ATTACHMENT---\nName: (.*)\nURL: (.*)/);
+            if (match) {
+                loadNotes = loadNotes.replace(match[0], '').trim();
+                loadAttName = match[1];
+                loadAttUrl = match[2];
+            }
+
+            setFormData({
+                number: formData.number, // keep the next available number loaded previously
+                date: new Date().toISOString().slice(0, 10),
+                dueDate: '',
+                clientId: '', // Empty so they can search or type a new one
+                clientName: fullInv.clients?.name ? `${fullInv.clients.name} (Copy)` : '',
+                clientEmail: '', // Let them enter the new payer email
+                clientPhone: '',
+                items: invItems.length > 0 ? invItems.map(it => ({
+                    description: it.description,
+                    quantity: it.quantity,
+                    unit_price: (it.unit_price_cents / 100).toFixed(2)
+                })) : [{ description: '', quantity: 1, unit_price: '' }],
+                tax_percent: fullInv.tax_percent !== undefined ? fullInv.tax_percent : '',
+                taxExempt: Number(fullInv.tax_percent) === 0 && fullInv.tax_percent !== null ? false : false,
+                discount: fullInv.discount_cents !== undefined ? (fullInv.discount_cents / 100) : '',
+                leadId: '', // Reset tracking
+                notes: loadNotes,
+                attachmentName: loadAttName,
+                attachmentUrl: loadAttUrl,
+                photographerSigned: !!fullInv.photographer_signed,
+            });
+            setIsCreatorOpen(true);
+            setEditingId(null); // Ensure it saves as a new draft
         } catch (e) {
-            console.error("Failed to load invoice items", e);
-            setStatusMsg({ type: 'bad', text: "Failed to load full invoice details." });
+            console.error("Failed to duplicate invoice items", e);
+            setStatusMsg({ type: 'bad', text: "Failed to duplicate full invoice details." });
         } finally {
             setLoading(false);
         }
@@ -798,6 +842,7 @@ export default function Invoice() {
                                             <td style={{ textAlign: 'right' }}>
                                                 <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                                                     <button className="btn sm secondary" onClick={() => handlePreview(inv)}>Preview</button>
+                                                    <button className="btn sm secondary" onClick={() => handleDuplicate(inv)}>Clone</button>
                                                     {(inv.status === 'draft' || inv.status === 'sent') && (
                                                         <button className="btn sm secondary" onClick={() => handleEdit(inv)}>Edit</button>
                                                     )}
