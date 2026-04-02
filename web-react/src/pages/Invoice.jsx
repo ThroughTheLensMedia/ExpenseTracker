@@ -96,8 +96,21 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
         const imgData = canvas.toDataURL('image/jpeg', 0.8);
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
         const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+        let heightLeft = pdfHeight;
+        let position = 0;
+
+        pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, pdfHeight);
+        heightLeft -= pageHeight;
+
+        while (heightLeft > 0) {
+            position = heightLeft - pdfHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, pdfHeight);
+            heightLeft -= pageHeight;
+        }
+        
         pdf.save(`Invoice_${data.number}.pdf`);
     };
 
@@ -110,9 +123,20 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
             const imgData = canvas.toDataURL('image/jpeg', 0.8);
             const pdf = new jsPDF('p', 'mm', 'a4', true); // Use compression
             const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
             const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-            pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
-            
+            let heightLeft = pdfHeight;
+            let position = 0;
+
+            pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, pdfHeight, undefined, 'FAST');
+            heightLeft -= pageHeight;
+
+            while (heightLeft > 0) {
+                position = heightLeft - pdfHeight;
+                pdf.addPage();
+                pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, pdfHeight, undefined, 'FAST');
+                heightLeft -= pageHeight;
+            }
             // Generate Base64 for attachment
             const pdfBase64 = pdf.output('datauristring').split(',')[1];
             await onSendEmail(invoice, pdfBase64);
@@ -205,10 +229,10 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
                             ) : data.items.map((it, idx) => {
                                 const hasBillableQty = it.quantity > 0;
                                 return (
-                                    <div key={idx} style={{ display: 'flex', borderBottom: '1px solid #f9f9f9', fontSize: '14px', alignItems: 'center', padding: '10px 0', background: hasBillableQty ? 'transparent' : '#fafafa' }}>
+                                    <div key={idx} style={{ display: 'flex', borderBottom: '1px solid #f9f9f9', fontSize: '14px', alignItems: 'center', padding: '10px 0', background: 'transparent' }}>
                                         <div style={{ flex: 1, padding: '10px 20px', fontWeight: 500, fontStyle: hasBillableQty ? 'normal' : 'italic', color: hasBillableQty ? '#1a1a1a' : '#888' }}>{it.description || '---'}</div>
                                         <div style={{ width: '80px', padding: '10px', textAlign: 'center', color: '#999' }}>
-                                            {hasBillableQty ? it.quantity : '—'}
+                                            {hasBillableQty ? it.quantity : ''}
                                         </div>
                                         <div style={{ width: '120px', padding: '10px', textAlign: 'right', color: '#999' }}>
                                             {hasBillableQty ? formatMoney(Number(it.unit_price) * 100) : ''}
@@ -251,16 +275,17 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
                         <div style={{ marginTop: 'auto', paddingTop: '40px' }}>
                             <div style={{ display: 'flex', gap: '40px', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '60px' }}>
                                 <div style={{ flex: 1, fontSize: '13px', lineHeight: '1.8' }}>
-                                    {invoice.notes && (
+                                    {(settings?.invoice_notes || invoice.notes) && (
                                         <div style={{ marginBottom: '25px' }}>
                                             <div style={{ fontWeight: 950, textTransform: 'uppercase', fontSize: '11px', letterSpacing: '2px', marginBottom: '8px', color: '#000' }}>Notes</div>
-                                            <div style={{ color: '#000' }}>{invoice.notes}</div>
+                                            {settings?.invoice_notes && <div style={{ color: '#000', whiteSpace: 'pre-wrap', marginBottom: invoice.notes ? '12px' : 0 }}>{settings.invoice_notes}</div>}
+                                            {invoice.notes && <div style={{ color: '#000', whiteSpace: 'pre-wrap' }}>{invoice.notes}</div>}
                                         </div>
                                     )}
                                     {settings?.standard_terms && (
                                         <div style={{ marginBottom: '25px' }}>
                                             <div style={{ fontWeight: 950, textTransform: 'uppercase', fontSize: '11px', letterSpacing: '2px', marginBottom: '8px', color: '#000' }}>Studio Terms</div>
-                                            <div style={{ color: '#000' }}>{settings.standard_terms}</div>
+                                            <div style={{ color: '#000', whiteSpace: 'pre-wrap' }}>{settings.standard_terms}</div>
                                         </div>
                                     )}
 
@@ -693,18 +718,21 @@ export default function Invoice() {
                 )}
                 {view === 'invoices' ? (
                     <div className="tableWrap">
-                        <table style={{ width: '100%' }}>
-                            <thead>
-                                <tr>
-                                    <th># / Date</th>
-                                    <th>Client</th>
-                                    <th style={{ textAlign: 'right' }}>Amount</th>
-                                    <th style={{ textAlign: 'center' }}>Status</th>
-                                    <th style={{ textAlign: 'right' }}>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {invoices.map(inv => {
+                        {loading && invoices.length === 0 ? (
+                            <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>Loading current invoices...</div>
+                        ) : (
+                            <table style={{ width: '100%' }}>
+                                <thead>
+                                    <tr>
+                                        <th># / Date</th>
+                                        <th>Client</th>
+                                        <th style={{ textAlign: 'right' }}>Amount</th>
+                                        <th style={{ textAlign: 'center' }}>Status</th>
+                                        <th style={{ textAlign: 'right' }}>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {invoices.map(inv => {
                                     const subtotal = (inv.invoice_items || []).reduce((s, it) => s + (it.unit_price_cents * it.quantity), 0);
                                     const tax = Math.round(subtotal * (inv.tax_percent / 100));
                                     const discountPercent = (inv.discount_cents || 0) / 100;
@@ -755,8 +783,9 @@ export default function Invoice() {
                                     );
                                 })}
                                 {!invoices.length && <tr><td colSpan="5" className="muted center" style={{ padding: '60px' }}>No invoices.</td></tr>}
-                            </tbody>
-                        </table>
+                                </tbody>
+                            </table>
+                        )}
                     </div>
                 ) : (
                     <div className="locker-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', margin: 0 }}>

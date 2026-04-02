@@ -166,7 +166,7 @@ router.patch("/:id", async (req, res) => {
                     .single(),
                 req.sb
                     .from('settings')
-                    .select('business_name, email, logo_url, phone, website')
+                    .select('business_name, email, logo_url, phone, website, invoice_notes')
                     .maybeSingle()
             ]);
 
@@ -179,7 +179,7 @@ router.patch("/:id", async (req, res) => {
                 const allItems = fullInvoice.invoice_items || [];
                 const subtotalCents = allItems.reduce((s, it) => s + (it.unit_price_cents * it.quantity), 0);
                 const taxCents = Math.round(subtotalCents * ((fullInvoice.tax_percent || 0) / 100));
-                const discountAmt = Math.round(subtotalCents * ((fullInvoice.discount_cents || 0) / 100));
+                const discountAmt = fullInvoice.discount_cents || 0;
                 const totalCents = subtotalCents + taxCents - discountAmt;
                 const totalDollars = (totalCents / 100).toFixed(2);
 
@@ -188,24 +188,33 @@ router.patch("/:id", async (req, res) => {
 
                 // Build inline line items table — skip items with no qty
                 const itemRowsHtml = allItems
-                    .filter(it => it.quantity > 0)
-                    .map(it => `
+                    .map(it => it.quantity > 0 ? `
                         <tr>
                           <td style="padding:10px 0; border-bottom:1px solid #f1f5f9; font-size:14px; color:#1e293b;">${it.description}</td>
                           <td style="padding:10px 0; border-bottom:1px solid #f1f5f9; font-size:14px; color:#64748b; text-align:center;">${it.quantity}</td>
                           <td style="padding:10px 0; border-bottom:1px solid #f1f5f9; font-size:14px; color:#64748b; text-align:right;">${formatMoney(it.unit_price_cents)}</td>
                           <td style="padding:10px 0; border-bottom:1px solid #f1f5f9; font-size:14px; font-weight:700; color:#1e293b; text-align:right;">${formatMoney(it.unit_price_cents * it.quantity)}</td>
+                        </tr>` : `
+                        <tr>
+                          <td colspan="4" style="padding:10px 0; border-bottom:1px solid #f1f5f9; font-size:14px; color:#64748b; font-style:italic;">${it.description}</td>
                         </tr>`).join('');
 
-                const notesHtml = fullInvoice.notes
+                const formatNotes = text => text ? text.replace(/\n/g, '<br/>') : '';
+                const combinedNotes = [settings?.invoice_notes, fullInvoice.notes].filter(Boolean).map(formatNotes).join('<br/><br/>');
+
+                const notesHtml = combinedNotes
                     ? `<div style="margin-top:24px; padding:20px; background:#f8fafc; border-radius:10px; border-left:3px solid #f97316;">
                          <div style="font-size:11px; font-weight:800; color:#f97316; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px;">Notes from Your Photographer</div>
-                         <p style="margin:0; font-size:14px; color:#475569; line-height:1.6;">${fullInvoice.notes}</p>
+                         <p style="margin:0; font-size:14px; color:#475569; line-height:1.6;">${combinedNotes}</p>
                        </div>`
                     : '';
 
-                const logoHtml = settings?.logo_url
-                    ? `<img src="${settings.logo_url}" alt="${studioName}" style="max-height:60px; max-width:180px; object-fit:contain; margin-bottom:8px;">`
+                let logoUrlImg = settings?.logo_url;
+                if (logoUrlImg && logoUrlImg.startsWith('/')) {
+                    logoUrlImg = appUrl + logoUrlImg;
+                }
+                const logoHtml = logoUrlImg
+                    ? `<img src="${logoUrlImg}" alt="${studioName}" style="max-height:60px; max-width:180px; object-fit:contain; margin-bottom:8px;">`
                     : `<div style="font-size:20px; font-weight:900; color:#1e293b; letter-spacing:-0.02em;">${studioName}</div>`;
 
                 const emailBody = `
@@ -229,39 +238,41 @@ router.patch("/:id", async (req, res) => {
 
     <!-- Invoice card -->
     <div style="background:#fff; border-radius:16px; padding:28px; box-shadow:0 2px 12px rgba(0,0,0,0.06); margin-bottom:24px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:16px; border-bottom:2px solid #f1f5f9;">
-        <div>
-          <div style="font-size:11px; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:0.08em;">Invoice Number</div>
-          <div style="font-size:20px; font-weight:900; color:#1e293b;">#${fullInvoice.invoice_number}</div>
-        </div>
-        <div style="text-align:right;">
-          <div style="font-size:11px; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:0.08em;">Due Date</div>
-          <div style="font-size:15px; font-weight:700; color:#1e293b;">${formatDate(fullInvoice.due_date)}</div>
-        </div>
-      </div>
+      <table style="width:100%; margin-bottom:20px; padding-bottom:16px; border-bottom:2px solid #f1f5f9; border-collapse:collapse;">
+        <tr>
+          <td style="text-align:left; vertical-align:top;">
+            <div style="font-size:11px; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:0.08em;">Invoice Number</div>
+            <div style="font-size:20px; font-weight:900; color:#1e293b;">#${fullInvoice.invoice_number}</div>
+          </td>
+          <td style="text-align:right; vertical-align:top;">
+            <div style="font-size:11px; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:0.08em;">Due Date</div>
+            <div style="font-size:15px; font-weight:700; color:#1e293b;">${formatDate(fullInvoice.due_date)}</div>
+          </td>
+        </tr>
+      </table>
 
       <!-- Line items -->
       <table style="width:100%; border-collapse:collapse;">
         <thead>
           <tr style="background:#f8fafc;">
-            <th style="text-align:left; padding:8px 0; font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; font-weight:800;">Description</th>
-            <th style="text-align:center; padding:8px 0; font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; font-weight:800;">Qty</th>
-            <th style="text-align:right; padding:8px 0; font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; font-weight:800;">Price</th>
-            <th style="text-align:right; padding:8px 0; font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; font-weight:800;">Total</th>
+            <th style="text-align:left; padding:8px 0; font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; font-weight:800; width:50%;">Description</th>
+            <th style="text-align:center; padding:8px 0; font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; font-weight:800; width:10%;">Qty</th>
+            <th style="text-align:right; padding:8px 0; font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; font-weight:800; width:20%;">Price</th>
+            <th style="text-align:right; padding:8px 0; font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; font-weight:800; width:20%;">Total</th>
           </tr>
         </thead>
         <tbody>${itemRowsHtml}</tbody>
       </table>
 
       <!-- Totals -->
-      <div style="margin-top:20px; padding-top:16px; border-top:2px solid #f1f5f9;">
-        ${taxCents > 0 ? `<div style="display:flex; justify-content:space-between; font-size:13px; color:#94a3b8; margin-bottom:6px;"><span>Tax (${fullInvoice.tax_percent}%)</span><span>${formatMoney(taxCents)}</span></div>` : ''}
-        ${discountAmt > 0 ? `<div style="display:flex; justify-content:space-between; font-size:13px; color:#94a3b8; margin-bottom:6px;"><span>Discount</span><span>-${formatMoney(discountAmt)}</span></div>` : ''}
-        <div style="display:flex; justify-content:space-between; font-size:18px; font-weight:900; color:#1e293b; margin-top:8px;">
-          <span>Total Due</span>
-          <span style="color:#f97316;">$${totalDollars}</span>
-        </div>
-      </div>
+      <table style="width:100%; margin-top:20px; padding-top:16px; border-top:2px solid #f1f5f9; border-collapse:collapse;">
+        ${taxCents > 0 ? `<tr><td style="font-size:13px; color:#94a3b8; padding-bottom:6px;">Tax (${fullInvoice.tax_percent}%)</td><td style="font-size:13px; color:#94a3b8; text-align:right; padding-bottom:6px;">${formatMoney(taxCents)}</td></tr>` : ''}
+        ${discountAmt > 0 ? `<tr><td style="font-size:13px; color:#94a3b8; padding-bottom:6px;">Discount</td><td style="font-size:13px; color:#94a3b8; text-align:right; padding-bottom:6px;">-${formatMoney(discountAmt)}</td></tr>` : ''}
+        <tr>
+          <td style="font-size:18px; font-weight:900; color:#1e293b; padding-top:8px;">Total Due</td>
+          <td style="font-size:18px; font-weight:900; color:#f97316; text-align:right; padding-top:8px;">$${totalDollars}</td>
+        </tr>
+      </table>
 
       ${notesHtml}
     </div>

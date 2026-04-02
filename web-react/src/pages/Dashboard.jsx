@@ -856,8 +856,8 @@ export default function Dashboard() {
                             <div className="muted" style={{ fontSize: '11px', marginTop: '4px' }}>Capital distribution by category</div>
                         </div>
                         <div style={{ flex: 1, display: 'flex', gap: '20px', alignItems: 'center' }}>
-                            <div style={{ flex: 1, maxHeight: '280px' }}>
-                                <Doughnut data={allocationData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: '75%' }} />
+                            <div style={{ flex: 1, maxHeight: '280px', padding: '10px' }}>
+                                <Doughnut data={allocationData} options={{ responsive: true, maintainAspectRatio: false, layout: { padding: 10 }, plugins: { legend: { display: false } }, cutout: '65%' }} />
                             </div>
                             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px', overflowY: 'auto' }}>
                                  {stats.topCats.slice(0, 10).map(([cat, meta], idx) => (

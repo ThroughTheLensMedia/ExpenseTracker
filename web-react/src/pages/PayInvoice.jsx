@@ -288,36 +288,6 @@ export default function PayInvoice() {
                 )}
             </div>
 
-            {/* Payment handles */}
-            {(studio.venmo_handle || studio.zelle_handle || studio.cashapp_tag) && (
-                <div style={{ ...styles.card, marginTop: 0 }}>
-                    <div style={styles.sectionLabel}>Payment Options</div>
-                    <div style={styles.handleGrid}>
-                        {studio.venmo_handle && (
-                            <a href={`https://venmo.com/${studio.venmo_handle.replace('@', '')}`} target="_blank" rel="noreferrer" style={styles.handleCard}>
-                                <div style={styles.handleIcon}>💜</div>
-                                <div style={styles.handleLabel}>Venmo</div>
-                                <div style={styles.handleValue}>{studio.venmo_handle}</div>
-                            </a>
-                        )}
-                        {studio.zelle_handle && (
-                            <div style={styles.handleCard}>
-                                <div style={styles.handleIcon}>💙</div>
-                                <div style={styles.handleLabel}>Zelle</div>
-                                <div style={styles.handleValue}>{studio.zelle_handle}</div>
-                            </div>
-                        )}
-                        {studio.cashapp_tag && (
-                            <a href={`https://cash.app/${studio.cashapp_tag}`} target="_blank" rel="noreferrer" style={styles.handleCard}>
-                                <div style={styles.handleIcon}>💚</div>
-                                <div style={styles.handleLabel}>CashApp</div>
-                                <div style={styles.handleValue}>{studio.cashapp_tag}</div>
-                            </a>
-                        )}
-                    </div>
-                </div>
-            )}
-
             {/* E-Signature section */}
             <div style={{ ...styles.card, marginTop: 0 }}>
                 <div style={styles.sectionLabel}>Approve This Invoice</div>
@@ -361,10 +331,40 @@ export default function PayInvoice() {
                     {submitting ? '⏳ Submitting…' : 'I Agree & Submit →'}
                 </button>
 
-                <p style={{ fontSize: '11px', color: '#94a3b8', textAlign: 'center', marginTop: '12px', marginBottom: 0 }}>
+                <p style={{ fontSize: '11px', color: '#94a3b8', textAlign: 'center', margin: '12px 0 0 0' }}>
                     Your typed name serves as your electronic signature and agreement to this invoice.
                 </p>
             </div>
+
+            {/* Payment handles */}
+            {(studio.venmo_handle || studio.zelle_handle || studio.cashapp_tag) && (
+                <div style={{ ...styles.card, marginTop: 0 }}>
+                    <div style={styles.sectionLabel}>Payment Options</div>
+                    <div style={styles.handleGrid}>
+                        {studio.venmo_handle && (
+                            <a href={`https://venmo.com/${studio.venmo_handle.replace('@', '')}`} target="_blank" rel="noreferrer" style={styles.handleCard}>
+                                <div style={styles.handleIcon}>💜</div>
+                                <div style={styles.handleLabel}>Venmo</div>
+                                <div style={styles.handleValue}>{studio.venmo_handle}</div>
+                            </a>
+                        )}
+                        {studio.zelle_handle && (
+                            <div style={styles.handleCard}>
+                                <div style={styles.handleIcon}>💙</div>
+                                <div style={styles.handleLabel}>Zelle</div>
+                                <div style={styles.handleValue}>{studio.zelle_handle}</div>
+                            </div>
+                        )}
+                        {studio.cashapp_tag && (
+                            <a href={`https://cash.app/${studio.cashapp_tag}`} target="_blank" rel="noreferrer" style={styles.handleCard}>
+                                <div style={styles.handleIcon}>💚</div>
+                                <div style={styles.handleLabel}>CashApp</div>
+                                <div style={styles.handleValue}>{studio.cashapp_tag}</div>
+                            </a>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* Footer */}
             <div style={{ textAlign: 'center', padding: '24px 0 40px', fontSize: '12px', color: '#cbd5e1' }}>
