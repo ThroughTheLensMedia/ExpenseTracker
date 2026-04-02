@@ -170,6 +170,28 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
 
     return (
         <div className="drawer" style={{ background: 'rgba(0,0,0,0.92)', zIndex: 20000 }}>
+            <style>{`
+                @media print {
+                    @page { margin: 1in; size: letter; }
+                    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: transparent !important; }
+                    .drawer { background: transparent !important; z-index: auto !important; position: static !important; }
+                    .drawer-panel { background: transparent !important; width: 100% !important; padding: 0 !important; overflow: visible !important; display: block !important; }
+                    .drawer-panel > div:first-child { display: none !important; /* hide header buttons */ }
+                    .invoice-scroll-area { padding: 0 !important; overflow: visible !important; }
+                    .invoice-print-area {
+                        width: 100% !important;
+                        min-width: 0 !important;
+                        min-height: 0 !important;
+                        padding: 0 !important;
+                        box-shadow: none !important;
+                        margin: 0 !important;
+                        display: block !important;
+                    }
+                    /* Force page breaks cleanly if content is too long */
+                    .invoice-print-area .page-break-avoid { page-break-inside: avoid; }
+                    .invoice-print-footer { transform: scale(0.65); transform-origin: top center; margin-top: 10px; }
+                }
+            `}</style>
             <div className="drawer-panel" style={{ width: 'min(1000px, 98%)', background: '#f5f5f5', color: '#1a1a1a', padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ padding: '20px 40px', background: '#111', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 10 }}>
                     <h3 style={{ margin: 0, color: '#fff', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px', fontSize: '13px' }}>Executive Snapshot</h3>
@@ -184,8 +206,8 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
                     </div>
                 </div>
 
-                <div style={{ flex: 1, overflowY: 'auto', padding: '40px' }}>
-                    <div ref={previewRef} style={{ background: '#fff', width: '8.5in', minWidth: '8.5in', minHeight: '11in', margin: '0 auto', padding: '1in', boxShadow: '0 0 60px rgba(0,0,0,0.15)', position: 'relative', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
+                <div className="invoice-scroll-area" style={{ flex: 1, overflowY: 'auto', padding: '40px' }}>
+                    <div ref={previewRef} className="invoice-print-area" style={{ background: '#fff', width: '8.5in', minWidth: '8.5in', minHeight: '11in', margin: '0 auto', padding: '1in', boxShadow: '0 0 60px rgba(0,0,0,0.15)', position: 'relative', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
 
                         {/* HEADER */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
@@ -243,7 +265,7 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
                             ) : data.items.map((it, idx) => {
                                 const hasBillableQty = it.quantity > 0;
                                 return (
-                                    <div key={idx} style={{ display: 'flex', borderBottom: '1px solid #f9f9f9', fontSize: '14px', alignItems: 'center', padding: '10px 0', background: 'transparent' }}>
+                                    <div key={idx} className="page-break-avoid" style={{ display: 'flex', borderBottom: '1px solid #f9f9f9', fontSize: '14px', alignItems: 'center', padding: '10px 0', background: 'transparent' }}>
                                         <div style={{ flex: 1, padding: '10px 20px', fontWeight: 500, fontStyle: hasBillableQty ? 'normal' : 'italic', color: hasBillableQty ? '#1a1a1a' : '#888' }}>{it.description || '---'}</div>
                                         <div style={{ width: '80px', padding: '10px', textAlign: 'center', color: '#999' }}>
                                             {hasBillableQty ? it.quantity : ''}
@@ -260,7 +282,7 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
                         </div>
 
                         {/* TOTALS BOX */}
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
+                        <div className="page-break-avoid" style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
                             <div style={{ width: '320px' }}>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', fontSize: '14px', padding: '8px 20px', color: '#666' }}>
                                     <div>Subtotal</div>
@@ -286,13 +308,12 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
                         </div>
 
                         {/* BOTTOM SECTIONS */}
-                        <div style={{ marginTop: 'auto', paddingTop: '40px' }}>
+                        <div className="page-break-avoid" style={{ marginTop: 'auto', paddingTop: '40px' }}>
                             <div style={{ display: 'flex', gap: '40px', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '60px' }}>
                                 <div style={{ flex: 1, fontSize: '13px', lineHeight: '1.8' }}>
-                                    {(settings?.invoice_notes || data.notes) && (
+                                    {(data.notes || data.attachment) && (
                                         <div style={{ marginBottom: '25px' }}>
                                             <div style={{ fontWeight: 950, textTransform: 'uppercase', fontSize: '11px', letterSpacing: '2px', marginBottom: '8px', color: '#000' }}>Notes</div>
-                                            {settings?.invoice_notes && <div style={{ color: '#000', whiteSpace: 'pre-wrap', marginBottom: data.notes ? '12px' : 0 }}>{settings.invoice_notes}</div>}
                                             {data.notes && <div style={{ color: '#000', whiteSpace: 'pre-wrap' }}>{data.notes}</div>}
                                             {data.attachment && (
                                                 <div style={{ marginTop: '15px' }}>
@@ -323,7 +344,7 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
                             <div style={{ borderTop: '2px solid #000', marginTop: '20px', paddingBottom: '30px' }}></div>
 
                             {/* FOOTER */}
-                            <div style={{ textAlign: 'center' }}>
+                            <div className="invoice-print-footer" style={{ textAlign: 'center' }}>
                                 <div style={{
                                     fontSize: '32px',
                                     fontWeight: 950,
@@ -358,6 +379,7 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
 export default function Invoice() {
     const modal = useModal();
     const [view, setView] = useState('invoices');
+    const [filterText, setFilterText] = useState('');
     const [invoices, setInvoices] = useState([]);
     const [clients, setClients] = useState([]);
     const [leads, setLeads] = useState([]);
@@ -864,7 +886,8 @@ export default function Invoice() {
                             <table style={{ width: '100%' }}>
                                 <thead>
                                     <tr>
-                                        <th>Inv / Date, Event</th>
+                                        <th>Inv / Date</th>
+                                        <th>Event</th>
                                         <th>Client</th>
                                         <th style={{ textAlign: 'right' }}>Amount</th>
                                         <th style={{ textAlign: 'center' }}>Status</th>
@@ -872,7 +895,22 @@ export default function Invoice() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {invoices.map(inv => {
+                                    {invoices
+                                        .filter(inv => {
+                                            if (!filterText) return true;
+                                            const term = filterText.toLowerCase();
+                                            const num = (inv.invoice_number || '').toLowerCase();
+                                            const cli = (inv.clients?.name || '').toLowerCase();
+                                            const stat = (inv.status || '').toLowerCase();
+                                            const notes = (inv.notes || '').toLowerCase();
+                                            return num.includes(term) || cli.includes(term) || stat.includes(term) || notes.includes(term);
+                                        })
+                                        .sort((a, b) => {
+                                            const numA = parseInt((a.invoice_number || '').replace(/\D/g, ''), 10) || 0;
+                                            const numB = parseInt((b.invoice_number || '').replace(/\D/g, ''), 10) || 0;
+                                            return numA - numB;
+                                        })
+                                        .map(inv => {
                                     const subtotal = (inv.invoice_items || []).reduce((s, it) => s + (it.unit_price_cents * it.quantity), 0);
                                     const tax = Math.round(subtotal * (inv.tax_percent / 100));
                                     const discountPercent = (inv.discount_cents || 0) / 100;
@@ -890,18 +928,18 @@ export default function Invoice() {
                                     return (
                                         <tr key={inv.id}>
                                             <td style={{ fontWeight: 800 }}>
-                                                <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                                                    <div>
-                                                        <div style={{ color: BRAND_ORANGE }}>#{inv.invoice_number}</div>
-                                                        <div className="muted small">{inv.issue_date}</div>
-                                                    </div>
-                                                    {listEventName && (
-                                                        <div style={{ maxWidth: '160px', wordWrap: 'break-word', whiteSpace: 'normal', lineHeight: '1.3' }}>
-                                                            <div className="small" style={{ color: '#e2e8f0' }}>{listEventName}</div>
-                                                            {listEventType && listEventType !== 'undefined' && <div className="muted extra-small">{listEventType}</div>}
-                                                        </div>
-                                                    )}
+                                                <div>
+                                                    <div style={{ color: BRAND_ORANGE }}>#{inv.invoice_number}</div>
+                                                    <div className="muted small">{inv.issue_date}</div>
                                                 </div>
+                                            </td>
+                                            <td>
+                                                {listEventName ? (
+                                                    <div style={{ maxWidth: '160px', wordWrap: 'break-word', whiteSpace: 'normal', lineHeight: '1.3' }}>
+                                                        <div className="small" style={{ color: '#e2e8f0' }}>{listEventName}</div>
+                                                        {listEventType && listEventType !== 'undefined' && <div className="muted extra-small">{listEventType}</div>}
+                                                    </div>
+                                                ) : <div className="muted small">--</div>}
                                             </td>
                                             <td>
                                                 <div style={{ fontWeight: 700 }}>{inv.clients?.name}</div>

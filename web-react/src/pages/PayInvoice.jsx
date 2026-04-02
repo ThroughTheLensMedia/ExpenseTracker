@@ -211,10 +211,7 @@ export default function PayInvoice() {
         <div style={styles.page}>
             {/* Studio header */}
             <div style={styles.header}>
-                {studio.logo_url
-                    ? <img src={studio.logo_url} alt={studio.business_name} style={{ maxHeight: '56px', maxWidth: '180px', objectFit: 'contain' }} />
-                    : <div style={styles.studioName}>{studio.business_name}</div>
-                }
+                <div style={styles.studioName}>{studio.business_name}</div>
                 <div style={styles.headerDivider} />
             </div>
 
@@ -240,31 +237,33 @@ export default function PayInvoice() {
 
                 {/* Line items */}
                 <div style={styles.divider} />
-                <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '8px' }}>
-                    <thead>
-                        <tr>
-                            <th style={styles.th}>Description</th>
-                            <th style={{ ...styles.th, textAlign: 'center', width: '40px' }}>Qty</th>
-                            <th style={{ ...styles.th, textAlign: 'right', width: '70px' }}>Price</th>
-                            <th style={{ ...styles.th, textAlign: 'right', width: '80px' }}>Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {billedItems.map((it, i) => (
-                            <tr key={i}>
-                                <td style={{ ...styles.td, wordBreak: 'break-word', minWidth: '100px' }}>{it.description}</td>
-                                <td style={{ ...styles.td, textAlign: 'center', color: '#64748b' }}>{it.quantity}</td>
-                                <td style={{ ...styles.td, textAlign: 'right', color: '#64748b' }}>{formatMoney(it.unit_price_cents)}</td>
-                                <td style={{ ...styles.td, textAlign: 'right', fontWeight: 700 }}>{formatMoney(it.unit_price_cents * it.quantity)}</td>
+                <div style={{ width: '100%', overflowX: 'auto' }}>
+                    <table style={{ width: '100%', minWidth: '400px', borderCollapse: 'collapse', marginBottom: '8px' }}>
+                        <thead>
+                            <tr>
+                                <th style={{ ...styles.th, minWidth: '150px' }}>Description</th>
+                                <th style={{ ...styles.th, textAlign: 'center', width: '40px' }}>Qty</th>
+                                <th style={{ ...styles.th, textAlign: 'right', width: '70px' }}>Price</th>
+                                <th style={{ ...styles.th, textAlign: 'right', width: '80px' }}>Total</th>
                             </tr>
-                        ))}
-                        {descOnlyItems.map((it, i) => (
-                            <tr key={`desc-${i}`}>
-                                <td style={{ ...styles.td, color: '#94a3b8', fontStyle: 'italic' }} colSpan={4}>{it.description}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {billedItems.map((it, i) => (
+                                <tr key={i}>
+                                    <td style={{ ...styles.td, wordBreak: 'break-word' }}>{it.description}</td>
+                                    <td style={{ ...styles.td, textAlign: 'center', color: '#64748b' }}>{it.quantity}</td>
+                                    <td style={{ ...styles.td, textAlign: 'right', color: '#64748b' }}>{formatMoney(it.unit_price_cents)}</td>
+                                    <td style={{ ...styles.td, textAlign: 'right', fontWeight: 700 }}>{formatMoney(it.unit_price_cents * it.quantity)}</td>
+                                </tr>
+                            ))}
+                            {descOnlyItems.map((it, i) => (
+                                <tr key={`desc-${i}`}>
+                                    <td style={{ ...styles.td, color: '#94a3b8', fontStyle: 'italic' }} colSpan={4}>{it.description}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
 
                 {/* Totals */}
                 <div style={{ ...styles.divider, marginTop: 0 }} />
