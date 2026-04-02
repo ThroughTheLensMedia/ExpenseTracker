@@ -1,7 +1,14 @@
 import React from 'react';
 
 const RELEASES = [
-    { version: '5.0.0', date: 'APRIL 1, 2026', color: '#f97316', items: [
+    { version: '5.1.0', date: 'APRIL 2, 2026', color: '#f97316', items: [
+        '<strong>Invoice Cloning:</strong> Added a one-click "Clone" button on the invoice dashboard to instantly duplicate proposals or bill new clients with identical parameters.',
+        '<strong>Attachment URLs:</strong> You can now attach a direct URL (like Google Drive or Pixieset) to any invoice. It automatically prints on the PDF and the Client Email as an interactive button.',
+        '<strong>Dynamic Email Senders:</strong> Outbound emails securely adopt your Official Business Name. Furthermore, any client replies are intelligently routed directly back to your personal Business Email account.',
+        '<strong>Intelligent Discount Scaling:</strong> Completely rebuilt the discount processing engine backend to guarantee 100% precision on scaled percentages across PDFs, Emails, and the Pay Portal.',
+        '<strong>Visual & PDF Refinements:</strong> Cleaned up empty quantity rows on the PDF generator and optimized layout spacing dynamically. The Studio Tracker logic gracefully prevents blank rows from bleeding lines onto the formal file.'
+    ]},
+    { version: '5.0.0', date: 'APRIL 1, 2026', color: 'var(--accent)', items: [
         '<strong>Pay Now Portal:</strong> Clients receive a branded payment link (<code>/pay/:token</code>) — no login required. Shows invoice summary, payment handles, and e-signature capture.',
         '<strong>Dual E-Signatures:</strong> Photographers check "I authorize this invoice" in the creator. Clients type their full name to approve on the Pay Portal — timestamp and signature stored permanently.',
         '<strong>Premium Invoice Email:</strong> Fully redesigned client email with inline line-item table, studio logo, conditional notes, orange Pay Now CTA button, and PDF attachment.',

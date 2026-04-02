@@ -73,13 +73,22 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
         const taxCents = Math.round(subtotalCents * (taxPercent / 100));
         const totalCents = subtotalCents + taxCents - discountCents;
 
-        // Extract attachments from Notes
         let displayNotes = invoice.notes || '';
         let attachment = null;
+        let eventName = '';
+        let eventType = '';
+
         const attachmentMatch = displayNotes.match(/---ATTACHMENT---\nName: (.*)\nURL: (.*)/);
         if (attachmentMatch) {
             displayNotes = displayNotes.replace(attachmentMatch[0], '').trim();
             attachment = { name: attachmentMatch[1], url: attachmentMatch[2] };
+        }
+
+        const metaMatch = displayNotes.match(/---METADATA---\nEventName: (.*)\nEventType: (.*)/);
+        if (metaMatch) {
+            displayNotes = displayNotes.replace(metaMatch[0], '').trim();
+            eventName = metaMatch[1];
+            eventType = metaMatch[2];
         }
 
         return {
@@ -89,7 +98,7 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
             clientName: invoice.clientName || invoice.clients?.name || '---',
             clientEmail: invoice.clientEmail || invoice.clients?.email || '',
             clientPhone: invoice.clientPhone || invoice.clients?.phone || '',
-            items,       // All items — for display (description-only rows included)
+            items,
             subtotal: subtotalCents / 100,
             taxVal: taxCents / 100,
             discount: discountCents / 100,
@@ -97,7 +106,9 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
             total: totalCents / 100,
             tax_percent: taxPercent,
             notes: displayNotes,
-            attachment
+            attachment,
+            eventName,
+            eventType
         };
     }, [invoice]);
 
@@ -381,6 +392,8 @@ export default function Invoice() {
         discount: '',
         leadId: '',
         notes: '',
+        eventName: '',
+        eventType: '',
         attachmentName: '',
         attachmentUrl: '',
         photographerSigned: false,
@@ -401,6 +414,8 @@ export default function Invoice() {
             discount: '',
             leadId: '',
             notes: '',
+            eventName: '',
+            eventType: '',
             attachmentName: '',
             attachmentUrl: '',
             photographerSigned: false,
@@ -492,11 +507,21 @@ export default function Invoice() {
             let loadNotes = fullInv.notes || '';
             let loadAttName = '';
             let loadAttUrl = '';
-            const match = loadNotes.match(/---ATTACHMENT---\nName: (.*)\nURL: (.*)/);
-            if (match) {
-                loadNotes = loadNotes.replace(match[0], '').trim();
-                loadAttName = match[1];
-                loadAttUrl = match[2];
+            let loadEventName = '';
+            let loadEventType = '';
+            
+            const matchAtt = loadNotes.match(/---ATTACHMENT---\nName: (.*)\nURL: (.*)/);
+            if (matchAtt) {
+                loadNotes = loadNotes.replace(matchAtt[0], '').trim();
+                loadAttName = matchAtt[1];
+                loadAttUrl = matchAtt[2];
+            }
+
+            const matchMeta = loadNotes.match(/---METADATA---\nEventName: (.*)\nEventType: (.*)/);
+            if (matchMeta) {
+                loadNotes = loadNotes.replace(matchMeta[0], '').trim();
+                loadEventName = matchMeta[1];
+                loadEventType = matchMeta[2];
             }
 
             setFormData({
@@ -517,6 +542,8 @@ export default function Invoice() {
                 discount: fullInv.discount_cents !== undefined ? (fullInv.discount_cents / 100) : '',
                 leadId: fullInv.lead_id || '',
                 notes: loadNotes,
+                eventName: loadEventName,
+                eventType: loadEventType,
                 attachmentName: loadAttName,
                 attachmentUrl: loadAttUrl,
                 photographerSigned: !!fullInv.photographer_signed,
@@ -535,19 +562,42 @@ export default function Invoice() {
             let loadNotes = fullInv.notes || '';
             let loadAttName = '';
             let loadAttUrl = '';
-            const match = loadNotes.match(/---ATTACHMENT---\nName: (.*)\nURL: (.*)/);
-            if (match) {
-                loadNotes = loadNotes.replace(match[0], '').trim();
-                loadAttName = match[1];
-                loadAttUrl = match[2];
+            let loadEventName = '';
+            let loadEventType = '';
+            
+            const matchAtt = loadNotes.match(/---ATTACHMENT---\nName: (.*)\nURL: (.*)/);
+            if (matchAtt) {
+                loadNotes = loadNotes.replace(matchAtt[0], '').trim();
+                loadAttName = matchAtt[1];
+                loadAttUrl = matchAtt[2];
             }
 
+            const matchMeta = loadNotes.match(/---METADATA---\nEventName: (.*)\nEventType: (.*)/);
+            if (matchMeta) {
+                loadNotes = loadNotes.replace(matchMeta[0], '').trim();
+                loadEventName = matchMeta[1];
+                loadEventType = matchMeta[2];
+            }
+
+            let max = 1000;
+            let prefix = 'INV-';
+            invoices.forEach(i => {
+                const m = i.invoice_number.match(/(\d+)/);
+                if (m) {
+                    const val = parseInt(m[1], 10);
+                    if (val > max) max = val;
+                    const pm = i.invoice_number.match(/^([A-Za-z0-9]+-)/);
+                    if (pm) prefix = pm[1];
+                }
+            });
+            const nextUniqueNumber = `${prefix}${max + 1}`;
+
             setFormData({
-                number: formData.number, // keep the next available number loaded previously
+                number: nextUniqueNumber,
                 date: new Date().toISOString().slice(0, 10),
                 dueDate: '',
                 clientId: '', // Empty so they can search or type a new one
-                clientName: fullInv.clients?.name ? `${fullInv.clients.name} (Copy)` : '',
+                clientName: '',
                 clientEmail: '', // Let them enter the new payer email
                 clientPhone: '',
                 items: invItems.length > 0 ? invItems.map(it => ({
@@ -558,8 +608,10 @@ export default function Invoice() {
                 tax_percent: fullInv.tax_percent !== undefined ? fullInv.tax_percent : '',
                 taxExempt: Number(fullInv.tax_percent) === 0 && fullInv.tax_percent !== null ? false : false,
                 discount: fullInv.discount_cents !== undefined ? (fullInv.discount_cents / 100) : '',
-                leadId: '', // Reset tracking
+                leadId: '', 
                 notes: loadNotes,
+                eventName: loadEventName,
+                eventType: loadEventType,
                 attachmentName: loadAttName,
                 attachmentUrl: loadAttUrl,
                 photographerSigned: !!fullInv.photographer_signed,
@@ -624,6 +676,14 @@ export default function Invoice() {
                     finalNotes += `\n\n---ATTACHMENT---\nName: ${formData.attachmentName}\nURL: ${formData.attachmentUrl}`;
                 } else {
                     finalNotes = finalNotes.replace(/---ATTACHMENT---\nName: .*\nURL: .*/, `---ATTACHMENT---\nName: ${formData.attachmentName}\nURL: ${formData.attachmentUrl}`);
+                }
+            }
+
+            if (formData.eventName || formData.eventType) {
+                if (!finalNotes.includes('---METADATA---')) {
+                    finalNotes += `\n\n---METADATA---\nEventName: ${formData.eventName || ''}\nEventType: ${formData.eventType || ''}`;
+                } else {
+                    finalNotes = finalNotes.replace(/---METADATA---\nEventName: .*\nEventType: .*/, `---METADATA---\nEventName: ${formData.eventName || ''}\nEventType: ${formData.eventType || ''}`);
                 }
             }
 
@@ -812,7 +872,7 @@ export default function Invoice() {
                                 <thead>
                                     <tr>
                                         <th># / Date</th>
-                                        <th>Client</th>
+                                        <th>Client & Project</th>
                                         <th style={{ textAlign: 'right' }}>Amount</th>
                                         <th style={{ textAlign: 'center' }}>Status</th>
                                         <th style={{ textAlign: 'right' }}>Actions</th>
@@ -825,6 +885,15 @@ export default function Invoice() {
                                     const discountPercent = (inv.discount_cents || 0) / 100;
                                     const discountAmount = Math.round(subtotal * (discountPercent / 100));
                                     const total = subtotal + tax - discountAmount;
+                                    
+                                    let listEventName = '';
+                                    let listEventType = '';
+                                    const metaMatch = (inv.notes || '').match(/---METADATA---\nEventName: (.*)\nEventType: (.*)/);
+                                    if (metaMatch) {
+                                        listEventName = metaMatch[1];
+                                        listEventType = metaMatch[2];
+                                    }
+
                                     return (
                                         <tr key={inv.id}>
                                             <td style={{ fontWeight: 800 }}>
@@ -833,7 +902,13 @@ export default function Invoice() {
                                             </td>
                                             <td>
                                                 <div style={{ fontWeight: 700 }}>{inv.clients?.name}</div>
-                                                <div className="muted small">{inv.clients?.email}</div>
+                                                {listEventName ? (
+                                                    <div className="muted small" style={{ color: 'var(--accent)' }}>
+                                                        {listEventName} {listEventType !== 'undefined' && listEventType ? `(${listEventType})` : ''}
+                                                    </div>
+                                                ) : (
+                                                    <div className="muted small">{inv.clients?.email}</div>
+                                                )}
                                             </td>
                                             <td style={{ textAlign: 'right', fontWeight: 900 }}>{formatMoney(total)}</td>
                                             <td style={{ textAlign: 'center' }}>
@@ -952,6 +1027,27 @@ export default function Invoice() {
                                 <div>
                                     <small className="muted" style={{ fontWeight: 800 }}>CLIENT EMAIL</small>
                                     <input value={formData.clientEmail || ''} onChange={e => setFormData({ ...formData, clientEmail: e.target.value })} />
+                                </div>
+                            </div>
+
+                            <div className="grid two" style={{ marginTop: '4px' }}>
+                                <div>
+                                    <small className="muted" style={{ fontWeight: 800 }}>EVENT NAME</small>
+                                    <input value={formData.eventName || ''} onChange={e => setFormData({ ...formData, eventName: e.target.value })} placeholder="e.g. Smith Wedding" />
+                                </div>
+                                <div>
+                                    <small className="muted" style={{ fontWeight: 800 }}>TYPE OF EVENT</small>
+                                    <select value={formData.eventType || ''} onChange={e => setFormData({ ...formData, eventType: e.target.value })}>
+                                        <option value="">-- Select Type --</option>
+                                        <option value="Airbnb">Airbnb</option>
+                                        <option value="Bike Event">Bike Event</option>
+                                        <option value="Commercial">Commercial</option>
+                                        <option value="Portrait">Portrait</option>
+                                        <option value="Running Event">Running Event</option>
+                                        <option value="Videography">Videography</option>
+                                        <option value="Wedding">Wedding</option>
+                                        <option value="Other">Other</option>
+                                    </select>
                                 </div>
                             </div>
 
