@@ -871,8 +871,8 @@ export default function Invoice() {
                             <table style={{ width: '100%' }}>
                                 <thead>
                                     <tr>
-                                        <th># / Date</th>
-                                        <th>Client & Project</th>
+                                        <th># & Event</th>
+                                        <th>Client</th>
                                         <th style={{ textAlign: 'right' }}>Amount</th>
                                         <th style={{ textAlign: 'center' }}>Status</th>
                                         <th style={{ textAlign: 'right' }}>Actions</th>
@@ -897,18 +897,22 @@ export default function Invoice() {
                                     return (
                                         <tr key={inv.id}>
                                             <td style={{ fontWeight: 800 }}>
-                                                <div style={{ color: BRAND_ORANGE }}>#{inv.invoice_number}</div>
-                                                <div className="muted small">{inv.issue_date}</div>
+                                                <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                                                    <div>
+                                                        <div style={{ color: BRAND_ORANGE }}>#{inv.invoice_number}</div>
+                                                        <div className="muted small">{inv.issue_date}</div>
+                                                    </div>
+                                                    {listEventName && (
+                                                        <div style={{ maxWidth: '160px', wordWrap: 'break-word', whiteSpace: 'normal', lineHeight: '1.3' }}>
+                                                            <div className="small" style={{ color: '#e2e8f0' }}>{listEventName}</div>
+                                                            {listEventType && listEventType !== 'undefined' && <div className="muted extra-small">{listEventType}</div>}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td>
                                                 <div style={{ fontWeight: 700 }}>{inv.clients?.name}</div>
-                                                {listEventName ? (
-                                                    <div className="muted small" style={{ color: 'var(--accent)' }}>
-                                                        {listEventName} {listEventType !== 'undefined' && listEventType ? `(${listEventType})` : ''}
-                                                    </div>
-                                                ) : (
-                                                    <div className="muted small">{inv.clients?.email}</div>
-                                                )}
+                                                <div className="muted small">{inv.clients?.email}</div>
                                             </td>
                                             <td style={{ textAlign: 'right', fontWeight: 900 }}>{formatMoney(total)}</td>
                                             <td style={{ textAlign: 'center' }}>
@@ -979,6 +983,27 @@ export default function Invoice() {
                         <form onSubmit={handleCreateInvoice} style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '24px', flex: 1, overflowY: 'auto' }}>
                             <div className="grid two">
                                 <div>
+                                    <small className="muted" style={{ fontWeight: 800 }}>EVENT NAME</small>
+                                    <input value={formData.eventName || ''} onChange={e => setFormData({ ...formData, eventName: e.target.value })} placeholder="e.g. Smith Wedding" />
+                                </div>
+                                <div>
+                                    <small className="muted" style={{ fontWeight: 800 }}>TYPE OF EVENT</small>
+                                    <select value={formData.eventType || ''} onChange={e => setFormData({ ...formData, eventType: e.target.value })}>
+                                        <option value="">-- Select Type --</option>
+                                        <option value="Airbnb">Airbnb</option>
+                                        <option value="Bike Event">Bike Event</option>
+                                        <option value="Commercial">Commercial</option>
+                                        <option value="Portrait">Portrait</option>
+                                        <option value="Running Event">Running Event</option>
+                                        <option value="Videography">Videography</option>
+                                        <option value="Wedding">Wedding</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="grid two">
+                                <div>
                                     <small className="muted" style={{ fontWeight: 800 }}>INVOICE NUMBER</small>
                                     <input value={formData.number || ''} onChange={e => setFormData({ ...formData, number: e.target.value })} />
                                 </div>
@@ -993,11 +1018,6 @@ export default function Invoice() {
                                     <small className="muted" style={{ fontWeight: 800 }}>DUE DATE (OPTIONAL)</small>
                                     <input type="date" value={formData.dueDate || ''} onChange={e => setFormData({ ...formData, dueDate: e.target.value })} />
                                     <div className="muted extra-small" style={{ marginTop: '4px' }}>Defaults to "Day of Photoshoot" if empty.</div>
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-                                    <button type="button" className="btn sm secondary" style={{ width: '100%' }} onClick={() => setPreviewingInvoice(formData)}>
-                                        👁️ Preview Current Draft
-                                    </button>
                                 </div>
                             </div>
 
@@ -1027,27 +1047,6 @@ export default function Invoice() {
                                 <div>
                                     <small className="muted" style={{ fontWeight: 800 }}>CLIENT EMAIL</small>
                                     <input value={formData.clientEmail || ''} onChange={e => setFormData({ ...formData, clientEmail: e.target.value })} />
-                                </div>
-                            </div>
-
-                            <div className="grid two" style={{ marginTop: '4px' }}>
-                                <div>
-                                    <small className="muted" style={{ fontWeight: 800 }}>EVENT NAME</small>
-                                    <input value={formData.eventName || ''} onChange={e => setFormData({ ...formData, eventName: e.target.value })} placeholder="e.g. Smith Wedding" />
-                                </div>
-                                <div>
-                                    <small className="muted" style={{ fontWeight: 800 }}>TYPE OF EVENT</small>
-                                    <select value={formData.eventType || ''} onChange={e => setFormData({ ...formData, eventType: e.target.value })}>
-                                        <option value="">-- Select Type --</option>
-                                        <option value="Airbnb">Airbnb</option>
-                                        <option value="Bike Event">Bike Event</option>
-                                        <option value="Commercial">Commercial</option>
-                                        <option value="Portrait">Portrait</option>
-                                        <option value="Running Event">Running Event</option>
-                                        <option value="Videography">Videography</option>
-                                        <option value="Wedding">Wedding</option>
-                                        <option value="Other">Other</option>
-                                    </select>
                                 </div>
                             </div>
 
@@ -1135,6 +1134,10 @@ export default function Invoice() {
                                     </div>
                                 </label>
                             </div>
+
+                            <button type="button" className="btn secondary" style={{ width: '100%', padding: '16px', fontWeight: 800 }} onClick={() => setPreviewingInvoice(formData)}>
+                                Preview Current Draft
+                            </button>
 
                             <div style={{ height: '100px' }} /> {/* Spacing for fixed footer */}
                         </form>
