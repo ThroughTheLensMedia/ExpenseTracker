@@ -385,10 +385,9 @@ async function sendInvoiceApprovalEmail({
       </ol>
     </div>
 
-    <!-- Deep-link CTAs -->
+    <!-- Deep-link CTA -->
     <div style="text-align:center; margin-bottom:32px;">
-      <a href="${appUrl}/crm/financials" style="display:inline-block; background:#f97316; color:#fff; padding:14px 28px; border-radius:10px; font-weight:900; font-size:14px; text-decoration:none; margin-right:12px;">View in Studio Tracker &rarr;</a>
-      <a href="${appUrl}/pay/${invoiceId}/download" style="display:inline-block; background:rgba(255,255,255,0.06); color:#94a3b8; padding:14px 28px; border-radius:10px; font-weight:700; font-size:13px; text-decoration:none; border:1px solid rgba(255,255,255,0.1);">Download PDF</a>
+      <a href="${appUrl}/crm/financials" style="display:inline-block; background:#f97316; color:#fff; padding:14px 28px; border-radius:10px; font-weight:900; font-size:14px; text-decoration:none;">View in Studio Tracker &rarr;</a>
     </div>
 
     <!-- Footer -->

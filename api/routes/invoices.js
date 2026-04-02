@@ -179,8 +179,9 @@ router.patch("/:id", async (req, res) => {
                 const allItems = fullInvoice.invoice_items || [];
                 const subtotalCents = allItems.reduce((s, it) => s + (it.unit_price_cents * it.quantity), 0);
                 const taxCents = Math.round(subtotalCents * ((fullInvoice.tax_percent || 0) / 100));
-                const discountPercent = (fullInvoice.discount_cents || 0) / 100;
-                const discountAmt = Math.round(subtotalCents * (discountPercent / 100));
+                // discount_cents stores percent×100 (e.g. 500 = 5%). Divide once to get percent, once more for /100 = fraction.
+                const discountPct = (fullInvoice.discount_cents || 0) / 10000;
+                const discountAmt = Math.round(subtotalCents * discountPct);
                 const totalCents = subtotalCents + taxCents - discountAmt;
                 const totalDollars = (totalCents / 100).toFixed(2);
 

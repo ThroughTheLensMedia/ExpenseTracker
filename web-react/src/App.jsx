@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useActivityPulse } from "./hooks/useActivityPulse";
-import { BrowserRouter as Router, Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, NavLink, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './components/AuthContext';
 import { ModalProvider } from './components/ModalContext';
 import Dashboard from './pages/Dashboard';
@@ -46,6 +46,7 @@ function AppContent() {
   const [apiStatus, setApiStatus] = useState('Checking...');
   const { user, loading, logout, subscription, settings } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [showRedeem, setShowRedeem] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [newVersion, setNewVersion] = useState(false);
@@ -157,7 +158,7 @@ function AppContent() {
             ? 'STUDIO ACCESS EXPIRED — UPDATES DISABLED' 
             : `STUDIO ACCESS EXPIRES IN ${daysLeft} DAYS`}
           <button 
-            onClick={() => window.location.hash = '#redeem'} 
+            onClick={() => navigate('/StudioControlCenter?tab=saas')} 
             style={{ marginLeft: '15px', padding: '2px 8px', background: 'white', color: 'black', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '10px' }}
           >
             EXTEND ACCESS

@@ -27,8 +27,10 @@ const brainRouter = require("./routes/brain"); // AI Intelligence Engine
 const plaidRouter = require("./routes/plaid"); // Plaid Bank Sync
 const payRouter = require("./routes/pay");    // Public Payment Portal (no auth)
 
-// Initialize Database
-initDb();
+// Initialize Database — log clearly if it fails
+if (!initDb()) {
+  console.error("[STARTUP] Database client failed to initialize. Check SUPABASE_SERVICE_ROLE_KEY and SUPABASE_URL in Vercel env.");
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;

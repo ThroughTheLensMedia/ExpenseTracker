@@ -52,7 +52,8 @@ export function AuthProvider({ children }) {
 
     // 0. Developer Bypass (Safe for Localhost)
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const hasDevBypass = localStorage.getItem('studio_tracker_dev_mode') === 'true' || window.location.search.includes('bypass_login=true');
+    // SECURITY: Use localStorage only — query params appear in browser history and shared links.
+    const hasDevBypass = localStorage.getItem('studio_tracker_dev_mode') === 'true';
 
     if (isLocal && hasDevBypass) {
         console.warn("[AUTH] Developer Bypass Enabled");

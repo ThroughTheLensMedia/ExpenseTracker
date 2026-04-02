@@ -61,9 +61,13 @@ async function licensingMiddleware(req, res, next) {
         next();
     } catch (err) {
         console.error("[Licensing Error]", err);
-        // Fallback to allowing access if the licensing system fails (fail-open)
-        // or block it (fail-closed). For beta, fail-open is safer.
-        next();
+        // SECURITY: Fail-closed. If licensing check fails (DB overload, migration, etc.),
+        // return 503 instead of granting free access. A paid SaaS must not give away access on errors.
+        return res.status(503).json({
+            error: "Service Temporarily Unavailable",
+            message: "Unable to verify your studio access. Please try again in a moment.",
+            code: "LICENSING_UNAVAILABLE"
+        });
     }
 }
 

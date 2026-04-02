@@ -8,7 +8,10 @@ async function authMiddleware(req, res, next) {
   }
 
   const token = authHeader.split(" ")[1];
-  const isLocalDev = process.env.NODE_ENV !== 'production' || !process.env.VERCEL;
+  // SECURITY: Both conditions must be true for dev bypass to activate.
+  // Using OR (||) means it fires if EITHER is true — which includes Vercel preview deployments.
+  // Using AND (&&) means it only fires locally where VERCEL is unset AND NODE_ENV is not production.
+  const isLocalDev = !process.env.VERCEL && process.env.NODE_ENV !== 'production';
 
   // 1. Local Developer Bypass
   if (isLocalDev && token === "mock-session") {

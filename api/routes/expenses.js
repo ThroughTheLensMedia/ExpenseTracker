@@ -197,10 +197,13 @@ router.patch("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
-    const { error, count } = await req.sb
+    // Defense-in-depth: explicitly filter by user_id even though RLS also enforces ownership.
+    // This ensures correctness if RLS policies are ever accidentally dropped during migrations.
+    const { error } = await req.sb
       .from("expenses")
       .delete()
-      .eq("id", id);
+      .eq("id", id)
+      .eq("user_id", req.user.id);
 
     if (error) throw error;
     res.status(204).send();

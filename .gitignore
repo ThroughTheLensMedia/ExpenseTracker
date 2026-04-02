@@ -1,2 +1,9 @@
 .vercel
+.env
+.env.local
 .env*.local
+*.sqlite
+*.sqlite-journal
+data/
+marketing_assets/
+node_modules/

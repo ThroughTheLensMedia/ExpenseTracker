@@ -11,9 +11,12 @@ router.get("/test", (req, res) => res.json({ ok: true, test: "admin-reachable" }
 
 // GET /admin/daily-report (Automated CRON)
 router.get("/daily-report", async (req, res) => {
-    // 1. Security Check (Allow Vercel Cron Secret OR Admin Email)
+    // Vercel Cron injects the header 'x-vercel-cron: 1' on every scheduled run.
+    // CRON_SECRET (via Authorization header) is supported as a manual override for testing.
     const cronSecret = process.env.CRON_SECRET;
-    const isCron = cronSecret && req.headers['authorization'] === `Bearer ${cronSecret}`;
+    const isVercelCron = req.headers['x-vercel-cron'] === '1';
+    const isCronSecret = cronSecret && req.headers['authorization'] === `Bearer ${cronSecret}`;
+    const isCron = isVercelCron || isCronSecret;
     const isAdmin = req.user?.email?.toLowerCase() === 'joshua.deuermeyer@gmail.com';
     
     if (!isCron && !isAdmin) {
@@ -438,6 +441,7 @@ router.get("/beta-codes", async (req, res) => {
 // POST /admin/beta-codes
 // Generate a new code: { code, daysValid, assigned_to_name, assigned_to_email, plan_type }
 router.post("/beta-codes", async (req, res) => {
+    if (req.user?.email?.toLowerCase() !== 'joshua.deuermeyer@gmail.com') return res.status(403).json({ error: "Denied" });
     try {
         const { code, daysValid = 90, assigned_to_name, assigned_to_email, plan_type = 'beta_tester' } = req.body;
         const validUntil = new Date();
@@ -496,6 +500,7 @@ router.patch("/beta-codes/:code", async (req, res) => {
 
 // POST /admin/beta-codes/:code/resend
 router.post("/beta-codes/:code/resend", async (req, res) => {
+    if (req.user?.email?.toLowerCase() !== 'joshua.deuermeyer@gmail.com') return res.status(403).json({ error: "Denied" });
     try {
         const { data: codeData, error } = await supabase
             .from('beta_codes')
@@ -521,6 +526,7 @@ router.post("/beta-codes/:code/resend", async (req, res) => {
 
 // DELETE /admin/beta-codes/:code
 router.delete("/beta-codes/:code", async (req, res) => {
+    if (req.user?.email?.toLowerCase() !== 'joshua.deuermeyer@gmail.com') return res.status(403).json({ error: "Denied" });
     try {
         const { error } = await supabase
             .from('beta_codes')
