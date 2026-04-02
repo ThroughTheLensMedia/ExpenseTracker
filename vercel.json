@@ -19,12 +19,11 @@
             "destination": "api/server.js"
         },
         {
-            "source": "/(.*)",
-            "destination": "/web-react/$1",
-            "check": true
+            "source": "/(assets/.*|manifest\\.json|version\\.json|favicon\\.ico|robots\\.txt|sitemap\\.xml)",
+            "destination": "/web-react/$1"
         },
         {
-            "source": "/(.*)",
+            "source": "/((?!api/).*)",
             "destination": "/web-react/index.html"
         }
     ],
