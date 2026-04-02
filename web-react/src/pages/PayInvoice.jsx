@@ -75,7 +75,8 @@ export default function PayInvoice() {
         const billedItems = (inv.items || []).filter(it => it.quantity > 0);
         const subtotalCents = billedItems.reduce((s, it) => s + it.unit_price_cents * it.quantity, 0);
         const taxCents = Math.round(subtotalCents * ((inv.tax_percent || 0) / 100));
-        const discountCents = Math.round(subtotalCents * ((inv.discount_cents || 0) / 100));
+        const discountPercent = (inv.discount_cents || 0) / 100;
+        const discountCents = Math.round(subtotalCents * (discountPercent / 100));
         const totalCents = subtotalCents + taxCents - discountCents;
         return { subtotalCents, taxCents, discountCents, totalCents };
     }, [data]);

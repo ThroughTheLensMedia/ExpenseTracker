@@ -73,6 +73,15 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
         const taxCents = Math.round(subtotalCents * (taxPercent / 100));
         const totalCents = subtotalCents + taxCents - discountCents;
 
+        // Extract attachments from Notes
+        let displayNotes = invoice.notes || '';
+        let attachment = null;
+        const attachmentMatch = displayNotes.match(/---ATTACHMENT---\nName: (.*)\nURL: (.*)/);
+        if (attachmentMatch) {
+            displayNotes = displayNotes.replace(attachmentMatch[0], '').trim();
+            attachment = { name: attachmentMatch[1], url: attachmentMatch[2] };
+        }
+
         return {
             number: invoice.number || invoice.invoice_number || '---',
             date: invoice.date || invoice.issue_date || '---',
@@ -86,7 +95,9 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
             discount: discountCents / 100,
             discountPercent,
             total: totalCents / 100,
-            tax_percent: taxPercent
+            tax_percent: taxPercent,
+            notes: displayNotes,
+            attachment
         };
     }, [invoice]);
 
@@ -275,11 +286,18 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
                         <div style={{ marginTop: 'auto', paddingTop: '40px' }}>
                             <div style={{ display: 'flex', gap: '40px', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '60px' }}>
                                 <div style={{ flex: 1, fontSize: '13px', lineHeight: '1.8' }}>
-                                    {(settings?.invoice_notes || invoice.notes) && (
+                                    {(settings?.invoice_notes || data.notes) && (
                                         <div style={{ marginBottom: '25px' }}>
                                             <div style={{ fontWeight: 950, textTransform: 'uppercase', fontSize: '11px', letterSpacing: '2px', marginBottom: '8px', color: '#000' }}>Notes</div>
-                                            {settings?.invoice_notes && <div style={{ color: '#000', whiteSpace: 'pre-wrap', marginBottom: invoice.notes ? '12px' : 0 }}>{settings.invoice_notes}</div>}
-                                            {invoice.notes && <div style={{ color: '#000', whiteSpace: 'pre-wrap' }}>{invoice.notes}</div>}
+                                            {settings?.invoice_notes && <div style={{ color: '#000', whiteSpace: 'pre-wrap', marginBottom: data.notes ? '12px' : 0 }}>{settings.invoice_notes}</div>}
+                                            {data.notes && <div style={{ color: '#000', whiteSpace: 'pre-wrap' }}>{data.notes}</div>}
+                                            {data.attachment && (
+                                                <div style={{ marginTop: '15px' }}>
+                                                    <a href={data.attachment.url} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#f8fafc', padding: '10px 16px', borderRadius: '8px', textDecoration: 'none', color: BRAND_ORANGE, fontWeight: 700, fontSize: '13px', border: `1px solid ${BRAND_ORANGE}` }}>
+                                                        📄 View {data.attachment.name}
+                                                    </a>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                     {settings?.standard_terms && (
@@ -363,6 +381,8 @@ export default function Invoice() {
         discount: '',
         leadId: '',
         notes: '',
+        attachmentName: '',
+        attachmentUrl: '',
         photographerSigned: false,
     });
 
@@ -381,6 +401,8 @@ export default function Invoice() {
             discount: '',
             leadId: '',
             notes: '',
+            attachmentName: '',
+            attachmentUrl: '',
             photographerSigned: false,
         });
         setEditingId(null);
@@ -467,6 +489,16 @@ export default function Invoice() {
             const fullInv = await apiGet(`/invoices/${inv.id}`);
             setEditingId(fullInv.id);
             const invItems = fullInv.invoice_items || [];
+            let loadNotes = fullInv.notes || '';
+            let loadAttName = '';
+            let loadAttUrl = '';
+            const match = loadNotes.match(/---ATTACHMENT---\nName: (.*)\nURL: (.*)/);
+            if (match) {
+                loadNotes = loadNotes.replace(match[0], '').trim();
+                loadAttName = match[1];
+                loadAttUrl = match[2];
+            }
+
             setFormData({
                 number: fullInv.invoice_number,
                 date: fullInv.issue_date,
@@ -484,7 +516,9 @@ export default function Invoice() {
                 taxExempt: Number(fullInv.tax_percent) === 0 && fullInv.tax_percent !== null ? false : false,
                 discount: fullInv.discount_cents !== undefined ? (fullInv.discount_cents / 100) : '',
                 leadId: fullInv.lead_id || '',
-                notes: fullInv.notes || '',
+                notes: loadNotes,
+                attachmentName: loadAttName,
+                attachmentUrl: loadAttUrl,
                 photographerSigned: !!fullInv.photographer_signed,
             });
             setIsCreatorOpen(true);
@@ -540,6 +574,15 @@ export default function Invoice() {
                 finalClientId = newClient.id;
             }
 
+            let finalNotes = formData.notes;
+            if (formData.attachmentUrl && formData.attachmentName) {
+                if (!finalNotes.includes('---ATTACHMENT---')) {
+                    finalNotes += `\n\n---ATTACHMENT---\nName: ${formData.attachmentName}\nURL: ${formData.attachmentUrl}`;
+                } else {
+                    finalNotes = finalNotes.replace(/---ATTACHMENT---\nName: .*\nURL: .*/, `---ATTACHMENT---\nName: ${formData.attachmentName}\nURL: ${formData.attachmentUrl}`);
+                }
+            }
+
             const payload = {
                 client_id: finalClientId,
                 lead_id: formData.leadId || null,
@@ -547,7 +590,7 @@ export default function Invoice() {
                 issue_date: formData.date,
                 due_date: formData.dueDate || null,
                 status: editingId ? undefined : 'draft',
-                notes: formData.notes,
+                notes: finalNotes,
                 tax_percent: formData.taxExempt ? 0 : Number(formData.tax_percent),
                 discount_cents: Math.round(Number(formData.discount) * 100),
                 photographer_signed: !!formData.photographerSigned,
@@ -806,7 +849,7 @@ export default function Invoice() {
 
             {/* CREATOR DRAWER */}
             {isCreatorOpen && (
-                <div className="drawer" onClick={(e) => { if (e.target.className === 'drawer') { setIsCreatorOpen(false); resetFormData(); } }}>
+                <div className="drawer">
                     <div className="drawer-panel" style={{ width: 'min(700px, 100%)', display: 'flex', flexDirection: 'column', padding: 0 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '24px', borderBottom: '1px solid rgba(255,255,255,0.05)', position: 'sticky', top: 0, background: 'var(--bg)', zIndex: 10 }}>
                             <h2 style={{ margin: 0, fontSize: '1.4rem' }}>{editingId ? 'Edit' : 'Create'} Invoice</h2>
@@ -920,6 +963,15 @@ export default function Invoice() {
                                 <small className="muted" style={{ fontWeight: 800 }}>NOTES FOR CUSTOMER</small>
                                 <div className="muted extra-small" style={{ marginBottom: '8px', marginTop: '4px' }}>These notes appear on the invoice PDF sent to the client (e.g. thank you messages, shoot details, or special instructions).</div>
                                 <textarea value={formData.notes || ''} onChange={e => setFormData({ ...formData, notes: e.target.value })} style={{ minHeight: '120px' }} placeholder="e.g. Thank you for booking! Please arrive 15 minutes early..." />
+                            </div>
+
+                            <div style={{ marginTop: '10px' }}>
+                                <small className="muted" style={{ fontWeight: 800 }}>ATTACH DOCUMENT (OPTIONAL)</small>
+                                <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
+                                    <input value={formData.attachmentName} onChange={e => setFormData(prev => ({...prev, attachmentName: e.target.value}))} placeholder="Attachment Name (e.g. Contract)" style={{ flex: 1, padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }} />
+                                    <input value={formData.attachmentUrl} onChange={e => setFormData(prev => ({...prev, attachmentUrl: e.target.value}))} placeholder="File URL (https://...)" style={{ flex: 2, padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }} />
+                                </div>
+                                <div className="muted extra-small" style={{ marginTop: '6px' }}>Creates a clickable link button on the invoice so the customer knows what the attachment is.</div>
                             </div>
 
                             {/* Photographer Signature */}

@@ -131,7 +131,8 @@ router.post('/:token', async (req, res) => {
             (s, it) => s + (it.unit_price_cents * it.quantity), 0
         );
         const taxCents = Math.round(subtotalCents * ((invoice.tax_percent || 0) / 100));
-        const discountAmt = Math.round(subtotalCents * ((invoice.discount_cents || 0) / 100));
+        const discountPercent = (invoice.discount_cents || 0) / 100;
+        const discountAmt = Math.round(subtotalCents * (discountPercent / 100));
         const totalCents = subtotalCents + taxCents - discountAmt;
 
         // Fetch photographer's business email + payment handles for notification

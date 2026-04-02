@@ -179,7 +179,8 @@ router.patch("/:id", async (req, res) => {
                 const allItems = fullInvoice.invoice_items || [];
                 const subtotalCents = allItems.reduce((s, it) => s + (it.unit_price_cents * it.quantity), 0);
                 const taxCents = Math.round(subtotalCents * ((fullInvoice.tax_percent || 0) / 100));
-                const discountAmt = fullInvoice.discount_cents || 0;
+                const discountPercent = (fullInvoice.discount_cents || 0) / 100;
+                const discountAmt = Math.round(subtotalCents * (discountPercent / 100));
                 const totalCents = subtotalCents + taxCents - discountAmt;
                 const totalDollars = (totalCents / 100).toFixed(2);
 
@@ -199,13 +200,32 @@ router.patch("/:id", async (req, res) => {
                           <td colspan="4" style="padding:10px 0; border-bottom:1px solid #f1f5f9; font-size:14px; color:#64748b; font-style:italic;">${it.description}</td>
                         </tr>`).join('');
 
-                const formatNotes = text => text ? text.replace(/\n/g, '<br/>') : '';
-                const combinedNotes = [settings?.invoice_notes, fullInvoice.notes].filter(Boolean).map(formatNotes).join('<br/><br/>');
+                let rawInvoiceNotes = fullInvoice.notes || '';
+                let extAttName = '';
+                let extAttUrl = '';
+                const match = rawInvoiceNotes.match(/---ATTACHMENT---\nName: (.*)\nURL: (.*)/);
+                if (match) {
+                    rawInvoiceNotes = rawInvoiceNotes.replace(match[0], '').trim();
+                    extAttName = match[1];
+                    extAttUrl = match[2];
+                }
 
-                const notesHtml = combinedNotes
+                const formatNotes = text => text ? text.replace(/\n/g, '<br/>') : '';
+                const combinedNotes = [settings?.invoice_notes, rawInvoiceNotes].filter(Boolean).map(formatNotes).join('<br/><br/>');
+
+                const attachmentHtml = extAttUrl 
+                    ? `<div style="margin-top:16px;">
+                           <a href="${extAttUrl}" target="_blank" style="display:inline-block; background:#fff; color:#f97316; padding:10px 16px; border-radius:8px; font-weight:700; font-size:13px; text-decoration:none; border:1px solid #f97316;">
+                             📄 View ${extAttName}
+                           </a>
+                       </div>`
+                    : '';
+
+                const notesHtml = (combinedNotes || attachmentHtml)
                     ? `<div style="margin-top:24px; padding:20px; background:#f8fafc; border-radius:10px; border-left:3px solid #f97316;">
                          <div style="font-size:11px; font-weight:800; color:#f97316; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px;">Notes from Your Photographer</div>
-                         <p style="margin:0; font-size:14px; color:#475569; line-height:1.6;">${combinedNotes}</p>
+                         ${combinedNotes ? `<p style="margin:0; font-size:14px; color:#475569; line-height:1.6;">${combinedNotes}</p>` : ''}
+                         ${attachmentHtml}
                        </div>`
                     : '';
 
