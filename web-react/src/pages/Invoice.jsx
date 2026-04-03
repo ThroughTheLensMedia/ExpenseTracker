@@ -113,7 +113,30 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
     }, [invoice]);
 
     const handleDownloadPDF = async () => {
-        window.print();
+        const style = document.createElement('style');
+        style.innerHTML = `
+            @media print {
+                body > * { display: none !important; }
+                .cloned-print-area { display: block !important; position: absolute; left: 0; top: 0; width: 100%; height: auto; background: #fff !important; margin: 0; padding: 0; }
+                .cloned-print-area .page-break-avoid { page-break-inside: avoid; }
+                .cloned-print-area .invoice-print-footer { transform: scale(0.65); transform-origin: top center; margin-top: 10px; }
+                @page { margin: 1in; size: letter; }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        const printArea = previewRef.current.cloneNode(true);
+        printArea.classList.add('cloned-print-area');
+        printArea.style.margin = '0';
+        printArea.style.boxShadow = 'none';
+        
+        document.body.appendChild(printArea);
+        
+        setTimeout(() => {
+            window.print();
+            document.body.removeChild(printArea);
+            document.head.removeChild(style);
+        }, 100);
     };
 
     const handleSendWithPDF = async () => {
@@ -212,16 +235,9 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
                         {/* HEADER */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
                             <div>
-                                {settings?.logo_url ? (
-                                    <div style={{ width: '350px', height: '180px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', background: '#fff' }}>
-                                        <img src={settings.logo_url} alt="Studio Logo" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-                                    </div>
-                                ) : (
-                                    <div style={{ width: '220px', height: '220px', background: '#fafafa', border: '3px solid #000', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-                                        <div style={{ fontSize: '52px' }}>📸</div>
-                                        <div style={{ fontSize: '14px', fontWeight: 950, textTransform: 'uppercase', marginTop: '10px', letterSpacing: '2px' }}>Pure Capture</div>
-                                    </div>
-                                )}
+                                <div style={{ fontSize: '28px', fontWeight: 950, textTransform: 'uppercase', letterSpacing: '4px', color: '#000' }}>
+                                    {settings?.business_name || 'Through The Lens Media'}
+                                </div>
                             </div>
                             <div style={{ textAlign: 'right' }}>
                                 <h1 style={{ margin: 0, fontSize: '38px', fontWeight: 300, color: '#000', letterSpacing: '4px', textTransform: 'uppercase' }}>INVOICE</h1>
@@ -386,6 +402,15 @@ export default function Invoice() {
     const [settings, setSettings] = useState({});
     const [loading, setLoading] = useState(true);
     const [sendingId, setSendingId] = useState(null); // Track which invoice is currently emailing
+    const [sortConfig, setSortConfig] = useState({ key: 'number', dir: 'asc' });
+
+    const handleSort = (key) => {
+        if (sortConfig.key === key) {
+            setSortConfig({ key, dir: sortConfig.dir === 'asc' ? 'desc' : 'asc' });
+        } else {
+            setSortConfig({ key, dir: 'asc' });
+        }
+    };
 
     const [isCreatorOpen, setIsCreatorOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
@@ -886,12 +911,20 @@ export default function Invoice() {
                             <table style={{ width: '100%' }}>
                                 <thead>
                                     <tr>
-                                        <th>Inv / Date</th>
-                                        <th>Event</th>
-                                        <th>Client</th>
+                                        <th onClick={() => handleSort('number')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                                            Inv / Date {sortConfig.key === 'number' ? (sortConfig.dir === 'asc' ? '↑' : '↓') : ''}
+                                        </th>
+                                        <th onClick={() => handleSort('event')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                                            Event {sortConfig.key === 'event' ? (sortConfig.dir === 'asc' ? '↑' : '↓') : ''}
+                                        </th>
+                                        <th onClick={() => handleSort('client')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                                            Client {sortConfig.key === 'client' ? (sortConfig.dir === 'asc' ? '↑' : '↓') : ''}
+                                        </th>
                                         <th style={{ textAlign: 'right' }}>Amount</th>
-                                        <th style={{ textAlign: 'center' }}>Status</th>
-                                        <th style={{ textAlign: 'right' }}>Actions</th>
+                                        <th onClick={() => handleSort('status')} style={{ textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}>
+                                            Status {sortConfig.key === 'status' ? (sortConfig.dir === 'asc' ? '↑' : '↓') : ''}
+                                        </th>
+                                        <th style={{ textAlign: 'center' }}>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -906,9 +939,40 @@ export default function Invoice() {
                                             return num.includes(term) || cli.includes(term) || stat.includes(term) || notes.includes(term);
                                         })
                                         .sort((a, b) => {
+                                            const dirMod = sortConfig.dir === 'asc' ? 1 : -1;
+                                            
+                                            // Extract event names
+                                            const metaRowA = (a.notes || '').match(/---METADATA---\nEventName: (.*)\nEventType:/);
+                                            const metaRowB = (b.notes || '').match(/---METADATA---\nEventName: (.*)\nEventType:/);
+                                            const eventA = metaRowA ? metaRowA[1] : '';
+                                            const eventB = metaRowB ? metaRowB[1] : '';
+                                            
+                                            if (sortConfig.key === 'client') {
+                                                const clA = (a.clients?.name || '').toLowerCase();
+                                                const clB = (b.clients?.name || '').toLowerCase();
+                                                if (clA < clB) return -1 * dirMod;
+                                                if (clA > clB) return 1 * dirMod;
+                                                return 0;
+                                            }
+                                            if (sortConfig.key === 'event') {
+                                                const evA = eventA.toLowerCase();
+                                                const evB = eventB.toLowerCase();
+                                                if (evA < evB) return -1 * dirMod;
+                                                if (evA > evB) return 1 * dirMod;
+                                                return 0;
+                                            }
+                                            if (sortConfig.key === 'status') {
+                                                const stA = (a.status || '').toLowerCase();
+                                                const stB = (b.status || '').toLowerCase();
+                                                if (stA < stB) return -1 * dirMod;
+                                                if (stA > stB) return 1 * dirMod;
+                                                return 0;
+                                            }
+                                            
+                                            // Default: numeric sort on invoice number
                                             const numA = parseInt((a.invoice_number || '').replace(/\D/g, ''), 10) || 0;
                                             const numB = parseInt((b.invoice_number || '').replace(/\D/g, ''), 10) || 0;
-                                            return numA - numB;
+                                            return (numA - numB) * dirMod;
                                         })
                                         .map(inv => {
                                     const subtotal = (inv.invoice_items || []).reduce((s, it) => s + (it.unit_price_cents * it.quantity), 0);
@@ -949,8 +1013,8 @@ export default function Invoice() {
                                             <td style={{ textAlign: 'center' }}>
                                                 <span className={`tag ${inv.status === 'paid' ? 'ok' : 'warn'}`}>{inv.status}</span>
                                             </td>
-                                            <td style={{ textAlign: 'right' }}>
-                                                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                            <td style={{ textAlign: 'center' }}>
+                                                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
                                                     <button className="btn sm secondary" onClick={() => handlePreview(inv)}>Preview</button>
                                                     <button className="btn sm secondary" onClick={() => handleDuplicate(inv)}>Clone</button>
                                                     {(inv.status === 'draft' || inv.status === 'sent') && (

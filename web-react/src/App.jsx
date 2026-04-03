@@ -168,7 +168,6 @@ function AppContent() {
         {/* Left Side: Brand */}
         <div style={{ flex: '1', display: 'flex', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            <img src="/icon.png" alt="Studio Tracker" width="50" height="50" style={{ borderRadius: '10px', filter: 'drop-shadow(0 0 12px rgba(249, 115, 22, 0.3))' }} />
             <div>
               <div className="title" style={{ fontSize: '1.8rem', fontWeight: 950, letterSpacing: '-0.02em', whiteSpace: 'nowrap', lineHeight: 1 }}>STUDIO TRACKER</div>
               <div className="muted" style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.05em', marginTop: '2px', opacity: 0.6 }}>INTEL FOR TODAY'S PHOTOGRAPHER</div>
