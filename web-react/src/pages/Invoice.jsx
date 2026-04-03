@@ -236,7 +236,7 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
                             <div>
                                 <div style={{ fontSize: '28px', fontWeight: 950, textTransform: 'uppercase', letterSpacing: '4px', color: '#000' }}>
-                                    {settings?.business_name || 'Through The Lens Media'}
+                                    {settings?.business_name || 'Your Business Name'}
                                 </div>
                             </div>
                             <div style={{ textAlign: 'right' }}>
