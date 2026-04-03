@@ -1,6 +1,14 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '5.2.0', date: 'APRIL 3, 2026', color: '#38bdf8', items: [
+        '<strong>AI Category Segregation:</strong> Deep-linked Dividend and Interest income categories into the Brain logic. No more generic "Side Income" tagging for asset yields.',
+        '<strong>Executive Dashboard Sort:</strong> Enabled multi-column sorting (Invoice #, Date, Client, Status) on the global invoice matrix.',
+        '<strong>Print Isolation Hub:</strong> Native 1" margin PDF generation now clears the viewport and isolates only the invoice for professional A4/Letter accuracy.',
+        '<strong>ROAMAP: Phase 1 Deep Context:</strong> Brain now looks at multi-year comparatives for trend analysis (YTD/Prior Yr).',
+        '<strong>ROADMAP: Phase 2 Tool Integration:</strong> [PLANNED] Giving the AI "Hands" to create invoices and update CRM statuses via voice/chat commands.',
+        '<strong>ROADMAP: Phase 3 Vision RAG:</strong> [PLANNED] Direct analysis of uploaded PDF receipts, contracts, and manual ledger attachments.',
+    ]},
     { version: '5.1.0', date: 'APRIL 2, 2026', color: '#f97316', items: [
         '<strong>Invoice Cloning:</strong> Added a one-click "Clone" button on the invoice dashboard to instantly duplicate proposals or bill new clients with identical parameters.',
         '<strong>Attachment URLs:</strong> You can now attach a direct URL (like Google Drive or Pixieset) to any invoice. It automatically prints on the PDF and the Client Email as an interactive button.',

@@ -110,7 +110,6 @@ export default function Backup() {
                     <h1 style={{ fontSize: '2.4rem', fontWeight: 950, marginBottom: '6px', color: '#38bdf8' }}>Studio Control Center</h1>
                     <div className="muted" style={{ fontWeight: 600, fontSize: '15px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
                         <span>Infrastructure Management & Intelligence Engine</span>
-                        <span style={{ padding: '2px 8px', background: 'rgba(74, 222, 128, 0.1)', color: '#4ade80', borderRadius: '4px', fontSize: '10px', fontWeight: 900, letterSpacing: '0.05em' }}>V5.0.0</span>
                     </div>
                 </div>
 

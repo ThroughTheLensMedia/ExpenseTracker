@@ -27,7 +27,7 @@ export default function HelpTab() {
                         <h2 style={{ fontSize: '2.2rem', margin: 0 }}>Studio Onboarding Guide</h2>
                         <p className="muted" style={{ fontSize: '18px' }}>Follow these steps to transition your studio into full automation.</p>
                     </div>
-                    <button className="pill" onClick={() => setShowChangeLog(true)} style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--accent)', border: '1px solid var(--accent)' }}>💎 CHANGE LOG</button>
+                    <button className="pill" onClick={() => setShowChangeLog(true)} style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--accent)', border: '1px solid var(--accent)' }}>📙 CHANGE LOG</button>
                 </div>
 
                 <div style={{ marginTop: '40px', display: 'flex', flexDirection: 'column', gap: '40px' }}>
