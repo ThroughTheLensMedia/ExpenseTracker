@@ -191,7 +191,7 @@ router.post("/auto-map", async (req, res) => {
     }
 
     // New: Auto-mark both INCOME categories and special words case-insensitively as business income (Line 1)
-    const INCOME_KEYWORDS = ['photo income', 'freelance income', 'contract income', 'side income', 'photography income'];
+    const INCOME_KEYWORDS = ['photo income', 'freelance income', 'contract income', 'side income', 'photography income', 'interest income', 'dividend income'];
     for (const kw of INCOME_KEYWORDS) {
       const { error: incError, count: incCount } = await req.sb
         .from("expenses")

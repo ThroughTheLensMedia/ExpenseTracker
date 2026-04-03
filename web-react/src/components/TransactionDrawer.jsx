@@ -163,7 +163,7 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
                                     if (val === '__custom__') field('category', '');
                                     else {
                                         field('category', val);
-                                        const INCOME_CATS = ['Photo Income', 'Freelance Income', 'Contract Income', 'Side Income'];
+                                        const INCOME_CATS = ['Photo Income', 'Freelance Income', 'Contract Income', 'Side Income', 'Interest Income', 'Dividend Income'];
                                         if (INCOME_CATS.includes(val) && Number(amount || 0) < 0) {
                                             field('deduct', true);
                                         }

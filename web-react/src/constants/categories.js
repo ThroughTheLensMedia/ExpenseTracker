@@ -61,6 +61,7 @@ export const CATEGORY_GROUPS = [
             'Reimbursement',
             'Cashback / Rewards',
             'Interest Income',
+            'Dividend Income',
             'Internal Transfer',
             'Credit Card Payment',
             'Deposit',

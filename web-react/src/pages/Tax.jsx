@@ -230,7 +230,7 @@ export default function Tax() {
             doc.line(14, 32, 196, 32);
 
             // ─── Financial stats calculation ───
-            const INCOME_CATS = ['photo income', 'freelance income', 'contract income', 'side income', 'photography income'];
+            const INCOME_CATS = ['photo income', 'freelance income', 'contract income', 'side income', 'photography income', 'interest income', 'dividend income'];
             const incomeRows = expenses.filter(e => {
                 if (!String(e.expense_date || '').startsWith(String(year))) return false;
                 if (Number(e.amount_cents || 0) >= 0) return false;
@@ -380,7 +380,7 @@ export default function Tax() {
 
                 <div style={{ padding: '24px' }}>
                     {(() => {
-                        const INCOME_CATS = ['photo income', 'freelance income', 'contract income', 'side income', 'photography income'];
+                        const INCOME_CATS = ['photo income', 'freelance income', 'contract income', 'side income', 'photography income', 'interest income', 'dividend income'];
                         const incomeRows = expenses.filter(e => {
                             if (!String(e.expense_date || '').startsWith(String(selectedYear))) return false;
                             if (Number(e.amount_cents || 0) >= 0) return false;
@@ -667,7 +667,7 @@ export default function Tax() {
             {/* Mileage tracker removed from here, now in its own page */}
             {/* Income Audit Modal */}
             {showIncomeAudit && (() => {
-                const INCOME_CATS = ['photo income', 'freelance income', 'contract income', 'side income', 'photography income'];
+                const INCOME_CATS = ['photo income', 'freelance income', 'contract income', 'side income', 'photography income', 'interest income', 'dividend income'];
                 const incomeRows = expenses.filter(e => {
                     if (!String(e.expense_date || '').startsWith(String(selectedYear))) return false;
                     if (Number(e.amount_cents || 0) >= 0) return false;
