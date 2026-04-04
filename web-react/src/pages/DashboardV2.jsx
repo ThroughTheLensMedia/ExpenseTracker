@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { apiGet } from '../utils/api';
+import { apiGet } from '../api';
 
 export default function DashboardV2({ apiStatus }) {
     const navigate = useNavigate();
