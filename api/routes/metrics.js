@@ -18,7 +18,7 @@ router.get("/summary", async (req, res) => {
           .eq("user_id", req.user.id),
       req.sb
           .from("invoices")
-          .select("status, total_cents, amount_paid_cents, due_date")
+          .select("status, due_date, tax_percent, discount_cents, invoice_items(quantity, unit_price_cents)")
           .eq("user_id", req.user.id)
     ]);
       
@@ -132,9 +132,14 @@ router.get("/summary", async (req, res) => {
     if (invoices) {
         const today = new Date().toISOString().slice(0, 10);
         for (const inv of invoices) {
-            if (inv.status === 'sent' || inv.status === 'partial') {
-                const due = (inv.total_cents || 0) - (inv.amount_paid_cents || 0);
-                if (due > 0) openReceivablesCents += due;
+            if (inv.status === 'sent') {
+                const subtotal = (inv.invoice_items || []).reduce((s, it) => s + ((it.unit_price_cents || 0) * (it.quantity || 0)), 0);
+                const tax = Math.round(subtotal * ((inv.tax_percent || 0) / 100));
+                const discountPct = (inv.discount_cents || 0) / 10000;
+                const discount = Math.round(subtotal * discountPct);
+                const totalDue = subtotal + tax - discount;
+
+                if (totalDue > 0) openReceivablesCents += totalDue;
                 if (inv.due_date && inv.due_date < today) overdueCount++;
             } else if (inv.status === 'draft') {
                 draftCount++;

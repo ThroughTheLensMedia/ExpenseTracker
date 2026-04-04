@@ -55,7 +55,7 @@ export default function DashboardV2({ apiStatus }) {
             <div className="card glass glow-blue" style={{ border: 'none', margin: 0, padding: '40px', position: 'relative', overflow: 'hidden' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px', position: 'relative', zIndex: 1 }}>
                     <div>
-                        <h1 style={{ margin: 0, fontSize: '2.4rem', fontWeight: 950, letterSpacing: '-0.03em', lineHeight: 1 }}>Executive Analytics V2</h1>
+                        <h1 style={{ margin: 0, fontSize: '2.4rem', fontWeight: 950, letterSpacing: '-0.03em', lineHeight: 1 }}>Business Analytics</h1>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '12px' }}>
                             <span className="muted" style={{ fontWeight: 700, fontSize: '14px' }}>Financial Command Center</span>
                             {apiStatus && <span style={{ fontSize: '12px', fontWeight: 800, padding: '2px 8px', borderRadius: '4px', background: apiStatus.includes('OK') ? 'rgba(74, 222, 128, 0.1)' : 'rgba(2ef, 68, 68, 0.1)', color: apiStatus.includes('OK') ? '#4ade80' : '#ef4444' }}>{apiStatus}</span>}
