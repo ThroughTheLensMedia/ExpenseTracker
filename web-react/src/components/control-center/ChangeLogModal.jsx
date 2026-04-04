@@ -1,6 +1,14 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '5.3.0', date: 'APRIL 4, 2026', color: '#4ade80', items: [
+        '<strong>Dashboard V2 Architecture (Beta):</strong> A complete rebuild of the Executive Analytics dashboard, focusing on data clarity, performance, and actionable intelligence over aesthetics.',
+        '<strong>Backend Metrics Engine:</strong> Centralized calculations for YTD/MTD Revenue, Net Profit, and Operating Expenses entirely on the server. Reduces browser memory overhead and ensures 100% data consistency everywhere.',
+        '<strong>Performance Combo Chart:</strong> Removed confusing independent line graphs. Added a unified HTML-native visual overlaying Monthly Revenue vs. Expense vs. Net Profit.',
+        '<strong>Recurring Vendor Inference:</strong> AI Brain logic is now backed by a deterministic backend algorithm. Automatically detects and flags recurring subscriptions and potential <em>Personal Leakage</em> directly on the dashboard.',
+        '<strong>Obligations & Receivables Layer:</strong> Native, at-a-glance visibility into "Invoice Health". Track open receivables, overdue invoices, and pending drafts right alongside your cash balances.',
+        '<strong>Ranked Allocations:</strong> Say goodbye to the bloated expense doughnut chart. The Dashboard now renders crystal clear, scalable ranked horizontal bars for your top spending sources.'
+    ]},
     { version: '5.2.0', date: 'APRIL 3, 2026', color: '#38bdf8', items: [
         '<strong>AI Category Segregation:</strong> Deep-linked Dividend and Interest income categories into the Brain logic. No more generic "Side Income" tagging for asset yields.',
         '<strong>Executive Dashboard Sort:</strong> Enabled multi-column sorting (Invoice #, Date, Client, Status) on the global invoice matrix.',

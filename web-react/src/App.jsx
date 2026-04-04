@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route, NavLink, Navigate, useLocation,
 import { AuthProvider, useAuth } from './components/AuthContext';
 import { ModalProvider } from './components/ModalContext';
 import Dashboard from './pages/Dashboard';
+import DashboardV2 from './pages/DashboardV2';
 import Transactions from './pages/Transactions';
 import Tax from './pages/Tax';
 import Backup from './pages/Backup';
@@ -280,7 +281,8 @@ function AppContent() {
 
       <main style={{ marginTop: '16px', minHeight: 'calc(100vh - 160px)', animation: 'fadeIn 0.3s ease-out' }}>
         <Routes>
-          <Route path="/" element={<Dashboard apiStatus={apiStatus} />} />
+          <Route path="/" element={<DashboardV2 apiStatus={apiStatus} />} />
+          <Route path="/legacy" element={<Dashboard apiStatus={apiStatus} />} />
           <Route path="/transactions" element={<Transactions />} />
           <Route path="/tax" element={<Tax />} />
           <Route path="/mileage" element={<Mileage />} />
