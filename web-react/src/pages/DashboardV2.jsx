@@ -58,7 +58,6 @@ export default function DashboardV2({ apiStatus }) {
                         <h1 style={{ margin: 0, fontSize: '2.4rem', fontWeight: 950, letterSpacing: '-0.03em', lineHeight: 1 }}>Executive Analytics V2</h1>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '12px' }}>
                             <span className="muted" style={{ fontWeight: 700, fontSize: '14px' }}>Financial Command Center</span>
-                            <span style={{ padding: '2px 8px', background: 'rgba(56, 189, 248, 0.1)', color: '#38bdf8', borderRadius: '4px', fontSize: '10px', fontWeight: 900, letterSpacing: '0.05em' }}>PHASE B (BETA)</span>
                             {apiStatus && <span style={{ fontSize: '12px', fontWeight: 800, padding: '2px 8px', borderRadius: '4px', background: apiStatus.includes('OK') ? 'rgba(74, 222, 128, 0.1)' : 'rgba(2ef, 68, 68, 0.1)', color: apiStatus.includes('OK') ? '#4ade80' : '#ef4444' }}>{apiStatus}</span>}
                             {loading && <span className="spinner-small" style={{ marginLeft: '10px' }}></span>}
                         </div>
