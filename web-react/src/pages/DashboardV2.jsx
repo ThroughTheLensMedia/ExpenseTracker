@@ -223,8 +223,10 @@ export default function DashboardV2({ apiStatus }) {
                         <div className="muted" style={{ fontSize: '12px', fontWeight: 700, marginTop: '4px' }}>Recurring Vendors & Subscription Leakage</div>
                     </div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '15px' }}>
-                    {metrics?.analytics?.recurringVendors?.slice(0, 12).map((sub, idx) => (
+                
+                {/* Top 3 as Cards */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '15px' }}>
+                    {metrics?.analytics?.recurringVendors?.slice(0, 3).map((sub, idx) => (
                         <div key={idx} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                 <div style={{ fontWeight: 800, textTransform: 'capitalize', fontSize: '14px' }}>{sub.vendor || 'Unknown Provider'}</div>
@@ -242,10 +244,43 @@ export default function DashboardV2({ apiStatus }) {
                             </div>
                         </div>
                     ))}
-                    {(!metrics?.analytics?.recurringVendors || metrics.analytics.recurringVendors.length === 0) && !loading && (
-                        <div className="muted" style={{ fontSize: '13px', fontStyle: 'italic', padding: '20px' }}>No recurring data mapped.</div>
-                    )}
                 </div>
+
+                {/* Remaining as Compact Table */}
+                {metrics?.analytics?.recurringVendors?.length > 3 && (
+                    <div style={{ marginTop: '20px', background: 'rgba(255,255,255,0.01)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', overflow: 'hidden' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                            <thead>
+                                <tr style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                    <th style={{ padding: '10px 15px', textAlign: 'left', fontWeight: 800, color: 'rgba(255,255,255,0.5)' }}>VENDOR</th>
+                                    <th style={{ padding: '10px 15px', textAlign: 'right', fontWeight: 800, color: 'rgba(255,255,255,0.5)' }}>EST. MONTHLY</th>
+                                    <th style={{ padding: '10px 15px', textAlign: 'right', fontWeight: 800, color: 'rgba(255,255,255,0.5)' }}>PROJECTED ANNUAL</th>
+                                    <th style={{ padding: '10px 15px', textAlign: 'left', fontWeight: 800, color: 'rgba(255,255,255,0.5)' }}>FLAGS</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {metrics.analytics.recurringVendors.slice(3).map((sub, idx) => (
+                                    <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                                        <td style={{ padding: '10px 15px', fontWeight: 800, textTransform: 'capitalize' }}>{sub.vendor}</td>
+                                        <td style={{ padding: '10px 15px', textAlign: 'right' }}>{formatMoney(sub.avgMonthlyCents)}/mo</td>
+                                        <td style={{ padding: '10px 15px', textAlign: 'right', color: 'rgba(255,255,255,0.6)' }}>{formatMoney(sub.annualProjectedCents)}/yr</td>
+                                        <td style={{ padding: '10px 15px' }}>
+                                            <div style={{ display: 'flex', gap: '4px' }}>
+                                                {sub.flags.isSubscription && <span style={{ color: '#38bdf8', fontSize: '10px', fontWeight: 800 }}>SUB</span>}
+                                                {sub.flags.leakageWarning && <span style={{ color: '#ef4444', fontSize: '10px', fontWeight: 800 }}>LEAKAGE</span>}
+                                                {sub.flags.cancelCandidate && <span style={{ color: '#f97316', fontSize: '10px', fontWeight: 800 }}>REVIEW</span>}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
+                {(!metrics?.analytics?.recurringVendors || metrics.analytics.recurringVendors.length === 0) && !loading && (
+                    <div className="muted" style={{ fontSize: '13px', fontStyle: 'italic', padding: '20px' }}>No recurring data mapped.</div>
+                )}
             </div>
 
             {/* Layer 5: Cash, Receivables, Obligations */}
@@ -258,24 +293,24 @@ export default function DashboardV2({ apiStatus }) {
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
                     
-                    <div style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '20px', borderRadius: '12px', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '20px', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
                         <div style={{ fontWeight: 900, color: '#ef4444', fontSize: '20px' }}>{loading ? '-' : formatMoney(metrics?.obligations?.overdueCents)}</div>
                         <div className="muted" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, marginTop: '4px' }}>{loading ? '-' : metrics?.obligations?.overdueInvoices} Overdue Invoices</div>
-                        <button className="btn sm secondary" onClick={() => navigate('/crm/financials')} style={{ marginTop: 'auto', paddingTop: '10px', fontSize: '10px' }}>CHASE PAYMENTS</button>
+                        <button className="btn sm secondary" onClick={() => navigate('/crm/financials')} style={{ marginTop: 'auto', paddingTop: '10px', fontSize: '10px', alignSelf: 'stretch' }}>CHASE PAYMENTS</button>
                     </div>
 
-                    <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '20px', borderRadius: '12px', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '20px', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
                         <div style={{ fontWeight: 900, color: 'white', fontSize: '20px' }}>{loading ? '-' : formatMoney(metrics?.snapshot?.openReceivablesCents)}</div>
                         <div className="muted" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, marginTop: '4px' }}>Total Unpaid Pipeline</div>
-                        <button className="btn sm outline" onClick={() => navigate('/crm/financials')} style={{ marginTop: 'auto', paddingTop: '10px', fontSize: '10px' }}>VIEW LEDGER</button>
+                        <button className="btn sm outline" onClick={() => navigate('/crm/financials')} style={{ marginTop: 'auto', paddingTop: '10px', fontSize: '10px', alignSelf: 'stretch' }}>VIEW LEDGER</button>
                     </div>
 
-                    <div style={{ background: 'rgba(252, 211, 77, 0.05)', border: '1px solid rgba(252, 211, 77, 0.2)', padding: '20px', borderRadius: '12px', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ background: 'rgba(252, 211, 77, 0.05)', border: '1px solid rgba(252, 211, 77, 0.2)', padding: '20px', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
                         <div style={{ fontWeight: 900, color: '#fcd34d', fontSize: '20px' }}>{loading ? '-' : metrics?.obligations?.dueSoonCount} Expected</div>
                         <div className="muted" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, marginTop: '4px' }}>Due within 7 days</div>
                     </div>
 
-                    <div style={{ background: 'rgba(56, 189, 248, 0.05)', border: '1px solid rgba(56, 189, 248, 0.2)', padding: '20px', borderRadius: '12px', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ background: 'rgba(56, 189, 248, 0.05)', border: '1px solid rgba(56, 189, 248, 0.2)', padding: '20px', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
                         <div style={{ fontWeight: 900, color: '#38bdf8', fontSize: '20px' }}>{loading ? '-' : metrics?.obligations?.avgDaysToCollect} Days</div>
                         <div className="muted" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, marginTop: '4px' }}>Avg Collection Time</div>
                     </div>
