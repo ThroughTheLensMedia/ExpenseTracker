@@ -1,6 +1,6 @@
 {
-  "version": "5.2.0",
-  "release_date": "2026-04-03",
-  "codename": "Executive Insight & AI Segmentation",
-  "notes": "Expanded Dividend/Interest AI categorizer, Dashboard Invoice Sorting, Native 1-inch Print Isolation, and multi-year AI Roadmap."
+  "version": "5.3.0",
+  "release_date": "2026-04-04",
+  "codename": "Business Analytics V2 & Data Workflows",
+  "notes": "Transitioned to Dashboard V2 with Interactive KPI drilling, obligations calculation engine, and fixed/variable insights."
 }

@@ -22,46 +22,42 @@ This document outlines the strategic evolution of Studio Tracker from a financia
 
 ---
 
-## 🧠 PHASE 2: STRATEGIC ACCOUNTS & MEMORY (IN PROGRESS)
-*   [ ] **Strategic Account Mapping**:
-    *   New Dashboard to map "Source" strings (chase, rocket, venmo) to formal Financial Institution profiles.
-    *   This is the prerequisite for **Plaid Integration**.
-*   [ ] **Semantic Search (Vector Embeddings)**:
-    *   Implement pgvector/embeddings for lifetime transaction recall.
-    *   Enable natural language search for specific notes, equipment, or leads across years.
-*   [ ] **Burn Rate Predictive Alerts**:
-    *   Proactive warnings when current monthly velocity exceeds the 6-month average.
-    *   Automatic tax liability allocation (30% net profit buffer) mentioned in AI advice.
-
----
-
-## 🛠️ PHASE 3: AGENTIC ACTIONS (THE "STUDIO HANDS")
+## 🧠 PHASE 2: AI AGENTIC CAPABILITIES ("STUDIO HANDS")
 *   [ ] **AI Function Calling**:
-    *   Grant the "Your Assistant" sidebar the ability to write to the database.
+    *   Grant the "Your Assistant" sidebar the ability to write to the database (create/update records).
     *   **Prompt**: *"I just finished the Miller shoot. Link the $500 deposit to their lead and mark it as Booked."*
 *   [ ] **Automated CRM & Invoicing**:
-    *   Voice/Chat command to generate draft invoices based on quoted lead values.
-    *   Bulk-categorization rules suggested by AI based on historical patterns.
+    *   Voice/Chat command to automatically generate draft invoices based on quoted lead values.
+    *   Trigger workflow automations natively without manual clicks.
 
 ---
 
-## 📷 PHASE 4: COMPUTER VISION & RAG (DOCUMENT ANALYST)
+## 📷 PHASE 3: COMPUTER VISION & RAG (DOCUMENT ANALYST)
 *   [ ] **RAG (Retrieval-Augmented Generation)**:
     *   Direct indexing of uploaded PDF receipts, contracts, and lease agreements.
-    *   Extract critical data (Serial #s, Term dates, Interest rates) into the Gear Locker and Ledger.
-*   [ ] **Visual Asset Forensics**:
-    *   AI-powered check of equipment receipts against your Gear Locker to identify missing insurance documentation.
+    *   Extract critical data (Serial #s, Term dates, Interest rates) instantly into the database.
+*   [ ] **Fast Receipt Processing**:
+    *   Drag-and-drop receipt capture in the transaction ledger that instantly logs vendor and amount via Vision models before the user even clicks "save".
 
 ---
 
-## 📈 PHASE 5: THE INTELLIGENCE ENGINE (AUTONOMY)
-*   [ ] **Autonomous Financial Reports**:
-    *   Monthly "Studio Performance Brief" generated and emailed to the owner.
-    *   Automated Schedule C (Tax) preparation summary with AI-flagged "High-Risk" deductions.
-*   [ ] **Marketplace Pricing Analysis**:
-    *   Compare your project quotes/lead values against target profit margins to suggest pricing adjustments.
+## 🚀 PHASE 4: SEMANTIC MEMORY & PREDICTIVE FORECASTING
+*   [ ] **Semantic Search (Vector Embeddings)**:
+    *   Implement pgvector/embeddings for lifetime transaction recall.
+    *   Enable natural language search across notes, equipment, or leads ("Find that weird AWS charge from two years ago").
+*   [ ] **Burn Rate Predictive Alerts**:
+    *   Proactive warnings when current monthly velocity exceeds historical averages.
+
+---
+
+## 🏦 PHASE 5: ENTERPRISE INTEGRATIONS & MAPPING (DELAYED)
+*   [ ] **Strategic Account Mapping & Plaid Integration**:
+    *   Map external financial sources to internal profiles.
+    *   Connect live bank feeds via Plaid. (Pushed out to prioritize core platform autonomy).
+*   [ ] **Paid Subscriptions / Saas Upgrades**:
+    *   Advanced tiering and paywalls for premium functionality.
 
 ---
 
 > [!NOTE]
-> All AI features are powered by **Gemini 2.5 Flash** using your private API key to ensure 100% data sovereignty and cost-efficiency.
+> All AI features are powered by **Gemini** to ensure 100% data sovereignty, speed, and cost-efficiency.

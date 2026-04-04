@@ -4,10 +4,10 @@ const RELEASES = [
     { version: '5.3.0', date: 'APRIL 4, 2026', color: '#4ade80', items: [
         '<strong>Dashboard V2 Architecture (Beta):</strong> A complete rebuild of the Executive Analytics dashboard, focusing on data clarity, performance, and actionable intelligence over aesthetics.',
         '<strong>Backend Metrics Engine:</strong> Centralized calculations for YTD/MTD Revenue, Net Profit, and Operating Expenses entirely on the server. Reduces browser memory overhead and ensures 100% data consistency everywhere.',
-        '<strong>Performance Combo Chart:</strong> Removed confusing independent line graphs. Added a unified HTML-native visual overlaying Monthly Revenue vs. Expense vs. Net Profit.',
-        '<strong>Recurring Vendor Inference:</strong> AI Brain logic is now backed by a deterministic backend algorithm. Automatically detects and flags recurring subscriptions and potential <em>Personal Leakage</em> directly on the dashboard.',
-        '<strong>Obligations & Receivables Layer:</strong> Native, at-a-glance visibility into "Invoice Health". Track open receivables, overdue invoices, and pending drafts right alongside your cash balances.',
-        '<strong>Ranked Allocations:</strong> Say goodbye to the bloated expense doughnut chart. The Dashboard now renders crystal clear, scalable ranked horizontal bars for your top spending sources.'
+        '<strong>Performance Combo Chart & Ghost Bars:</strong> Removed confusing independent line graphs. Added a unified HTML-native visual overlaying Monthly Revenue vs. Expense vs. Net Profit, along with reclaimed UI space for quick-hit Fixed/Variable sub calculations.',
+        '<strong>Interactive KPIs:</strong> All top-level snapshot cards (Revenue, Expenses, Receivables) are now interactive routing modules that jump directly to the pre-filtered core data ledger.',
+        '<strong>Obligations & Invoice Health 2.0:</strong> We now dynamically digest the invoice ledger to provide 4-column cash-flow insight: Exact uncollected totals, strict calculation of overdue dollars, upcoming expectation forecasts (next 7 days), and average historical collection time.',
+        '<strong>Recurring Vendor Inference:</strong> AI Brain logic is now backed by a deterministic backend algorithm. Automatically detects and flags recurring subscriptions and potential <em>Personal Leakage</em> directly on the dashboard.'
     ]},
     { version: '5.2.0', date: 'APRIL 3, 2026', color: '#38bdf8', items: [
         '<strong>AI Category Segregation:</strong> Deep-linked Dividend and Interest income categories into the Brain logic. No more generic "Side Income" tagging for asset yields.',

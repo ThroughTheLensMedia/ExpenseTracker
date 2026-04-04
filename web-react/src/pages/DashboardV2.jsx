@@ -82,7 +82,7 @@ export default function DashboardV2({ apiStatus }) {
 
             {/* Layer 1: Executive Snapshot - Top KPI Strip */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
-                <div className="card glass" style={{ margin: 0, padding: '24px', position: 'relative', borderTop: '4px solid #4ade80' }}>
+                <div className="card glass cursor-pointer" onClick={() => navigate('/transactions')} style={{ margin: 0, padding: '24px', position: 'relative', borderTop: '4px solid #4ade80', cursor: 'pointer' }}>
                     <div className="muted" style={{ fontWeight: 800, fontSize: '11px', letterSpacing: '0.05em', marginBottom: '8px' }}>GROSS REVENUE (MTD)</div>
                     <div style={{ fontSize: '2.4rem', fontWeight: 950, color: '#4ade80' }}>
                         {loading ? '---' : formatMoney(metrics?.snapshot?.mtdIncome)}
@@ -92,7 +92,7 @@ export default function DashboardV2({ apiStatus }) {
                     </div>
                 </div>
 
-                <div className="card glass" style={{ margin: 0, padding: '24px', position: 'relative', borderTop: '4px solid #f97316' }}>
+                <div className="card glass cursor-pointer" onClick={() => navigate('/transactions')} style={{ margin: 0, padding: '24px', position: 'relative', borderTop: '4px solid #f97316', cursor: 'pointer' }}>
                     <div className="muted" style={{ fontWeight: 800, fontSize: '11px', letterSpacing: '0.05em', marginBottom: '8px' }}>OPERATING EXPENSE (MTD)</div>
                     <div style={{ fontSize: '2.4rem', fontWeight: 950, color: '#f97316' }}>
                         {loading ? '---' : formatMoney(metrics?.snapshot?.mtdSpend)}
@@ -102,7 +102,7 @@ export default function DashboardV2({ apiStatus }) {
                     </div>
                 </div>
 
-                <div className="card glass" style={{ margin: 0, padding: '24px', position: 'relative', borderTop: '4px solid #38bdf8' }}>
+                <div className="card glass cursor-pointer" onClick={() => navigate('/transactions')} style={{ margin: 0, padding: '24px', position: 'relative', borderTop: '4px solid #38bdf8', cursor: 'pointer' }}>
                     <div className="muted" style={{ fontWeight: 800, fontSize: '11px', letterSpacing: '0.05em', marginBottom: '8px' }}>NET PROFIT (MTD)</div>
                     <div style={{ fontSize: '2.4rem', fontWeight: 950, color: '#38bdf8' }}>
                         {loading ? '---' : formatMoney(metrics?.snapshot?.mtdNet)}
@@ -112,7 +112,7 @@ export default function DashboardV2({ apiStatus }) {
                     </div>
                 </div>
 
-                <div className="card glass" style={{ margin: 0, padding: '24px', position: 'relative', borderTop: '4px solid #fcd34d' }}>
+                <div className="card glass cursor-pointer" onClick={() => navigate('/crm')} style={{ margin: 0, padding: '24px', position: 'relative', borderTop: '4px solid #fcd34d', cursor: 'pointer' }}>
                     <div className="muted" style={{ fontWeight: 800, fontSize: '11px', letterSpacing: '0.05em', marginBottom: '8px' }}>OPEN RECEIVABLES</div>
                     <div style={{ fontSize: '2.4rem', fontWeight: 950, color: '#fcd34d' }}>
                         {loading ? '---' : formatMoney(metrics?.snapshot?.openReceivablesCents)}
@@ -134,7 +134,7 @@ export default function DashboardV2({ apiStatus }) {
                             <div className="muted" style={{ fontSize: '12px', fontWeight: 700, marginTop: '4px' }}>Revenue vs Expense vs Profit</div>
                         </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'flex-end', height: '240px', gap: '8px', position: 'relative', marginTop: '20px' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-end', height: '180px', gap: '8px', position: 'relative', marginTop: '20px' }}>
                          {/* Minimalist HTML/CSS combo chart implementation */}
                          {metrics?.performance?.map((monthData, i) => {
                              // find max for scaling
@@ -157,10 +157,30 @@ export default function DashboardV2({ apiStatus }) {
                              )
                          })}
                     </div>
-                    <div style={{ display: 'flex', gap: '15px', marginTop: '20px', justifyContent: 'center', fontSize: '12px', fontWeight: 800 }}>
-                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '10px', height: '10px', background: 'rgba(74, 222, 128, 0.8)', borderRadius: '2px' }}></div> Revenue</div>
-                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '10px', height: '10px', background: 'rgba(249, 115, 22, 0.8)', borderRadius: '2px' }}></div> Expense</div>
-                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '8px', height: '8px', background: '#38bdf8', borderRadius: '50%' }}></div> Net Profit</div>
+                    {/* Insights Strip (Reclaimed Space) */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginTop: '30px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                         <div style={{ display: 'flex', flexDirection: 'column' }}>
+                             <span style={{ fontSize: '10px', fontWeight: 800, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>Net Margin (MTD)</span>
+                             <span style={{ fontSize: '14px', fontWeight: 900, color: '#38bdf8' }}>
+                                 {!loading && metrics?.snapshot?.mtdIncome > 0 ? `${((metrics.snapshot.mtdNet / metrics.snapshot.mtdIncome) * 100).toFixed(1)}%` : '0%'}
+                             </span>
+                         </div>
+                         <div style={{ display: 'flex', flexDirection: 'column' }}>
+                             <span style={{ fontSize: '10px', fontWeight: 800, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>Col. vs Open</span>
+                             <span style={{ fontSize: '14px', fontWeight: 900, color: '#fcd34d' }}>
+                                 {loading ? '-' : `${formatMoney(metrics?.snapshot?.ytdIncome)} / ${formatMoney(metrics?.snapshot?.openReceivablesCents)}`}
+                             </span>
+                         </div>
+                         <div style={{ display: 'flex', flexDirection: 'column' }}>
+                             <span style={{ fontSize: '10px', fontWeight: 800, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>Fixed vs Variable</span>
+                             <span style={{ fontSize: '14px', fontWeight: 900, color: 'white' }}>
+                                 {loading ? '-' : `${formatMoney(metrics?.analytics?.recurringVendors?.reduce((a, b) => a + b.avgMonthlyCents, 0) || 0)}/mo`}
+                             </span>
+                         </div>
+                         <div style={{ display: 'flex', flexDirection: 'column' }}>
+                             <span style={{ fontSize: '10px', fontWeight: 800, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>Top Revenue</span>
+                             <span style={{ fontSize: '14px', fontWeight: 900, color: '#4ade80' }}>Studios</span>
+                         </div>
                     </div>
                 </div>
 
@@ -236,18 +256,30 @@ export default function DashboardV2({ apiStatus }) {
                         <div className="muted" style={{ fontSize: '12px', fontWeight: 700, marginTop: '4px' }}>Watch your cash flow liabilities</div>
                     </div>
                 </div>
-                <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-                    <div style={{ flex: 1, minWidth: '200px', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '20px', borderRadius: '12px' }}>
-                        <div style={{ fontWeight: 900, color: '#ef4444', fontSize: '18px' }}>{loading ? '-' : metrics?.obligations?.overdueInvoices} Overdue</div>
-                        <div className="muted" style={{ fontSize: '12px', marginTop: '4px' }}>Invoices past due date requiring follow-up.</div>
-                        <button className="btn sm secondary" onClick={() => navigate('/crm/financials')} style={{ marginTop: '12px', fontSize: '10px' }}>CHASE PAYMENTS</button>
-                    </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
                     
-                    <div style={{ flex: 1, minWidth: '200px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '20px', borderRadius: '12px' }}>
-                        <div style={{ fontWeight: 900, color: '#fcd34d', fontSize: '18px' }}>{loading ? '-' : metrics?.obligations?.draftInvoices} Drafts</div>
-                        <div className="muted" style={{ fontSize: '12px', marginTop: '4px' }}>Incomplete invoices awaiting signatures or dispatch.</div>
-                        <button className="btn sm outline" onClick={() => navigate('/crm/financials')} style={{ marginTop: '12px', fontSize: '10px' }}>FINISH DRAFTS</button>
+                    <div style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '20px', borderRadius: '12px', display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ fontWeight: 900, color: '#ef4444', fontSize: '20px' }}>{loading ? '-' : formatMoney(metrics?.obligations?.overdueCents)}</div>
+                        <div className="muted" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, marginTop: '4px' }}>{loading ? '-' : metrics?.obligations?.overdueInvoices} Overdue Invoices</div>
+                        <button className="btn sm secondary" onClick={() => navigate('/crm/financials')} style={{ marginTop: 'auto', paddingTop: '10px', fontSize: '10px' }}>CHASE PAYMENTS</button>
                     </div>
+
+                    <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '20px', borderRadius: '12px', display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ fontWeight: 900, color: 'white', fontSize: '20px' }}>{loading ? '-' : formatMoney(metrics?.snapshot?.openReceivablesCents)}</div>
+                        <div className="muted" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, marginTop: '4px' }}>Total Unpaid Pipeline</div>
+                        <button className="btn sm outline" onClick={() => navigate('/crm/financials')} style={{ marginTop: 'auto', paddingTop: '10px', fontSize: '10px' }}>VIEW LEDGER</button>
+                    </div>
+
+                    <div style={{ background: 'rgba(252, 211, 77, 0.05)', border: '1px solid rgba(252, 211, 77, 0.2)', padding: '20px', borderRadius: '12px', display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ fontWeight: 900, color: '#fcd34d', fontSize: '20px' }}>{loading ? '-' : metrics?.obligations?.dueSoonCount} Expected</div>
+                        <div className="muted" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, marginTop: '4px' }}>Due within 7 days</div>
+                    </div>
+
+                    <div style={{ background: 'rgba(56, 189, 248, 0.05)', border: '1px solid rgba(56, 189, 248, 0.2)', padding: '20px', borderRadius: '12px', display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ fontWeight: 900, color: '#38bdf8', fontSize: '20px' }}>{loading ? '-' : metrics?.obligations?.avgDaysToCollect} Days</div>
+                        <div className="muted" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, marginTop: '4px' }}>Avg Collection Time</div>
+                    </div>
+
                 </div>
             </div>
 

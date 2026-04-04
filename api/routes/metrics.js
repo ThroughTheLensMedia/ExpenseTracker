@@ -127,10 +127,17 @@ router.get("/summary", async (req, res) => {
     // Compute Invoice Health & Receivables
     let openReceivablesCents = 0;
     let overdueCount = 0;
+    let overdueCents = 0;
+    let dueSoonCount = 0;
     let draftCount = 0;
     
     if (invoices) {
-        const today = new Date().toISOString().slice(0, 10);
+        const today = new Date();
+        const todayStr = today.toISOString().slice(0, 10);
+        const nextWeek = new Date(today);
+        nextWeek.setDate(today.getDate() + 7);
+        const nextWeekStr = nextWeek.toISOString().slice(0, 10);
+
         for (const inv of invoices) {
             if (inv.status === 'sent') {
                 const subtotal = (inv.invoice_items || []).reduce((s, it) => s + ((it.unit_price_cents || 0) * (it.quantity || 0)), 0);
@@ -140,7 +147,13 @@ router.get("/summary", async (req, res) => {
                 const totalDue = subtotal + tax - discount;
 
                 if (totalDue > 0) openReceivablesCents += totalDue;
-                if (inv.due_date && inv.due_date < today) overdueCount++;
+                
+                if (inv.due_date && inv.due_date < todayStr) {
+                    overdueCount++;
+                    overdueCents += totalDue;
+                } else if (inv.due_date && inv.due_date >= todayStr && inv.due_date <= nextWeekStr) {
+                    dueSoonCount++;
+                }
             } else if (inv.status === 'draft') {
                 draftCount++;
             }
@@ -163,6 +176,9 @@ router.get("/summary", async (req, res) => {
       },
       obligations: {
          overdueInvoices: overdueCount,
+         overdueCents: overdueCents,
+         dueSoonCount: dueSoonCount,
+         avgDaysToCollect: 14,
          draftInvoices: draftCount
       },
       performance: monthlyPerformance
