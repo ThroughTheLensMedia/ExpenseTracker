@@ -169,6 +169,7 @@ function AppContent() {
         {/* Left Side: Brand */}
         <div style={{ flex: '1', display: 'flex', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <img src="/icon.png" alt="Studio Tracker Logo" style={{ width: '40px', height: '40px', borderRadius: '10px' }} />
             <div>
               <div className="title" style={{ fontSize: '1.8rem', fontWeight: 950, letterSpacing: '-0.02em', whiteSpace: 'nowrap', lineHeight: 1 }}>STUDIO TRACKER</div>
               <div className="muted" style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.05em', marginTop: '2px', opacity: 0.6 }}>INTEL FOR TODAY'S PHOTOGRAPHER</div>

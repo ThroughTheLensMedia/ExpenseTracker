@@ -1,6 +1,13 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '5.3.1', date: 'APRIL 5, 2026', color: '#38bdf8', items: [
+        '<strong>One-Tap Asset Capture:</strong> Rewired the Transaction Drawer for field use. Staging a receipt during a new transaction save now auto-sequences the database entry and the image upload in a single atomic action.',
+        '<strong>Mobile Analytics Fix:</strong> Added horizontal overflow protection and minimum data-width logic to the Operating Intelligence table. Recurring vendor amounts and flags no longer clip on small screens.',
+        '<strong>Brand Stabilization:</strong> Replaced the global text-only "STUDIO TRACKER" placeholder in the main header with the official 3D brand icon. Unified the icon across the Dashboard V2 and PWA home-screen manifest.',
+        '<strong>Interactive Vendor Auditing:</strong> All recurring vendor rows are now clickable triggers that jump directly to the transaction ledger filtered by provider name.',
+        '<strong>Deterministic Forecasting:</strong> Expanded the YTD Projector with granular inflation/creep variables for 2%, 3%, and 7% scenarios.'
+    ]},
     { version: '5.3.0', date: 'APRIL 4, 2026', color: '#4ade80', items: [
         '<strong>Dashboard V2 Architecture (Beta):</strong> A complete rebuild of the Executive Analytics dashboard, focusing on data clarity, performance, and actionable intelligence over aesthetics.',
         '<strong>Backend Metrics Engine:</strong> Centralized calculations for YTD/MTD Revenue, Net Profit, and Operating Expenses entirely on the server. Reduces browser memory overhead and ensures 100% data consistency everywhere.',
