@@ -18,7 +18,7 @@ router.get("/summary", async (req, res) => {
           .eq("user_id", req.user.id),
       req.sb
           .from("invoices")
-          .select("status, due_date, tax_percent, discount_cents, amount_paid, invoice_items(quantity, unit_price_cents)")
+          .select("status, due_date, tax_percent, discount_cents, amount_paid_cents, invoice_items(quantity, unit_price_cents)")
           .eq("user_id", req.user.id)
     ]);
       
@@ -164,8 +164,8 @@ router.get("/summary", async (req, res) => {
             // Cash Reality: track collected invoices
             if (inv.status === 'paid') {
                 totalInvoiceCollected += totalDue;
-            } else if (inv.amount_paid && inv.amount_paid > 0) {
-                totalInvoiceCollected += inv.amount_paid;
+            } else if (inv.amount_paid_cents && inv.amount_paid_cents > 0) {
+                totalInvoiceCollected += inv.amount_paid_cents;
             }
 
             if (inv.status === 'sent') {
