@@ -60,7 +60,6 @@ export default function DashboardV2({ apiStatus }) {
                             <h1 style={{ margin: 0, fontSize: '2.4rem', fontWeight: 950, letterSpacing: '-0.03em', lineHeight: 1 }}>Business Analytics</h1>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '12px' }}>
                                 <span className="muted" style={{ fontWeight: 700, fontSize: '14px' }}>Financial Command Center</span>
-                                {apiStatus && <span style={{ fontSize: '12px', fontWeight: 800, padding: '2px 8px', borderRadius: '4px', background: apiStatus.includes('OK') ? 'rgba(74, 222, 128, 0.1)' : 'rgba(2ef, 68, 68, 0.1)', color: apiStatus.includes('OK') ? '#4ade80' : '#ef4444' }}>{apiStatus}</span>}
                                 {loading && <span className="spinner-small" style={{ marginLeft: '10px' }}></span>}
                             </div>
                         </div>
@@ -85,7 +84,7 @@ export default function DashboardV2({ apiStatus }) {
 
             {/* Layer 1: Executive Snapshot - Top KPI Strip */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
-                <div className="card glass cursor-pointer" onClick={() => navigate('/transactions')} style={{ margin: 0, padding: '24px', position: 'relative', borderTop: '4px solid #4ade80', cursor: 'pointer' }}>
+                <div className="card glass cursor-pointer" onClick={() => navigate('/transactions')} style={{ margin: 0, padding: '24px', position: 'relative', borderTop: '4px solid #4ade80', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
                     <div className="muted" style={{ fontWeight: 800, fontSize: '11px', letterSpacing: '0.05em', marginBottom: '8px' }}>GROSS REVENUE (MTD)</div>
                     <div style={{ fontSize: '2.4rem', fontWeight: 950, color: '#4ade80' }}>
                         {loading ? '---' : formatMoney(metrics?.snapshot?.mtdIncome)}
@@ -95,7 +94,7 @@ export default function DashboardV2({ apiStatus }) {
                     </div>
                 </div>
 
-                <div className="card glass cursor-pointer" onClick={() => navigate('/transactions')} style={{ margin: 0, padding: '24px', position: 'relative', borderTop: '4px solid #f97316', cursor: 'pointer' }}>
+                <div className="card glass cursor-pointer" onClick={() => navigate('/transactions')} style={{ margin: 0, padding: '24px', position: 'relative', borderTop: '4px solid #f97316', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
                     <div className="muted" style={{ fontWeight: 800, fontSize: '11px', letterSpacing: '0.05em', marginBottom: '8px' }}>OPERATING EXPENSE (MTD)</div>
                     <div style={{ fontSize: '2.4rem', fontWeight: 950, color: '#f97316' }}>
                         {loading ? '---' : formatMoney(metrics?.snapshot?.mtdSpend)}
@@ -105,7 +104,7 @@ export default function DashboardV2({ apiStatus }) {
                     </div>
                 </div>
 
-                <div className="card glass cursor-pointer" onClick={() => navigate('/transactions')} style={{ margin: 0, padding: '24px', position: 'relative', borderTop: '4px solid #38bdf8', cursor: 'pointer' }}>
+                <div className="card glass cursor-pointer" onClick={() => navigate('/transactions')} style={{ margin: 0, padding: '24px', position: 'relative', borderTop: '4px solid #38bdf8', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
                     <div className="muted" style={{ fontWeight: 800, fontSize: '11px', letterSpacing: '0.05em', marginBottom: '8px' }}>NET PROFIT (MTD)</div>
                     <div style={{ fontSize: '2.4rem', fontWeight: 950, color: '#38bdf8' }}>
                         {loading ? '---' : formatMoney(metrics?.snapshot?.mtdNet)}
@@ -115,7 +114,7 @@ export default function DashboardV2({ apiStatus }) {
                     </div>
                 </div>
 
-                <div className="card glass cursor-pointer" onClick={() => navigate('/crm')} style={{ margin: 0, padding: '24px', position: 'relative', borderTop: '4px solid #fcd34d', cursor: 'pointer' }}>
+                <div className="card glass cursor-pointer" onClick={() => navigate('/crm')} style={{ margin: 0, padding: '24px', position: 'relative', borderTop: '4px solid #fcd34d', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
                     <div className="muted" style={{ fontWeight: 800, fontSize: '11px', letterSpacing: '0.05em', marginBottom: '8px' }}>OPEN RECEIVABLES</div>
                     <div style={{ fontSize: '2.4rem', fontWeight: 950, color: '#fcd34d' }}>
                         {loading ? '---' : formatMoney(metrics?.snapshot?.openReceivablesCents)}
@@ -230,7 +229,7 @@ export default function DashboardV2({ apiStatus }) {
                 {/* Top 3 as Cards */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '15px' }}>
                     {metrics?.analytics?.recurringVendors?.slice(0, 3).map((sub, idx) => (
-                        <div key={idx} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div onClick={() => navigate('/transactions?search=' + encodeURIComponent(sub.vendor))} key={idx} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px', cursor: 'pointer' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                 <div style={{ fontWeight: 800, textTransform: 'capitalize', fontSize: '14px' }}>{sub.vendor || 'Unknown Provider'}</div>
                                 <div style={{ textAlign: 'right' }}>
@@ -251,10 +250,11 @@ export default function DashboardV2({ apiStatus }) {
 
                 {/* Remaining as Compact Table */}
                 {metrics?.analytics?.recurringVendors?.length > 3 && (
-                    <div style={{ marginTop: '20px', background: 'rgba(255,255,255,0.01)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', overflow: 'hidden' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                    <div style={{ marginTop: '20px', background: 'rgba(255,255,255,0.01)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                        <table style={{ width: '100%', minWidth: '550px', borderCollapse: 'collapse', fontSize: '12px' }}>
                             <thead>
                                 <tr style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                    <th style={{ padding: '10px 15px', textAlign: 'center', fontWeight: 800, color: 'rgba(255,255,255,0.5)', width: '60px' }}>SUB?</th>
                                     <th style={{ padding: '10px 15px', textAlign: 'left', fontWeight: 800, color: 'rgba(255,255,255,0.5)' }}>VENDOR</th>
                                     <th style={{ padding: '10px 15px', textAlign: 'right', fontWeight: 800, color: 'rgba(255,255,255,0.5)' }}>EST. MONTHLY</th>
                                     <th style={{ padding: '10px 15px', textAlign: 'right', fontWeight: 800, color: 'rgba(255,255,255,0.5)' }}>PROJECTED ANNUAL</th>
@@ -263,7 +263,12 @@ export default function DashboardV2({ apiStatus }) {
                             </thead>
                             <tbody>
                                 {metrics.analytics.recurringVendors.slice(3).map((sub, idx) => (
-                                    <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                                    <tr onClick={(e) => { 
+                                        if(e.target.tagName !== 'INPUT') navigate('/transactions?search=' + encodeURIComponent(sub.vendor));
+                                    }} key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', cursor: 'pointer' }} className="table-row-hover">
+                                        <td style={{ padding: '10px 15px', textAlign: 'center' }}>
+                                            <input type="checkbox" defaultChecked={sub.flags.isSubscription} onClick={(e) => e.stopPropagation()} style={{ cursor: 'pointer' }}/>
+                                        </td>
                                         <td style={{ padding: '10px 15px', fontWeight: 800, textTransform: 'capitalize' }}>{sub.vendor}</td>
                                         <td style={{ padding: '10px 15px', textAlign: 'right' }}>{formatMoney(sub.avgMonthlyCents)}/mo</td>
                                         <td style={{ padding: '10px 15px', textAlign: 'right', color: 'rgba(255,255,255,0.6)' }}>{formatMoney(sub.annualProjectedCents)}/yr</td>
@@ -344,7 +349,10 @@ export default function DashboardV2({ apiStatus }) {
                             <label style={{ fontSize: '10px', fontWeight: 900, color: '#f97316' }}>EXPECTED MONTHLY EXPENSE CREEP +%</label>
                             <select value={expenseAssump} onChange={e => setExpenseAssump(Number(e.target.value))} style={{ background: 'transparent', color: 'white', border: 'none', outline: 'none', fontWeight: 900, fontSize: '14px' }}>
                                 <option value={1.00}>Locked (0%)</option>
-                                <option value={1.05}>Inflation (5%)</option>
+                                <option value={1.02}>Stable (2%)</option>
+                                <option value={1.03}>Avg Inflation (3%)</option>
+                                <option value={1.05}>High Inflation (5%)</option>
+                                <option value={1.07}>Stressed (7%)</option>
                                 <option value={1.15}>Expansion (15%)</option>
                             </select>
                         </div>
@@ -352,15 +360,15 @@ export default function DashboardV2({ apiStatus }) {
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginTop: '20px' }}>
-                    <div style={{ padding: '20px', background: 'rgba(74, 222, 128, 0.05)', borderRadius: '12px', border: '1px solid rgba(74, 222, 128, 0.2)' }}>
+                    <div style={{ padding: '20px', background: 'rgba(74, 222, 128, 0.05)', borderRadius: '12px', border: '1px solid rgba(74, 222, 128, 0.2)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
                         <div className="muted" style={{ fontWeight: 900, fontSize: '10px', color: '#4ade80', marginBottom: '8px', letterSpacing: '0.05em' }}>YE PROJECTED REVENUE</div>
                         <div style={{ fontSize: '2rem', fontWeight: 950, color: 'white' }}>{loading ? '-' : formatMoney(projectedRev)}</div>
                     </div>
-                    <div style={{ padding: '20px', background: 'rgba(249, 115, 22, 0.05)', borderRadius: '12px', border: '1px solid rgba(249, 115, 22, 0.2)' }}>
+                    <div style={{ padding: '20px', background: 'rgba(249, 115, 22, 0.05)', borderRadius: '12px', border: '1px solid rgba(249, 115, 22, 0.2)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
                         <div className="muted" style={{ fontWeight: 900, fontSize: '10px', color: '#f97316', marginBottom: '8px', letterSpacing: '0.05em' }}>YE PROJECTED EXPENSE</div>
                         <div style={{ fontSize: '2rem', fontWeight: 950, color: 'white' }}>{loading ? '-' : formatMoney(projectedExp)}</div>
                     </div>
-                    <div style={{ padding: '20px', background: 'rgba(56, 189, 248, 0.05)', borderRadius: '12px', border: '1px solid rgba(56, 189, 248, 0.2)' }}>
+                    <div style={{ padding: '20px', background: 'rgba(56, 189, 248, 0.05)', borderRadius: '12px', border: '1px solid rgba(56, 189, 248, 0.2)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
                         <div className="muted" style={{ fontWeight: 900, fontSize: '10px', color: '#38bdf8', marginBottom: '8px', letterSpacing: '0.05em' }}>ESTIMATED NET PROFIT</div>
                         <div style={{ fontSize: '2rem', fontWeight: 950, color: 'white' }}>{loading ? '-' : formatMoney(projectedNet)}</div>
                     </div>

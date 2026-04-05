@@ -75,12 +75,26 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
                 updated = await apiPost('/expenses', payload);
             }
 
-            if (onSave) onSave(updated);
-            if (!transaction.id && !savedId) {
-                dispatch({ type: 'SAVED_NEW', id: updated.id });
+            if (state.receiptFile && !state.receiptLink) {
+                 dispatch({ type: 'SET_MSG', value: 'Uploading receipt...' });
+                 const fd = new FormData();
+                 fd.append('file', state.receiptFile);
+                 try {
+                     const withReceipt = await apiUpload(`/receipts/expenses/${updated.id}`, fd);
+                     updated = withReceipt;
+                     dispatch({ type: 'RECEIPT_UPLOADED', link: updated.receipt_link });
+                     dispatch({ type: 'SET_MSG', value: 'Saved with receipt.' });
+                 } catch (err) {
+                     dispatch({ type: 'SET_MSG', value: `Saved, but receipt upload failed: ${err.message}` });
+                 }
             } else {
-                dispatch({ type: 'SET_MSG', value: 'Saved.' });
+                 if (!transaction.id && !savedId) {
+                     dispatch({ type: 'SAVED_NEW', id: updated.id });
+                 } else {
+                     dispatch({ type: 'SET_MSG', value: 'Saved.' });
+                 }
             }
+            if (onSave) onSave(updated);
         } catch (err) {
             dispatch({ type: 'SET_MSG', value: `Save failed: ${err.message}` });
         }
