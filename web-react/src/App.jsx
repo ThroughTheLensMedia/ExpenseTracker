@@ -55,7 +55,7 @@ function AppContent() {
 
   // --- Version Check Hook ---
   useEffect(() => {
-    const CURRENT_VERSION = "5.3.0";
+    const CURRENT_VERSION = "5.3.1";
     const checkVersion = async () => {
       try {
         const res = await fetch('/version.json?v=' + Date.now());
