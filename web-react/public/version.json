@@ -1,6 +1,6 @@
 {
-  "version": "5.3.1",
-  "release_date": "2026-04-04",
-  "codename": "Business Analytics V2 & Data Workflows",
-  "notes": "v5.3.1: One-tap mobile receipt uploads, interactive vendor auditing, and PWA branding stabilization."
+  "version": "5.4.0",
+  "release_date": "2026-04-05",
+  "codename": "Financial Insight Strip",
+  "notes": "v5.4.0: Live 6-metric insight strip inside Monthly Performance — Margin Quality, Cash Reality, Expense Pressure, Revenue Quality, Burn Rate, and Short-Term Signal."
 }

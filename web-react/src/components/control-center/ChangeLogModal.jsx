@@ -1,6 +1,15 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '5.4.0', date: 'APRIL 5, 2026', color: '#a855f7', items: [
+        '<strong>Financial Insight Strip:</strong> Six live analytical signals embedded inside Monthly Performance \u2014 powered by server-side math, zero added DB queries.',
+        '<strong>Margin Quality:</strong> Net margin % MTD with delta vs prior month and Healthy/Watch/Risk classification.',
+        '<strong>Cash Reality:</strong> Invoice collection rate (collected vs open) as a single actionable percentage.',
+        '<strong>Expense Pressure:</strong> Fixed vs variable cost split using recurring vendor inference \u2014 flags cost structure risk above 70%.',
+        '<strong>Revenue Quality:</strong> Detects single-source dependency \u2014 flags concentration risk above 60% of total revenue.',
+        '<strong>Burn Rate + Runway:</strong> 3-month trailing average spend with months-of-runway from cash-on-hand.',
+        '<strong>Short-Term Signal:</strong> Current month revenue velocity vs prior month as a leading growth/contraction indicator.',
+    ]},
     { version: '5.3.1', date: 'APRIL 5, 2026', color: '#38bdf8', items: [
         '<strong>One-Tap Asset Capture:</strong> Rewired the Transaction Drawer for field use. Staging a receipt during a new transaction save now auto-sequences the database entry and the image upload in a single atomic action.',
         '<strong>Mobile Analytics Fix:</strong> Added horizontal overflow protection and minimum data-width logic to the Operating Intelligence table. Recurring vendor amounts and flags no longer clip on small screens.',

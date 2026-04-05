@@ -159,31 +159,58 @@ export default function DashboardV2({ apiStatus }) {
                              )
                          })}
                     </div>
-                    {/* Insights Strip (Reclaimed Space) */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginTop: '30px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                         <div style={{ display: 'flex', flexDirection: 'column' }}>
-                             <span style={{ fontSize: '10px', fontWeight: 800, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>Net Margin (MTD)</span>
-                             <span style={{ fontSize: '14px', fontWeight: 900, color: '#38bdf8' }}>
-                                 {!loading && metrics?.snapshot?.mtdIncome > 0 ? `${((metrics.snapshot.mtdNet / metrics.snapshot.mtdIncome) * 100).toFixed(1)}%` : '0%'}
-                             </span>
-                         </div>
-                         <div style={{ display: 'flex', flexDirection: 'column' }}>
-                             <span style={{ fontSize: '10px', fontWeight: 800, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>Col. vs Open</span>
-                             <span style={{ fontSize: '14px', fontWeight: 900, color: '#fcd34d' }}>
-                                 {loading ? '-' : `${formatMoney(metrics?.snapshot?.ytdIncome)} / ${formatMoney(metrics?.snapshot?.openReceivablesCents)}`}
-                             </span>
-                         </div>
-                         <div style={{ display: 'flex', flexDirection: 'column' }}>
-                             <span style={{ fontSize: '10px', fontWeight: 800, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>Fixed vs Variable</span>
-                             <span style={{ fontSize: '14px', fontWeight: 900, color: 'white' }}>
-                                 {loading ? '-' : `${formatMoney(metrics?.analytics?.recurringVendors?.reduce((a, b) => a + b.avgMonthlyCents, 0) || 0)}/mo`}
-                             </span>
-                         </div>
-                         <div style={{ display: 'flex', flexDirection: 'column' }}>
-                             <span style={{ fontSize: '10px', fontWeight: 800, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>Top Revenue</span>
-                             <span style={{ fontSize: '14px', fontWeight: 900, color: '#4ade80' }}>Studios</span>
-                         </div>
-                    </div>
+                    {/* Financial Insight Strip — Phase 1 + 2 */}
+                    {(() => {
+                        const ins = metrics?.insights;
+                        const sc = { healthy: '#4ade80', watch: '#fcd34d', risk: '#ef4444' };
+                        const bg = { healthy: 'rgba(74,222,128,0.06)', watch: 'rgba(252,211,77,0.06)', risk: 'rgba(239,68,68,0.06)' };
+                        const sl = { healthy: '● Healthy', watch: '◐ Watch', risk: '▲ Risk' };
+                        const card = (title, primary, secondary, status) => (
+                            <div key={title} style={{ background: bg[status] || 'rgba(255,255,255,0.02)', borderRadius: '10px', padding: '12px 14px', border: `1px solid ${(sc[status] || '#fff') + '28'}` }}>
+                                <div style={{ fontSize: '10px', fontWeight: 800, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '4px' }}>{title}</div>
+                                <div style={{ fontSize: '1.2rem', fontWeight: 950, color: sc[status] || 'white', lineHeight: 1.2 }}>{primary}</div>
+                                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', marginTop: '3px' }}>{secondary}</div>
+                                <div style={{ fontSize: '9px', fontWeight: 900, color: sc[status] || 'rgba(255,255,255,0.3)', marginTop: '5px', letterSpacing: '0.03em' }}>{sl[status] || ''}</div>
+                            </div>
+                        );
+                        const skeletonCard = (title) => (
+                            <div key={title} style={{ background: 'rgba(255,255,255,0.02)', borderRadius: '10px', padding: '12px 14px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                <div style={{ fontSize: '10px', fontWeight: 800, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' }}>{title}</div>
+                                <div style={{ fontSize: '1.2rem', fontWeight: 950, color: 'rgba(255,255,255,0.15)', marginTop: '4px' }}>—</div>
+                            </div>
+                        );
+                        const titles = ['Margin Quality', 'Cash Reality', 'Expense Pressure', 'Revenue Quality', 'Burn Rate', 'Short-Term Signal'];
+                        return (
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                                {(loading || !ins) ? titles.map(t => skeletonCard(t)) : [
+                                    card('Margin Quality',
+                                        `${ins.marginQuality.pct}%`,
+                                        `${ins.marginQuality.delta >= 0 ? '+' : ''}${ins.marginQuality.delta}% vs last month`,
+                                        ins.marginQuality.status),
+                                    card('Cash Reality',
+                                        `${ins.cashReality.rate}% collected`,
+                                        `${formatMoney(ins.cashReality.collected)} in · ${formatMoney(ins.cashReality.open)} open`,
+                                        ins.cashReality.status),
+                                    card('Expense Pressure',
+                                        `${ins.expensePressure.ratio}% fixed`,
+                                        `Fixed ${formatMoney(ins.expensePressure.fixed)} · Var ${formatMoney(ins.expensePressure.variable)}`,
+                                        ins.expensePressure.status),
+                                    card('Revenue Quality',
+                                        `${ins.revenueQuality.topPct}%`,
+                                        `${ins.revenueQuality.topSource} of revenue`,
+                                        ins.revenueQuality.status),
+                                    card('Burn Rate',
+                                        `${formatMoney(ins.burnRate.avgMonthlySpend)}/mo`,
+                                        `${ins.burnRate.monthsRunway} months runway`,
+                                        ins.burnRate.monthsRunway > 6 ? 'healthy' : ins.burnRate.monthsRunway > 3 ? 'watch' : 'risk'),
+                                    card('Short-Term Signal',
+                                        `${ins.shortTermSignal.pctChange >= 0 ? '+' : ''}${ins.shortTermSignal.pctChange}%`,
+                                        'vs prior month revenue',
+                                        ins.shortTermSignal.pctChange >= 5 ? 'healthy' : ins.shortTermSignal.pctChange >= 0 ? 'watch' : 'risk'),
+                                ]}
+                            </div>
+                        );
+                    })()}
                 </div>
 
                 {/* Layer 3: Business Mix (Expense Categories) */}
