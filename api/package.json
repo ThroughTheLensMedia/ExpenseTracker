@@ -10,14 +10,16 @@
     "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.99.1",
     "archiver": "^7.0.1",
+    "bull": "^4.16.5",
     "cors": "^2.8.5",
     "csv-parser": "^3.2.0",
     "dotenv": "^17.3.1",
     "express": "^4.19.2",
+    "file-type": "16.5.4",
     "jsonwebtoken": "^9.0.3",
     "jwks-rsa": "^4.0.1",
     "multer": "^2.1.0",
-    "resend": "^6.9.3",
+    "resend": "2.1.0",
     "zod": "^3.23.8"
   }
 }
