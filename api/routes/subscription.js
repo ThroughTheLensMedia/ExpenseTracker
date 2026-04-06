@@ -6,6 +6,8 @@ const router = express.Router();
  * Returns the current user's subscription and license info
  */
 router.get("/status", async (req, res) => {
+    if (!req.sb || !req.user?.id) return res.status(401).json({ error: "Session required" });
+
     try {
         const { data, error } = await req.sb
             .from('user_subscriptions')
@@ -13,7 +15,13 @@ router.get("/status", async (req, res) => {
             .eq('user_id', req.user.id)
             .single();
 
-        if (error) throw error;
+        if (error) {
+            // PGRST116: No results for .single()
+            if (error.code === 'PGRST116') return res.json(null);
+            console.error("[Subscription] DB Error:", error.message);
+            throw error;
+        }
+
         res.json(data);
     } catch (e) {
         res.status(500).json({ error: e.message });

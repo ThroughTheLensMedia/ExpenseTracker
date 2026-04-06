@@ -4,8 +4,15 @@
  */
 
 async function licensingMiddleware(req, res, next) {
-    // 1. Skip check for health or admin
+    // 1. Skip check for health or public system paths
     if (req.path === '/health') return next();
+    
+    // Safety: If auth middleware failed or skipped, we can't check licenses.
+    // Dashboard health checks or direct hits to /pay routes fall through here.
+    if (!req.user || !req.sb) {
+        return next(); 
+    }
+
     if (req.user?.email?.toLowerCase() === 'joshua.deuermeyer@gmail.com') return next();
 
     try {

@@ -3,18 +3,19 @@ const router = express.Router();
 
 // Get settings - always returns an object even if empty
 router.get("/", async (req, res) => {
-    try {
-        const { data, error } = await req.sb
-            .from("settings")
-            .select("*")
-            .eq("user_id", req.user.id)
-            .limit(1)
-            .maybeSingle();
-        if (error) throw error;
-        res.json(data || {});
-    } catch (e) {
-        res.status(500).json({ error: e.message });
+    if (!req.sb || !req.user?.id) return res.status(401).json({ error: "Session required" });
+    const { data: row, error } = await req.sb
+        .from('user_settings')
+        .select('*')
+        .eq('user_id', req.user.id)
+        .single();
+
+    if (error) {
+        if (error.code === 'PGRST116') return res.json(null);
+        console.error("[SETTINGS] Fetch error:", error.message);
+        return res.status(500).json({ error: error.message });
     }
+    res.json(row);
 });
 
 // Update settings - robust upsert logic
