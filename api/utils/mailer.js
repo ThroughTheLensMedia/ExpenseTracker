@@ -280,12 +280,25 @@ async function sendContactRelayEmail({ senderName, senderEmail, messageContent }
         const fromEmail = 'Studio Tracker Inbound <support@throughthelens.media>';
         const adminEmail = 'joshua.deuermeyer@gmail.com';
 
+        const escapeHtml = (unsafe) => {
+            return (unsafe || '')
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        };
+
+        const safeName = escapeHtml(senderName);
+        const safeEmail = escapeHtml(senderEmail);
+        const safeMessage = escapeHtml(messageContent);
+
         const html = `
             <div style="background-color: #0f172a; color: white; padding: 30px; font-family: sans-serif; border-radius: 12px; max-width: 600px;">
                 <h2 style="color: #2f6bff; margin-top: 0;">New Inquiry from Facebook / Studio Tracker</h2>
                 <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 8px; margin: 20px 0;">
-                    <p><strong>From:</strong> ${senderName || 'Anonymous'} (${senderEmail})</p>
-                    <p style="white-space: pre-wrap; line-height: 1.6; color: #e9eefc;">${messageContent}</p>
+                    <p><strong>From:</strong> ${safeName || 'Anonymous'} (${safeEmail})</p>
+                    <p style="white-space: pre-wrap; line-height: 1.6; color: #e9eefc;">${safeMessage}</p>
                 </div>
                 <div style="font-size: 12px; color: #64748b;">
                     This inquiry was relayed via Resend from support@throughthelens.media

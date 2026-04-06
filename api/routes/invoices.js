@@ -3,7 +3,7 @@ const z = require("zod");
 const { randomUUID } = require('crypto');
 
 const router = express.Router();
-const { sendInvoiceEmail } = require("../utils/mailer");
+const { queueInvoiceEmail } = require("../utils/emailQueue");
 
 const ClientSchema = z.object({
     name: z.string().trim().min(1),
@@ -36,9 +36,34 @@ const InvoiceSchema = z.object({
 
 router.get("/clients", async (req, res) => {
     try {
-        const { data, error } = await req.sb.from("clients").select("*").order("name");
+        const limit = Math.min(parseInt(req.query.limit) || 50, 500);
+        const offset = parseInt(req.query.offset) || 0;
+
+        // Get total count
+        const { count: totalCount } = await req.sb
+            .from("clients")
+            .select("*", { count: 'exact', head: true })
+            .eq("user_id", req.user.id);
+
+        // Get paginated data
+        const { data, error } = await req.sb
+            .from("clients")
+            .select("*")
+            .eq("user_id", req.user.id)
+            .order("name")
+            .range(offset, offset + limit - 1);
+
         if (error) throw error;
-        res.json(data);
+
+        res.json({
+            data,
+            pagination: {
+                total: totalCount || 0,
+                offset,
+                limit,
+                hasMore: offset + limit < (totalCount || 0)
+            }
+        });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
@@ -47,7 +72,7 @@ router.get("/clients", async (req, res) => {
 router.post("/clients", async (req, res) => {
     try {
         const body = ClientSchema.parse(req.body);
-        const { data, error } = await req.sb.from("clients").insert(body).select().single();
+        const { data, error } = await req.sb.from("clients").insert({ ...body, user_id: req.user.id }).select().single();
         if (error) throw error;
         res.json(data);
     } catch (e) {
@@ -59,12 +84,34 @@ router.post("/clients", async (req, res) => {
 
 router.get("/", async (req, res) => {
     try {
+        const limit = Math.min(parseInt(req.query.limit) || 50, 500);
+        const offset = parseInt(req.query.offset) || 0;
+
+        // Get total count
+        const { count: totalCount } = await req.sb
+            .from("invoices")
+            .select("*", { count: 'exact', head: true })
+            .eq("user_id", req.user.id);
+
+        // Get paginated data
         const { data, error } = await req.sb
             .from("invoices")
             .select("*, clients(name, email), invoice_items(*)")
-            .order("issue_date", { ascending: false });
+            .eq("user_id", req.user.id)
+            .order("issue_date", { ascending: false })
+            .range(offset, offset + limit - 1);
+
         if (error) throw error;
-        res.json(data);
+
+        res.json({
+            data,
+            pagination: {
+                total: totalCount || 0,
+                offset,
+                limit,
+                hasMore: offset + limit < (totalCount || 0)
+            }
+        });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
@@ -89,10 +136,15 @@ router.post("/", async (req, res) => {
         const body = InvoiceSchema.parse(req.body);
         const { items, ...invoiceData } = body;
 
+        // Security check: only allow safe protocols in notes
+        if (invoiceData.notes && (invoiceData.notes.includes('javascript:') || invoiceData.notes.includes('data:'))) {
+            return res.status(400).json({ error: "Malicious URL schemes in notes are not allowed." });
+        }
+
         // 1. Insert Invoice
         const { data: invoice, error: invError } = await req.sb
             .from("invoices")
-            .insert(invoiceData)
+            .insert({ ...invoiceData, user_id: req.user.id })
             .select()
             .single();
 
@@ -123,11 +175,17 @@ router.patch("/:id", async (req, res) => {
             console.log(`[INVOICE] Payload received. PDF Attachment Size: ${(pdf_base64.length / 1024).toFixed(2)} KB`);
         }
 
+        // Security check: only allow safe protocols in notes
+        if (invoiceData.notes && (invoiceData.notes.includes('javascript:') || invoiceData.notes.includes('data:'))) {
+            return res.status(400).json({ error: "Malicious URL schemes in notes are not allowed." });
+        }
+
         // 1. Update Invoice Metadata
         const { data: invoice, error: invError } = await req.sb
             .from("invoices")
             .update({ ...invoiceData, updated_at: new Date() })
             .eq("id", req.params.id)
+            .eq("user_id", req.user.id)
             .select()
             .single();
 
@@ -155,7 +213,8 @@ router.patch("/:id", async (req, res) => {
                 await req.sb
                     .from('invoices')
                     .update({ payment_token: paymentToken })
-                    .eq('id', req.params.id);
+                    .eq('id', req.params.id)
+                    .eq('user_id', req.user.id);
             }
 
             const [{ data: fullInvoice }, { data: settings }] = await Promise.all([
@@ -163,6 +222,7 @@ router.patch("/:id", async (req, res) => {
                     .from('invoices')
                     .select('*, clients(*), invoice_items(*)')
                     .eq('id', req.params.id)
+                    .eq('user_id', req.user.id)
                     .single(),
                 req.sb
                     .from('settings')
@@ -344,18 +404,18 @@ router.patch("/:id", async (req, res) => {
                     ? `Invoice #${fullInvoice.invoice_number} from ${studioName} for ${extEventName} — $${totalDollars} Due`
                     : `Invoice #${fullInvoice.invoice_number} from ${studioName} — $${totalDollars} Due`;
                 
-                const result = await sendInvoiceEmail({
+                // Queue email asynchronously (non-blocking)
+                queueInvoiceEmail({
                     to: fullInvoice.clients.email,
                     subject: displaySubject,
                     body: emailBody,
                     attachments: emailAttachments,
                     fromName: studioName,
                     replyTo: studioEmail
+                }).catch(err => {
+                    console.error("[INVOICE EMAIL QUEUE] Failed to enqueue:", err);
+                    // Request continues; Bull will retry the job
                 });
-
-                if (!result.success) {
-                    throw new Error(`Email failed: ${result.error}`);
-                }
             } else if (invoiceData.status === 'sent') {
                 throw new Error('Cannot send invoice: Client email is missing.');
             }
@@ -369,7 +429,7 @@ router.patch("/:id", async (req, res) => {
 
 router.delete("/:id", async (req, res) => {
     try {
-        const { error } = await req.sb.from("invoices").delete().eq("id", req.params.id);
+        const { error } = await req.sb.from("invoices").delete().eq("id", req.params.id).eq("user_id", req.user.id);
         if (error) throw error;
         res.json({ ok: true });
     } catch (e) {

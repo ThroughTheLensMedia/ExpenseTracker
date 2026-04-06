@@ -47,14 +47,21 @@ router.post("/redeem", async (req, res) => {
             return res.status(400).json({ error: "Code has expired" });
         }
 
-        // 3. Mark code as used
-        await req.sb
+        // 3. Mark code as used (ATOMICALLY to prevent race conditions)
+        const { data: finalCode, error: updateError } = await req.sb
             .from('beta_codes')
             .update({ 
                 is_used: true, 
                 used_by_email: req.user.email 
             })
-            .eq('code', betaCode.code);
+            .eq('code', betaCode.code)
+            .eq('is_used', false)
+            .select()
+            .single();
+ 
+        if (updateError || !finalCode) {
+            return res.status(409).json({ error: "Code was just claimed by another user." });
+        }
 
         // 4. Update the user's subscription
         // For beta codes, we extend by 90 days or set to a specific date
