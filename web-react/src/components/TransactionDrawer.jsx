@@ -5,7 +5,8 @@ import CategorySelect from './CategorySelect.jsx';
 import { ALL_CATEGORIES } from '../constants/categories.js';
 
 const initialState = {
-    date: '', amount: '', vendor: '', category: '', taxBucket: '',
+    date: new Date().toISOString().slice(0, 10),
+    amount: '', vendor: '', category: '', taxBucket: '',
     bizPct: 100, deduct: false, notes: '', receiptLink: '',
     receiptFile: null, source: 'manual', msg: '', savedId: null,
 };
@@ -75,20 +76,21 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
                 updated = await apiPost('/expenses', payload);
             }
 
-            if (state.receiptFile && !state.receiptLink) {
+            if (receiptFile && !receiptLink) {
                  dispatch({ type: 'SET_MSG', value: 'Uploading receipt...' });
                  const fd = new FormData();
-                 fd.append('file', state.receiptFile);
+                 fd.append('file', receiptFile);
                  try {
                      const withReceipt = await apiUpload(`/receipts/expenses/${updated.id}`, fd);
                      updated = withReceipt;
                      dispatch({ type: 'RECEIPT_UPLOADED', link: updated.receipt_link });
                      dispatch({ type: 'SET_MSG', value: 'Saved with receipt.' });
                  } catch (err) {
-                     dispatch({ type: 'SET_MSG', value: `Saved, but receipt upload failed: ${err.message}` });
+                     const errMsg = err?.message || String(err);
+                     dispatch({ type: 'SET_MSG', value: `Saved, but receipt upload failed: ${errMsg}` });
                  }
             } else {
-                 if (!transaction.id && !savedId) {
+                 if (!transaction?.id && !savedId) {
                      dispatch({ type: 'SAVED_NEW', id: updated.id });
                  } else {
                      dispatch({ type: 'SET_MSG', value: 'Saved.' });
@@ -96,7 +98,8 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
             }
             if (onSave) onSave(updated);
         } catch (err) {
-            dispatch({ type: 'SET_MSG', value: `Save failed: ${err.message}` });
+            const errMsg = err?.message || String(err);
+            dispatch({ type: 'SET_MSG', value: `Save failed: ${errMsg}` });
         }
     };
 

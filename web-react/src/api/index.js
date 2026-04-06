@@ -35,7 +35,12 @@ export async function apiPatch(path, payload) {
     });
     if (!r.ok) {
         let msg = `${r.status} ${r.statusText}`;
-        try { const j = await r.json(); if (j && j.error) msg = j.error; } catch (_) { }
+        try { 
+            const j = await r.json(); 
+            if (j && j.error) {
+                msg = typeof j.error === 'string' ? j.error : JSON.stringify(j.error);
+            }
+        } catch (_) { }
         throw new Error(msg);
     }
     return r.json();
@@ -51,7 +56,12 @@ export async function apiPost(path, payload) {
     });
     if (!r.ok) {
         let msg = `${r.status} ${r.statusText}`;
-        try { const j = await r.json(); if (j && j.error) msg = j.error; } catch (_) { }
+        try { 
+            const j = await r.json(); 
+            if (j && j.error) {
+                msg = typeof j.error === 'string' ? j.error : JSON.stringify(j.error);
+            }
+        } catch (_) { }
         throw new Error(msg);
     }
     return r.json();
@@ -76,7 +86,12 @@ export async function apiUpload(path, formData) {
     
     if (!r.ok) {
         let msg = `${r.status} ${r.statusText}`;
-        try { const j = await r.json(); if (j && j.error) msg = j.error; } catch (_) { }
+        try { 
+            const j = await r.json(); 
+            if (j && j.error) {
+                msg = typeof j.error === 'string' ? j.error : JSON.stringify(j.error);
+            }
+        } catch (_) { }
         throw new Error(msg);
     }
     return r.json();
@@ -91,7 +106,12 @@ export async function apiDelete(path) {
     });
     if (!r.ok) {
         let msg = `${r.status} ${r.statusText}`;
-        try { const j = await r.json(); if (j && j.error) msg = j.error; } catch (_) { }
+        try { 
+            const j = await r.json(); 
+            if (j && j.error) {
+                msg = typeof j.error === 'string' ? j.error : JSON.stringify(j.error);
+            }
+        } catch (_) { }
         throw new Error(msg);
     }
     if (r.status === 204 || r.headers.get('content-length') === '0') return {};
