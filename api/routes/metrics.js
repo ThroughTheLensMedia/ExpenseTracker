@@ -56,6 +56,7 @@ router.get("/summary", async (req, res) => {
         const absValue = Math.abs(cents);
         
         const monthNum = parseInt(String(row.expense_date || '').slice(5, 7), 10);
+        if (isNaN(monthNum)) continue;
         
         if (isIncome) {
           ytdIncome += absValue;

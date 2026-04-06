@@ -17,10 +17,15 @@ export async function apiGet(path) {
         credentials: "include" 
     });
     if (!r.ok) {
-        if (r.status === 401) {
-             // Session expired
-        }
-        throw new Error(`${r.status} ${r.statusText} (Path: ${path})`);
+        let msg = `${r.status} ${r.statusText} (Path: ${path})`;
+        try { 
+            const j = await r.json(); 
+            if (j && j.error) {
+                const inner = typeof j.error === 'string' ? j.error : JSON.stringify(j.error);
+                msg = `${r.status}: ${inner}`;
+            }
+        } catch (_) { }
+        throw new Error(msg);
     }
     return r.json();
 }
