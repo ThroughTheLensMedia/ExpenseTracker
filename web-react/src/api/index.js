@@ -251,7 +251,9 @@ export async function fetchAllInvoices(force = false) {
         const cached = getCached(key);
         if (cached) return cached;
     }
-    const data = await apiGet('/invoices');
+    const res = await apiGet('/invoices');
+    // API returns paginated shape { data, pagination }; callers expect a plain array
+    const data = Array.isArray(res) ? res : (res?.data || []);
     setCache(key, data);
     return data;
 }

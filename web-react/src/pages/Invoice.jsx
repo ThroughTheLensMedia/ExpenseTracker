@@ -472,9 +472,10 @@ export default function Invoice() {
                 apiGet('/settings').catch(() => ({}))
             ]);
             setInvoices(invs);
-            setClients(cls);
+            // /invoices/clients returns { data, pagination } — unwrap to array
+            setClients(Array.isArray(cls) ? cls : (cls?.data || []));
             setLeads(lds.leads || []);
-            const settingsData = st || {};
+            const settingsData = (st && typeof st === 'object' && !st.error) ? st : {};
             setSettings(settingsData);
 
             // Set default notes if empty and auto-increment invoice number
