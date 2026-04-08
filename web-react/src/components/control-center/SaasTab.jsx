@@ -225,14 +225,7 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
                 </div>
             </div>
 
-            {/* Footer */}
-            <div className="card glass" style={{ border: 'none', padding: '15px 30px', background: 'rgba(99, 102, 241, 0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                    <span style={{ padding: '4px 8px', background: 'rgba(99, 102, 241, 0.2)', color: '#a5b4fc', borderRadius: '4px', fontSize: '9px', fontWeight: 900 }}>AI BRAIN</span>
-                    <span style={{ fontSize: '13px', fontWeight: 800 }}>Predictive forensics and automated tax strategy engine active.</span>
-                </div>
-                <div style={{ fontSize: '12px', opacity: 0.5, fontWeight: 900 }}>4.0.1-PRO</div>
-            </div>
+
 
             {/* Edit Invite Modal */}
             {editingInvite && (
