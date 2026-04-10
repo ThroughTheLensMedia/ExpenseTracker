@@ -31,7 +31,7 @@ const QuerySchema = z.object({
 router.get("/", async (req, res) => {
     try {
         const { year } = QuerySchema.parse(req.query);
-        let query = req.sb.from("mileage_logs").select("*").order("log_date", { ascending: false });
+        let query = req.sb.from("mileage_logs").select("*").eq("user_id", req.user.id).order("log_date", { ascending: false });
         if (year) {
             query = query.gte("log_date", `${year}-01-01`).lte("log_date", `${year}-12-31`);
         }
@@ -48,7 +48,7 @@ router.get("/", async (req, res) => {
 router.post("/", async (req, res) => {
     try {
         const body = MileageSchema.parse(req.body);
-        const { data, error } = await req.sb.from("mileage_logs").insert([body]).select();
+        const { data, error } = await req.sb.from("mileage_logs").insert([{ ...body, user_id: req.user.id }]).select();
         if (error) throw error;
         res.status(201).json(data[0]);
     } catch (e) {
@@ -58,11 +58,33 @@ router.post("/", async (req, res) => {
     }
 });
 
+// PUT /mileage/:id
+router.put("/:id", async (req, res) => {
+    try {
+        const body = MileageSchema.parse(req.body);
+        const { id } = req.params;
+        const { data, error } = await req.sb
+            .from("mileage_logs")
+            .update({ ...body })
+            .eq("id", id)
+            .eq("user_id", req.user.id)
+            .select();
+            
+        if (error) throw error;
+        if (data.length === 0) return res.status(404).json({ error: "Trip not found" });
+        res.json(data[0]);
+    } catch (e) {
+        console.error("[API] PUT /mileage Error:", e);
+        if (e instanceof z.ZodError) return res.status(400).json({ error: e.errors });
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // DELETE /mileage/:id
 router.delete("/:id", async (req, res) => {
     try {
         const { id } = req.params;
-        const { error } = await req.sb.from("mileage_logs").delete().eq("id", id);
+        const { error } = await req.sb.from("mileage_logs").delete().eq("id", id).eq("user_id", req.user.id);
         if (error) throw error;
         res.json({ ok: true });
     } catch (e) {

@@ -1,69 +1,232 @@
-import React, { useState, useEffect } from 'react';
-import { apiGet, apiPost, apiDelete, formatMoney, fetchAllMileage } from '../api';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useLoadScript, GoogleMap, DirectionsRenderer, Autocomplete } from '@react-google-maps/api';
+import { apiGet, apiPost, apiPut, apiDelete, formatMoney, fetchAllMileage } from '../api';
 import { useModal } from '../components/ModalContext.jsx';
 import { useAuth } from '../components/AuthContext';
+
+const LIBRARIES = ['places'];
+const MAP_CONTAINER_STYLE = { width: '100%', height: '260px', borderRadius: '12px' };
+const MAP_OPTIONS = {
+    disableDefaultUI: true,
+    zoomControl: true,
+    styles: [
+        { elementType: 'geometry', stylers: [{ color: '#1a1a2e' }] },
+        { elementType: 'labels.text.fill', stylers: [{ color: '#a0a0b0' }] },
+        { elementType: 'labels.text.stroke', stylers: [{ color: '#1a1a2e' }] },
+        { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#2c2c4a' }] },
+        { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#212140' }] },
+        { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0d1b2a' }] },
+        { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+    ],
+};
 
 export default function Mileage() {
     const { settings } = useAuth();
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [mileage, setMileage] = useState([]);
+    const [sortDesc, setSortDesc] = useState(true);
     const [mileageRates, setMileageRates] = useState([]);
-    const [mileageInput, setMileageInput] = useState({ 
-        date: new Date().toISOString().slice(0, 10), 
-        miles: '', 
-        purpose: '' 
-    });
     const [syncStatus, setSyncStatus] = useState('');
     const [manualRate, setManualRate] = useState({ year: new Date().getFullYear(), rate: '' });
     const [ratesOpen, setRatesOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const modal = useModal();
 
+    // Map / trip state
+    const [origin, setOrigin] = useState('');
+    const [destination, setDestination] = useState('');
+    const [tripName, setTripName] = useState('');
+    const [tripNotes, setTripNotes] = useState('');
+    const [tripDate, setTripDate] = useState(new Date().toISOString().slice(0, 10));
+    const [calculatedMiles, setCalculatedMiles] = useState(null);
+    const [directions, setDirections] = useState(null);
+    const [waypoint, setWaypoint] = useState('');
+    const [isRoundTrip, setIsRoundTrip] = useState(false);
+    const [mapCenter, setMapCenter] = useState({ lat: 37.7749, lng: -122.4194 });
+    const [calculating, setCalculating] = useState(false);
+    const [mapError, setMapError] = useState('');
+
+    // Edit state
+    const [editingId, setEditingId] = useState(null);
+    const [editDate, setEditDate] = useState('');
+    const [editMiles, setEditMiles] = useState('');
+    const [editPurpose, setEditPurpose] = useState('');
+
+    const originRef = useRef(null);
+    const destinationRef = useRef(null);
+    const waypointRef = useRef(null);
+    const originAutocomplete = useRef(null);
+    const destinationAutocomplete = useRef(null);
+    const waypointAutocomplete = useRef(null);
+
+    const { isLoaded, loadError } = useLoadScript({
+        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+        libraries: LIBRARIES,
+    });
+
     const loadData = async (force = false) => {
         setLoading(true);
         try {
             const [miles, rates] = await Promise.all([
-                fetchAllMileage(selectedYear),
+                fetchAllMileage(selectedYear, force),
                 apiGet('/mileage/rates')
             ]);
             setMileage(miles);
             setMileageRates(rates);
         } catch (e) {
-            console.error("Failed to load mileage data:", e);
+            console.error('Failed to load mileage data:', e);
         } finally {
             setLoading(false);
         }
     };
 
-    useEffect(() => {
-        loadData();
-    }, [selectedYear]);
+    useEffect(() => { loadData(); }, [selectedYear]);
 
-    const handleAddMileage = async () => {
-        if (!mileageInput.miles || !mileageInput.purpose) {
-            return modal.alert("Please enter both miles and purpose.");
+    const calculateRoute = useCallback(() => {
+        const addrA = originRef.current?.value || origin;
+        const addrB = waypointRef.current?.value || waypoint;
+        const addrC = destinationRef.current?.value || destination;
+        
+        // We need at least A and B
+        if (!addrA || !addrB) return;
+
+        setCalculating(true);
+        setMapError('');
+        const directionsService = new window.google.maps.DirectionsService();
+        
+        // If they fill A + B but leave C blank, route A -> B
+        let finalDestination = addrB;
+        let optionalWaypoint = null;
+        
+        // If they fill A + B + C, route A -> C with B as waypoint
+        if (addrC && addrC.trim() !== '') {
+            finalDestination = addrC;
+            optionalWaypoint = addrB;
         }
+        
+        const request = {
+            origin: addrA.trim(),
+            destination: finalDestination.trim(),
+            travelMode: window.google.maps.TravelMode.DRIVING,
+        };
+        
+        if (optionalWaypoint && optionalWaypoint.trim() !== '') {
+            request.waypoints = [{ location: optionalWaypoint.trim(), stopover: true }];
+        }
+
+        directionsService.route(
+            request,
+            (result, status) => {
+                setCalculating(false);
+                if (status === 'OK') {
+                    setDirections(result);
+                    // The useEffect below handles the miles calculation
+                    const leg = result.routes[0].legs[0];
+                    setMapCenter({
+                        lat: (leg.start_location.lat() + leg.end_location.lat()) / 2,
+                        lng: (leg.start_location.lng() + leg.end_location.lng()) / 2,
+                    });
+                } else {
+                    console.error('Google Maps route calculation failed:', status, result);
+                    setMapError('Could not calculate route. Please check the addresses. (Error: ' + status + ')');
+                    setDirections(null);
+                    setCalculatedMiles(null);
+                }
+            }
+        );
+    }, [origin, destination, waypoint]);
+
+    useEffect(() => {
+        if (directions) {
+            const distanceMeters = directions.routes[0].legs.reduce((acc, leg) => acc + leg.distance.value, 0);
+            let miles = distanceMeters / 1609.344;
+            if (isRoundTrip) miles *= 2;
+            setCalculatedMiles(Math.round(miles * 10) / 10);
+        } else {
+            setCalculatedMiles(null);
+        }
+    }, [directions, isRoundTrip]);
+
+    const handleDestinationChange = () => {
+        if (origin && destinationRef.current?.value) {
+            calculateRoute();
+        }
+    };
+
+    const handleAddTrip = async () => {
+        if (!calculatedMiles) return modal.alert('Please enter addresses to calculate the distance first.');
+        if (!tripName) return modal.alert('Please enter a trip name or purpose.');
         try {
-            await apiPost("/mileage", {
-                log_date: mileageInput.date,
-                miles: Number(mileageInput.miles),
-                purpose: mileageInput.purpose
+            const addrA = originRef.current?.value || origin;
+            const addrB = waypointRef.current?.value || waypoint;
+            const addrC = destinationRef.current?.value || destination;
+            
+            let routeStr;
+            if (addrC && addrC.trim() !== '') {
+                routeStr = `${addrA} → ${addrB} → ${addrC}`;
+            } else {
+                routeStr = `${addrA} → ${addrB}`;
+            }
+            
+            if (isRoundTrip) routeStr += ` (Round Trip)`;
+            
+            const purpose = tripNotes
+                ? `${tripName} | ${routeStr} | ${tripNotes}`
+                : `${tripName} | ${routeStr}`;
+                
+            await apiPost('/mileage', {
+                log_date: tripDate,
+                miles: calculatedMiles,
+                purpose,
             });
-            setMileageInput({ ...mileageInput, miles: '', purpose: '' });
-            loadData(true);
+            // Reset form
+            setOrigin('');
+            setDestination('');
+            setWaypoint('');
+            setTripName('');
+            setTripNotes('');
+            setIsRoundTrip(false);
+            setCalculatedMiles(null);
+            setDirections(null);
+            if (originRef.current) originRef.current.value = '';
+            if (waypointRef.current) waypointRef.current.value = '';
+            if (destinationRef.current) destinationRef.current.value = '';
+            loadData(true); // force cache-bust so new entry appears immediately
         } catch (err) {
-            modal.alert("Failed to add trip: " + err.message);
+            modal.alert('Failed to log trip: ' + err.message);
         }
     };
 
     const handleDeleteMileage = async (id) => {
-        const ok = await modal.confirm("Delete this trip log?");
+        const ok = await modal.confirm('Delete this trip log?');
         if (!ok) return;
         try {
             await apiDelete(`/mileage/${id}`);
-            loadData(true);
+            loadData();
         } catch (err) {
-            modal.alert("Failed to delete trip: " + err.message);
+            modal.alert('Failed to delete trip: ' + err.message);
+        }
+    };
+
+    const handleStartEdit = (m) => {
+        setEditingId(m.id);
+        setEditDate(m.log_date);
+        setEditMiles(m.miles);
+        setEditPurpose(m.purpose);
+    };
+
+    const handleSaveEdit = async () => {
+        if (!editDate || !editMiles || !editPurpose) return modal.alert("All fields are required.");
+        try {
+            await apiPut(`/mileage/${editingId}`, {
+                log_date: editDate,
+                miles: Number(editMiles),
+                purpose: editPurpose
+            });
+            setEditingId(null);
+            loadData(true);
+        } catch (e) {
+            modal.alert('Failed to update trip: ' + e.message);
         }
     };
 
@@ -71,7 +234,7 @@ export default function Mileage() {
         setSyncStatus('Checking IRS.gov...');
         try {
             const result = await apiPost('/mileage/rates/sync', {});
-            setSyncStatus(`✅ Updated: ${result.year} = $${Number(result.rate_per_mile).toFixed(2)}/mile`);
+            setSyncStatus(`✅ ${result.year} = $${Number(result.rate_per_mile).toFixed(2)}/mi`);
             const rates = await apiGet('/mileage/rates');
             setMileageRates(rates);
         } catch (err) {
@@ -83,7 +246,7 @@ export default function Mileage() {
         if (!manualRate.rate) return;
         try {
             await apiPost('/mileage/rates', { year: manualRate.year, rate_per_mile: manualRate.rate });
-            setSyncStatus(`✅ Saved: ${manualRate.year} = $${Number(manualRate.rate).toFixed(2)}/mile`);
+            setSyncStatus(`✅ Saved: ${manualRate.year} = $${Number(manualRate.rate).toFixed(2)}/mi`);
             const rates = await apiGet('/mileage/rates');
             setMileageRates(rates);
             setManualRate({ year: new Date().getFullYear(), rate: '' });
@@ -97,12 +260,10 @@ export default function Mileage() {
     const currentRate = currentRateObj?.rate_per_mile ?? 0.70;
     const mileageDeduction = totalMiles * currentRate;
 
-    const exportCsv = () => {
-        window.open(`/api/tax/export.csv?year=${encodeURIComponent(selectedYear)}`, "_blank");
-    };
-
     return (
         <section style={{ maxWidth: '1400px', margin: '0 auto', paddingBottom: '100px' }}>
+
+            {/* Header */}
             <div className="card glass glow-blue" style={{ marginBottom: '20px', padding: '24px 30px', border: 'none' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
                     <div>
@@ -110,112 +271,330 @@ export default function Mileage() {
                             Mileage Tracker
                         </h1>
                         <div className="muted" style={{ marginTop: '6px', fontSize: '14px' }}>
-                            IRS Standard Business Deduction • {selectedYear}
+                            IRS Standard Business Deduction • {selectedYear} • ${currentRate.toFixed(2)}/mi
                         </div>
                     </div>
-                    <div>
-                        <select 
-                            value={selectedYear} 
-                            onChange={(e) => setSelectedYear(Number(e.target.value))} 
-                            className="btn secondary" 
-                            style={{ padding: '10px 16px', borderRadius: '12px', fontWeight: 900, fontSize: '14px' }}
-                        >
-                            {Array.from({ length: new Date().getFullYear() - 2019 }, (_, i) => new Date().getFullYear() - i).map(y => <option key={y} value={y}>FY {y}</option>)}
-                        </select>
-                    </div>
+                    <select
+                        value={selectedYear}
+                        onChange={(e) => setSelectedYear(Number(e.target.value))}
+                        className="btn secondary"
+                        style={{ padding: '10px 16px', borderRadius: '12px', fontWeight: 900, fontSize: '14px' }}
+                    >
+                        {Array.from({ length: new Date().getFullYear() - 2019 }, (_, i) => new Date().getFullYear() - i).map(y => (
+                            <option key={y} value={y}>FY {y}</option>
+                        ))}
+                    </select>
                 </div>
             </div>
 
+            {/* KPI Cards */}
             <div className="grid two" style={{ gap: '20px', marginBottom: '20px' }}>
                 <div className="card accent" style={{ textAlign: 'center', padding: '24px' }}>
                     <div className="muted" style={{ fontWeight: 800, fontSize: '12px', letterSpacing: '0.1em', marginBottom: '8px' }}>TOTAL BUSINESS DISTANCE</div>
                     <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'white' }}>{totalMiles.toLocaleString()} <span style={{ fontSize: '1rem', opacity: 0.5 }}>MI</span></div>
                 </div>
-                <div className="card accent" style={{ textAlign: 'center', padding: '24px', position: 'relative', overflow: 'hidden' }}>
+                <div className="card accent" style={{ textAlign: 'center', padding: '24px' }}>
                     <div className="muted" style={{ fontWeight: 800, fontSize: '12px', letterSpacing: '0.1em', marginBottom: '8px' }}>POTENTIAL TAX DEDUCTION</div>
                     <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#4ade80' }}>{formatMoney(mileageDeduction * 100)}</div>
-                    <div style={{ fontSize: '10px', fontWeight: 700, opacity: 0.6, marginTop: '4px' }}>Calculated at ${currentRate.toFixed(2)}/mile</div>
+                    <div style={{ fontSize: '10px', fontWeight: 700, opacity: 0.6, marginTop: '4px' }}>at ${currentRate.toFixed(2)}/mile</div>
                 </div>
             </div>
 
-            <div className="card">
+            {/* Maps Trip Logger */}
+            <div className="card" style={{ marginBottom: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                    <h2 style={{ margin: 0 }}>Log New Trip</h2>
-                    <div className="tag ok" style={{ fontSize: '10px' }}>IRS COMPLIANT LOG</div>
+                    <div>
+                        <h2 style={{ margin: 0 }}>Log New Trip</h2>
+                        <div className="muted small" style={{ marginTop: '4px' }}>Enter your start and end address — miles auto-calculated</div>
+                    </div>
+                    <div className="tag ok" style={{ fontSize: '10px' }}>MAPS AUTOPILOT</div>
                 </div>
-                
-                <div className="controls" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                    <div style={{ flex: '0 0 160px' }}>
-                        <label className="muted small" style={{ display: 'block', marginBottom: '6px' }}>Trip Date</label>
-                        <input 
-                            type="date" 
-                            value={mileageInput.date} 
-                            onChange={e => setMileageInput({ ...mileageInput, date: e.target.value })} 
-                            style={{ width: '100%' }}
-                        />
+
+                {loadError && (
+                    <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '10px', padding: '12px 16px', color: '#ef4444', marginBottom: '16px', fontSize: '13px' }}>
+                        ⚠️ Google Maps failed to load. Check your <code>VITE_GOOGLE_MAPS_API_KEY</code>.
                     </div>
-                    <div style={{ flex: '0 0 100px' }}>
-                        <label className="muted small" style={{ display: 'block', marginBottom: '6px' }}>Miles</label>
-                        <input 
-                            type="number" 
-                            placeholder="0" 
-                            value={mileageInput.miles} 
-                            onChange={e => setMileageInput({ ...mileageInput, miles: e.target.value })} 
-                            style={{ width: '100%' }}
-                        />
-                    </div>
-                    <div style={{ flex: '2', minWidth: '250px' }}>
-                        <label className="muted small" style={{ display: 'block', marginBottom: '6px' }}>Purpose / Destination</label>
-                        <input 
-                            type="text" 
-                            placeholder="Client Shoot - Downtown HQ" 
-                            value={mileageInput.purpose} 
-                            onChange={e => setMileageInput({ ...mileageInput, purpose: e.target.value })} 
-                            style={{ width: '100%' }}
-                        />
-                    </div>
-                    <div style={{ flex: '0 0 120px', display: 'flex', alignItems: 'flex-end' }}>
-                        <button className="btn primary glow-blue" onClick={handleAddMileage} style={{ width: '100%', padding: '12px' }}>
-                            Add Trip
+                )}
+
+                {!isLoaded && !loadError && (
+                    <div style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.3)' }}>Loading Maps…</div>
+                )}
+
+                {isLoaded && (
+                    <>
+                        {/* Date + Trip Name row */}
+                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '14px' }}>
+                            <div style={{ flex: '0 0 155px' }}>
+                                <label className="muted small" style={{ display: 'block', marginBottom: '6px' }}>Trip Date</label>
+                                <input
+                                    type="date"
+                                    value={tripDate}
+                                    onChange={e => setTripDate(e.target.value)}
+                                    style={{ width: '100%' }}
+                                />
+                            </div>
+                            <div style={{ flex: 2, minWidth: '200px' }}>
+                                <label className="muted small" style={{ display: 'block', marginBottom: '6px' }}>Trip Name / Client</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. Miller Wedding Shoot"
+                                    value={tripName}
+                                    onChange={e => setTripName(e.target.value)}
+                                    style={{ width: '100%' }}
+                                />
+                            </div>
+                        </div>
+
+                        {/* A → B → C Address row */}
+                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '14px', alignItems: 'flex-end' }}>
+                            <div style={{ flex: 1, minWidth: '180px' }}>
+                                <label className="muted small" style={{ display: 'block', marginBottom: '6px' }}>📍 Start (Point A)</label>
+                                <Autocomplete
+                                    onLoad={a => (originAutocomplete.current = a)}
+                                    onPlaceChanged={() => {
+                                        const place = originAutocomplete.current?.getPlace();
+                                        const addr = place?.formatted_address || originRef.current?.value;
+                                        setOrigin(addr);
+                                    }}
+                                >
+                                    <input
+                                        ref={originRef}
+                                        type="text"
+                                        placeholder="Starting address…"
+                                        style={{ width: '100%' }}
+                                        onBlur={() => setOrigin(originRef.current?.value)}
+                                    />
+                                </Autocomplete>
+                            </div>
+
+                            <div style={{ fontSize: '20px', paddingBottom: '10px', opacity: 0.4, flexShrink: 0 }}>→</div>
+
+                            <div style={{ flex: 1, minWidth: '180px' }}>
+                                <label className="muted small" style={{ display: 'block', marginBottom: '6px' }}>🏁 Point B</label>
+                                <Autocomplete
+                                    onLoad={a => (waypointAutocomplete.current = a)}
+                                    onPlaceChanged={() => {
+                                        const place = waypointAutocomplete.current?.getPlace();
+                                        const addr = place?.formatted_address || waypointRef.current?.value;
+                                        setWaypoint(addr);
+                                        // Auto calculate if A and B are present
+                                        if (origin || originRef.current?.value) {
+                                            setTimeout(calculateRoute, 100);
+                                        }
+                                    }}
+                                >
+                                    <input
+                                        ref={waypointRef}
+                                        type="text"
+                                        placeholder="Destination…"
+                                        style={{ width: '100%' }}
+                                        onBlur={() => setWaypoint(waypointRef.current?.value)}
+                                    />
+                                </Autocomplete>
+                            </div>
+
+                            <div style={{ fontSize: '20px', paddingBottom: '10px', opacity: 0.4, flexShrink: 0 }}>→</div>
+
+                            <div style={{ flex: 1, minWidth: '180px' }}>
+                                <label className="muted small" style={{ display: 'block', marginBottom: '6px' }}>📍 Point C <span style={{ opacity: 0.5 }}>(optional extra stop)</span></label>
+                                <Autocomplete
+                                    onLoad={a => (destinationAutocomplete.current = a)}
+                                    onPlaceChanged={() => {
+                                        const place = destinationAutocomplete.current?.getPlace();
+                                        const addr = place?.formatted_address || destinationRef.current?.value;
+                                        setDestination(addr);
+                                        if (origin || originRef.current?.value) {
+                                            setTimeout(calculateRoute, 100);
+                                        }
+                                    }}
+                                >
+                                    <input
+                                        ref={destinationRef}
+                                        type="text"
+                                        placeholder="Destination address…"
+                                        style={{ width: '100%' }}
+                                        onBlur={() => {
+                                            setDestination(destinationRef.current?.value);
+                                            handleDestinationChange();
+                                        }}
+                                    />
+                                </Autocomplete>
+                            </div>
+
+                            <div style={{ flexShrink: 0, paddingBottom: '2px', display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 700, paddingRight: '8px' }}>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={isRoundTrip}
+                                        onChange={(e) => setIsRoundTrip(e.target.checked)}
+                                        style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                                    />
+                                    Round Trip
+                                </label>
+
+                                <button
+                                    className="btn secondary"
+                                    onClick={calculateRoute}
+                                    disabled={calculating}
+                                    style={{ padding: '12px 18px', whiteSpace: 'nowrap' }}
+                                >
+                                    {calculating ? '⏳ Calculating…' : '🗺️ Calculate'}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Notes */}
+                        <div style={{ marginBottom: '14px' }}>
+                            <label className="muted small" style={{ display: 'block', marginBottom: '6px' }}>Notes (optional)</label>
+                            <input
+                                type="text"
+                                placeholder="e.g. Picked up rental lens on the way"
+                                value={tripNotes}
+                                onChange={e => setTripNotes(e.target.value)}
+                                style={{ width: '100%' }}
+                            />
+                        </div>
+
+                        {mapError && (
+                            <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '10px', padding: '10px 14px', color: '#ef4444', fontSize: '13px', marginBottom: '14px' }}>
+                                ⚠️ {mapError}
+                            </div>
+                        )}
+
+                        {/* Distance result + Map */}
+                        {calculatedMiles !== null && (
+                            <div style={{ marginBottom: '16px', animation: 'fadeIn 0.3s ease-out' }}>
+                                <div style={{
+                                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                    background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.3)',
+                                    borderRadius: '12px', padding: '14px 20px', marginBottom: '12px', flexWrap: 'wrap', gap: '12px'
+                                }}>
+                                    <div>
+                                        <div style={{ fontSize: '11px', fontWeight: 700, opacity: 0.5, letterSpacing: '0.08em' }}>{isRoundTrip ? 'ROUND TRIP DISTANCE' : 'TOTAL DISTANCE'}</div>
+                                        <div style={{ fontSize: '2rem', fontWeight: 900, color: '#818cf8' }}>
+                                            {calculatedMiles} <span style={{ fontSize: '1rem', opacity: 0.6 }}>mi</span>
+                                        </div>
+                                    </div>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <div style={{ fontSize: '11px', fontWeight: 700, opacity: 0.5, letterSpacing: '0.08em' }}>IRS DEDUCTION</div>
+                                        <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#4ade80' }}>
+                                            {formatMoney(calculatedMiles * currentRate * 100)}
+                                        </div>
+                                        <a
+                                            href={`https://www.google.com/maps/dir/${encodeURIComponent(origin)}/${waypoint ? encodeURIComponent(waypoint) + '/' : ''}${encodeURIComponent(destination)}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            style={{ display: 'inline-block', marginTop: '8px', fontSize: '11px', fontWeight: 700, color: '#818cf8', textDecoration: 'none', padding: '4px 10px', border: '1px solid rgba(129,140,248,0.4)', borderRadius: '6px' }}
+                                        >
+                                            🗺️ Open in Google Maps ↗
+                                        </a>
+                                    </div>
+                                </div>
+                                <GoogleMap
+                                    mapContainerStyle={MAP_CONTAINER_STYLE}
+                                    zoom={11}
+                                    center={mapCenter}
+                                    options={MAP_OPTIONS}
+                                >
+                                    {directions && <DirectionsRenderer directions={directions} options={{ suppressMarkers: false, polylineOptions: { strokeColor: '#818cf8', strokeWeight: 4 } }} />}
+                                </GoogleMap>
+                            </div>
+                        )}
+
+                        <button
+                            className="btn primary glow-blue"
+                            onClick={handleAddTrip}
+                            disabled={!calculatedMiles || !tripName}
+                            style={{ width: '100%', padding: '14px', fontSize: '15px', fontWeight: 800, marginTop: '4px', opacity: (!calculatedMiles || !tripName) ? 0.4 : 1 }}
+                        >
+                            ✅ Log This Trip
                         </button>
-                    </div>
-                </div>
+                    </>
+                )}
             </div>
 
-            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-                <div style={{ padding: '24px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            {/* Trip History */}
+            <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: '20px' }}>
+                <div style={{ padding: '24px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h2 style={{ margin: 0 }}>Trip History</h2>
+                    <div className="muted small">{mileage.length} trips logged in {selectedYear}</div>
                 </div>
                 <div className="tableWrap" style={{ maxHeight: '500px' }}>
                     <table>
                         <thead>
                             <tr>
-                                <th>Date</th>
-                                <th>Purpose</th>
+                                <th 
+                                    style={{ cursor: 'pointer', userSelect: 'none' }} 
+                                    onClick={() => setSortDesc(!sortDesc)}
+                                >
+                                    Date {sortDesc ? '▼' : '▲'}
+                                </th>
+                                <th>Trip / Route</th>
                                 <th style={{ textAlign: 'center' }}>Miles</th>
                                 <th style={{ textAlign: 'right' }}>Deduction</th>
                                 <th></th>
                             </tr>
                         </thead>
                         <tbody>
-                            {mileage.map(m => (
-                                <tr key={m.id}>
-                                    <td style={{ fontWeight: 600 }}>{m.log_date}</td>
-                                    <td>
-                                        <div style={{ fontWeight: 500 }}>{m.purpose}</div>
-                                        <div className="muted small" style={{ fontSize: '9px' }}>Official IRS Log ID: #{m.id}</div>
-                                    </td>
-                                    <td style={{ textAlign: 'center' }}>
-                                        <span className="tag" style={{ background: 'rgba(255,255,255,0.05)', fontWeight: 900 }}>{Number(m.miles).toLocaleString()}</span>
-                                    </td>
-                                    <td style={{ textAlign: 'right', fontWeight: 800, color: '#4ade80' }}>
-                                        {formatMoney(Number(m.miles) * currentRate * 100)}
-                                    </td>
-                                    <td style={{ textAlign: 'right' }}>
-                                        <button className="btn sm secondary" onClick={() => handleDeleteMileage(m.id)} style={{ color: '#ef4444' }}>×</button>
-                                    </td>
-                                </tr>
-                            ))}
+                            {[...mileage].sort((a, b) => {
+                                if (sortDesc) {
+                                    if (a.log_date !== b.log_date) return new Date(b.log_date) - new Date(a.log_date);
+                                    return b.id - a.id;
+                                } else {
+                                    if (a.log_date !== b.log_date) return new Date(a.log_date) - new Date(b.log_date);
+                                    return a.id - b.id;
+                                }
+                            }).map(m => {
+                                if (editingId === m.id) {
+                                    return (
+                                        <tr key={m.id} style={{ background: 'rgba(99,102,241,0.1)' }}>
+                                            <td style={{ verticalAlign: 'top' }}>
+                                                <input type="date" value={editDate} onChange={e => setEditDate(e.target.value)} style={{ width: '130px', padding: '6px' }} />
+                                            </td>
+                                            <td style={{ verticalAlign: 'top' }}>
+                                                <input type="text" value={editPurpose} onChange={e => setEditPurpose(e.target.value)} style={{ width: '100%', padding: '6px', fontSize: '13px' }} placeholder="Trip / Route / Notes" />
+                                                <div className="muted small" style={{ fontSize: '9px', marginTop: '4px' }}>Edit string directly. Use ' | ' to separate segments.</div>
+                                            </td>
+                                            <td style={{ verticalAlign: 'top' }}>
+                                                <input type="number" step="0.1" value={editMiles} onChange={e => setEditMiles(e.target.value)} style={{ width: '80px', padding: '6px' }} />
+                                            </td>
+                                            <td style={{ textAlign: 'right', verticalAlign: 'top', fontWeight: 800, color: '#4ade80', paddingTop: '12px' }}>
+                                                {formatMoney(Number(editMiles || 0) * currentRate * 100)}
+                                            </td>
+                                            <td style={{ textAlign: 'right', whiteSpace: 'nowrap', verticalAlign: 'top' }}>
+                                                <button className="btn sm ok" onClick={handleSaveEdit} style={{ marginRight: '6px' }}>Save</button>
+                                                <button className="btn sm secondary" onClick={() => setEditingId(null)}>Cancel</button>
+                                            </td>
+                                        </tr>
+                                    );
+                                }
+
+                                const parts = m.purpose?.split(' | ') || [];
+                                const name = parts[0] || m.purpose;
+                                const route = parts[1] || '';
+                                const notes = parts[2] || '';
+                                return (
+                                    <tr key={m.id}>
+                                        <td style={{ fontWeight: 600, whiteSpace: 'nowrap', verticalAlign: 'top', paddingTop: '12px' }}>{m.log_date}</td>
+                                        <td style={{ verticalAlign: 'top', paddingTop: '12px' }}>
+                                            <div style={{ fontWeight: 700 }}>{name}</div>
+                                            {route && <div className="muted small" style={{ fontSize: '11px', marginTop: '2px' }}>{route}</div>}
+                                            {notes && <div className="muted small" style={{ fontSize: '10px', fontStyle: 'italic', marginTop: '1px', opacity: 0.6 }}>{notes}</div>}
+                                            <div className="muted small" style={{ fontSize: '9px', marginTop: '2px' }}>IRS Log ID #{m.id}</div>
+                                        </td>
+                                        <td style={{ textAlign: 'center', verticalAlign: 'top', paddingTop: '12px' }}>
+                                            <span className="tag" style={{ background: 'rgba(255,255,255,0.05)', fontWeight: 900 }}>{Number(m.miles).toLocaleString()}</span>
+                                        </td>
+                                        <td style={{ textAlign: 'right', fontWeight: 800, color: '#4ade80', verticalAlign: 'top', paddingTop: '12px' }}>
+                                            {formatMoney(Number(m.miles) * currentRate * 100)}
+                                        </td>
+                                        <td style={{ textAlign: 'right', whiteSpace: 'nowrap', verticalAlign: 'top', paddingTop: '12px' }}>
+                                            <button className="btn sm secondary" onClick={() => handleStartEdit(m)} style={{ marginRight: '6px' }}>Edit</button>
+                                            <button className="btn sm secondary" onClick={() => handleDeleteMileage(m.id)} style={{ color: '#ef4444' }}>×</button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                             {mileage.length === 0 && (
                                 <tr>
                                     <td colSpan="5" className="muted center" style={{ padding: '60px' }}>
@@ -229,8 +608,9 @@ export default function Mileage() {
                 </div>
             </div>
 
+            {/* IRS Rates */}
             <div className="card">
-                <div 
+                <div
                     style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
                     onClick={() => setRatesOpen(!ratesOpen)}
                 >
@@ -239,7 +619,7 @@ export default function Mileage() {
                         <div className="muted small">Configuring the global rate engine for Sch C Line 9.</div>
                     </div>
                     <button className="btn sm secondary" onClick={e => { e.stopPropagation(); handleSyncIRS(); }}>
-                        {syncStatus ? syncStatus : "Sync Rates"}
+                        {syncStatus || 'Sync IRS Rates'}
                     </button>
                 </div>
 
@@ -248,9 +628,7 @@ export default function Mileage() {
                         <div className="grid two" style={{ gap: '20px' }}>
                             <div className="tableWrap">
                                 <table className="sm">
-                                    <thead>
-                                        <tr><th>Year</th><th>Rate</th><th>Source</th></tr>
-                                    </thead>
+                                    <thead><tr><th>Year</th><th>Rate</th><th>Source</th></tr></thead>
                                     <tbody>
                                         {mileageRates.map(r => (
                                             <tr key={r.year} style={r.year === selectedYear ? { background: 'rgba(99,102,241,0.1)' } : {}}>
