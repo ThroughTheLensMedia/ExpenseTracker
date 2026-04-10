@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { fetchAllExpenses, formatMoney, formatDate, invalidateExpensesCache } from '../api';
+import { fetchAllExpenses, formatMoney, formatDate, invalidateExpensesCache, apiGet } from '../api';
 import TransactionDrawer from '../components/TransactionDrawer';
 import { useModal } from '../components/ModalContext.jsx';
 import CategorySelect from '../components/CategorySelect.jsx';
@@ -277,12 +277,11 @@ export default function Transactions() {
                                                     onClick={async (e) => {
                                                         e.stopPropagation();
                                                         try {
-                                                            const res = await fetch(`/api/receipts/signed-url?path=${encodeURIComponent(r.receipt_link)}`, { credentials: 'include' });
-                                                            const json = await res.json();
+                                                            const json = await apiGet(`/receipts/signed-url?path=${encodeURIComponent(r.receipt_link)}`);
                                                             if (json.url) window.open(json.url, '_blank');
-                                                            else alert('Could not load receipt: ' + (json.error || 'Unknown error'));
+                                                            else modal.alert('Could not load receipt: ' + (json.error || 'Unknown error'));
                                                         } catch (err) {
-                                                            alert('Receipt load failed: ' + err.message);
+                                                            modal.alert('Receipt load failed: ' + err.message);
                                                         }
                                                     }}
                                                 >View</button>
