@@ -8,7 +8,7 @@ const initialState = {
     date: new Date().toISOString().slice(0, 10),
     amount: '', vendor: '', category: '', taxBucket: '',
     bizPct: 100, deduct: false, isSub: false, notes: '', receiptLink: '',
-    receiptFile: null, source: 'manual', msg: '', savedId: null,
+    receiptFile: null, source: 'manual', msg: '', savedId: null, saving: false,
 };
 
 function reducer(state, action) {
@@ -57,6 +57,9 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
     const effectiveId = savedId || transaction?.id;
 
     const handleSave = async () => {
+        // Guard against double-taps on mobile
+        if (state.saving) return;
+        dispatch({ type: 'SET_FIELD', field: 'saving', value: true });
         dispatch({ type: 'SET_MSG', value: 'Saving...' });
         try {
             const payload = {
@@ -98,10 +101,14 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
                      dispatch({ type: 'SET_MSG', value: 'Saved.' });
                  }
             }
+            // Call onSave AFTER everything (including receipt upload) is complete
             if (onSave) onSave(updated);
+            onClose();
         } catch (err) {
             const errMsg = err?.message || String(err);
             dispatch({ type: 'SET_MSG', value: `Save failed: ${errMsg}` });
+        } finally {
+            dispatch({ type: 'SET_FIELD', field: 'saving', value: false });
         }
     };
 
@@ -285,7 +292,9 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
                     </div>
 
                     <div className="controls" style={{ marginTop: '12px' }}>
-                        <button className="btn" onClick={handleSave}>Save</button>
+                        <button className="btn" onClick={handleSave} disabled={state.saving} style={{ opacity: state.saving ? 0.5 : 1 }}>
+                            {state.saving ? 'Saving...' : 'Save'}
+                        </button>
                         {effectiveId && (
                             <button className="btn secondary" onClick={handleUpload}>Upload receipt</button>
                         )}
