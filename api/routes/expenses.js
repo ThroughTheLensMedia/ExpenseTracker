@@ -18,13 +18,12 @@ const QuerySchema = z.object({
 });
 
 const ExpenseBaseSchema = z.object({
-  expense_date: z.string().optional().nullable().transform(v => {
-    if (!v) return v;
-    // Normalize any date format to YYYY-MM-DD (handles iOS MM/DD/YYYY, ISO strings, etc.)
-    const d = new Date(v);
-    if (isNaN(d.getTime())) return v; // return raw value and let regex catch it
+  expense_date: z.preprocess(v => {
+    if (!v) return null;
+    const d = new Date(String(v));
+    if (isNaN(d.getTime())) return v;
     return d.toISOString().split('T')[0];
-  }).pipe(z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date (YYYY-MM-DD)").optional().nullable()),
+  }, z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date (YYYY-MM-DD)").optional().nullable()),
   vendor: z.string().trim().optional().default(""),
   category: z.string().trim().optional().default(""),
   amount_cents: z.coerce.number().default(0),
