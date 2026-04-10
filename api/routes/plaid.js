@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { z } = require("zod");
+const { encrypt, decrypt } = require("../utils/cryptoUtil");
 
 /**
  * Plaid Integration Routes
@@ -86,13 +87,22 @@ router.post("/exchange-token", async (req, res) => {
         const tokenResp = await client.itemPublicTokenExchange({ public_token });
         const { access_token, item_id } = tokenResp.data;
 
-        // Store in plaid_connections table
+        // Encrypt access token before storage
+        let encrypted_access_token;
+        try {
+            encrypted_access_token = encrypt(access_token);
+        } catch (err) {
+            console.error("[Plaid] Encryption failed:", err.message);
+            return res.status(500).json({ error: "Failed to secure access token." });
+        }
+
+        // Store in plaid_connections table (encrypted)
         const { data, error } = await req.sb
             .from("plaid_connections")
             .upsert({
                 user_id: req.user.id,
                 item_id,
-                access_token,
+                access_token: encrypted_access_token,
                 institution_id: institution?.institution_id || null,
                 institution_name: institution?.name || "Unknown Bank",
                 status: "active",
@@ -193,10 +203,11 @@ router.delete("/accounts/:id", async (req, res) => {
 
         if (fetchErr || !conn) return res.status(404).json({ error: "Account not found." });
 
-        // Remove from Plaid
+        // Remove from Plaid (decrypt token first)
         try {
-            await client.itemRemove({ access_token: conn.access_token });
-        } catch (_) { /* Plaid may already have removed it */ }
+            const access_token = decrypt(conn.access_token);
+            await client.itemRemove({ access_token });
+        } catch (_) { /* Plaid may already have removed it, or decryption failed */ }
 
         // Soft-delete: mark as disconnected
         await req.sb
@@ -220,8 +231,17 @@ async function syncTransactions(sb, plaidClient, connection, userId) {
     let hasMore = true;
 
     while (hasMore) {
+        // Decrypt access token for API call
+        let access_token;
+        try {
+            access_token = decrypt(connection.access_token);
+        } catch (err) {
+            console.error("[Plaid] Decryption failed:", err.message);
+            throw new Error("Failed to decrypt access token");
+        }
+
         const syncResp = await plaidClient.transactionsSync({
-            access_token: connection.access_token,
+            access_token,
             cursor: cursor || undefined,
         });
 

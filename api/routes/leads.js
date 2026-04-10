@@ -11,6 +11,7 @@ router.get("/", async (req, res) => {
                 *,
                 clients ( name, email, phone )
             `)
+            .eq("user_id", req.user.id)
             .order("created_at", { ascending: false });
 
         if (error) throw error;
@@ -61,6 +62,7 @@ router.patch("/:id", async (req, res) => {
                 updated_at: new Date().toISOString()
             })
             .eq("id", id)
+            .eq("user_id", req.user.id)
             .select()
             .single();
 
@@ -79,7 +81,8 @@ router.delete("/:id", async (req, res) => {
         const { error } = await req.sb
             .from("leads")
             .delete()
-            .eq("id", id);
+            .eq("id", id)
+            .eq("user_id", req.user.id);
 
         if (error) throw error;
         return res.status(204).send();

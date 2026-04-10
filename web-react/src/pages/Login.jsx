@@ -4,10 +4,13 @@ import { useNavigate, NavLink } from 'react-router-dom';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, signup, loginWithGoogle } = useAuth();
+  const { login, signup, loginWithGoogle, supabase: supabaseClient } = useAuth();
   // Auto-fill from URL
   const params = new URLSearchParams(window.location.search);
   const [isLogin, setIsLogin] = useState(!params.get('code'));
+  const [showForgot, setShowForgot] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotSent, setForgotSent] = useState(false);
   
   const [email, setEmail] = useState(params.get('email') || '');
   const [password, setPassword] = useState('');
@@ -32,6 +35,28 @@ export default function Login() {
         setSuccess("Studio account created! Check your email to confirm, then use your code to activate.");
         setIsLogin(true);
       }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    try {
+      const { createClient } = await import('@supabase/supabase-js');
+      const sb = createClient(
+        import.meta.env.VITE_SUPABASE_URL,
+        import.meta.env.VITE_SUPABASE_ANON_KEY
+      );
+      const { error: resetErr } = await sb.auth.resetPasswordForEmail(forgotEmail.trim(), {
+        redirectTo: `${window.location.origin}/login`
+      });
+      if (resetErr) throw resetErr;
+      setForgotSent(true);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -168,14 +193,73 @@ export default function Login() {
           )}
         </form>
 
-        <div style={{ marginTop: '20px' }}>
-          <button 
-            onClick={() => setIsLogin(!isLogin)} 
-            style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: '13px', fontWeight: 800 }}
-          >
-            {isLogin ? "Need a studio account? Sign Up" : "Already have an account? Login"}
-          </button>
-        </div>
+        {/* Forgot Password link — only shown on login mode */}
+        {isLogin && !showForgot && (
+          <div style={{ marginTop: '20px' }}>
+            <button
+              onClick={() => setIsLogin(!isLogin)}
+              style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: '13px', fontWeight: 800 }}
+            >
+              {isLogin ? "Need a studio account? Sign Up" : "Already have an account? Login"}
+            </button>
+            <div style={{ marginTop: '10px' }}>
+              <button
+                onClick={() => { setShowForgot(true); setError(null); setForgotEmail(email); }}
+                style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', fontSize: '12px', fontWeight: 700 }}
+              >
+                Forgot your password?
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Forgot Password Form */}
+        {showForgot && (
+          <div style={{ marginTop: '20px', animation: 'fadeIn 0.3s ease-out' }}>
+            {!forgotSent ? (
+              <form onSubmit={handleForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div style={{ textAlign: 'left' }}>
+                  <label className="muted" style={{ fontSize: '12px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Reset Email</label>
+                  <input
+                    type="email"
+                    value={forgotEmail}
+                    onChange={e => setForgotEmail(e.target.value)}
+                    placeholder=" Your studio email"
+                    style={{ marginTop: '8px', width: '100%' }}
+                    required
+                  />
+                </div>
+                {error && <div className="tag bad" style={{ padding: '10px', borderRadius: '8px', fontSize: '12px' }}>{error}</div>}
+                <button type="submit" className="btn primary" style={{ padding: '14px' }} disabled={loading}>
+                  {loading ? 'SENDING...' : 'SEND RESET LINK'}
+                </button>
+                <button type="button" onClick={() => { setShowForgot(false); setError(null); }} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', fontSize: '12px', fontWeight: 700 }}>
+                  ← Back to login
+                </button>
+              </form>
+            ) : (
+              <div style={{ textAlign: 'center', animation: 'fadeIn 0.3s ease-out' }}>
+                <div style={{ fontSize: '36px', marginBottom: '12px' }}>📬</div>
+                <div style={{ fontWeight: 800, marginBottom: '8px', color: '#4ade80' }}>Reset link sent!</div>
+                <div className="muted small">Check your inbox for a password reset email. It may take a minute.</div>
+                <button onClick={() => { setShowForgot(false); setForgotSent(false); setError(null); }} style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: '13px', fontWeight: 800, marginTop: '16px' }}>
+                  ← Back to login
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {!isLogin && !showForgot && (
+          <div style={{ marginTop: '20px' }}>
+            <button
+              onClick={() => setIsLogin(true)}
+              style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: '13px', fontWeight: 800 }}
+            >
+              Already have an account? Login
+            </button>
+          </div>
+        )}
 
         <div className="muted" style={{ marginTop: '40px', fontSize: '10px', fontWeight: 900, textAlign: 'center' }}>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginBottom: '15px' }}>

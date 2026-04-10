@@ -17,20 +17,16 @@ async function check() {
     
     console.log("Checking tables...");
     
-    const tables = ['user_daily_activity', 'user_subscriptions', 'profiles', 'beta_codes'];
-    
-    for (const table of tables) {
         try {
-            const { data, error, count } = await sb.from(table).select('*', { count: 'exact', head: true });
+            const { data, error } = await sb.from('expenses').select('*').limit(1);
             if (error) {
-                console.error(`- Table [${table}]: ERROR - ${error.message} (${error.code})`);
+                console.error(`- Table [expenses]: ERROR - ${error.message} (${error.code})`);
             } else {
-                console.log(`- Table [${table}]: OK - Count: ${count}`);
+                console.log(`- expenses schema:`, Object.keys(data[0] || {}));
             }
         } catch (e) {
-            console.error(`- Table [${table}]: FATAL - ${e.message}`);
+            console.error(`FATAL - ${e.message}`);
         }
-    }
 }
 
 check();

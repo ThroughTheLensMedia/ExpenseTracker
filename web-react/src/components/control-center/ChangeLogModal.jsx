@@ -1,6 +1,31 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '6.3.0', date: 'APRIL 8, 2026', color: '#f59e0b', items: [
+        '<strong>Persistent Ignoral:</strong> You can now explicitly IGNORE/RESTORE noise or generic recurring vendors directly from the intelligence view. These rules automatically persist in the backend.',
+        '<strong>Multi-Timeframe Analytics:</strong> Top Expense Drivers and analytical projections can now be seamlessly evaluated across <em>Full Year</em>, <em>Last Year</em>, <em>YTD</em>, and <em>Current Month</em> arrays with native zero-latency switching.',
+        '<strong>Pagination Defenses:</strong> Surmounted strict database truncation limits. The metrics engine now auto-paginates, pulling 100% of your data rows for completely accurate multi-year reporting.',
+        '<strong>Contextual Accuracy:</strong> Relabeled subscription mathematics to intelligently align with overarching "Recurring Vendors" analysis, protecting footprint totals.'
+    ]},
+    { version: '6.2.0', date: 'APRIL 8, 2026', color: '#10b981', items: [
+        '<strong>Operational Intelligence Revamp:</strong> Complete rewrite of the recurring vendor tracking center. Removed legacy static cards and replaced them with a responsive 4-metric summary strip.',
+        '<strong>Action-Driven Filters:</strong> New filter controls allow one-click table narrowing for "Review Candidates", "Duplicates", and "Unused" subscriptions.',
+        '<strong>Top Offenders Snapshot:</strong> Automatic detection and isolation of the three highest monthly recurring expenses for immediate visibility.',
+        '<strong>Streamlined Table:</strong> Cleaned up the Operational Intelligence table with uniform 25% column spacing and unified pill flags, directly mapping to standard database truths.'
+    ]},
+    { version: '6.1.0', date: 'APRIL 8, 2026', color: '#818cf8', items: [
+        '<strong>Maps Autopilot:</strong> Rebuilt the Mileage Tracker with Google Maps integration. Address autocomplete (Google Places) for both Start (A) and End (B) fields.',
+        '<strong>Auto Distance Calculation:</strong> Google Distance Matrix API instantly computes the exact driving miles between any two addresses — no manual counting.',
+        '<strong>Dark Route Preview:</strong> A styled dark-mode map renders the A\u2192B route with a purple polyline for visual confirmation before logging.',
+        '<strong>Flexible Multi-Stop Logging:</strong> Each trip is logged as a single one-way segment. Log multiple trips per day with different clients and destinations.',
+        '<strong>Smart Trip History:</strong> The Trip History table now parses and displays the Trip Name, Route, and Notes as separate structured lines for clean IRS-compliant records.',
+    ]},
+    { version: '6.0.0-SECURITY', date: 'APRIL 8, 2026', color: '#ef4444', items: [
+        '<strong>Security Lockdown (Critical):</strong> Activated Row-Level Security (RLS) across all Supabase tables to enforce strict hardware-level data isolation between studios.',
+        '<strong>Multi-Tenant Integrity:</strong> Audited and hardened 40+ backend endpoints (Mileage, Assets, Rules, Invoices) to ensure per-request <code>user_id</code> filtering.',
+        '<strong>Defense-in-Depth:</strong> Every database query now combines both RLS policy protection and explicit backend owner-checking for redundant security.',
+        '<strong>Admin Transparency:</strong> Re-pathed SaaS telemetry and engagement tracking to the Service Layer to maintain operational visibility without exposing user data.',
+    ]},
     { version: '5.4.0', date: 'APRIL 5, 2026', color: '#a855f7', items: [
         '<strong>Financial Insight Strip:</strong> Six live analytical signals embedded inside Monthly Performance \u2014 powered by server-side math, zero added DB queries.',
         '<strong>Margin Quality:</strong> Net margin % MTD with delta vs prior month and Healthy/Watch/Risk classification.',

@@ -8,6 +8,7 @@ router.get("/", async (req, res) => {
         const { data, error } = await req.sb
             .from("classification_rules")
             .select("*")
+            .eq("user_id", req.user.id)
             .order("match_column")
             .order("match_value");
 
@@ -63,7 +64,8 @@ router.delete("/:id", async (req, res) => {
         const { error } = await req.sb
             .from("classification_rules")
             .delete()
-            .eq("id", id);
+            .eq("id", id)
+            .eq("user_id", req.user.id);
 
         if (error) throw error;
         return res.json({ success: true });
@@ -74,7 +76,7 @@ router.delete("/:id", async (req, res) => {
 });
 
 // Helper to fetch ALL rows from a table (Supabase defaults to 1000)
-async function fetchAllRows(sb, tableName, selectStr = "*") {
+async function fetchAllRows(sb, tableName, selectStr = "*", userId) {
     let all = [];
     let page = 0;
     const PAGE_SIZE = 1000;
@@ -82,6 +84,7 @@ async function fetchAllRows(sb, tableName, selectStr = "*") {
         const { data, error } = await sb
             .from(tableName)
             .select(selectStr)
+            .eq("user_id", userId)
             .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
         if (error) throw error;
         if (!data || data.length === 0) break;
@@ -97,11 +100,11 @@ async function fetchAllRows(sb, tableName, selectStr = "*") {
 router.get("/:id/preview", async (req, res) => {
     try {
         const { data: rule, error: rErr } = await req.sb
-            .from("classification_rules").select("*").eq("id", req.params.id).single();
+            .from("classification_rules").select("*").eq("id", req.params.id).eq("user_id", req.user.id).single();
         if (rErr || !rule) return res.status(404).json({ error: "Rule not found" });
 
         // Fetch ALL expenses to ensure we catch those beyond the 1000-row default limit
-        const expenses = await fetchAllRows(req.sb, "expenses", "id, vendor, notes, category, tax_bucket, tax_deductible, business_use_pct");
+        const expenses = await fetchAllRows(req.sb, "expenses", "id, vendor, notes, category, tax_bucket, tax_deductible, business_use_pct", req.user.id);
 
         const matched = [];
         const val = (rule.match_value || '').toLowerCase().trim();
@@ -153,11 +156,11 @@ router.get("/:id/preview", async (req, res) => {
 router.post("/:id/apply", async (req, res) => {
     try {
         const { data: rule, error: rErr } = await req.sb
-            .from("classification_rules").select("*").eq("id", req.params.id).single();
+            .from("classification_rules").select("*").eq("id", req.params.id).eq("user_id", req.user.id).single();
         if (rErr || !rule) return res.status(404).json({ error: "Rule not found" });
 
         // Fetch ALL expenses to ensure we catch those beyond the 1000-row default limit
-        const expenses = await fetchAllRows(req.sb, "expenses", "id, vendor, notes, category, tax_bucket, tax_deductible, business_use_pct");
+        const expenses = await fetchAllRows(req.sb, "expenses", "id, vendor, notes, category, tax_bucket, tax_deductible, business_use_pct", req.user.id);
 
         let updated = 0;
         const errors = [];
@@ -180,7 +183,7 @@ router.post("/:id/apply", async (req, res) => {
 
             if (Object.keys(patch).length === 0) continue;
 
-            const { error: updErr } = await req.sb.from("expenses").update(patch).eq("id", exp.id);
+            const { error: updErr } = await req.sb.from("expenses").update(patch).eq("id", exp.id).eq("user_id", req.user.id);
             if (updErr) errors.push({ vendor: exp.vendor, error: updErr.message });
             else updated++;
         }

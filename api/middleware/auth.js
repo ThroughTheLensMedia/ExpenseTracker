@@ -56,4 +56,45 @@ async function authMiddleware(req, res, next) {
   }
 }
 
+/**
+ * requireRole(...allowedRoles)
+ * Middleware that checks user's role against allowed list.
+ * Must be used AFTER authMiddleware; short-circuits with 403 if role doesn't match.
+ *
+ * Usage: router.get("/admin", requireRole('admin'), handler)
+ */
+function requireRole(...allowedRoles) {
+    return async (req, res, next) => {
+        if (!req.user || !req.user.id) {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+
+        try {
+            const { data: roleRecord, error } = await req.sb
+                .from("user_roles")
+                .select("role")
+                .eq("user_id", req.user.id)
+                .single();
+
+            if (error || !roleRecord) {
+                console.warn(`[AUTH] User ${req.user.id} has no role record`);
+                return res.status(403).json({ error: "Access Denied" });
+            }
+
+            if (!allowedRoles.includes(roleRecord.role)) {
+                console.warn(`[AUTH] User ${req.user.id} (${roleRecord.role}) denied access; required: ${allowedRoles.join(' or ')}`);
+                return res.status(403).json({ error: "Admin access required" });
+            }
+
+            req.userRole = roleRecord.role;
+            next();
+        } catch (err) {
+            console.error("[AUTH] Role check failed:", err.message);
+            res.status(500).json({ error: "Role verification failed" });
+        }
+    };
+}
+
+// Export as default for backward compatibility, plus named export for requireRole
 module.exports = authMiddleware;
+module.exports.requireRole = requireRole;

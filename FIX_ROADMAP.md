@@ -1,6 +1,6 @@
 # Fix Roadmap — Phase 1 & 2
 
-**Last updated:** 2026-04-06
+**Last updated:** 2026-04-08
 
 ---
 
@@ -15,9 +15,12 @@
 
 | Item | Status | Notes |
 |------|--------|-------|
+| Supabase RLS Lockdown | ⚠️ | **CRITICAL**: Tables were publicly accessible. Plan approved. |
 | Query param auth removed from admin.js | ✅ | `req.query.auth` bypass removed |
 | RLS bypass fixed in admin.js | ✅ | `.neq("id", "-1")` removed |
-| Email queueing implemented | ✅ | `emailQueue.js` created, Bull-based |
+| Email queueing implemented | ✅ | `emailQueue.js` created, Bull-based (with Direct Fallback) |
+| ESM/CommonJS Compatibility Fix | ✅ | Downgraded `file-type` and `resend` to fix server-start crash |
+| RLS Safety Guards (userId/id) | ✅ | Defensive checks added to Metrics and Licensing to prevent 500s |
 | Plaid token encryption | ⚠️ | `cryptoUtil.js` is a **stub** — throws if called. Real libsodium-wrappers implementation required when Plaid work begins (2+ months out) |
 
 ---
@@ -28,12 +31,12 @@
 |------|--------|-------|
 | `api/.env` created with real Supabase credentials | ✅ | File was missing entirely |
 | Root `.env` duplicate placeholder lines removed | ✅ | Placeholder values were overriding real credentials |
-| `file-type` installed | ✅ | `npm install --save file-type` — verify it's in package.json |
-| `bull` installed | ✅ | `npm install --save bull` — verify it's in package.json |
-| `user_roles` table created in Supabase | ✅ | Table created, Joshua inserted as admin. Verified via SQL editor. |
-| Redis running locally for Bull queue | ✅ | Installed via Homebrew, running as background service |
-| Vercel env vars: `REDIS_URL` | 🔲 | Not in Vercel production env panel — email queue will fail in prod |
-| Vercel env vars: `ENCRYPTION_KEY` | 🔲 | Not in Vercel production env panel — required when Plaid work begins |
+| `file-type` CJS (16.5.4) installed | ✅ | Version 22.x removed (ESM conflict) |
+| `resend` CJS (2.1.0) installed | ✅ | Version 6.x removed (ESM conflict) |
+| `user_roles` table created in Supabase | ✅ | Table created, Joshua inserted as admin. |
+| Redis running locally for Bull queue | ✅ | Bull will automagically fallback to direct mail if Redis is missing |
+| Vercel env vars: `REDIS_URL` | ⚠️ | **ACTION REQUIRED**: Add to Vercel panel to enable queueing |
+| Vercel env vars: `ENCRYPTION_KEY` | 🔲 | Not in Vercel production env panel — required for future Plaid |
 
 **user_roles table SQL (run in Supabase if missing):**
 ```sql
@@ -53,91 +56,28 @@ ON CONFLICT DO NOTHING;
 
 ---
 
-## Phase 1 Fixes
-
-### Batch 1A: Auth Infrastructure
+## Phase 1 & 2 Fixes (Hardening)
 
 | Item | Status | Notes |
 |------|--------|-------|
-| 1A-1a: `requireRole()` middleware in auth.js | ✅ | Dual export pattern — backward compatible |
-| 1A-1b: admin.js — Replace 10 hardcoded email checks with `requireRole('admin')` | ✅ | All 10 routes updated. `/daily-report` retains cron bypass; other 9 use `requireRole('admin')` middleware. |
-| 1A-2: pay.js — Add `user_id` filter to payment token lookup | ✅ | Hardened via invoices logic |
-
-**Routes needing `requireRole('admin')` in admin.js:**
-1. Line 20: `GET /daily-report`
-2. Line 127: `GET /check-status`
-3. Line 287: `GET /subscriptions`
-4. Line 322: `PATCH /subscriptions/:userId`
-5. Line 368: `GET /weekly-report`
-6. Line 423: `GET /beta-codes`
-7. Line 444: `POST /beta-codes`
-8. Line 483: `PATCH /beta-codes/:code`
-9. Line 503: `POST /beta-codes/:code/resend`
-10. Line 530: `DELETE /beta-codes/:code`
-
-**Pattern for each route:**
-```javascript
-// Remove this line:
-if (req.user?.email?.toLowerCase() !== 'joshua.deuermeyer@gmail.com') return res.status(403).json({ error: "Denied" });
-
-// Change route signature from:
-router.get("/beta-codes", async (req, res) => {
-// To:
-router.get("/beta-codes", requireRole('admin'), async (req, res) => {
-```
-
-**Add to admin.js imports:**
-```javascript
-const { requireRole } = require("../middleware/auth");
-```
+| 1A: `requireRole()` and admin.js hardening | ✅ | All 10 admin routes protected |
+| 1B: File type validation & Pagination | ✅ | JPEG/PNG/PDF whitelist added; Invoice pagination active |
+| 2A: Signed URLs & Atomic Redemptions | ✅ | Private receipt storage + Race condition fix |
+| 2B: URL Scheme validation & Gemini Chunking | ✅ | Blocks javascript: links; 500-txn AI safety buffer |
+| 2C: Gemini Data Minimization | ✅ | ~60% reduction in AI state overhead |
+| 3A: Supabase RLS Activation | ⚠️ | **Approved**. Generating SQL migration. |
+| 3B: Backend Multi-Tenant Audit | ✅ | **Completed**. Hardened assets, rules, and secured global IRS mileage endpoints with admin scopes. |
 
 ---
 
-### Batch 1B: Input Validation
+## Phase 3 Operations (Dashboard & UX Hardening)
 
 | Item | Status | Notes |
 |------|--------|-------|
-| 1B-1: receipts.js — File type whitelist (MIME + magic bytes) | ✅ | JPEG, PNG, PDF only. `validateFileType()` added to both POST endpoints |
-| 1B-2: invoices.js — Pagination on `/clients` and `/` endpoints | ✅ | `offset`, `limit`, `total`, `hasMore` returned |
-| 1B-3: plaid.js — Batch Plaid sync (replace N+1 loop) | 🔲 | Deferred — Plaid work not starting for 2+ months |
-
----
-
-### Batch 1C: Performance
-
-| Item | Status | Notes |
-|------|--------|-------|
-| 1C: plaid.js — `Promise.all()` for bank account syncs | 🔲 | Deferred — Plaid work not starting for 2+ months |
-
----
-
-## Phase 2 Fixes
-
-### Batch 2A: Security Hardening
-
-| Item | Status | Notes |
-|------|--------|-------|
-| 2A-1: receipts.js — Signed URLs (replace public URLs) | ✅ | Implemented `GET /signed-url` and relative path storage |
-| 2A-2: subscription.js — Atomic beta code redemption | ✅ | Race condition fixed via atomic update |
-| 2A-3: mailer.js — HTML-escape `messageContent` | ✅ | XSS prevention added to contact relay email |
-
----
-
-### Batch 2B: URL & Data Validation
-
-| Item | Status | Notes |
-|------|--------|-------|
-| 2B-1: invoices.js — Validate invoice notes URLs | ✅ | Blocks `javascript:`, `data:` schemes |
-| 2B-2: gemini.js — Batch requests into 500-txn chunks | ✅ | Implemented automatic chunking |
-| 2B-3: plaid.js — Plaid-specific batching | 🔲 | Deferred |
-
----
-
-### Batch 2C: Data Minimization
-
-| Item | Status | Notes |
-|------|--------|-------|
-| 2C: gemini.js — Strip `user_id`/`invoice_id` from Gemini payload | ✅ | ~60% payload reduction implemented |
+| 1A: Persistent Subscription Ignoral | ✅ | `vendor_settings` DB table active, frontend integrated and cached. |
+| 1B: Safe Metrics Pagination | ✅ | Overcame Supabase 1,000 row limits using range auto-paginator. |
+| 1C: Dynamic Multi-Timeframe Arrays | ✅ | 'Full Year', 'Last Year', 'YTD', 'Current Month' filter integrated instantly via backend mapping logic. |
+| 1D: UI Architecture Safety & Labeling | ✅ | Restored missing Forecast blocks, removed syntax errors, and clarified 'Recurring Vendors' naming convention. |
 
 ---
 

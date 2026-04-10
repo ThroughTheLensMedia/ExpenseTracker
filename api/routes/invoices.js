@@ -123,6 +123,7 @@ router.get("/:id", async (req, res) => {
             .from("invoices")
             .select("*, clients(*), invoice_items(*)")
             .eq("id", req.params.id)
+            .eq("user_id", req.user.id)
             .single();
         if (error) throw error;
         res.json(data);

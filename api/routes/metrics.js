@@ -5,25 +5,51 @@ router.get("/summary", async (req, res) => {
   try {
     const targetYear = req.query.year || new Date().getFullYear();
     const currentMonth = new Date().getMonth() + 1; // 1-12
-    
-    const startDate = `${targetYear}-01-01`;
+    const startDate = `${targetYear - 1}-01-01`;
     const endDate = `${targetYear}-12-31`;
 
-    const [ { data: expenses, error: expError }, { data: invoices, error: invError } ] = await Promise.all([
-      req.sb
-          .from("expenses")
-          .select("amount_cents, expense_date, category, vendor")
-          .gte("expense_date", startDate)
-          .lte("expense_date", endDate)
-          .eq("user_id", req.user.id),
-      req.sb
+    let allExpenses = [];
+    let offset = 0;
+    let keepFetching = true;
+    let expError = null;
+    
+    // Auto-paginate safely through 1000+ row barriers
+    while (keepFetching) {
+        const { data, error } = await req.sb
+            .from("expenses")
+            .select("amount_cents, expense_date, category, vendor, is_subscription")
+            .gte("expense_date", startDate)
+            .lte("expense_date", endDate)
+            .eq("user_id", req.user.id)
+            .range(offset, offset + 999);
+            
+        if (error) {
+            expError = error;
+            break;
+        }
+        if (data && data.length > 0) {
+            allExpenses = allExpenses.concat(data);
+            offset += 1000;
+        }
+        if (!data || data.length < 1000) {
+            keepFetching = false;
+        }
+    }
+
+    const { data: invoices, error: invError } = await req.sb
           .from("invoices")
           .select("status, due_date, tax_percent, discount_cents, invoice_items(quantity, unit_price_cents)")
-          .eq("user_id", req.user.id)
-    ]);
+          .eq("user_id", req.user.id);
       
     if (expError) throw expError;
     if (invError) throw invError;
+    
+    // Safely attempt to pull vendor settings. If the table doesn't exist yet, it won't crash the dash.
+    let ignoredVendorsList = [];
+    try {
+        const { data: vSettings } = await req.sb.from("vendor_settings").select("vendor, is_ignored").eq("user_id", req.user.id);
+        if (vSettings) ignoredVendorsList = vSettings.filter(v => v.is_ignored).map(v => String(v.vendor).toLowerCase());
+    } catch(e) { }
 
     let ytdIncome = 0;
     let ytdSpend = 0;
@@ -34,7 +60,11 @@ router.get("/summary", async (req, res) => {
     const knownSubscriptions = ['adobe', 'netflix', 'hulu', 'spotify', 'apple', 'google workspace', 'squarespace', 'chatgpt', 'openai', 'amazon web services', 'aws'];
     const leakageWarningKeywords = ['netflix', 'hulu', 'spotify', 'peloton', 'xbox', 'playstation', 'door dash', 'ubereats'];
 
-    const categoryBreakdown = {};
+    const categoryBreakdownYear = {};
+    const categoryBreakdownLastYear = {};
+    const categoryBreakdownYtd = {};
+    const categoryBreakdownMonth = {};
+
     const vendorActivity = {}; // For recurring tracking
     const monthlyPerformance = Array(12).fill().map((_, i) => ({ month: String(i + 1).padStart(2, '0'), income: 0, spend: 0, net: 0 }));
     const incomeByCategory = {}; // For revenue quality insight
@@ -43,8 +73,8 @@ router.get("/summary", async (req, res) => {
     let totalInvoiceCollected = 0;
     const priorMonth = currentMonth === 1 ? 12 : currentMonth - 1;
 
-    if (expenses) {
-      for (const row of expenses) {
+    if (allExpenses.length > 0) {
+      for (const row of allExpenses) {
         const cat = String(row.category || '').toLowerCase();
         const vend = String(row.vendor || '').toLowerCase();
         
@@ -55,51 +85,70 @@ router.get("/summary", async (req, res) => {
         const isIncome = cents < 0;
         const absValue = Math.abs(cents);
         
-        const monthNum = parseInt(String(row.expense_date || '').slice(5, 7), 10);
-        if (isNaN(monthNum)) continue;
+        const dateParts = String(row.expense_date || '').split('T')[0].split('-');
+        const rowYear = parseInt(dateParts[0], 10);
+        const monthNum = parseInt(dateParts[1], 10);
+        if (isNaN(monthNum) || isNaN(rowYear)) continue;
         
-        if (isIncome) {
-          ytdIncome += absValue;
-          if (monthNum === currentMonth && targetYear == new Date().getFullYear()) {
-            mtdIncome += absValue;
-          }
-          if (monthNum >= 1 && monthNum <= 12) {
-             monthlyPerformance[monthNum - 1].income += absValue;
-          }
-          // Revenue quality: track income by category
-          const rawIncCat = row.category || 'Uncategorized';
-          incomeByCategory[rawIncCat] = (incomeByCategory[rawIncCat] || 0) + absValue;
-          // Prior month delta
-          if (monthNum === priorMonth && targetYear == new Date().getFullYear()) {
-            priorMonthIncome += absValue;
-          }
-        } else {
-          ytdSpend += absValue;
-          if (monthNum === currentMonth && targetYear == new Date().getFullYear()) {
-             mtdSpend += absValue;
-          }
-          if (monthNum >= 1 && monthNum <= 12) {
-             monthlyPerformance[monthNum - 1].spend += absValue;
-          }
-          // Prior month spend delta
-          if (monthNum === priorMonth && targetYear == new Date().getFullYear()) {
-            priorMonthSpend += absValue;
-          }
-          
-          const rawCat = row.category || 'Uncategorized';
-          categoryBreakdown[rawCat] = (categoryBreakdown[rawCat] || 0) + absValue;
+        const rawCat = row.category || 'Uncategorized';
+        
+        if (rowYear == targetYear - 1 && !isIncome) {
+            categoryBreakdownLastYear[rawCat] = (categoryBreakdownLastYear[rawCat] || 0) + absValue;
+        }
 
-          // Track vendor hits for recurrence
-          if (vend) {
-             if (!vendorActivity[vend]) {
-                 vendorActivity[vend] = { count: 0, total: 0, lastDate: row.expense_date };
-             }
-             vendorActivity[vend].count += 1;
-             vendorActivity[vend].total += absValue;
-             if (row.expense_date > vendorActivity[vend].lastDate) {
-                 vendorActivity[vend].lastDate = row.expense_date;
-             }
-          }
+        if (rowYear == targetYear) {
+            if (isIncome) {
+              ytdIncome += absValue;
+              if (monthNum === currentMonth && targetYear == new Date().getFullYear()) {
+                mtdIncome += absValue;
+              }
+              if (monthNum >= 1 && monthNum <= 12) {
+                 monthlyPerformance[monthNum - 1].income += absValue;
+              }
+              // Revenue quality: track income by category
+              const rawIncCat = row.category || 'Uncategorized';
+              incomeByCategory[rawIncCat] = (incomeByCategory[rawIncCat] || 0) + absValue;
+              // Prior month delta
+              if (monthNum === priorMonth && targetYear == new Date().getFullYear()) {
+                priorMonthIncome += absValue;
+              }
+            } else {
+              ytdSpend += absValue;
+              if (monthNum === currentMonth && targetYear == new Date().getFullYear()) {
+                 mtdSpend += absValue;
+              }
+              if (monthNum >= 1 && monthNum <= 12) {
+                 monthlyPerformance[monthNum - 1].spend += absValue;
+              }
+              // Prior month spend delta
+              if (monthNum === priorMonth && targetYear == new Date().getFullYear()) {
+                priorMonthSpend += absValue;
+              }
+              
+              categoryBreakdownYear[rawCat] = (categoryBreakdownYear[rawCat] || 0) + absValue;
+              
+              if (targetYear == new Date().getFullYear()) {
+                  if (monthNum <= currentMonth) {
+                      categoryBreakdownYtd[rawCat] = (categoryBreakdownYtd[rawCat] || 0) + absValue;
+                  }
+                  if (monthNum === currentMonth) {
+                      categoryBreakdownMonth[rawCat] = (categoryBreakdownMonth[rawCat] || 0) + absValue;
+                  }
+              }
+
+              // Track vendor hits for recurrence
+              if (vend) {
+                 if (!vendorActivity[vend]) {
+                     vendorActivity[vend] = { count: 0, total: 0, lastDate: row.expense_date, is_sub: false };
+                 }
+                 vendorActivity[vend].count += 1;
+                 vendorActivity[vend].total += absValue;
+                 if (row.is_subscription) vendorActivity[vend].is_sub = true;
+                 if (row.expense_date > vendorActivity[vend].lastDate) {
+                     vendorActivity[vend].lastDate = row.expense_date;
+                 }
+              }
+            }
         }
         
       }
@@ -110,15 +159,20 @@ router.get("/summary", async (req, res) => {
       }
     }
 
-    const topCategories = Object.entries(categoryBreakdown)
+    const formatTop = (bdown) => Object.entries(bdown)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 15)
         .map(([category, cents]) => ({ category, cents }));
 
+    const topCategoriesYear = formatTop(categoryBreakdownYear);
+    const topCategoriesLastYear = formatTop(categoryBreakdownLastYear);
+    const topCategoriesYtd = formatTop(categoryBreakdownYtd);
+    const topCategoriesMonth = formatTop(categoryBreakdownMonth);
+
     // Compute Recurring Vendors
     const recurringVendors = [];
     for (const [vend, data] of Object.entries(vendorActivity)) {
-        const isKnownSub = knownSubscriptions.some(k => vend.includes(k));
+        const isKnownSub = data.is_sub || knownSubscriptions.some(k => vend.includes(k));
         if (data.count >= 3 || isKnownSub) {
             const avgCost = data.total / data.count;
             const isLeakage = leakageWarningKeywords.some(k => vend.includes(k));
@@ -128,11 +182,12 @@ router.get("/summary", async (req, res) => {
                 avgMonthlyCents: avgCost,
                 annualProjectedCents: avgCost * 12,
                 lastSeen: data.lastDate,
-                count: data.count,
                 flags: {
                     isSubscription: isKnownSub,
-                    leakageWarning: isLeakage, // Personal expense showing up on business side
-                    cancelCandidate: data.count < 6 && avgCost > 2000 // Arb flag: Expensive infrequent sub
+                    review: data.count < 6 && avgCost > 2000, 
+                    duplicate: false,
+                    unused: false,
+                    ignored: ignoredVendorsList.includes(vend)
                 }
             });
         }
@@ -222,7 +277,13 @@ router.get("/summary", async (req, res) => {
         ytdIncome, ytdSpend, ytdNet: ytdIncome - ytdSpend,
         openReceivablesCents
       },
-      analytics: { topCategories, recurringVendors },
+      analytics: {
+        topCategoriesYear,
+        topCategoriesLastYear,
+        topCategoriesYtd,
+        topCategoriesMonth,
+        recurringVendors
+      },
       obligations: {
         overdueInvoices: overdueCount, overdueCents,
         dueSoonCount, avgDaysToCollect: 14, draftInvoices: draftCount

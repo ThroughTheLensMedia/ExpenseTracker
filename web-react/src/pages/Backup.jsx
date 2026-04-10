@@ -63,7 +63,7 @@ export default function Backup() {
             setIsHealthy(hlth.ok && (hlth.db !== false));
             setIsMailerReady(!!hlth.mailer);
 
-            if (activeTab !== 'profile') setSettings(st || {});
+            if (activeTab !== 'profile' || !settings.business_name && !settings.email) setSettings(st || {});
 
             const activeLeads = (lds.leads || []).filter(l => l.status !== 'Lost');
             setStats({ expenses: exps.length, equipment: eq.length, invoices: inv.length, clients: activeLeads.length });

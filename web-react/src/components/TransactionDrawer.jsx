@@ -7,7 +7,7 @@ import { ALL_CATEGORIES } from '../constants/categories.js';
 const initialState = {
     date: new Date().toISOString().slice(0, 10),
     amount: '', vendor: '', category: '', taxBucket: '',
-    bizPct: 100, deduct: false, notes: '', receiptLink: '',
+    bizPct: 100, deduct: false, isSub: false, notes: '', receiptLink: '',
     receiptFile: null, source: 'manual', msg: '', savedId: null,
 };
 
@@ -25,6 +25,7 @@ function reducer(state, action) {
                 taxBucket: action.tx.tax_bucket || '',
                 bizPct: action.tx.business_use_pct == null ? 100 : action.tx.business_use_pct,
                 deduct: !!action.tx.tax_deductible,
+                isSub: !!action.tx.is_subscription,
                 notes: action.tx.notes || '',
                 receiptLink: action.tx.receipt_link || '',
                 source: action.tx.source || 'manual',
@@ -44,7 +45,7 @@ function reducer(state, action) {
 export default function TransactionDrawer({ transaction, onClose, onSave, onDelete }) {
     const modal = useModal();
     const [state, dispatch] = useReducer(reducer, initialState);
-    const { date, amount, vendor, category, taxBucket, bizPct, deduct, notes,
+    const { date, amount, vendor, category, taxBucket, bizPct, deduct, isSub, notes,
             receiptLink, receiptFile, source, msg, savedId } = state;
 
     const field = (name, value) => dispatch({ type: 'SET_FIELD', field: name, value });
@@ -63,6 +64,7 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
                 vendor, category,
                 amount_cents: Math.round(Number(amount || 0) * 100),
                 tax_deductible: deduct,
+                is_subscription: isSub,
                 tax_bucket: taxBucket,
                 business_use_pct: Number(bizPct),
                 notes, source,
@@ -229,10 +231,14 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
                         </div>
                     </div>
 
-                    <div className="row" style={{ marginTop: '10px' }}>
+                    <div className="row" style={{ marginTop: '10px', display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
                         <label className="tag" style={{ display: 'flex', gap: '10px', alignItems: 'center', width: 'max-content' }}>
                             <input type="checkbox" checked={deduct} onChange={e => field('deduct', e.target.checked)} style={{ width: 'auto', margin: 0 }} />
-                            {Number(amount || 0) < 0 ? 'Business Income (Schedule C Line 1)' : 'Tax deductible business expense'}
+                            {Number(amount || 0) < 0 ? 'Business Income (Schedule C Line 1)' : 'Tax Deductible'}
+                        </label>
+                        <label className="tag" style={{ display: 'flex', gap: '10px', alignItems: 'center', width: 'max-content', background: 'rgba(56, 189, 248, 0.05)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.2)' }}>
+                            <input type="checkbox" checked={isSub} onChange={e => field('isSub', e.target.checked)} style={{ width: 'auto', margin: 0 }} />
+                            Recurring Subscription Flag
                         </label>
                     </div>
 

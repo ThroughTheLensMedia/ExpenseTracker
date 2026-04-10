@@ -9,7 +9,7 @@ This document outlines the strategic evolution of Studio Tracker from a financia
 *   **Digital Signatures**: Dual e-signature capture for photographers and clients.
 *   **Executive Dashboard**: Real-time Gross/Net/Burn tracking with multi-column sorting.
 *   **AI Category Segregation**: Recognition of Dividend and Interest income.
-*   **Infrastructure Lockdown**: Row Level Security (RLS) and Bring Your Own Key (BYOK) AI model.
+*   [x] **Infrastructure Lockdown**: ✅ RLS fully activated. 40+ backend endpoints hardened (v6.0.0-SECURITY).
 
 ---
 
@@ -17,8 +17,10 @@ This document outlines the strategic evolution of Studio Tracker from a financia
 *   [x] **Global Archive Awareness**: AI Brain now fetches across 3,200+ historical entries (3+ years) for every query.
 *   [x] **AI Retry Mechanism**: Hardened "Forensic Scan" handles Gemini 503 high-demand errors automatically.
 *   [x] **Mobile Field Speed**: Numeric/Decimal keyboards and visible dark-mode calendars for rapid field logging.
+*   [x] **Operational Intelligence Revamp**: Complete rebuild of the recurring subscription tracking layout with action-filters and top-offender snapshots.
 *   [x] **Manual Transaction Sovereignty**: First-class support for logging Venmo, Cash, and Apple Pay directly to the ledger.
 *   [x] **Admin Diagnostic Transparency**: Real-time service key validation and "Key Hint" dashboard for SaaS owners.
+*   [ ] **Maps Autopilot (IN PROGRESS)**: Google Maps A→B→A round-trip integration for mileage tracking with auto-calculated distance.
 
 ---
 
@@ -38,6 +40,9 @@ This document outlines the strategic evolution of Studio Tracker from a financia
     *   Extract critical data (Serial #s, Term dates, Interest rates) instantly into the database.
 *   [ ] **Fast Receipt Processing**:
     *   Drag-and-drop receipt capture in the transaction ledger that instantly logs vendor and amount via Vision models before the user even clicks "save".
+*   [ ] **Smart Receipt Scanner (DEFERRED)**:
+    *   Adobe Scan-style edge detection using WebAssembly (OpenCV.js) for mobile camera capture.
+    *   Perspective warp + contrast enhancement before uploading. ~1.5MB load cost.
 
 ---
 

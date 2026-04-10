@@ -27,6 +27,7 @@ const brainRouter = require("./routes/brain"); // AI Intelligence Engine
 const plaidRouter = require("./routes/plaid"); // Plaid Bank Sync
 const payRouter = require("./routes/pay");    // Public Payment Portal (no auth)
 const metricsRouter = require("./routes/metrics"); // Dashboard metrics layer
+const vendorsRouter = require("./routes/vendors"); // Vendor specific settings
 
 // Initialize Database — log clearly if it fails
 if (!initDb()) {
@@ -105,6 +106,7 @@ apiRouter.use("/activity", activityRouter);
 apiRouter.use("/brain", brainRouter);
 apiRouter.use("/plaid", plaidRouter);
 apiRouter.use("/metrics", metricsRouter);
+apiRouter.use("/vendors", vendorsRouter);
 
 // Mount all API routes under /api
 // Mount all API routes under /api AND root (for Vercel flexibility)

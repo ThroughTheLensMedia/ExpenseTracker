@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import OperationalIntelligenceSection from '../components/dashboard/OperationalIntelligenceSection.jsx';
 import { apiGet } from '../api';
 
 export default function DashboardV2({ apiStatus }) {
@@ -7,6 +8,7 @@ export default function DashboardV2({ apiStatus }) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [metrics, setMetrics] = useState(null);
+    const [topCatFilter, setTopCatFilter] = useState('ytd'); // 'year', 'last_year', 'ytd', 'month'
 
     // Phase F: Forecast Assumptions
     const [growthAssump, setGrowthAssump] = useState(1.10); // 10% defaults
@@ -49,6 +51,7 @@ export default function DashboardV2({ apiStatus }) {
         }).format((cents || 0) / 100);
     };
 
+
     return (
         <section style={{ display: 'flex', flexDirection: 'column', gap: '30px', maxWidth: '1400px', margin: '0 auto', animation: 'fadeIn 0.3s ease-out' }}>
             {/* Header Area */}
@@ -65,9 +68,7 @@ export default function DashboardV2({ apiStatus }) {
                         </div>
                     </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
-                         <button className="btn secondary" onClick={() => navigate('/legacy')} style={{ fontSize: '12px', fontWeight: 800, padding: '10px 20px', borderRadius: '12px' }}>
-                            VIEW LEGACY
-                        </button>
+                        {/* Legacy toggle removed */}
                     </div>
                 </div>
             </div>
@@ -125,6 +126,90 @@ export default function DashboardV2({ apiStatus }) {
                 </div>
             </div>
 
+            {/* Layer 5: Cash, Receivables, Obligations (Moved up) */}
+            <div className="card glass" style={{ margin: 0, padding: '30px' }}>
+                <div style={{ marginBottom: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                    <div>
+                        <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900 }}>Invoice & Obligations Health</h2>
+                        <div className="muted" style={{ fontSize: '12px', fontWeight: 700, marginTop: '4px' }}>Watch your cash flow liabilities</div>
+                    </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+                    
+                    <div style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '20px', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                        <div style={{ fontWeight: 900, color: '#ef4444', fontSize: '20px' }}>{loading ? '-' : formatMoney(metrics?.obligations?.overdueCents)}</div>
+                        <div className="muted" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, marginTop: '4px' }}>{loading ? '-' : metrics?.obligations?.overdueInvoices} Overdue Invoices</div>
+                        <button className="btn sm secondary" onClick={() => navigate('/crm/financials')} style={{ marginTop: 'auto', paddingTop: '10px', fontSize: '10px', alignSelf: 'stretch' }}>CHASE PAYMENTS</button>
+                    </div>
+
+                    <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '20px', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                        <div style={{ fontWeight: 900, color: 'white', fontSize: '20px' }}>{loading ? '-' : formatMoney(metrics?.snapshot?.openReceivablesCents)}</div>
+                        <div className="muted" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, marginTop: '4px' }}>Total Unpaid Pipeline</div>
+                        <button className="btn sm outline" onClick={() => navigate('/crm/financials')} style={{ marginTop: 'auto', paddingTop: '10px', fontSize: '10px', alignSelf: 'stretch' }}>VIEW LEDGER</button>
+                    </div>
+
+                    <div style={{ background: 'rgba(252, 211, 77, 0.05)', border: '1px solid rgba(252, 211, 77, 0.2)', padding: '20px', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                        <div style={{ fontWeight: 900, color: '#fcd34d', fontSize: '20px' }}>{loading ? '-' : metrics?.obligations?.dueSoonCount} Expected</div>
+                        <div className="muted" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, marginTop: '4px' }}>Due within 7 days</div>
+                    </div>
+
+                    <div style={{ background: 'rgba(56, 189, 248, 0.05)', border: '1px solid rgba(56, 189, 248, 0.2)', padding: '20px', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                        <div style={{ fontWeight: 900, color: '#38bdf8', fontSize: '20px' }}>{loading ? '-' : metrics?.obligations?.avgDaysToCollect} Days</div>
+                        <div className="muted" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, marginTop: '4px' }}>Avg Collection Time</div>
+                    </div>
+
+                </div>
+            </div>
+
+            {/* Layer 6: Forecast & Scenario Modeling (Moved up) */}
+            <div className="card glass" style={{ margin: 0, padding: '30px', borderTop: '4px solid #a855f7' }}>
+                <div style={{ marginBottom: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '15px' }}>
+                    <div>
+                        <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900 }}>Year-End Growth Forecast</h2>
+                        <div className="muted" style={{ fontSize: '12px', fontWeight: 700, marginTop: '4px' }}>Projected trajectory based on custom variables</div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '15px', background: 'rgba(255,255,255,0.03)', padding: '10px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <label style={{ fontSize: '10px', fontWeight: 900, color: '#4ade80' }}>TARGET MONTHLY REVENUE GROWTH +%</label>
+                            <select value={growthAssump} onChange={e => setGrowthAssump(Number(e.target.value))} style={{ background: 'transparent', color: 'white', border: 'none', outline: 'none', fontWeight: 900, fontSize: '14px' }}>
+                                <option value={1.00}>Flat (0%)</option>
+                                <option value={1.05}>Conservative (5%)</option>
+                                <option value={1.10}>Aggressive (10%)</option>
+                                <option value={1.25}>Hyper (25%)</option>
+                                <option value={0.90}>Recession (-10%)</option>
+                            </select>
+                        </div>
+                        <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)' }}></div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <label style={{ fontSize: '10px', fontWeight: 900, color: '#f87171' }}>EXPECTED MONTHLY EXPENSE CREEP +%</label>
+                            <select value={expenseAssump} onChange={e => setExpenseAssump(Number(e.target.value))} style={{ background: 'transparent', color: 'white', border: 'none', outline: 'none', fontWeight: 900, fontSize: '14px' }}>
+                                <option value={1.00}>Locked (0%)</option>
+                                <option value={1.02}>Stable (2%)</option>
+                                <option value={1.03}>Avg Inflation (3%)</option>
+                                <option value={1.05}>High Inflation (5%)</option>
+                                <option value={1.07}>Stressed (7%)</option>
+                                <option value={1.15}>Expansion (15%)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginTop: '20px' }}>
+                    <div style={{ padding: '20px', background: 'rgba(74, 222, 128, 0.05)', borderRadius: '12px', border: '1px solid rgba(74, 222, 128, 0.2)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                        <div className="muted" style={{ fontWeight: 900, fontSize: '10px', color: '#4ade80', marginBottom: '8px', letterSpacing: '0.05em' }}>YE PROJECTED REVENUE</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 950, color: 'white' }}>{loading ? '-' : formatMoney(projectedRev)}</div>
+                    </div>
+                    <div style={{ padding: '20px', background: 'rgba(249, 115, 22, 0.05)', borderRadius: '12px', border: '1px solid rgba(249, 115, 22, 0.2)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                        <div className="muted" style={{ fontWeight: 900, fontSize: '10px', color: '#f97316', marginBottom: '8px', letterSpacing: '0.05em' }}>YE PROJECTED EXPENSE</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 950, color: 'white' }}>{loading ? '-' : formatMoney(projectedExp)}</div>
+                    </div>
+                    <div style={{ padding: '20px', background: 'rgba(56, 189, 248, 0.05)', borderRadius: '12px', border: '1px solid rgba(56, 189, 248, 0.2)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                        <div className="muted" style={{ fontWeight: 900, fontSize: '10px', color: '#38bdf8', marginBottom: '8px', letterSpacing: '0.05em' }}>ESTIMATED NET PROFIT</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 950, color: 'white' }}>{loading ? '-' : formatMoney(projectedNet)}</div>
+                    </div>
+                </div>
+            </div>
+
             {/* Layer 2 & Layer 3 Container */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '20px' }}>
                 
@@ -166,11 +251,11 @@ export default function DashboardV2({ apiStatus }) {
                         const bg = { healthy: 'rgba(74,222,128,0.06)', watch: 'rgba(252,211,77,0.06)', risk: 'rgba(239,68,68,0.06)' };
                         const sl = { healthy: '● Healthy', watch: '◐ Watch', risk: '▲ Risk' };
                         const card = (title, primary, secondary, status) => (
-                            <div key={title} style={{ background: bg[status] || 'rgba(255,255,255,0.02)', borderRadius: '10px', padding: '12px 14px', border: `1px solid ${(sc[status] || '#fff') + '28'}` }}>
+                            <div key={title} style={{ background: bg[status] || 'rgba(255,255,255,0.02)', borderRadius: '10px', padding: '12px 14px', border: `1px solid ${(sc[status] || '#fff') + '28'}`, textAlign: 'center' }}>
                                 <div style={{ fontSize: '10px', fontWeight: 800, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '4px' }}>{title}</div>
                                 <div style={{ fontSize: '1.2rem', fontWeight: 950, color: sc[status] || 'white', lineHeight: 1.2 }}>{primary}</div>
-                                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', marginTop: '3px' }}>{secondary}</div>
-                                <div style={{ fontSize: '9px', fontWeight: 900, color: sc[status] || 'rgba(255,255,255,0.3)', marginTop: '5px', letterSpacing: '0.03em' }}>{sl[status] || ''}</div>
+                                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', marginTop: '3px', marginInline: 'auto' }}>{secondary}</div>
+                                <div style={{ fontSize: '9px', fontWeight: 900, color: sc[status] || 'rgba(255,255,255,0.3)', marginTop: '5px', letterSpacing: '0.03em', marginInline: 'auto' }}>{sl[status] || ''}</div>
                             </div>
                         );
                         const skeletonCard = (title) => (
@@ -215,192 +300,55 @@ export default function DashboardV2({ apiStatus }) {
 
                 {/* Layer 3: Business Mix (Expense Categories) */}
                 <div className="card glass" style={{ margin: 0, padding: '30px', display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ marginBottom: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                    <div style={{ marginBottom: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '15px' }}>
                         <div>
                             <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900 }}>Top Expense Drivers</h2>
-                            <div className="muted" style={{ fontSize: '12px', fontWeight: 700, marginTop: '4px' }}>Ranked by annual spend</div>
+                            <div className="muted" style={{ fontSize: '12px', fontWeight: 700, marginTop: '4px' }}>Ranked by spend footprint</div>
+                        </div>
+                        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '5px 15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                            <select value={topCatFilter} onChange={e => setTopCatFilter(e.target.value)} style={{ background: 'transparent', color: 'white', border: 'none', outline: 'none', fontWeight: 900, fontSize: '12px', textTransform: 'uppercase' }}>
+                                <option value="year">Full Year</option>
+                                <option value="last_year">Last Year</option>
+                                <option value="ytd">Year-to-Date</option>
+                                <option value="month">Current Month</option>
+                            </select>
                         </div>
                     </div>
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px', overflowY: 'auto' }}>
-                        {metrics?.analytics?.topCategories?.map((cat, idx) => {
-                            const maxSpend = metrics.analytics.topCategories[0].cents || 1;
-                            const percent = Math.min(100, Math.max(0, (cat.cents / maxSpend) * 100)); // Scaled against top spender
-                            return (
-                                <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 800 }}>
-                                         <span style={{ textTransform: 'uppercase', color: 'rgba(255,255,255,0.8)' }}>{cat.category || 'UNCATEGORIZED'}</span>
-                                         <span>{formatMoney(cat.cents)}</span>
+                        {(() => {
+                            let list = metrics?.analytics?.topCategoriesYear;
+                            if (topCatFilter === 'last_year') list = metrics?.analytics?.topCategoriesLastYear;
+                            if (topCatFilter === 'ytd') list = metrics?.analytics?.topCategoriesYtd;
+                            if (topCatFilter === 'month') list = metrics?.analytics?.topCategoriesMonth;
+                            
+                            if (!list || list.length === 0) {
+                                return !loading ? <div className="muted" style={{ fontSize: '12px', textAlign: 'center', marginTop: '20px' }}>No categories mapped.</div> : null;
+                            }
+
+                            const maxSpend = list[0]?.cents || 1;
+                            return list.map((cat, idx) => {
+                                const percent = Math.min(100, Math.max(0, (cat.cents / maxSpend) * 100));
+                                return (
+                                    <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 800 }}>
+                                             <span style={{ textTransform: 'uppercase', color: 'rgba(255,255,255,0.8)' }}>{cat.category || 'UNCATEGORIZED'}</span>
+                                             <span>{formatMoney(cat.cents)}</span>
+                                        </div>
+                                        <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
+                                             <div style={{ height: '100%', width: `${percent}%`, background: idx === 0 ? '#f97316' : 'rgba(255,255,255,0.2)', borderRadius: '4px' }}></div>
+                                        </div>
                                     </div>
-                                    <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
-                                         <div style={{ height: '100%', width: `${percent}%`, background: idx === 0 ? '#f97316' : 'rgba(255,255,255,0.2)', borderRadius: '4px' }}></div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                        {(!metrics?.analytics?.topCategories || metrics.analytics.topCategories.length === 0) && !loading && (
-                            <div className="muted" style={{ fontSize: '12px', textAlign: 'center', marginTop: '20px' }}>No categories mapped.</div>
-                        )}
+                                );
+                            });
+                        })()}
                     </div>
                 </div>
             </div>
 
             {/* Layer 4: Operational Intelligence (Recurring Subscriptions & Bills) */}
-            <div className="card glass" style={{ margin: 0, padding: '30px' }}>
-                <div style={{ marginBottom: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                    <div>
-                        <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900 }}>Operational Intelligence</h2>
-                        <div className="muted" style={{ fontSize: '12px', fontWeight: 700, marginTop: '4px' }}>Recurring Vendors & Subscription Leakage</div>
-                    </div>
-                </div>
-                
-                {/* Top 3 as Cards */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '15px' }}>
-                    {metrics?.analytics?.recurringVendors?.slice(0, 3).map((sub, idx) => (
-                        <div onClick={() => navigate('/transactions?search=' + encodeURIComponent(sub.vendor))} key={idx} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px', cursor: 'pointer' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                <div style={{ fontWeight: 800, textTransform: 'capitalize', fontSize: '14px' }}>{sub.vendor || 'Unknown Provider'}</div>
-                                <div style={{ textAlign: 'right' }}>
-                                    <div style={{ fontWeight: 950, color: 'white' }}>{formatMoney(sub.avgMonthlyCents)} / mo</div>
-                                    <div className="muted" style={{ fontSize: '10px', marginTop: '2px' }}>{formatMoney(sub.annualProjectedCents)} / yr</div>
-                                </div>
-                            </div>
-                            
-                            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: 'auto', paddingTop: '10px' }}>
-                                {sub.flags.isSubscription && <span style={{ padding: '2px 8px', background: 'rgba(56, 189, 248, 0.1)', color: '#38bdf8', borderRadius: '4px', fontSize: '10px', fontWeight: 900 }}>SUBSCRIPTION</span>}
-                                {sub.flags.leakageWarning && <span style={{ padding: '2px 8px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderRadius: '4px', fontSize: '10px', fontWeight: 900 }}>PERSONAL LEAKAGE</span>}
-                                {sub.flags.cancelCandidate && <span style={{ padding: '2px 8px', background: 'rgba(249, 115, 22, 0.1)', color: '#f97316', borderRadius: '4px', fontSize: '10px', fontWeight: 900 }}>REVIEW CANDIDATE</span>}
-                                {!sub.flags.isSubscription && !sub.flags.leakageWarning && !sub.flags.cancelCandidate && <span style={{ padding: '2px 8px', background: 'rgba(255, 255, 255, 0.1)', color: 'rgba(255,255,255,0.6)', borderRadius: '4px', fontSize: '10px', fontWeight: 900 }}>RECURRING VENDOR</span>}
-                            </div>
-                        </div>
-                    ))}
-                </div>
+            <OperationalIntelligenceSection data={metrics?.analytics?.recurringVendors} />
 
-                {/* Remaining as Compact Table */}
-                {metrics?.analytics?.recurringVendors?.length > 3 && (
-                    <div style={{ marginTop: '20px', background: 'rgba(255,255,255,0.01)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-                        <table style={{ width: '100%', minWidth: '550px', borderCollapse: 'collapse', fontSize: '12px' }}>
-                            <thead>
-                                <tr style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                    <th style={{ padding: '10px 15px', textAlign: 'center', fontWeight: 800, color: 'rgba(255,255,255,0.5)', width: '60px' }}>SUB?</th>
-                                    <th style={{ padding: '10px 15px', textAlign: 'left', fontWeight: 800, color: 'rgba(255,255,255,0.5)' }}>VENDOR</th>
-                                    <th style={{ padding: '10px 15px', textAlign: 'right', fontWeight: 800, color: 'rgba(255,255,255,0.5)' }}>EST. MONTHLY</th>
-                                    <th style={{ padding: '10px 15px', textAlign: 'right', fontWeight: 800, color: 'rgba(255,255,255,0.5)' }}>PROJECTED ANNUAL</th>
-                                    <th style={{ padding: '10px 15px', textAlign: 'left', fontWeight: 800, color: 'rgba(255,255,255,0.5)' }}>FLAGS</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {metrics.analytics.recurringVendors.slice(3).map((sub, idx) => (
-                                    <tr onClick={(e) => { 
-                                        if(e.target.tagName !== 'INPUT') navigate('/transactions?search=' + encodeURIComponent(sub.vendor));
-                                    }} key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', cursor: 'pointer' }} className="table-row-hover">
-                                        <td style={{ padding: '10px 15px', textAlign: 'center' }}>
-                                            <input type="checkbox" defaultChecked={sub.flags.isSubscription} onClick={(e) => e.stopPropagation()} style={{ cursor: 'pointer' }}/>
-                                        </td>
-                                        <td style={{ padding: '10px 15px', fontWeight: 800, textTransform: 'capitalize' }}>{sub.vendor}</td>
-                                        <td style={{ padding: '10px 15px', textAlign: 'right' }}>{formatMoney(sub.avgMonthlyCents)}/mo</td>
-                                        <td style={{ padding: '10px 15px', textAlign: 'right', color: 'rgba(255,255,255,0.6)' }}>{formatMoney(sub.annualProjectedCents)}/yr</td>
-                                        <td style={{ padding: '10px 15px' }}>
-                                            <div style={{ display: 'flex', gap: '4px' }}>
-                                                {sub.flags.isSubscription && <span style={{ color: '#38bdf8', fontSize: '10px', fontWeight: 800 }}>SUB</span>}
-                                                {sub.flags.leakageWarning && <span style={{ color: '#ef4444', fontSize: '10px', fontWeight: 800 }}>LEAKAGE</span>}
-                                                {sub.flags.cancelCandidate && <span style={{ color: '#f97316', fontSize: '10px', fontWeight: 800 }}>REVIEW</span>}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
 
-                {(!metrics?.analytics?.recurringVendors || metrics.analytics.recurringVendors.length === 0) && !loading && (
-                    <div className="muted" style={{ fontSize: '13px', fontStyle: 'italic', padding: '20px' }}>No recurring data mapped.</div>
-                )}
-            </div>
-
-            {/* Layer 5: Cash, Receivables, Obligations */}
-            <div className="card glass" style={{ margin: 0, padding: '30px' }}>
-                <div style={{ marginBottom: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                    <div>
-                        <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900 }}>Invoice & Obligations Health</h2>
-                        <div className="muted" style={{ fontSize: '12px', fontWeight: 700, marginTop: '4px' }}>Watch your cash flow liabilities</div>
-                    </div>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
-                    
-                    <div style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '20px', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-                        <div style={{ fontWeight: 900, color: '#ef4444', fontSize: '20px' }}>{loading ? '-' : formatMoney(metrics?.obligations?.overdueCents)}</div>
-                        <div className="muted" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, marginTop: '4px' }}>{loading ? '-' : metrics?.obligations?.overdueInvoices} Overdue Invoices</div>
-                        <button className="btn sm secondary" onClick={() => navigate('/crm/financials')} style={{ marginTop: 'auto', paddingTop: '10px', fontSize: '10px', alignSelf: 'stretch' }}>CHASE PAYMENTS</button>
-                    </div>
-
-                    <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '20px', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-                        <div style={{ fontWeight: 900, color: 'white', fontSize: '20px' }}>{loading ? '-' : formatMoney(metrics?.snapshot?.openReceivablesCents)}</div>
-                        <div className="muted" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, marginTop: '4px' }}>Total Unpaid Pipeline</div>
-                        <button className="btn sm outline" onClick={() => navigate('/crm/financials')} style={{ marginTop: 'auto', paddingTop: '10px', fontSize: '10px', alignSelf: 'stretch' }}>VIEW LEDGER</button>
-                    </div>
-
-                    <div style={{ background: 'rgba(252, 211, 77, 0.05)', border: '1px solid rgba(252, 211, 77, 0.2)', padding: '20px', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-                        <div style={{ fontWeight: 900, color: '#fcd34d', fontSize: '20px' }}>{loading ? '-' : metrics?.obligations?.dueSoonCount} Expected</div>
-                        <div className="muted" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, marginTop: '4px' }}>Due within 7 days</div>
-                    </div>
-
-                    <div style={{ background: 'rgba(56, 189, 248, 0.05)', border: '1px solid rgba(56, 189, 248, 0.2)', padding: '20px', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-                        <div style={{ fontWeight: 900, color: '#38bdf8', fontSize: '20px' }}>{loading ? '-' : metrics?.obligations?.avgDaysToCollect} Days</div>
-                        <div className="muted" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, marginTop: '4px' }}>Avg Collection Time</div>
-                    </div>
-
-                </div>
-            </div>
-
-            {/* Layer 6: Forecast & Scenario Modeling */}
-            <div className="card glass" style={{ margin: 0, padding: '30px', borderTop: '4px solid #a855f7' }}>
-                <div style={{ marginBottom: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '15px' }}>
-                    <div>
-                        <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900 }}>Year-End Growth Forecast</h2>
-                        <div className="muted" style={{ fontSize: '12px', fontWeight: 700, marginTop: '4px' }}>Projected trajectory based on custom variables</div>
-                    </div>
-                    <div style={{ display: 'flex', gap: '15px', background: 'rgba(255,255,255,0.03)', padding: '10px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <label style={{ fontSize: '10px', fontWeight: 900, color: '#4ade80' }}>TARGET MONTHLY REVENUE GROWTH +%</label>
-                            <select value={growthAssump} onChange={e => setGrowthAssump(Number(e.target.value))} style={{ background: 'transparent', color: 'white', border: 'none', outline: 'none', fontWeight: 900, fontSize: '14px' }}>
-                                <option value={1.00}>Flat (0%)</option>
-                                <option value={1.05}>Conservative (5%)</option>
-                                <option value={1.10}>Aggressive (10%)</option>
-                                <option value={1.25}>Hyper (25%)</option>
-                                <option value={0.90}>Recession (-10%)</option>
-                            </select>
-                        </div>
-                        <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)' }}></div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <label style={{ fontSize: '10px', fontWeight: 900, color: '#f97316' }}>EXPECTED MONTHLY EXPENSE CREEP +%</label>
-                            <select value={expenseAssump} onChange={e => setExpenseAssump(Number(e.target.value))} style={{ background: 'transparent', color: 'white', border: 'none', outline: 'none', fontWeight: 900, fontSize: '14px' }}>
-                                <option value={1.00}>Locked (0%)</option>
-                                <option value={1.02}>Stable (2%)</option>
-                                <option value={1.03}>Avg Inflation (3%)</option>
-                                <option value={1.05}>High Inflation (5%)</option>
-                                <option value={1.07}>Stressed (7%)</option>
-                                <option value={1.15}>Expansion (15%)</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginTop: '20px' }}>
-                    <div style={{ padding: '20px', background: 'rgba(74, 222, 128, 0.05)', borderRadius: '12px', border: '1px solid rgba(74, 222, 128, 0.2)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-                        <div className="muted" style={{ fontWeight: 900, fontSize: '10px', color: '#4ade80', marginBottom: '8px', letterSpacing: '0.05em' }}>YE PROJECTED REVENUE</div>
-                        <div style={{ fontSize: '2rem', fontWeight: 950, color: 'white' }}>{loading ? '-' : formatMoney(projectedRev)}</div>
-                    </div>
-                    <div style={{ padding: '20px', background: 'rgba(249, 115, 22, 0.05)', borderRadius: '12px', border: '1px solid rgba(249, 115, 22, 0.2)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-                        <div className="muted" style={{ fontWeight: 900, fontSize: '10px', color: '#f97316', marginBottom: '8px', letterSpacing: '0.05em' }}>YE PROJECTED EXPENSE</div>
-                        <div style={{ fontSize: '2rem', fontWeight: 950, color: 'white' }}>{loading ? '-' : formatMoney(projectedExp)}</div>
-                    </div>
-                    <div style={{ padding: '20px', background: 'rgba(56, 189, 248, 0.05)', borderRadius: '12px', border: '1px solid rgba(56, 189, 248, 0.2)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-                        <div className="muted" style={{ fontWeight: 900, fontSize: '10px', color: '#38bdf8', marginBottom: '8px', letterSpacing: '0.05em' }}>ESTIMATED NET PROFIT</div>
-                        <div style={{ fontSize: '2rem', fontWeight: 950, color: 'white' }}>{loading ? '-' : formatMoney(projectedNet)}</div>
-                    </div>
-                </div>
-            </div>
 
             {/* Quick Drill-down Strip to prove functionality without charts yet */}
             {!loading && (

@@ -29,7 +29,8 @@ const ExpenseBaseSchema = z.object({
   tax_deductible: z.union([z.boolean(), z.coerce.number()]).transform(v => (v === true || v === 1 ? true : false)).default(false),
   tax_bucket: z.string().trim().optional().default(""),
   business_use_pct: z.coerce.number().min(0).max(100).default(100),
-  receipt_link: z.string().trim().optional().nullable()
+  receipt_link: z.string().trim().optional().nullable(),
+  is_subscription: z.boolean().default(false)
 });
 
 const ExpenseUpdateSchema = ExpenseBaseSchema.partial();

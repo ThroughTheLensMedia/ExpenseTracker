@@ -72,6 +72,27 @@ export async function apiPost(path, payload) {
     return r.json();
 }
 
+export async function apiPut(path, payload) {
+    const headers = await getAuthHeaders();
+    const r = await fetch("/api" + path, {
+        method: "PUT",
+        headers,
+        credentials: "include",
+        body: JSON.stringify(payload)
+    });
+    if (!r.ok) {
+        let msg = `${r.status} ${r.statusText}`;
+        try { 
+            const j = await r.json(); 
+            if (j && j.error) {
+                msg = typeof j.error === 'string' ? j.error : JSON.stringify(j.error);
+            }
+        } catch (_) { }
+        throw new Error(msg);
+    }
+    return r.json();
+}
+
 export async function apiUpload(path, formData) {
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token;

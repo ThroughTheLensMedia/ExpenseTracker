@@ -29,6 +29,7 @@ router.get("/", async (req, res) => {
         const { data, error } = await req.sb
             .from("equipment_assets")
             .select("*")
+            .eq("user_id", req.user.id)
             .order("purchase_date", { ascending: false });
         if (error) throw error;
         res.json(data);
@@ -44,7 +45,7 @@ router.post("/", async (req, res) => {
         const useful_life_years = body.useful_life_years || DEPRECIATION_LIFE[body.category] || 5;
         const { data, error } = await req.sb
             .from("equipment_assets")
-            .insert({ ...body, useful_life_years })
+            .insert({ ...body, useful_life_years, user_id: req.user.id })
             .select()
             .single();
         if (error) throw error;
@@ -63,6 +64,7 @@ router.patch("/:id", async (req, res) => {
             .from("equipment_assets")
             .update(body)
             .eq("id", req.params.id)
+            .eq("user_id", req.user.id)
             .select()
             .single();
         if (error) throw error;
@@ -79,7 +81,8 @@ router.delete("/:id", async (req, res) => {
         const { error } = await req.sb
             .from("equipment_assets")
             .delete()
-            .eq("id", req.params.id);
+            .eq("id", req.params.id)
+            .eq("user_id", req.user.id);
         if (error) throw error;
         res.json({ ok: true });
     } catch (e) {
@@ -95,6 +98,7 @@ router.get("/depreciation", async (req, res) => {
         const { data, error } = await req.sb
             .from("equipment_assets")
             .select("*")
+            .eq("user_id", req.user.id)
             .order("purchase_date", { ascending: true });
         if (error) throw error;
 

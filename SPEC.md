@@ -11,7 +11,7 @@ The world's most elite, AI-driven financial command center for professional phot
 3. **AI Engine**: Google Gemini 2.5 Flash. Users supply their own Gemini API keys (privacy + cost control).
 4. **Design System**: Vanilla CSS with Glassmorphism, deep dark mode, and micro-animations. No component library.
 5. **Hosting**: Vercel (auto-deploy on push to `main`). Custom domain: `app.throughthelens.media`.
-6. **Security**: Row-Level Security on all user tables. Admin-only tables (`beta_codes`, `user_subscriptions`, `user_daily_activity`) have RLS disabled for server-side access. Service Role Key used for admin operations.
+6. **Security**: (IN PROGRESS) Row-Level Security on all user tables. Currently undergoing multi-tenant hardening. Admin-only tables (`beta_codes`, `user_subscriptions`, `user_daily_activity`) use Service Role Key for access.
 7. **Payments**: Beta code gating during testing phase. Subscription licensing planned for SaaS launch.
 
 ---
@@ -164,14 +164,15 @@ The world's most elite, AI-driven financial command center for professional phot
 
 ### Acceptance Criteria
 
-- [x] **Data Integrity**: Newest transactions processed first during AI repairs. Cross-source duplicates detected on import.
-- [x] **Privacy**: Row-Level Security enforces complete tenant isolation. User A never sees User B's data.
+- [x] **Data Integrity**: Newest transactions processed first during AI repairs. Cross-source duplicates detected on import. Safe auto-pagination prevents row truncation.
+- [/] **Privacy**: (HARDENING IN PROGRESS) Row-Level Security enforces complete tenant isolation. User A never sees User B's data.
 - [x] **Mobile UX**: Decimal/numeric keyboards for currency fields. Dark-mode calendar icons. Scrollable modals.
 - [x] **Resilience**: Gemini 503 errors trigger automatic retries before surfacing failure.
 - [x] **Branding**: All AI feedback uses "Studio Assistant" persona. No raw JSON in user-facing messages.
 - [x] **CRUD Complete**: Transactions can be created, read, updated, and deleted from the UI.
 - [x] **Tax Alignment**: Expense categories map to IRS Schedule C line items. Mileage uses current IRS rates.
 - [x] **Bank Import**: 11+ bank CSV formats supported with auto-detection and cross-source dedup.
+- [x] **Operational Intelligence**: Multi-timeframe metrics filtering (Full Year, Last Year, YTD, Current Month), predictive cash flow, and persistent active vendor ignoral states seamlessly bypass performance latency.
 - [ ] **Plaid Sync**: Live bank auto-sync (pending Plaid account approval).
 - [ ] **Subscription Billing**: Paid SaaS tier with Stripe integration.
 

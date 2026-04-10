@@ -4,7 +4,8 @@ const path = require("path");
 const archiver = require("archiver");
 const { supabase } = require("../db");
 const router = express.Router();
-const { sendInviteEmail, sendDailyReportEmail } = require("../utils/mailer");
+const { queueInviteEmail, queueDailyReportEmail } = require("../utils/emailQueue");
+const { requireRole } = require("../middleware/auth");
 
 router.get("/", (req, res) => res.json({ ok: true, module: "admin", user: req.user?.email }));
 router.get("/test", (req, res) => res.json({ ok: true, test: "admin-reachable" }));
@@ -17,10 +18,13 @@ router.get("/daily-report", async (req, res) => {
     const isVercelCron = req.headers['x-vercel-cron'] === '1';
     const isCronSecret = cronSecret && req.headers['authorization'] === `Bearer ${cronSecret}`;
     const isCron = isVercelCron || isCronSecret;
-    const isAdmin = req.user?.email?.toLowerCase() === 'joshua.deuermeyer@gmail.com';
-    
-    if (!isCron && !isAdmin) {
-        return res.status(403).json({ error: "Unauthorized" });
+
+    if (!isCron) {
+        const { data: roleRecord } = await req.sb
+            .from("user_roles").select("role").eq("user_id", req.user?.id).single();
+        if (!roleRecord || roleRecord.role !== 'admin') {
+            return res.status(403).json({ error: "Unauthorized" });
+        }
     }
 
     try {
@@ -107,14 +111,14 @@ router.get("/daily-report", async (req, res) => {
 
         const finalData = Object.values(aggregated).sort((a,b) => b.minutes_today - a.minutes_today);
 
-        // Send Email
-        let result = { success: false };
-        const secureTrigger = req.query.email === 'true' && req.query.auth === 'SECURE_V3';
-        if (secureTrigger || isCron) {
-            result = await sendDailyReportEmail({ to: 'joshua.deuermeyer@gmail.com', activityRows: finalData }).catch(() => ({ success: false }));
+        // Queue Email (non-blocking)
+        if (isCron) {
+            queueDailyReportEmail({ to: 'joshua.deuermeyer@gmail.com', activityRows: finalData }).catch(err => {
+                console.error("[DAILY REPORT EMAIL QUEUE] Failed to enqueue:", err);
+            });
         }
 
-        res.json({ ok: true, sent: result.success, usersReported: finalData.length, data: finalData });
+        res.json({ ok: true, sent: isCron, usersReported: finalData.length, data: finalData });
     } catch (e) {
         console.error("[CRON] Daily Report Fatal Error:", e);
         res.status(500).json({ error: e.message, status: "500-Internal-Crash" });
@@ -123,10 +127,7 @@ router.get("/daily-report", async (req, res) => {
 
 // (Duplicate route block removed)
 
-router.get("/check-status", async (req, res) => {
-    if (req.user?.email?.toLowerCase() !== 'joshua.deuermeyer@gmail.com') {
-        return res.status(403).json({ error: "Access Denied" });
-    }
+router.get("/check-status", requireRole('admin'), async (req, res) => {
 
     try {
         const hasServiceKey = !!(process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || process.env.SERVICE_ROLE_KEY);
@@ -257,8 +258,8 @@ router.post("/import-all", async (req, res) => {
         for (const table of tables) {
             const rows = backup[table];
             if (Array.isArray(rows) && rows.length > 0) {
-                // Delete existing data for this user
-                await req.sb.from(table).delete().neq("id", "-1"); // dummy check to match all rows under RLS
+                // Delete existing data for this user (RLS filters to current user)
+                await req.sb.from(table).delete();
 
                 // Chunked insert
                 const CHUNK = 500;
@@ -283,8 +284,7 @@ router.post("/import-all", async (req, res) => {
 // --- SUBSCRIPTION & BETA MGMT ---
 
 // GET /admin/subscriptions
-router.get("/subscriptions", async (req, res) => {
-    if (req.user?.email?.toLowerCase() !== 'joshua.deuermeyer@gmail.com') return res.status(403).json({ error: "Denied" });
+router.get("/subscriptions", requireRole('admin'), async (req, res) => {
     try {
         const { supabase: serviceClient } = require("../db");
         if (!serviceClient) throw new Error("Service client required for SaaS dashboard");
@@ -318,8 +318,7 @@ router.get("/subscriptions", async (req, res) => {
 });
 
 // PATCH /admin/subscriptions/:userId (Edit Session)
-router.patch("/subscriptions/:userId", async (req, res) => {
-    if (req.user?.email?.toLowerCase() !== 'joshua.deuermeyer@gmail.com') return res.status(403).json({ error: "Denied" });
+router.patch("/subscriptions/:userId", requireRole('admin'), async (req, res) => {
     try {
         const { supabase: serviceClient } = require("../db");
         if (!serviceClient) throw new Error("Service client required");
@@ -364,8 +363,7 @@ router.patch("/subscriptions/:userId", async (req, res) => {
 });
 
 // GET /admin/weekly-report
-router.get("/weekly-report", async (req, res) => {
-    if (req.user?.email?.toLowerCase() !== 'joshua.deuermeyer@gmail.com') return res.status(403).json({ error: "Denied" });
+router.get("/weekly-report", requireRole('admin'), async (req, res) => {
     try {
         const { supabase: serviceClient } = require("../db");
         if (!serviceClient) throw new Error("DB client uninit");
@@ -419,8 +417,7 @@ router.get("/weekly-report", async (req, res) => {
 });
 
 // GET /admin/beta-codes
-router.get("/beta-codes", async (req, res) => {
-    if (req.user?.email?.toLowerCase() !== 'joshua.deuermeyer@gmail.com') return res.status(403).json({ error: "Denied" });
+router.get("/beta-codes", requireRole('admin'), async (req, res) => {
     try {
         if (!supabase) throw new Error("Supabase client not initialized.");
         const { data, error } = await supabase
@@ -440,8 +437,7 @@ router.get("/beta-codes", async (req, res) => {
 
 // POST /admin/beta-codes
 // Generate a new code: { code, daysValid, assigned_to_name, assigned_to_email, plan_type }
-router.post("/beta-codes", async (req, res) => {
-    if (req.user?.email?.toLowerCase() !== 'joshua.deuermeyer@gmail.com') return res.status(403).json({ error: "Denied" });
+router.post("/beta-codes", requireRole('admin'), async (req, res) => {
     try {
         const { code, daysValid = 90, assigned_to_name, assigned_to_email, plan_type = 'beta_tester' } = req.body;
         const validUntil = new Date();
@@ -463,13 +459,13 @@ router.post("/beta-codes", async (req, res) => {
 
         if (error) throw error;
 
-        // Auto-send invite email if email is provided
+        // Queue invite email if email is provided (non-blocking)
         if (assigned_to_email) {
-            await sendInviteEmail({
+            queueInviteEmail({
                 to: assigned_to_email,
                 name: assigned_to_name,
                 code: newCode
-            }).catch(e => console.error("Auto-invite email failed:", e));
+            }).catch(e => console.error("[INVITE EMAIL QUEUE] Failed:", e));
         }
 
         res.json(data);
@@ -479,8 +475,7 @@ router.post("/beta-codes", async (req, res) => {
 });
 
 // PATCH /admin/beta-codes/:code (Edit Invite)
-router.patch("/beta-codes/:code", async (req, res) => {
-    if (req.user?.email?.toLowerCase() !== 'joshua.deuermeyer@gmail.com') return res.status(403).json({ error: "Denied" });
+router.patch("/beta-codes/:code", requireRole('admin'), async (req, res) => {
     try {
         const { assigned_to_name, assigned_to_email, plan_type } = req.body;
         const update = {};
@@ -499,8 +494,7 @@ router.patch("/beta-codes/:code", async (req, res) => {
 });
 
 // POST /admin/beta-codes/:code/resend
-router.post("/beta-codes/:code/resend", async (req, res) => {
-    if (req.user?.email?.toLowerCase() !== 'joshua.deuermeyer@gmail.com') return res.status(403).json({ error: "Denied" });
+router.post("/beta-codes/:code/resend", requireRole('admin'), async (req, res) => {
     try {
         const { data: codeData, error } = await supabase
             .from('beta_codes')
@@ -512,11 +506,12 @@ router.post("/beta-codes/:code/resend", async (req, res) => {
 
         if (!codeData.assigned_to_email) throw new Error("No email associated with this code");
 
-        await sendInviteEmail({
+        // Queue invite email (non-blocking)
+        queueInviteEmail({
             to: codeData.assigned_to_email,
             name: codeData.assigned_to_name,
             code: codeData.code
-        });
+        }).catch(e => console.error("[INVITE EMAIL QUEUE] Failed:", e));
 
         res.json({ ok: true });
     } catch (e) {
@@ -525,8 +520,7 @@ router.post("/beta-codes/:code/resend", async (req, res) => {
 });
 
 // DELETE /admin/beta-codes/:code
-router.delete("/beta-codes/:code", async (req, res) => {
-    if (req.user?.email?.toLowerCase() !== 'joshua.deuermeyer@gmail.com') return res.status(403).json({ error: "Denied" });
+router.delete("/beta-codes/:code", requireRole('admin'), async (req, res) => {
     try {
         const { error } = await supabase
             .from('beta_codes')

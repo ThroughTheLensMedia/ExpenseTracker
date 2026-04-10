@@ -1,5 +1,6 @@
 const express = require("express");
 const z = require("zod");
+const { requireRole } = require("../middleware/auth");
 
 const router = express.Router();
 
@@ -131,7 +132,7 @@ router.get("/rates", async (req, res) => {
 });
 
 // POST /mileage/rates/sync  – scrapes IRS.gov and saves the latest rate
-router.post("/rates/sync", async (req, res) => {
+router.post("/rates/sync", requireRole("admin"), async (req, res) => {
     try {
         // Fetch the IRS standard mileage rates page
         const irsUrl = "https://www.irs.gov/tax-professionals/standard-mileage-rates";
@@ -192,7 +193,7 @@ router.post("/rates/sync", async (req, res) => {
 });
 
 // POST /mileage/rates  – manually set a rate for a specific year
-router.post("/rates", async (req, res) => {
+router.post("/rates", requireRole("admin"), async (req, res) => {
     try {
         const body = z.object({
             year: z.coerce.number().min(2000).max(2100),

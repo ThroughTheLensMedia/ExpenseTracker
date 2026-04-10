@@ -21,9 +21,9 @@ const TaxAssignSchema = z.object({
   business_use_pct: z.coerce.number().min(0).max(100).optional()
 });
 
-async function fetchDepreciationTotal(sb, year) {
+async function fetchDepreciationTotal(sb, year, userId) {
   try {
-    const { data, error } = await sb.from("equipment_assets").select("*");
+    const { data, error } = await sb.from("equipment_assets").select("*").eq("user_id", userId);
     if (error || !data) return 0;
 
     let totalCents = 0;
@@ -63,6 +63,7 @@ router.get("/summary", async (req, res) => {
     const { data, error } = await req.sb
       .from("expenses")
       .select("tax_bucket, amount_cents, tax_deductible, business_use_pct")
+      .eq("user_id", req.user.id)
       .gte("expense_date", start)
       .lte("expense_date", end);
 
@@ -92,7 +93,7 @@ router.get("/summary", async (req, res) => {
     }
 
     // INJECT DEPRECIATION FROM ASSETS TABLE (Line 13)
-    const assetDeprCents = await fetchDepreciationTotal(req.sb, year);
+    const assetDeprCents = await fetchDepreciationTotal(req.sb, year, req.user.id);
     if (assetDeprCents > 0) {
       if (!buckets["Depreciation"]) {
         buckets["Depreciation"] = { tax_bucket: "Depreciation", count: 0, spend_cents: 0, deductible_cents: 0 };
@@ -132,6 +133,7 @@ router.post("/assign", async (req, res) => {
     const { error, count } = await req.sb
       .from("expenses")
       .update(updateData)
+      .eq("user_id", req.user.id)
       .gte("expense_date", start)
       .lte("expense_date", end)
       .eq("category", data.category);
@@ -185,6 +187,7 @@ router.post("/auto-map", async (req, res) => {
           tax_deductible: vmap.deductible,
           business_use_pct: vmap.pct
         })
+        .eq("user_id", req.user.id)
         .ilike("vendor", `%${vmap.vendor}%`)
         .eq("tax_bucket", "");
       if (!error && count) totalUpdated += count;
@@ -196,6 +199,7 @@ router.post("/auto-map", async (req, res) => {
       const { error: incError, count: incCount } = await req.sb
         .from("expenses")
         .update({ tax_deductible: true })
+        .eq("user_id", req.user.id)
         .lt("amount_cents", 0)
         .ilike("category", kw);
       if (!incError && incCount) totalUpdated += incCount;
@@ -206,6 +210,7 @@ router.post("/auto-map", async (req, res) => {
     const { data: allNegatives, error: negError } = await req.sb
       .from("expenses")
       .select("id, category")
+      .eq("user_id", req.user.id)
       .lt("amount_cents", 0)
       .eq("tax_deductible", true);
 
@@ -214,7 +219,7 @@ router.post("/auto-map", async (req, res) => {
         const cat = (txn.category || '').toLowerCase();
         const isIncome = INCOME_KEYWORDS.some(k => cat.includes(k));
         if (!isIncome) {
-          await req.sb.from("expenses").update({ tax_deductible: false }).eq("id", txn.id);
+          await req.sb.from("expenses").update({ tax_deductible: false }).eq("id", txn.id).eq("user_id", req.user.id);
         }
       }
     }
@@ -229,6 +234,7 @@ router.post("/auto-map", async (req, res) => {
             tax_deductible: mapping.deductible,
             business_use_pct: mapping.pct
           })
+          .eq("user_id", req.user.id)
           .eq("category", cat)
           .eq("tax_bucket", "") // Only update unassigned items
         if (!error && count) totalUpdated += count;
@@ -253,6 +259,7 @@ router.get("/export.csv", async (req, res) => {
     const { data, error } = await req.sb
       .from("expenses")
       .select("expense_date, vendor, category, tax_bucket, amount_cents, tax_deductible, business_use_pct, notes")
+      .eq("user_id", req.user.id)
       .gte("expense_date", start)
       .lte("expense_date", end)
       .order("tax_bucket", { ascending: true })

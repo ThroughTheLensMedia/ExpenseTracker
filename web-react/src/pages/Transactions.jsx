@@ -51,6 +51,13 @@ export default function Transactions() {
         loadData();
     }, []);
 
+    // Pre-populate vendor search from URL ?search= param (e.g. from dashboard drill-down)
+    useEffect(() => {
+        const urlSearch = searchParams.get('search');
+        if (urlSearch) setSearchVendor(urlSearch);
+    }, []); // intentionally run once on mount only
+
+
     const handleSort = (col) => {
         if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
         else { setSortCol(col); setSortDir('asc'); }
