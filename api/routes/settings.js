@@ -5,7 +5,7 @@ const router = express.Router();
 router.get("/", async (req, res) => {
     if (!req.sb || !req.user?.id) return res.status(401).json({ error: "Session required" });
     const { data: row, error } = await req.sb
-        .from('user_settings')
+        .from('settings')
         .select('*')
         .eq('user_id', req.user.id)
         .single();
@@ -29,7 +29,7 @@ router.post("/", async (req, res) => {
         protectedFields.forEach(f => delete payload[f]);
 
         const { data, error } = await req.sb
-            .from("user_settings")
+            .from("settings")
             .upsert({ ...payload, user_id: req.user.id }, { onConflict: 'user_id' })
             .select()
             .single();
