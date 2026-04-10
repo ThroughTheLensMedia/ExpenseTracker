@@ -261,7 +261,6 @@ export default function Transactions() {
                         </thead>
                         <tbody>
                             {filtered.slice(0, 1000).map(r => {
-                                const receiptUrl = r.receipt_link?.startsWith('http') ? r.receipt_link : `/api${r.receipt_link}`;
                                 return (
                                     <tr key={r.id}>
                                         <td><button className="btn secondary" style={{ fontSize: '11px', padding: '4px 8px' }} onClick={() => setEditingId(r.id)}>Edit</button></td>
@@ -271,8 +270,22 @@ export default function Transactions() {
                                         <td className="text-truncate" style={{ opacity: 0.9 }} title={r.category}>{r.category || <span className="muted">—</span>}</td>
                                         <td style={{ fontWeight: 700, textAlign: 'right' }}>{formatMoney(r.amount_cents)}</td>
                                         <td style={{ textAlign: 'center' }}>
-                                            {r.receipt_link ? (
-                                                <a className="tag ok" style={{ fontSize: '10px', padding: '2px 8px' }} href={receiptUrl} target="_blank" rel="noreferrer">View</a>
+                                        {r.receipt_link ? (
+                                                <button
+                                                    className="tag ok"
+                                                    style={{ fontSize: '10px', padding: '2px 8px', cursor: 'pointer', border: 'none', background: 'none' }}
+                                                    onClick={async (e) => {
+                                                        e.stopPropagation();
+                                                        try {
+                                                            const res = await fetch(`/api/receipts/signed-url?path=${encodeURIComponent(r.receipt_link)}`, { credentials: 'include' });
+                                                            const json = await res.json();
+                                                            if (json.url) window.open(json.url, '_blank');
+                                                            else alert('Could not load receipt: ' + (json.error || 'Unknown error'));
+                                                        } catch (err) {
+                                                            alert('Receipt load failed: ' + err.message);
+                                                        }
+                                                    }}
+                                                >View</button>
                                             ) : (
                                                 <span className="muted">—</span>
                                             )}
