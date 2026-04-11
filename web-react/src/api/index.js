@@ -227,6 +227,10 @@ export function invalidateExpensesCache() {
     _expensesAge = 0;
 }
 
+export function getExpensesCache() {
+    return _expensesCache;
+}
+
 export async function fetchExpenseYears(force = false) {
     const key = 'expense_years';
     if (!force) {

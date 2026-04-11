@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { fetchAllExpenses, formatMoney, formatDate, invalidateExpensesCache, apiGet } from '../api';
+import { fetchAllExpenses, formatMoney, formatDate, invalidateExpensesCache, apiGet, getExpensesCache } from '../api';
 import TransactionDrawer from '../components/TransactionDrawer';
 import { useModal } from '../components/ModalContext.jsx';
 import CategorySelect from '../components/CategorySelect.jsx';
@@ -36,6 +36,16 @@ export default function Transactions() {
     const [toast, setToast] = useState(null); // { msg, ok }
 
     const loadData = async (force = false) => {
+        // Stale-while-revalidate: if we have cached data, show it instantly
+        // then silently refresh in the background
+        const cached = getExpensesCache();
+        if (!force && cached) {
+            setExpenses(cached);
+            setLoading(false);
+            // Silently refresh in background
+            fetchAllExpenses(true).then(data => setExpenses(data)).catch(() => {});
+            return;
+        }
         setLoading(true);
         try {
             const data = await fetchAllExpenses(force);
@@ -48,6 +58,13 @@ export default function Transactions() {
     };
 
     useEffect(() => {
+        // Cold start: fetch first 25 instantly for immediate render, then load all
+        if (!getExpensesCache()) {
+            apiGet('/expenses?limit=25&offset=0').then(data => {
+                if (data?.rows?.length) setExpenses(data.rows);
+                setLoading(false);
+            }).catch(() => {});
+        }
         loadData();
     }, []);
 
@@ -222,9 +239,6 @@ export default function Transactions() {
 
             {/* ─── Mobile View (Cards) ─── */}
             <div className="mobile-only" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <button className="btn glow-blue" onClick={() => setEditingId('new')} style={{ padding: '16px', fontSize: '15px', fontWeight: 900, marginBottom: '8px' }}>
-                    + Add Manual Expense
-                </button>
                 {filtered.map(r => (
                     <div key={r.id} className="card glass" style={{ margin: 0, padding: '16px', maxWidth: '100vw', overflow: 'hidden' }} onClick={() => setEditingId(r.id)}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
