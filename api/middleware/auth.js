@@ -1,4 +1,5 @@
 const { createClient } = require("@supabase/supabase-js");
+const { supabase: adminClient } = require("../db");
 
 async function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -16,7 +17,7 @@ async function authMiddleware(req, res, next) {
   // 1. Local Developer Bypass
   if (isLocalDev && token === "mock-session") {
     req.user = { 
-        id: "f129a00b-333e-4d43-98b7-08ca1161d765", 
+        id: "49e7efcb-6434-4f0c-9563-3151a6d50df9", 
         email: "joshua.deuermeyer@gmail.com", 
         user_metadata: { display_name: "Developer Mode" } 
     };
@@ -62,6 +63,9 @@ async function authMiddleware(req, res, next) {
  * Must be used AFTER authMiddleware; short-circuits with 403 if role doesn't match.
  *
  * Usage: router.get("/admin", requireRole('admin'), handler)
+ * 
+ * IMPORTANT: Uses the service role client (adminClient) to bypass RLS on user_roles.
+ * The user_roles table is infrastructure — the user's own JWT client can't read it if RLS is active.
  */
 function requireRole(...allowedRoles) {
     return async (req, res, next) => {
@@ -70,14 +74,15 @@ function requireRole(...allowedRoles) {
         }
 
         try {
-            const { data: roleRecord, error } = await req.sb
+            // Use adminClient (service role) so RLS on user_roles doesn't block this lookup
+            const { data: roleRecord, error } = await adminClient
                 .from("user_roles")
                 .select("role")
                 .eq("user_id", req.user.id)
                 .single();
 
             if (error || !roleRecord) {
-                console.warn(`[AUTH] User ${req.user.id} has no role record`);
+                console.warn(`[AUTH] User ${req.user.id} has no role record in user_roles table`);
                 return res.status(403).json({ error: "Access Denied" });
             }
 
