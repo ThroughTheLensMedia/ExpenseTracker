@@ -57,14 +57,11 @@ export default function DashboardV2({ apiStatus }) {
             {/* Header Area */}
             <div className="card glass glow-blue" style={{ border: 'none', margin: 0, padding: '40px', position: 'relative', overflow: 'hidden' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px', position: 'relative', zIndex: 1 }}>
-                    <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-                        <img src="/icon.png" alt="Studio Tracker Logo" style={{ width: '45px', height: '45px', borderRadius: '12px', filter: 'drop-shadow(0 0 10px rgba(249, 115, 22, 0.3))' }} />
-                        <div>
-                            <h1 style={{ margin: 0, fontSize: '2.4rem', fontWeight: 950, letterSpacing: '-0.03em', lineHeight: 1 }}>Business Analytics</h1>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '12px' }}>
-                                <span className="muted" style={{ fontWeight: 700, fontSize: '14px' }}>Financial Command Center</span>
-                                {loading && <span className="spinner-small" style={{ marginLeft: '10px' }}></span>}
-                            </div>
+                    <div>
+                        <h1 style={{ margin: 0, fontSize: '2.4rem', fontWeight: 950, letterSpacing: '-0.03em', lineHeight: 1 }}>Business Analytics</h1>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '12px' }}>
+                            <span className="muted" style={{ fontWeight: 700, fontSize: '14px' }}>Financial Command Center</span>
+                            {loading && <span className="spinner-small" style={{ marginLeft: '10px' }}></span>}
                         </div>
                     </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
