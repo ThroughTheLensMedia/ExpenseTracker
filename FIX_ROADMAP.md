@@ -1,6 +1,8 @@
-# Fix Roadmap — Phase 1 & 2
+# Fix Roadmap — All Phases
 
-**Last updated:** 2026-04-08
+**Last updated:** 2026-04-14
+
+> See `REBRAND_ROADMAP.md` for the Lumière Ledger migration plan (May 2026).
 
 ---
 
@@ -11,113 +13,118 @@
 
 ---
 
-## Immediate Blockers
+## Phase 1 & 2 — Security Hardening ✅
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Supabase RLS Lockdown | ⚠️ | **CRITICAL**: Tables were publicly accessible. Plan approved. |
+| Supabase RLS Lockdown | ⚠️ | Policies written. Full activation pending final verification. |
 | Query param auth removed from admin.js | ✅ | `req.query.auth` bypass removed |
 | RLS bypass fixed in admin.js | ✅ | `.neq("id", "-1")` removed |
-| Email queueing implemented | ✅ | `emailQueue.js` created, Bull-based (with Direct Fallback) |
-| ESM/CommonJS Compatibility Fix | ✅ | Downgraded `file-type` and `resend` to fix server-start crash |
-| RLS Safety Guards (userId/id) | ✅ | Defensive checks added to Metrics and Licensing to prevent 500s |
-| Plaid token encryption | ⚠️ | `cryptoUtil.js` is a **stub** — throws if called. Real libsodium-wrappers implementation required when Plaid work begins (2+ months out) |
+| Email queueing implemented | ✅ | `emailQueue.js` created with direct fallback |
+| ESM/CommonJS Compatibility Fix | ✅ | `file-type` and `resend` downgraded to CJS versions |
+| RLS Safety Guards | ✅ | Defensive checks in Metrics and Licensing prevent 500s |
+| `requireRole()` uses service role client | ✅ | Bypasses RLS on `user_roles` table — fixes admin 403 |
+| Admin UUID corrected | ✅ | Updated to `49e7efcb-6434-4f0c-9563-3151a6d50df9` in auth.js |
+| `user_roles` table created | ✅ | Joshua inserted as admin |
+| Plaid token encryption | ⚠️ | `cryptoUtil.js` is a stub — real implementation deferred until Plaid work begins |
 
 ---
 
-## Environment / Ops (NOT in original roadmap — fix before deploying)
+## Phase 3 — Mobile & UX Fixes ✅
 
 | Item | Status | Notes |
 |------|--------|-------|
-| `api/.env` created with real Supabase credentials | ✅ | File was missing entirely |
-| Root `.env` duplicate placeholder lines removed | ✅ | Placeholder values were overriding real credentials |
-| `file-type` CJS (16.5.4) installed | ✅ | Version 22.x removed (ESM conflict) |
-| `resend` CJS (2.1.0) installed | ✅ | Version 6.x removed (ESM conflict) |
-| `user_roles` table created in Supabase | ✅ | Table created, Joshua inserted as admin. |
-| Redis running locally for Bull queue | ✅ | Bull will automagically fallback to direct mail if Redis is missing |
-| Vercel env vars: `REDIS_URL` | ⚠️ | **ACTION REQUIRED**: Add to Vercel panel to enable queueing |
-| Vercel env vars: `ENCRYPTION_KEY` | 🔲 | Not in Vercel production env panel — required for future Plaid |
-
-**user_roles table SQL (run in Supabase if missing):**
-```sql
-CREATE TABLE IF NOT EXISTS user_roles (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  role TEXT NOT NULL CHECK (role IN ('admin', 'user')),
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(user_id, role)
-);
-
--- Insert Joshua as admin (replace with actual user_id from auth.users)
-INSERT INTO user_roles (user_id, role)
-SELECT id, 'admin' FROM auth.users WHERE email = 'joshua.deuermeyer@gmail.com'
-ON CONFLICT DO NOTHING;
-```
+| iOS date validation fix | ✅ | `z.preprocess()` normalizes `MM/DD/YYYY` and ISO strings → `YYYY-MM-DD` |
+| Receipt upload on mobile | ✅ | Date fix unblocks iOS receipt uploads |
+| Receipt "View Doc" button | ✅ | Now calls `/api/receipts/signed-url` via `apiGet()` with auth headers |
+| Receipt error modal | ✅ | Uses branded `modal.alert()` instead of browser `alert()` |
+| Double-tap save bug | ✅ | `saving` guard added to TransactionDrawer — disables button during async |
+| Drawer auto-close on save | ✅ | `onClose()` fires after full save + receipt upload |
+| `onSave` race condition | ✅ | `onSave()` moved after receipt upload completes |
+| Persistent Subscription Ignoral | ✅ | `vendor_settings` DB table active |
+| Safe Metrics Pagination | ✅ | Auto-paginator overcomes Supabase 1,000 row limit |
+| Multi-Timeframe Filtering | ✅ | Full Year / Last Year / YTD / Current Month |
 
 ---
 
-## Phase 1 & 2 Fixes (Hardening)
+## Phase 4 — Performance & UX Polish ✅
 
 | Item | Status | Notes |
 |------|--------|-------|
-| 1A: `requireRole()` and admin.js hardening | ✅ | All 10 admin routes protected |
-| 1B: File type validation & Pagination | ✅ | JPEG/PNG/PDF whitelist added; Invoice pagination active |
-| 2A: Signed URLs & Atomic Redemptions | ✅ | Private receipt storage + Race condition fix |
-| 2B: URL Scheme validation & Gemini Chunking | ✅ | Blocks javascript: links; 500-txn AI safety buffer |
-| 2C: Gemini Data Minimization | ✅ | ~60% reduction in AI state overhead |
-| 3A: Supabase RLS Activation | ⚠️ | **Approved**. Generating SQL migration. |
-| 3B: Backend Multi-Tenant Audit | ✅ | **Completed**. Hardened assets, rules, and secured global IRS mileage endpoints with admin scopes. |
+| Stale-while-revalidate cache | ✅ | Shows cached data instantly, refreshes in background |
+| Cold start first-25 fast load | ✅ | `GET /expenses?limit=25` renders immediately on first visit |
+| `getExpensesCache()` exported | ✅ | Components can detect warm cache without private variable access |
+| Days-since-last-import badge | ✅ | Color-coded indicator in Transaction Ledger header (green/yellow/red) |
+| Remove duplicate mobile Add button | ✅ | Only "+ ADD TRANSACTION" in header remains |
+| Remove logo from page headers | ✅ | Logo only in top nav bar and public landing page |
+| Business Analytics header cleanup | ✅ | Removed logo from DashboardV2 page header |
 
 ---
 
-## Phase 3 Operations (Dashboard & UX Hardening)
+## Environment / Ops
 
 | Item | Status | Notes |
 |------|--------|-------|
-| 1A: Persistent Subscription Ignoral | ✅ | `vendor_settings` DB table active, frontend integrated and cached. |
-| 1B: Safe Metrics Pagination | ✅ | Overcame Supabase 1,000 row limits using range auto-paginator. |
-| 1C: Dynamic Multi-Timeframe Arrays | ✅ | 'Full Year', 'Last Year', 'YTD', 'Current Month' filter integrated instantly via backend mapping logic. |
-| 1D: UI Architecture Safety & Labeling | ✅ | Restored missing Forecast blocks, removed syntax errors, and clarified 'Recurring Vendors' naming convention. |
+| `api/.env` with real credentials | ✅ | Was missing entirely |
+| Root `.env` placeholder cleanup | ✅ | Duplicate values removed |
+| `file-type` CJS (16.5.4) | ✅ | ESM conflict resolved |
+| `resend` CJS (2.1.0) | ✅ | ESM conflict resolved |
+| Vercel: `VITE_GOOGLE_MAPS_API_KEY` | ✅ | Set in Vercel Dashboard |
+| Vercel: `REDIS_URL` | ⚠️ | **ACTION REQUIRED** — add to enable email queueing |
+| Vercel: `ENCRYPTION_KEY` | 🔲 | Deferred — required for Plaid |
 
 ---
 
 ## Validation Checklist
 
-**Phase 1 (before marking done):**
-- [ ] `user_roles` table exists in Supabase with Joshua as admin
-- [ ] `SELECT * FROM user_roles LIMIT 1` returns data (not error)
-- [ ] `curl localhost:3000/admin/beta-codes` → 401 (no token)
+**Security:**
+- [ ] `curl /admin/beta-codes` with no token → 401
 - [ ] Same with non-admin token → 403
 - [ ] Same with Joshua's token → 200
-- [ ] File upload with `.exe` → rejected
-- [ ] File upload with `.pdf` → accepted
-- [ ] `GET /api/invoices` returns `pagination.total`, `pagination.hasMore`
-- [ ] Redis running: `redis-cli ping` → PONG
-- [ ] Email queue: trigger a report, confirm job queued (check Bull dashboard or logs)
+- [ ] File upload `.exe` → rejected
+- [ ] File upload `.pdf` → accepted
+- [ ] Receipt "View Doc" opens file in new tab (not dashboard redirect)
 
-**Phase 2 (before marking done):**
-- [ ] Receipt URLs return signed URL with TTL (not public URL)
-- [ ] Concurrent beta code redemptions: only one succeeds
-- [ ] Contact form email: no raw `<` characters in HTML output
-- [ ] Invoice URL with `javascript:` scheme → rejected
-- [ ] Gemini payload excludes `user_id` and `invoice_id`
+**Mobile:**
+- [ ] iOS date format `MM/DD/YYYY` accepted on submit
+- [ ] Receipt uploads from iPhone work end-to-end
+- [ ] Tapping Save once closes drawer and adds correct ledger entry
+- [ ] Double-tap Save does NOT create a blank duplicate
+
+**Performance:**
+- [ ] Returning to Ledger tab shows data instantly (no blank screen)
+- [ ] Days-since-import badge visible and correct color
+- [ ] Cold load shows first 25 rows before full dataset arrives
 
 ---
 
 ## Optional Cleanup (Low Priority)
 
-1. `auth.js` — Remove or gate dev bypass to localhost only (15 min)
-2. `mailer.js` — Stream large attachments instead of buffering (1 hour)
-3. `invoices.js` — Combine invoice notes parsing logic (20 min)
-4. `admin.js` — Cache daily report user mapping (1 hour)
-5. Write local dev setup doc: Redis install, env setup, how to run both api and web-react
+1. `mailer.js` — Stream large attachments instead of buffering (1 hr)
+2. `invoices.js` — Combine invoice notes parsing logic (20 min)
+3. `admin.js` — Cache daily report user mapping (1 hr)
+4. Write local dev setup doc: env setup, how to run both servers
 
 ---
 
 ## Deferred (Plaid — 2+ months out)
 
 - `cryptoUtil.js` — Replace stub with real `libsodium-wrappers` async implementation
-- `plaid.js` — Batch sync (1B-3)
-- `plaid.js` — Promise.all syncs (1C)
-- `plaid.js` — Plaid-specific data validation (2B-3)
+- `plaid.js` — Batch sync, Promise.all syncs, Plaid-specific validation
 - Vercel: add `ENCRYPTION_KEY` to production env
+
+---
+
+## May 2026 — Lumière Ledger Rebrand
+
+See full plan in `REBRAND_ROADMAP.md`.
+
+| Item | Status |
+|------|--------|
+| Domain purchased: `lumiereleadger.com` | 🔲 |
+| Google Cloud OAuth redirect updated | 🔲 |
+| Supabase auth redirect URL updated | 🔲 |
+| Vercel new domain configured | 🔲 |
+| All "Studio Tracker" UI text replaced | 🔲 |
+| New logo deployed | 🔲 |
+| Old domain `app.throughthelens.media` retired | 🔲 |
