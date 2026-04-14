@@ -27,6 +27,17 @@ export default function Transactions() {
     const [sortCol, setSortCol] = useState('expense_date');
     const [sortDir, setSortDir] = useState('desc');
 
+    // Compute days since the most recent transaction was added to the system
+    const daysSinceImport = useMemo(() => {
+        if (!expenses.length) return null;
+        const latest = expenses.reduce((best, e) => {
+            const t = new Date(e.created_at || e.expense_date || 0).getTime();
+            return t > best ? t : best;
+        }, 0);
+        if (!latest) return null;
+        return Math.floor((Date.now() - latest) / (1000 * 60 * 60 * 24));
+    }, [expenses]);
+
     // Editor
     const [editingId, setEditingId] = useState(null);
     const modal = useModal();
@@ -156,8 +167,38 @@ export default function Transactions() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
                     <div>
                         <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 950, letterSpacing: '-0.02em' }}>Transaction Ledger</h1>
-                        <div className="muted" style={{ fontWeight: 600 }}>
+                        <div className="muted" style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginTop: '4px' }}>
                             {loading ? 'SYNCING...' : `${filtered.length.toLocaleString()} items in current view`}
+                            {!loading && daysSinceImport !== null && (
+                                <span style={{
+                                    fontSize: '11px',
+                                    fontWeight: 800,
+                                    padding: '2px 10px',
+                                    borderRadius: '20px',
+                                    letterSpacing: '0.04em',
+                                    background: daysSinceImport <= 3
+                                        ? 'rgba(74,222,128,0.12)'
+                                        : daysSinceImport <= 7
+                                        ? 'rgba(251,191,36,0.12)'
+                                        : 'rgba(255,77,77,0.12)',
+                                    color: daysSinceImport <= 3
+                                        ? '#4ade80'
+                                        : daysSinceImport <= 7
+                                        ? '#fbbf24'
+                                        : '#ff4d4d',
+                                    border: `1px solid ${daysSinceImport <= 3
+                                        ? 'rgba(74,222,128,0.25)'
+                                        : daysSinceImport <= 7
+                                        ? 'rgba(251,191,36,0.25)'
+                                        : 'rgba(255,77,77,0.25)'}`,
+                                }}>
+                                    {daysSinceImport === 0
+                                        ? '🟢 Updated today'
+                                        : daysSinceImport === 1
+                                        ? '🟢 1 day since last import'
+                                        : `${daysSinceImport <= 7 ? '🟡' : '🔴'} ${daysSinceImport}d since last import`}
+                                </span>
+                            )}
                         </div>
                     </div>
 
