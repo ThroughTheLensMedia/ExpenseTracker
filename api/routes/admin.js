@@ -34,13 +34,13 @@ router.get("/daily-report", async (req, res) => {
         const today = new Date().toISOString().split('T')[0];
 
         // 1. Fetch Activity base data using service client
-        // Check both today and yesterday (UTC) to handle evening timezone overlaps
-        const yesterday = new Date(new Date().getTime() - 86400000).toISOString().split('T')[0];
+        // Look back 7 days to capture weekly engagement
+        const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
         
         const { data: activityRows, error: actError } = await serviceClient
             .from('user_daily_activity')
             .select(`user_id, total_minutes_active, last_pulse_at, activity_date`)
-            .in('activity_date', [today, yesterday]);
+            .gte('activity_date', sevenDaysAgo);
 
         if (actError) {
             console.error("[Daily Report] Activity Query Error:", actError);

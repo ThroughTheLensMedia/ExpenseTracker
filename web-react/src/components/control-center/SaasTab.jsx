@@ -204,7 +204,7 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
             <div className="card glass" style={{ margin: 0, padding: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                     <h3 style={{ margin: 0, fontSize: '1.2rem' }}>Engagement Pulse</h3>
-                    <span className="tag secondary" style={{ fontSize: '10px', padding: '4px 10px' }}>REAL-TIME 24H</span>
+                    <span className="tag secondary" style={{ fontSize: '10px', padding: '4px 10px' }}>LAST 7 DAYS</span>
                 </div>
                 <div className="tableWrap" style={{ border: 'none', maxHeight: '300px', overflowY: 'auto' }}>
                     <table style={{ width: '100%' }}>
@@ -218,7 +218,7 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
                                     <td style={{ textAlign: 'right', fontWeight: 900, color: '#4ade80', fontSize: '13px' }}>{formatDuration(s.minutes_today)}</td>
                                 </tr>
                             )) : (
-                                <tr><td className="muted center" style={{ padding: '20px', fontSize: '12px' }}>No active ledger sessions captured yet today.</td></tr>
+                                <tr><td className="muted center" style={{ padding: '20px', fontSize: '12px' }}>No ledger sessions recorded in the last 7 days.</td></tr>
                             )}
                         </tbody>
                     </table>
