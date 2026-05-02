@@ -17,8 +17,8 @@ export default function Home() {
         <img 
           src="/icon.png" 
           alt="Lumière Ledger Logo" 
-          width="140"
-          height="140"
+          width="210"
+          height="210"
           style={{ 
             marginBottom: '30px', 
             borderRadius: '32px', 
@@ -38,7 +38,7 @@ export default function Home() {
         
         <p className="muted" style={{ fontSize: '20px', lineHeight: 1.6, maxWidth: '600px', margin: '0 auto', marginBottom: '40px' }}>
           Lumière Ledger is the elite command center for photographers. 
-          Automate your Schedule C tax mapping, track gear depreciation, and manage your pipeline in one unified hub.
+          Automate your Schedule C tax mapping, track gear depreciation, and manage your pipeline in one unified hub. Track customers, send invoices, track future income, analyze subscriptions, and track frequent vendor expenses. You can also map and log your trips at the same time.
         </p>
 
         <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>

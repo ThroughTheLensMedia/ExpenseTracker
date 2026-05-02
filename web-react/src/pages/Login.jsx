@@ -11,6 +11,10 @@ export default function Login() {
   const [showForgot, setShowForgot] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
+  const [showRequestForm, setShowRequestForm] = useState(false);
+  const [requestName, setRequestName] = useState('');
+  const [requestEmail, setRequestEmail] = useState('');
+  const [requestSent, setRequestSent] = useState(false);
   
   const [email, setEmail] = useState(params.get('email') || '');
   const [password, setPassword] = useState('');
@@ -81,7 +85,7 @@ export default function Login() {
       }}>
         <div style={{ marginBottom: '40px' }}>
           {/* Transition Banner */}
-          <div style={{ background: 'rgba(249, 115, 22, 0.1)', border: '1px solid rgba(249, 115, 22, 0.3)', borderRadius: '12px', padding: '16px', marginBottom: '24px', textAlign: 'left' }}>
+          <div style={{ background: 'rgba(249, 115, 22, 0.1)', border: '1px solid rgba(249, 115, 22, 0.3)', borderRadius: '12px', padding: '16px', marginBottom: '24px', textAlign: 'left', position: 'relative', zIndex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
               <span style={{ fontSize: '18px' }}>✨</span>
               <span style={{ fontWeight: 900, color: 'var(--accent)', letterSpacing: '0.05em' }}>BRAND UPDATE</span>
@@ -205,14 +209,8 @@ export default function Login() {
         </form>
 
         {/* Forgot Password link — only shown on login mode */}
-        {isLogin && !showForgot && (
+        {isLogin && !showForgot && !showRequestForm && (
           <div style={{ marginTop: '20px' }}>
-            <button
-              onClick={() => setIsLogin(!isLogin)}
-              style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: '13px', fontWeight: 800 }}
-            >
-              {isLogin ? "Need a studio account? Sign Up" : "Already have an account? Login"}
-            </button>
             <div style={{ marginTop: '10px' }}>
               <button
                 onClick={() => { setShowForgot(true); setError(null); setForgotEmail(email); }}
@@ -221,6 +219,83 @@ export default function Login() {
                 Forgot your password?
               </button>
             </div>
+          </div>
+        )}
+
+        {/* Need an Account? — Request Access */}
+        {isLogin && !showForgot && !showRequestForm && (
+          <div style={{ marginTop: '20px' }}>
+            <button
+              onClick={() => setShowRequestForm(true)}
+              style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: '13px', fontWeight: 800 }}
+            >
+              Need an Account?
+            </button>
+          </div>
+        )}
+
+        {/* Account Request Form */}
+        {showRequestForm && !requestSent && (
+          <div style={{ marginTop: '20px', animation: 'fadeIn 0.3s ease-out' }}>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              setLoading(true);
+              setError(null);
+              try {
+                const res = await fetch('/api/account-request', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ name: requestName, email: requestEmail })
+                });
+                if (!res.ok) throw new Error('Request failed. Please try again.');
+                setRequestSent(true);
+              } catch (err) {
+                setError(err.message);
+              } finally {
+                setLoading(false);
+              }
+            }} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ textAlign: 'left' }}>
+                <label className="muted" style={{ fontSize: '12px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Full Name</label>
+                <input
+                  type="text"
+                  value={requestName}
+                  onChange={e => setRequestName(e.target.value)}
+                  placeholder="John Smith"
+                  style={{ marginTop: '8px', width: '100%', position: 'relative', zIndex: 10 }}
+                  required
+                />
+              </div>
+              <div style={{ textAlign: 'left' }}>
+                <label className="muted" style={{ fontSize: '12px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Email Address</label>
+                <input
+                  type="email"
+                  value={requestEmail}
+                  onChange={e => setRequestEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  style={{ marginTop: '8px', width: '100%', position: 'relative', zIndex: 10 }}
+                  required
+                />
+              </div>
+              {error && <div className="tag bad" style={{ padding: '10px', borderRadius: '8px', fontSize: '12px' }}>{error}</div>}
+              <button type="submit" className="btn primary glow-orange" style={{ padding: '14px', borderRadius: '12px' }} disabled={loading}>
+                {loading ? 'SENDING...' : 'REQUEST ACCESS'}
+              </button>
+              <button type="button" onClick={() => { setShowRequestForm(false); setError(null); }} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', fontSize: '12px', fontWeight: 700 }}>
+                ← Back to login
+              </button>
+            </form>
+          </div>
+        )}
+
+        {showRequestForm && requestSent && (
+          <div style={{ marginTop: '20px', textAlign: 'center', animation: 'fadeIn 0.3s ease-out' }}>
+            <div style={{ fontSize: '36px', marginBottom: '12px' }}>✉️</div>
+            <div style={{ fontWeight: 800, marginBottom: '8px', color: '#4ade80' }}>Request Sent!</div>
+            <div className="muted small">We'll review your request and send you an invite code shortly.</div>
+            <button onClick={() => { setShowRequestForm(false); setRequestSent(false); setError(null); }} style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: '13px', fontWeight: 800, marginTop: '16px' }}>
+              ← Back to login
+            </button>
           </div>
         )}
 

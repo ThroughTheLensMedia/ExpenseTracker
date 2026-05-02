@@ -80,6 +80,41 @@ const licensingMiddleware = require("./middleware/licensing");
 // Must be mounted BEFORE authMiddleware
 apiRouter.use("/pay", payRouter);
 
+// Account Request — public form that emails the admin
+apiRouter.post("/account-request", async (req, res) => {
+  try {
+    const { name, email } = req.body;
+    if (!name || !email) return res.status(400).json({ error: "Name and email are required." });
+
+    const { sendHealthAlertEmail } = require("./utils/mailer");
+    const adminEmail = "joshua.deuermeyer@gmail.com";
+    const html = `
+      <div style="background:#0f172a;color:white;padding:40px;font-family:'Inter',sans-serif;border-radius:12px;max-width:600px;">
+        <h2 style="color:#f97316;margin:0 0 20px;">NEW LUMIÈRE LEDGER ACCOUNT REQUEST</h2>
+        <div style="background:rgba(255,255,255,0.05);padding:20px;border-radius:10px;margin-bottom:20px;">
+          <p style="margin:0 0 10px;"><strong style="color:#38bdf8;">Name:</strong> ${name}</p>
+          <p style="margin:0;"><strong style="color:#38bdf8;">Email:</strong> ${email}</p>
+        </div>
+        <p style="color:#94a3b8;font-size:13px;">This request was submitted from the Lumière Ledger login page. To onboard this user, generate an Access Key in the Ledger Control Center and send it to their email.</p>
+      </div>
+    `;
+
+    const { Resend } = require("resend");
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    await resend.emails.send({
+      from: process.env.RESEND_FROM || "Lumière Ledger <support@lumiereledger.com>",
+      to: [adminEmail],
+      subject: "NEW LUMIÈRE LEDGER ACCOUNT REQUEST",
+      html
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("[ACCOUNT-REQUEST]", err);
+    res.status(500).json({ error: "Failed to send request." });
+  }
+});
+
 // --- ATTACH LOCKDOWN MIDDLEWARE ---
 // Every route below this line is protected by Supabase Auth
 apiRouter.use(authMiddleware);
