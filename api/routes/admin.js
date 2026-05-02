@@ -20,9 +20,8 @@ router.get("/daily-report", async (req, res) => {
     const isCron = isVercelCron || isCronSecret;
 
     if (!isCron) {
-        const { data: roleRecord } = await req.sb
-            .from("user_roles").select("role").eq("user_id", req.user?.id).single();
-        if (!roleRecord || roleRecord.role !== 'admin') {
+        const userEmail = req.user?.email?.toLowerCase();
+        if (userEmail !== 'joshua.deuermeyer@gmail.com') {
             return res.status(403).json({ error: "Unauthorized" });
         }
     }
