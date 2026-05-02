@@ -387,7 +387,7 @@ router.patch("/:id", async (req, res) => {
     <!-- Footer -->
     <div style="text-align:center; padding-top:24px; border-top:1px solid #e2e8f0;">
       <p style="font-size:12px; color:#94a3b8; margin:0;">${studioName}${settings?.email ? ` &middot; ${settings.email}` : ''}${settings?.phone ? ` &middot; ${settings.phone}` : ''}</p>
-      <p style="font-size:11px; color:#cbd5e1; margin:8px 0 0;">This invoice was sent via Studio Tracker</p>
+      <p style="font-size:11px; color:#cbd5e1; margin:8px 0 0;">This invoice was sent via Lumière Ledger</p>
     </div>
   </div>
 </body>

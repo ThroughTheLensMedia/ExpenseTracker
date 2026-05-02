@@ -13,7 +13,7 @@ export default function Privacy() {
 
       <section style={{ marginTop: '40px' }}>
         <h2 style={{ color: 'var(--accent)', fontSize: '1.2rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>1. Introduction</h2>
-        <p>Welcome to Studio Tracker. We are committed to protecting your privacy and providing a secure environment for photographers and creative professionals to manage their studio's financial health.</p>
+        <p>Welcome to Lumière Ledger. We are committed to protecting your privacy and providing a secure environment for photographers and creative professionals to manage their studio's financial health.</p>
       </section>
 
       <section style={{ marginTop: '30px' }}>
@@ -30,7 +30,7 @@ export default function Privacy() {
         <h2 style={{ color: 'var(--accent)', fontSize: '1.2rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>3. How We Use Google Data</h2>
         <p>If you choose to use <strong>Google Sign-In</strong>, we request access to your basic profile information (email and name). We use this data strictly to:</p>
         <ul>
-          <li>Create and authenticate your Studio Tracker account.</li>
+          <li>Create and authenticate your Lumière Ledger account.</li>
           <li>Synchronize your display name across the studio dashboard.</li>
           <li>Communicate essential system updates or license expiration alerts.</li>
         </ul>
@@ -44,7 +44,7 @@ export default function Privacy() {
 
       <section style={{ marginTop: '30px' }}>
         <h2 style={{ color: 'var(--accent)', fontSize: '1.2rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>5. Third-Party Sharing</h2>
-        <p>Studio Tracker does not sell, rent, or trade your personal or financial data with third parties for marketing purposes. Data is only shared with essential service providers (like Supabase for database hosting and Vercel for application hosting) as necessary to operate the service.</p>
+        <p>Lumière Ledger does not sell, rent, or trade your personal or financial data with third parties for marketing purposes. Data is only shared with essential service providers (like Supabase for database hosting and Vercel for application hosting) as necessary to operate the service.</p>
       </section>
 
       <section style={{ marginTop: '30px' }}>
@@ -53,7 +53,7 @@ export default function Privacy() {
       </section>
 
       <div className="muted" style={{ marginTop: '60px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.05)', fontSize: '12px', textAlign: 'center' }}>
-        STUDIO TRACKER © 2026 • ELITE FINANCIAL INTELLIGENCE
+        LUMIÈRE LEDGER © 2026 • ELITE FINANCIAL INTELLIGENCE
       </div>
     </div>
   );

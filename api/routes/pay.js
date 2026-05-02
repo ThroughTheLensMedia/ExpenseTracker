@@ -155,7 +155,7 @@ router.post('/:token', async (req, res) => {
 
             await sendInvoiceApprovalEmail({
                 to: studioEmail,
-                studioName: settings?.business_name || 'Studio Tracker',
+                studioName: settings?.business_name || 'Lumière Ledger',
                 clientName: invoice.clients?.name || 'Your Client',
                 clientEmail: invoice.clients?.email || '',
                 invoiceNumber: invoice.invoice_number,

@@ -8,7 +8,7 @@ async function run() {
         process.exit(1);
     }
 
-    console.log(`🚀 Sending Studio Tracker Promo to ${targetEmail}...`);
+    console.log(`🚀 Sending Lumière Ledger Promo to ${targetEmail}...`);
     const result = await sendPromoEmail({ 
         to: targetEmail,
         subject: "📸 Transform Your Studio Operations for 2026"

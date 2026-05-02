@@ -1,4 +1,4 @@
-# Studio Tracker Executive Dashboard (2026 Edition)
+# Lumière Ledger — Executive Dashboard (2026 Edition)
 
 Welcome to your Financial Command Center. This application is engineered to transition from high-level "Rocket Money" snapshots to a pro-tier Revenue & Tax Ledger for media professionals.
 
@@ -10,13 +10,13 @@ Welcome to your Financial Command Center. This application is engineered to tran
 3. Drag and drop your `.csv` file. 
 4. *Intelligence:* The system auto-detects your bank format and maps headers to the unified ledger. If your bank is unsupported, use the **Universal Mapper**.
 
-### 2. Studio Intelligence & Runway
+### 2. Ledger Intelligence & Runway
 - **Forecast Controls:** Adjust your "Starting Cash" and "Weighted Pipeline Probability" on the Dashboard to see your exact runway (in months).
 - **Vigilance Reminders:** Set a custom days-to-sync reminder to ensure your ledger data never goes stale.
 - **Profit Trajectory:** Monitor your quarterly margin health based on actual processed invoices vs opex.
 
 ### 3. Tax & SCC Governance
-- **SCC Console:** Access the **Studio Control Center** (`/StudioControlCenter`) to manage client invites, beta testing codes, and global platform settings.
+- **SCC Console:** Access the **Ledger Control Center** (`/StudioControlCenter`) to manage client invites, beta testing codes, and global platform settings.
 - **Schedule C Reporting:** All categorizations map directly to IRS Line Items for instant year-end filing.
 
 ---
@@ -41,14 +41,14 @@ To test changes without affecting the production session:
 ## ❓ FAQ
 
 **Q: Is my data shared with other users?**
-A: No. We use **Supabase Row Level Security (RLS)**. Every transaction and receipt you upload is cryptographically isolated to your own personal account. Not even other studio members can see your ledger unless you explicitly invite them.
+A: No. We use **Supabase Row Level Security (RLS)**. Every transaction and receipt you upload is cryptographically isolated to your own personal account. Not even other ledger members can see your data unless you explicitly invite them.
 
 **Q: Where are my receipts stored?**
 A: Receipts are stored in an encrypted **Supabase Storage** bucket. We no longer use local storage or home servers (NAS) to ensure 99.9% availability and instant access on your mobile device.
 
 **Q: How do I export for my CPA?**
-**Q: How do I invite a new member to the studio?**
-A: Admins can generate single-use **Access Keys** in the Studio Control Center. You can specify the recipient's name, email, and account type (Beta, Pro, Lifetime). The system will automatically email them an invite link.
+**Q: How do I invite a new member?**
+A: Admins can generate single-use **Access Keys** in the Ledger Control Center. You can specify the recipient's name, email, and account type (Beta, Pro, Lifetime). The system will automatically email them an invite link.
 
 **Q: My beta access is expiring soon, what do I do?**
 A: The system provides visual alerts (Yellow at 7 days, Red at 3 days) as you approach expiration. You can redeem a new Access Key or contact the admin to extend your session.
@@ -61,4 +61,4 @@ A: The system provides visual alerts (Yellow at 7 days, Red at 3 days) as you ap
 - **Database:** Supabase (PostgreSQL) + RLS
 - **Storage:** Supabase Storage (S3-Compatible)
 - **Identity:** Supabase Auth + Resend (Transactional Email)
-- **Security:** Cloudflare + Studio Access Tokens
+- **Security:** Cloudflare + Ledger Access Tokens

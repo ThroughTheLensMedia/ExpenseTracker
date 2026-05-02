@@ -1,6 +1,11 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.0.0', date: 'MAY 1, 2026', color: '#f97316', items: [
+        '<strong>Lumière Ledger Rebrand:</strong> The platform is officially Lumière Ledger! Overhauled the UI, replaced all instances of the old branding, and implemented the new premium app icon.',
+        '<strong>Layer 2 System Watchdog:</strong> Added an hourly internal cron job to test DB/SMTP health and alert the admin if degraded.',
+        '<strong>Layer 1 Uptime Monitoring:</strong> Configured external HTTP ping via UptimeRobot to ensure public API availability.'
+    ]},
     { version: '6.3.0', date: 'APRIL 8, 2026', color: '#f59e0b', items: [
         '<strong>Persistent Ignoral:</strong> You can now explicitly IGNORE/RESTORE noise or generic recurring vendors directly from the intelligence view. These rules automatically persist in the backend.',
         '<strong>Multi-Timeframe Analytics:</strong> Top Expense Drivers and analytical projections can now be seamlessly evaluated across <em>Full Year</em>, <em>Last Year</em>, <em>YTD</em>, and <em>Current Month</em> arrays with native zero-latency switching.',
@@ -38,7 +43,7 @@ const RELEASES = [
     { version: '5.3.1', date: 'APRIL 5, 2026', color: '#38bdf8', items: [
         '<strong>One-Tap Asset Capture:</strong> Rewired the Transaction Drawer for field use. Staging a receipt during a new transaction save now auto-sequences the database entry and the image upload in a single atomic action.',
         '<strong>Mobile Analytics Fix:</strong> Added horizontal overflow protection and minimum data-width logic to the Operating Intelligence table. Recurring vendor amounts and flags no longer clip on small screens.',
-        '<strong>Brand Stabilization:</strong> Replaced the global text-only "STUDIO TRACKER" placeholder in the main header with the official 3D brand icon. Unified the icon across the Dashboard V2 and PWA home-screen manifest.',
+        '<strong>Brand Stabilization:</strong> Replaced the global text-only "LUMIÈRE LEDGER" placeholder in the main header with the official 3D brand icon. Unified the icon across the Dashboard V2 and PWA home-screen manifest.',
         '<strong>Interactive Vendor Auditing:</strong> All recurring vendor rows are now clickable triggers that jump directly to the transaction ledger filtered by provider name.',
         '<strong>Deterministic Forecasting:</strong> Expanded the YTD Projector with granular inflation/creep variables for 2%, 3%, and 7% scenarios.'
     ]},
@@ -63,13 +68,13 @@ const RELEASES = [
         '<strong>Attachment URLs:</strong> You can now attach a direct URL (like Google Drive or Pixieset) to any invoice. It automatically prints on the PDF and the Client Email as an interactive button.',
         '<strong>Dynamic Email Senders:</strong> Outbound emails securely adopt your Official Business Name. Furthermore, any client replies are intelligently routed directly back to your personal Business Email account.',
         '<strong>Intelligent Discount Scaling:</strong> Completely rebuilt the discount processing engine backend to guarantee 100% precision on scaled percentages across PDFs, Emails, and the Pay Portal.',
-        '<strong>Visual & PDF Refinements:</strong> Cleaned up empty quantity rows on the PDF generator and optimized layout spacing dynamically. The Studio Tracker logic gracefully prevents blank rows from bleeding lines onto the formal file.'
+        '<strong>Visual & PDF Refinements:</strong> Cleaned up empty quantity rows on the PDF generator and optimized layout spacing dynamically. The Lumière Ledger logic gracefully prevents blank rows from bleeding lines onto the formal file.'
     ]},
     { version: '5.0.0', date: 'APRIL 1, 2026', color: 'var(--accent)', items: [
         '<strong>Pay Now Portal:</strong> Clients receive a branded payment link (<code>/pay/:token</code>) — no login required. Shows invoice summary, payment handles, and e-signature capture.',
         '<strong>Dual E-Signatures:</strong> Photographers check "I authorize this invoice" in the creator. Clients type their full name to approve on the Pay Portal — timestamp and signature stored permanently.',
         '<strong>Premium Invoice Email:</strong> Fully redesigned client email with inline line-item table, studio logo, conditional notes, orange Pay Now CTA button, and PDF attachment.',
-        '<strong>Photographer Approval Notification:</strong> When a client signs, the photographer receives a dark-mode branded email with signature details, payment handles shown to client, and a deep-link back into Studio Tracker.',
+        '<strong>Photographer Approval Notification:</strong> When a client signs, the photographer receives a dark-mode branded email with signature details, payment handles shown to client, and a deep-link back into Lumière Ledger.',
         '<strong>Payment Handles:</strong> Business Profile now stores Venmo, Zelle, CashApp, and Stripe Publishable Key — surfaced on the Pay Portal with tap-to-open links.',
         '<strong>Tax Exempt Toggle:</strong> Invoice creator now includes a one-click toggle to zero out tax for exempt projects.',
         '<strong>Customer Notes:</strong> Dedicated notes section on invoices for shoot details, thank-you messages, and special instructions — only appears in email and Pay Portal when filled in.',
@@ -109,7 +114,7 @@ const RELEASES = [
     { version: '3.7', date: 'MARCH 13, 2026', color: '#fff', items: [
         '<strong>Documentation Refresh:</strong> Integrated the "Change Log" repository for real-time feature tracking.',
         '<strong>Widescreen Optimization:</strong> Expanded Onboarding and FAQ containers to 1400px for better data density.',
-        '<strong>Branding Evolution:</strong> Increased "STUDIO TRACKER" brand presence in the primary command bar.',
+        '<strong>Branding Evolution:</strong> Increased "LUMIÈRE LEDGER" brand presence in the primary command bar.',
         '<strong>Executive Symmetry:</strong> Precision grid calibration for dashboard controls (CHARTS, YEAR, SYNC).',
         '<strong>Dual Trajectory:</strong> Split profitability tracking into dual modules for "Margin %" and "Net Income Pulse".',
         '<strong>Inventory Density:</strong> Optimized Equipment Locker for 40% higher visibility per scroll.',

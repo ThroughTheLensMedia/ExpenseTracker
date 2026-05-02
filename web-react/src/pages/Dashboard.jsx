@@ -605,7 +605,7 @@ export default function Dashboard() {
                                 <div style={{ fontSize: '20px' }}>🔐</div>
                                 <div>
                                     <div style={{ fontWeight: 900, fontSize: '14px', marginBottom: '4px' }}>Your Key. Your Data. Your Brain.</div>
-                                    <div className="muted" style={{ fontSize: '13px' }}>Studio Tracker uses a "Bring Your Own Key" model powered by Google Gemini. Your data is never shared or trained on — it's isolated to only your studio.</div>
+                                    <div className="muted" style={{ fontSize: '13px' }}>Lumière Ledger uses a "Bring Your Own Key" model powered by Google Gemini. Your data is never shared or trained on — it's isolated to only your studio.</div>
                                 </div>
                             </div>
                             <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>

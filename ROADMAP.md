@@ -1,6 +1,6 @@
-# 📙 Studio Tracker: 2026 Product Roadmap
+# 📙 Lumière Ledger: 2026 Product Roadmap
 
-This document outlines the strategic evolution of Studio Tracker from a financial ledger into an autonomous **AI Studio Manager**.
+This document outlines the strategic evolution of Lumière Ledger from a financial ledger into an autonomous **AI Studio Manager**.
 
 ---
 
@@ -9,7 +9,9 @@ This document outlines the strategic evolution of Studio Tracker from a financia
 *   **Digital Signatures**: Dual e-signature capture for photographers and clients.
 *   **Executive Dashboard**: Real-time Gross/Net/Burn tracking with multi-column sorting.
 *   **AI Category Segregation**: Recognition of Dividend and Interest income.
-*   [x] **Infrastructure Lockdown**: ✅ RLS fully activated. 40+ backend endpoints hardened (v6.0.0-SECURITY).
+*   [x] **Infrastructure Lockdown**: ✅ RLS fully activated. 40+ backend endpoints hardened.
+*   [x] **System Reliability Watchdog**: ✅ Hourly internal cron job to test DB/SMTP health with automated email alerts.
+*   [x] **Uptime Monitoring**: ✅ Layer 1 external HTTP ping via UptimeRobot to ensure public API availability.
 
 ---
 

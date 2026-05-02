@@ -29,7 +29,7 @@ function PrivateRoute({ children }) {
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a', color: 'white' }}>
         <div style={{ textAlign: 'center' }}>
           <div className="spinner" style={{ marginBottom: '20px' }}></div>
-          <div style={{ fontWeight: 800, letterSpacing: '0.1em', fontSize: '12px', opacity: 0.5 }}>AUTHORIZING STUDIO SESSION...</div>
+          <div style={{ fontWeight: 800, letterSpacing: '0.1em', fontSize: '12px', opacity: 0.5 }}>AUTHORIZING LEDGER SESSION...</div>
         </div>
       </div>
     );
@@ -54,7 +54,7 @@ function AppContent() {
 
   // --- Version Check Hook ---
   useEffect(() => {
-    const CURRENT_VERSION = "5.4.0";
+    const CURRENT_VERSION = "7.0.0";
     const checkVersion = async () => {
       try {
         const res = await fetch('/version.json?v=' + Date.now());
@@ -120,7 +120,7 @@ function AppContent() {
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a', color: 'white' }}>
         <div style={{ textAlign: 'center' }}>
           <div className="spinner" style={{ marginBottom: '20px' }}></div>
-          <div style={{ fontWeight: 800, letterSpacing: '0.1em', fontSize: '12px', opacity: 0.5 }}>SYNCHRONIZING STUDIO...</div>
+          <div style={{ fontWeight: 800, letterSpacing: '0.1em', fontSize: '12px', opacity: 0.5 }}>SYNCHRONIZING LEDGER...</div>
         </div>
       </div>
     );
@@ -155,8 +155,8 @@ function AppContent() {
           letterSpacing: '0.05em'
         }}>
           {daysLeft <= 0 
-            ? 'STUDIO ACCESS EXPIRED — UPDATES DISABLED' 
-            : `STUDIO ACCESS EXPIRES IN ${daysLeft} DAYS`}
+            ? 'LEDGER ACCESS EXPIRED — UPDATES DISABLED' 
+            : `LEDGER ACCESS EXPIRES IN ${daysLeft} DAYS`}
           <button 
             onClick={() => navigate('/StudioControlCenter?tab=saas')} 
             style={{ marginLeft: '15px', padding: '2px 8px', background: 'white', color: 'black', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '10px' }}
@@ -168,9 +168,9 @@ function AppContent() {
         {/* Left Side: Brand */}
         <div style={{ flex: '1', display: 'flex', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            <img src="/icon.png" alt="Studio Tracker Logo" style={{ width: '40px', height: '40px', borderRadius: '10px' }} />
+            <img src="/icon.png" alt="Lumière Ledger Logo" style={{ width: '40px', height: '40px', borderRadius: '10px' }} />
             <div>
-              <div className="title" style={{ fontSize: '1.8rem', fontWeight: 950, letterSpacing: '-0.02em', whiteSpace: 'nowrap', lineHeight: 1 }}>STUDIO TRACKER</div>
+              <div className="title" style={{ fontSize: '1.8rem', fontWeight: 950, letterSpacing: '-0.02em', whiteSpace: 'nowrap', lineHeight: 1 }}>LUMIÈRE LEDGER</div>
               <div className="muted" style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.05em', marginTop: '2px', opacity: 0.6 }}>INTEL FOR TODAY'S PHOTOGRAPHER</div>
             </div>
           </div>
@@ -243,19 +243,19 @@ function AppContent() {
                 onClick={() => setMobileMenuOpen(false)} 
                 className={({ isActive }) => `dropdown-item ${isActive && !location.search ? 'active' : ''}`}
             >
-               ⚙️ Studio Control Center
+               ⚙️ Ledger Control Center
             </NavLink>
             <NavLink 
                 to="/StudioControlCenter?tab=help" 
                 onClick={() => setMobileMenuOpen(false)} 
                 className={() => `dropdown-item ${location.pathname === '/StudioControlCenter' && location.search.includes('tab=help') ? 'active' : ''}`}
             >
-               ❓ Studio Documentation & FAQ
+               ❓ Ledger Documentation & FAQ
             </NavLink>
             
             <div style={{ marginTop: '12px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '16px', paddingBottom: '4px' }}>
                 <div style={{ padding: '0 12px 16px 12px' }}>
-                  <div className="muted" style={{ fontWeight: 950, fontSize: '9px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', marginBottom: '6px', letterSpacing: '0.05em' }}>Studio Session</div>
+                  <div className="muted" style={{ fontWeight: 950, fontSize: '9px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', marginBottom: '6px', letterSpacing: '0.05em' }}>Ledger Session</div>
                   <div style={{ fontWeight: 800, fontSize: '13px', color: 'white' }}>{identityName}</div>
                   {identityTitle && <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.6)', fontWeight: 700 }}>{identityTitle}</div>}
                   <div style={{ fontSize: '10px', color: (daysLeft === null || daysLeft <= 7) ? '#f59e0b' : '#10b981', fontWeight: 900, marginTop: '4px' }}>

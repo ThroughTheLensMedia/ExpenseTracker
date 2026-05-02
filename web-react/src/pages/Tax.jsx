@@ -224,7 +224,7 @@ export default function Tax() {
 
             doc.setFontSize(10);
             doc.setTextColor(100);
-            doc.text("Studio Tracker · Photography Business Summary (Schedule C)", 14, 28);
+            doc.text("Lumière Ledger · Photography Business Summary (Schedule C)", 14, 28);
             doc.setLineWidth(0.5);
             doc.setDrawColor(226, 232, 240);
             doc.line(14, 32, 196, 32);

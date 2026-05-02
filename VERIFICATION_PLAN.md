@@ -1,4 +1,4 @@
-# Studio Tracker — Production Verification Plan
+# Lumière Ledger — Production Verification Plan
 
 This document outlines the manual verification steps required to confirm the recent hardening fixes. Follow these instructions to verify the system's integrity and report back any discrepancies.
 
@@ -73,7 +73,7 @@ This document outlines the manual verification steps required to confirm the rec
 *   **What to verify:**
     - [ ] Open the email.
     - [ ] **Expectation:** The "Download PDF" button should be **gone** (we removed the broken link).
-    - [ ] **Action:** Click "View in Studio Tracker".
+    - [ ] **Action:** Click "View in Lumière Ledger".
     - [ ] **Expectation:** It should take you to the correct client pay portal.
 
 ---

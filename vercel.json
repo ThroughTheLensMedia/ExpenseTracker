@@ -31,6 +31,10 @@
         {
             "path": "/api/admin/daily-report?email=true",
             "schedule": "45 23 * * *"
+        },
+        {
+            "path": "/api/admin/watchdog",
+            "schedule": "0 * * * *"
         }
     ]
 }

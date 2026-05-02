@@ -153,7 +153,7 @@ export default function Assets() {
 
     const handleExportFullCSV = () => {
         if (!assets || assets.length === 0) return;
-        const filename = `StudioTracker_CameraGear_FullExport_${new Date().toISOString().slice(0, 10)}.csv`;
+        const filename = `LumiereLedger_CameraGear_FullExport_${new Date().toISOString().slice(0, 10)}.csv`;
         const headers = ["ID", "Purchase Date", "Vendor", "Description", "Category", "Cost (Cents)", "Serial Number", "Useful Life (Yrs)", "Method", "Disposal Date", "Disposal Value", "Receipt Link", "Notes"];
         const rows = assets.map(a => [
             a.id, a.purchase_date, a.vendor, a.description, a.category, a.cost_cents, a.serial_number, a.useful_life_years, a.depreciation_method, a.disposal_date, a.disposal_value_cents, a.receipt_link, a.notes
@@ -164,7 +164,7 @@ export default function Assets() {
     const handleExportInventoryTable = () => {
         const list = deprData?.assets || [];
         if (!list.length) return;
-        const filename = `StudioTracker_InventoryTable_${selectedYear}_${new Date().toISOString().slice(0, 10)}.csv`;
+        const filename = `LumiereLedger_InventoryTable_${selectedYear}_${new Date().toISOString().slice(0, 10)}.csv`;
         const headers = ["Item / Description", "Purchase Date", "Total Basis Cost ($)", `${selectedYear} Deduction Amt`, "Full Depreciation Year", "Current Status"];
         const rows = list.map(a => [
             a.description, a.purchase_date, a.cost.toFixed(2), a.deduction_this_year.toFixed(2), a.full_depreciation_date, a.status.toUpperCase()
@@ -178,7 +178,7 @@ export default function Assets() {
 
     const handleExportSchC = () => {
         const totalDed = deprData?.total_deduction_cents ? (deprData.total_deduction_cents / 100).toFixed(2) : "0.00";
-        const filename = `StudioTracker_SchC_Line13_${selectedYear}.csv`;
+        const filename = `LumiereLedger_SchC_Line13_${selectedYear}.csv`;
         const headers = ["IRS Form/Schedule", "Line Item", "Description", "Calculated Value", "Tax Year"];
         const rows = [
             ["Schedule C", "Part II, Line 13", "Depreciation and section 179 expense", `$${totalDed}`, selectedYear],

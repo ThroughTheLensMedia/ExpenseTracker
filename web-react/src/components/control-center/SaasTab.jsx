@@ -57,7 +57,7 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
     };
 
     const handleRevokeSubscription = async (userId, email) => {
-        const ok = await modal.confirm(`Revoke access for ${email}? This will suspend their studio immediately.`);
+        const ok = await modal.confirm(`Revoke access for ${email}? This will suspend their ledger immediately.`);
         if (!ok) return;
         try { await apiPost(`/admin/subscriptions/${userId}/suspend`); onReload(true); } catch (err) { modal.alert(err.message); }
     };
@@ -68,8 +68,8 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
                 <div style={{ fontSize: '3rem', marginBottom: '20px' }}>🔒</div>
                 <h2 style={{ fontSize: '2rem' }}>Administrative Hub</h2>
                 <p className="muted" style={{ maxWidth: '500px', margin: '0 auto', lineHeight: '1.6' }}>
-                    The SaaS Studio Management suite is restricted to the administrator account (<strong>Joshua Deuermeyer</strong>).
-                    Users with <strong>Beta</strong> or <strong>Professional</strong> access can manage their own studio settings in the <strong>Business Profile</strong> tab.
+                    The SaaS Ledger Management suite is restricted to the administrator account (<strong>Joshua Deuermeyer</strong>).
+                    Users with <strong>Beta</strong> or <strong>Professional</strong> access can manage their own ledger settings in the <strong>Business Profile</strong> tab.
                 </p>
             </div>
         );
@@ -93,9 +93,9 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
                 </div>
             )}
 
-            {/* Studio Access Keys */}
-            <div className="card glass glow-blue" style={{ margin: 0, padding: '20px' }}>
-                <h3 style={{ margin: '0 0 15px 0', fontSize: '1.2rem' }}>Studio Access Keys</h3>
+            {/* Ledger Access Keys */}
+            <div className="card glass" style={{ padding: '30px' }}>
+                <h3 style={{ margin: '0 0 15px 0', fontSize: '1.2rem' }}>Ledger Access Keys</h3>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '15px', alignItems: 'flex-end' }}>
                     <div>
                         <small className="muted" style={{ fontWeight: 900, marginBottom: '6px', display: 'block', fontSize: '10px' }}>NAME</small>
@@ -159,9 +159,9 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
                 </div>
             </div>
 
-            {/* Active Studio Members */}
-            <div className="card glass" style={{ margin: 0, padding: '20px' }}>
-                <h3 style={{ fontSize: '1.2rem', marginBottom: '15px' }}>Active Studio Members</h3>
+            {/* Active Ledger Members */}
+            <div className="card glass" style={{ padding: '30px' }}>
+                <h3 style={{ fontSize: '1.2rem', marginBottom: '15px' }}>Active Ledger Members</h3>
                 <div className="tableWrap" style={{ border: 'none', maxHeight: '500px', overflowY: 'auto' }}>
                     <table style={{ width: '100%', minWidth: '1000px' }}>
                         <thead>
@@ -218,7 +218,7 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
                                     <td style={{ textAlign: 'right', fontWeight: 900, color: '#4ade80', fontSize: '13px' }}>{formatDuration(s.minutes_today)}</td>
                                 </tr>
                             )) : (
-                                <tr><td className="muted center" style={{ padding: '20px', fontSize: '12px' }}>No active studio sessions captured yet today.</td></tr>
+                                <tr><td className="muted center" style={{ padding: '20px', fontSize: '12px' }}>No active ledger sessions captured yet today.</td></tr>
                             )}
                         </tbody>
                     </table>
@@ -254,7 +254,7 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
             {editingSession && (
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)', zIndex: 30000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
                     <div className="card glass glow-blue" style={{ width: '100%', maxWidth: '400px', padding: '30px' }}>
-                        <h3 style={{ marginBottom: '20px' }}>Edit Studio Member</h3>
+                        <h3 style={{ marginBottom: '20px' }}>Edit Ledger Member</h3>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                             <div><small className="muted" style={{ fontWeight: 900, marginBottom: '5px', display: 'block' }}>DISPLAY NAME</small><input value={editSessionData.name} onChange={e => setEditSessionData({ ...editSessionData, name: e.target.value })} style={{ padding: '12px' }} /></div>
                             <div>

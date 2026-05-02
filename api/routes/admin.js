@@ -4,7 +4,7 @@ const path = require("path");
 const archiver = require("archiver");
 const { supabase } = require("../db");
 const router = express.Router();
-const { queueInviteEmail, queueDailyReportEmail } = require("../utils/emailQueue");
+const { queueInviteEmail, queueDailyReportEmail, queueHealthAlertEmail } = require("../utils/emailQueue");
 const { requireRole } = require("../middleware/auth");
 
 router.get("/", (req, res) => res.json({ ok: true, module: "admin", user: req.user?.email }));
@@ -125,7 +125,57 @@ router.get("/daily-report", async (req, res) => {
     }
 });
 
-// (Duplicate route block removed)
+// GET /admin/watchdog (Automated CRON Health Checker)
+router.get("/watchdog", async (req, res) => {
+    const cronSecret = process.env.CRON_SECRET;
+    const isVercelCron = req.headers['x-vercel-cron'] === '1';
+    const isCronSecret = cronSecret && req.headers['authorization'] === `Bearer ${cronSecret}`;
+    const isCron = isVercelCron || isCronSecret;
+
+    if (!isCron) {
+        return res.status(403).json({ error: "Unauthorized. Watchdog must be invoked via cron." });
+    }
+
+    const issues = [];
+    
+    // 1. Check Supabase Client and Connectivity
+    const hasServiceKey = !!(process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || process.env.SERVICE_ROLE_KEY);
+    if (!hasServiceKey) {
+        issues.push("CRITICAL: Supabase Service Role Key is missing or degraded.");
+    }
+    
+    if (supabase) {
+        try {
+            // Simple ping to ensure read access is functional
+            const { error } = await supabase.from('profiles').select('id').limit(1);
+            if (error) throw error;
+        } catch (err) {
+            issues.push(`DATABASE ERROR: Database queries failing. Details: ${err.message}`);
+        }
+    } else {
+        issues.push("DATABASE ERROR: Supabase client failed to initialize globally.");
+    }
+
+    // 2. Check Resend (SMTP Readiness)
+    if (!process.env.RESEND_API_KEY) {
+        issues.push("SMTP ERROR: RESEND_API_KEY is missing. System cannot send emails.");
+    }
+
+    // 3. Dispatch Alerts if issues found
+    if (issues.length > 0) {
+        console.error("[WATCHDOG] Issues detected:", issues);
+        // Only try to send email if we actually have the Resend Key
+        if (process.env.RESEND_API_KEY) {
+            queueHealthAlertEmail({ to: 'joshua.deuermeyer@gmail.com', issues }).catch(err => {
+                console.error("[WATCHDOG EMAIL QUEUE] Failed to enqueue alert:", err);
+            });
+        }
+        return res.status(500).json({ ok: false, status: "DEGRADED", issues });
+    }
+
+    // Return healthy status (doesn't send email)
+    return res.json({ ok: true, status: "HEALTHY", issues: [] });
+});
 
 router.get("/check-status", requireRole('admin'), async (req, res) => {
 

@@ -242,7 +242,7 @@ ${upcomingDeadlines.length > 0 ? upcomingDeadlines.join("\n") : "No upcoming dea
 
         // Build context-aware prompt with forward-thinking persona
         const systemPrompt = `
-You are "Your Assistant", an elite financial AI advisor for professional photographers using Studio Tracker.
+You are "Your Assistant", an elite financial AI advisor for professional photographers using Lumière Ledger.
 Current view: ${context.page}. Today's date: ${today}.
 
 ${dataContext}

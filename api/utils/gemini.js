@@ -38,7 +38,7 @@ async function repairLedgerBatch(apiKey, transactions) {
     for (let i = 0; i < sourceData.length; i += CHUNK_SIZE) {
         const chunk = sourceData.slice(i, i + CHUNK_SIZE);
         const prompt = `
-            You are the "Intelligence Engine" for Studio Tracker, a financial tool for photographers.
+            You are the "Intelligence Engine" for Lumière Ledger, a financial tool for photographers.
             I will provide a JSON list of transactions. Your job is to:
             1. Clean the 'vendor' name (e.g., "AMZN MKTP US*123" -> "Amazon", "UT STATE PARKS SALT LAKE" -> "Utah State Parks").
             2. Identify the likely 'account' if it is missing or says "Rocket Money", using the 'notes' or context.
@@ -98,7 +98,7 @@ async function classifyTransactions(apiKey, transactions) {
     for (let i = 0; i < sourceData.length; i += CHUNK_SIZE) {
         const chunk = sourceData.slice(i, i + CHUNK_SIZE);
         const prompt = `
-            You are the Intelligence Engine for Studio Tracker, a financial tool for professional photographers.
+            You are the Intelligence Engine for Lumière Ledger, a financial tool for professional photographers.
 
             Classify these transactions. For each, assign:
             - category: From [Advertising, Auto & Transport, Bills & Utilities, Camera & Equipment, Clothing, Dining & Drinks, Education, Entertainment, Gas & Fuel, Groceries, Health & Medical, Home & Garden, Insurance (Business), Insurance (Personal), Office Supplies, Parking & Tolls, Personal Care, Pets, Photography, Professional Services, Rent / Lease, Repairs & Maintenance, Shopping, Software & Tech, Subscriptions, Supplies, Taxes & Licenses, Travel & Vacation, Personal Expense, Photo Income, Freelance Income, Contract Income, Rental Income, Side Income, Dividend Income, Interest Income]

@@ -32,7 +32,7 @@ export default function Login() {
       } else {
         if (!betaCode) throw new Error("A valid Beta Code is required to create an account.");
         await signup(email, password);
-        setSuccess("Studio account created! Check your email to confirm, then use your code to activate.");
+        setSuccess("Ledger account created! Check your email to confirm, then use your code to activate.");
         setIsLogin(true);
       }
     } catch (err) {
@@ -80,7 +80,18 @@ export default function Login() {
         textAlign: 'center'
       }}>
         <div style={{ marginBottom: '40px' }}>
-          <img src="/icon.png" alt="Studio Tracker Icon" style={{ height: '120px', marginBottom: '20px', borderRadius: '24px', filter: 'drop-shadow(0 0 20px rgba(249, 115, 22, 0.2))' }} />
+          {/* Transition Banner */}
+          <div style={{ background: 'rgba(249, 115, 22, 0.1)', border: '1px solid rgba(249, 115, 22, 0.3)', borderRadius: '12px', padding: '16px', marginBottom: '24px', textAlign: 'left' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+              <span style={{ fontSize: '18px' }}>✨</span>
+              <span style={{ fontWeight: 900, color: 'var(--accent)', letterSpacing: '0.05em' }}>BRAND UPDATE</span>
+            </div>
+            <p style={{ margin: 0, fontSize: '13px', lineHeight: 1.5, color: '#f8fafc' }}>
+              <strong>Studio Tracker</strong> is now officially <strong>Lumière Ledger</strong>! 
+              Your account and data remain exactly the same. The old URL will continue to work, but please update your bookmarks to <a href="https://lumiereledger.com" style={{ color: 'var(--accent)' }}>lumiereledger.com</a>.
+            </p>
+          </div>
+          <img src="/icon.png" alt="Lumière Ledger Icon" style={{ height: '120px', marginBottom: '20px', borderRadius: '24px', filter: 'drop-shadow(0 0 20px rgba(249, 115, 22, 0.2))' }} />
           <h1 style={{ 
             fontSize: '1.5rem', 
             fontWeight: 900, 
@@ -88,7 +99,7 @@ export default function Login() {
             color: 'white',
             letterSpacing: '0.05em',
             textTransform: 'uppercase'
-          }}>Studio Tracker</h1>
+          }}>Lumière Ledger</h1>
           <p className="muted" style={{ marginTop: '8px', fontWeight: 600 }}>Financial Intelligence for Today's Photographer</p>
         </div>
 
@@ -150,7 +161,7 @@ export default function Login() {
             style={{ padding: '16px', fontSize: '16px', marginTop: '10px', borderRadius: '12px' }}
             disabled={loading}
           >
-            {loading ? 'PROCESSING...' : isLogin ? 'ENTER THE STUDIO' : 'CREATE STUDIO ACCOUNT'}
+            {loading ? 'PROCESSING...' : isLogin ? 'ENTER LUMIÈRE' : 'CREATE LEDGER ACCOUNT'}
           </button>
 
           {isLogin && (
@@ -266,7 +277,7 @@ export default function Login() {
             <NavLink to="/privacy" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none', letterSpacing: '0.05em', fontWeight: 900 }}>PRIVACY POLICY</NavLink>
             <NavLink to="/terms" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none', letterSpacing: '0.05em', fontWeight: 900 }}>TERMS OF SERVICE</NavLink>
           </div>
-          SECURE ENCRYPTED SESSION • STUDIO TRACKER © 2026 • PROFESSIONAL EDITION
+          SECURE ENCRYPTED SESSION • LUMIÈRE LEDGER © 2026 • PROFESSIONAL EDITION
         </div>
       </div>
     </div>

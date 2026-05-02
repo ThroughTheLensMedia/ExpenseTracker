@@ -57,7 +57,7 @@ router.post("/create-link-token", async (req, res) => {
         const client = getPlaidClient();
         const response = await client.linkTokenCreate({
             user: { client_user_id: req.user.id },
-            client_name: "Studio Tracker",
+            client_name: "Lumière Ledger",
             products: ["transactions"],
             country_codes: ["US"],
             language: "en",
@@ -309,7 +309,7 @@ async function syncTransactions(sb, plaidClient, connection, userId) {
     return { added, modified, removed };
 }
 
-// Map Plaid's personal_finance_category to Studio Tracker categories
+// Map Plaid's personal_finance_category to Lumière Ledger categories
 function mapPlaidCategory(plaidCat) {
     if (!plaidCat) return '';
     const primary = plaidCat.primary || '';

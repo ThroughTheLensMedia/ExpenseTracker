@@ -1,6 +1,6 @@
 {
-  "version": "5.4.0",
-  "release_date": "2026-04-05",
-  "codename": "Financial Insight Strip",
-  "notes": "v5.4.0: Live 6-metric insight strip inside Monthly Performance — Margin Quality, Cash Reality, Expense Pressure, Revenue Quality, Burn Rate, and Short-Term Signal."
+  "version": "7.0.0",
+  "release_date": "2026-05-01",
+  "codename": "Lumière Ledger",
+  "notes": "v7.0.0: Transitioned Studio Tracker to Lumière Ledger. Added System Watchdog, Layer 1 Uptime Monitoring, and updated core UI branding."
 }

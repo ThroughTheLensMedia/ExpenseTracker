@@ -11,7 +11,8 @@ const {
     sendDailyReportEmail: _sendDailyReportEmail,
     sendPromoEmail: _sendPromoEmail,
     sendContactRelayEmail: _sendContactRelayEmail,
-    sendInvoiceApprovalEmail: _sendInvoiceApprovalEmail
+    sendInvoiceApprovalEmail: _sendInvoiceApprovalEmail,
+    sendHealthAlertEmail: _sendHealthAlertEmail
 } = require('./mailer');
 
 // Initialize Bull queue ONLY if Redis config is present
@@ -65,6 +66,7 @@ async function processEmail(type, payload) {
         case 'promo':        return await _sendPromoEmail(payload);
         case 'contact-relay': return await _sendContactRelayEmail(payload);
         case 'approval':     return await _sendInvoiceApprovalEmail(payload);
+        case 'health-alert': return await _sendHealthAlertEmail(payload);
         default:             throw new Error(`Unknown email type: ${type}`);
     }
 }
@@ -100,6 +102,11 @@ async function queueInvoiceApprovalEmail(payload) {
     return await _sendInvoiceApprovalEmail(payload);
 }
 
+async function queueHealthAlertEmail(payload) {
+    if (useQueue) return emailQueue.add({ type: 'health-alert', payload }, { attempts: 3, backoff: 2000, removeOnComplete: true });
+    return await _sendHealthAlertEmail(payload);
+}
+
 module.exports = {
     emailQueue,
     queueInvoiceEmail,
@@ -107,5 +114,6 @@ module.exports = {
     queueDailyReportEmail,
     queuePromoEmail,
     queueContactRelayEmail,
-    queueInvoiceApprovalEmail
+    queueInvoiceApprovalEmail,
+    queueHealthAlertEmail
 };

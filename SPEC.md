@@ -1,7 +1,12 @@
-# Studio Tracker v4.3 — Master Engineering Specification
+# Lumière Ledger v7.0 — Master Engineering Specification
+> ✅ **REBRAND COMPLETE**: This product has been transitioned to **Lumière Ledger** (`lumiereledger.com`) as of May 2026.
+
+**Last updated:** 2026-04-14
+
+---
 
 ### Objective
-The world's most elite, AI-driven financial command center for professional photographers and creative freelancers. Studio Tracker enables automated expense forensics, retroactive ledger repair, tax-aligned reporting, invoicing, asset depreciation, mileage tracking, and strategic business advice — all powered by a private "Bring Your Own Brain" (BYOB) architecture.
+The world's most elite, AI-driven financial command center for professional photographers and creative freelancers. Enables automated expense forensics, retroactive ledger repair, tax-aligned reporting, invoicing, asset depreciation, mileage tracking, and strategic business advice — all powered by a private "Bring Your Own Brain" (BYOB) architecture.
 
 ---
 
@@ -10,8 +15,8 @@ The world's most elite, AI-driven financial command center for professional phot
 2. **Database**: Supabase / PostgreSQL with Row-Level Security (RLS) for 100% multi-tenant data isolation.
 3. **AI Engine**: Google Gemini 2.5 Flash. Users supply their own Gemini API keys (privacy + cost control).
 4. **Design System**: Vanilla CSS with Glassmorphism, deep dark mode, and micro-animations. No component library.
-5. **Hosting**: Vercel (auto-deploy on push to `main`). Custom domain: `app.throughthelens.media`.
-6. **Security**: (IN PROGRESS) Row-Level Security on all user tables. Currently undergoing multi-tenant hardening. Admin-only tables (`beta_codes`, `user_subscriptions`, `user_daily_activity`) use Service Role Key for access.
+5. **Hosting**: Vercel (auto-deploy on push to `main`). Current domain: `app.throughthelens.media`. Target: `lumiereleadger.com`.
+6. **Security**: Row-Level Security active on all user tables. `requireRole()` middleware uses service role client to bypass RLS on `user_roles` lookup. Admin UUID: `49e7efcb-6434-4f0c-9563-3151a6d50df9`.
 7. **Payments**: Beta code gating during testing phase. Subscription licensing planned for SaaS launch.
 
 ---
@@ -37,16 +42,16 @@ The world's most elite, AI-driven financial command center for professional phot
 | File | Purpose |
 |------|---------|
 | `server.js` | Express app entry, middleware, route mounting |
-| `db.js` | Supabase client init (Service Role Key priority for admin ops) |
+| `db.js` | Supabase client init (Service Role Key for admin ops) |
 | `routes/brain.js` | AI intelligence hub — chat, ledger repair, batch categorization |
-| `routes/expenses.js` | Core ledger CRUD — create, read, update, delete transactions |
+| `routes/expenses.js` | Core ledger CRUD — create, read, update, delete transactions. Zod `z.preprocess` normalizes iOS date formats. |
 | `routes/import.js` | CSV import engine — 11+ bank parsers, auto-detection, cross-source dedup |
 | `routes/invoices.js` | Invoice CRUD, line items, PDF export, email delivery via Resend |
 | `routes/tax.js` | Schedule C tax mapping, depreciation summaries, deduction exports |
 | `routes/assets.js` | Equipment tracking — straight-line & Section 179 depreciation |
 | `routes/mileage.js` | Mileage log CRUD, IRS standard rate calculations |
 | `routes/rules.js` | Auto-classification rules — vendor/notes pattern matching |
-| `routes/receipts.js` | Receipt upload to Supabase Storage (date-based folder structure) |
+| `routes/receipts.js` | Receipt upload to Supabase Storage. Signed URL endpoint for secure access. |
 | `routes/plaid.js` | Plaid link tokens, account sync, transaction pull |
 | `routes/admin.js` | Admin dashboard — beta codes, subscriptions, daily reports, data exports |
 | `routes/settings.js` | User config persistence (API keys, studio defaults, profile) |
@@ -54,6 +59,8 @@ The world's most elite, AI-driven financial command center for professional phot
 | `routes/activity.js` | Engagement pulse — daily active minutes tracking |
 | `routes/leads.js` | CRM lead/client management |
 | `routes/pwa.js` | PWA quick-snap receipt capture endpoint |
+| `middleware/auth.js` | JWT auth + `requireRole()`. Uses adminClient (service role) for role lookups to bypass RLS. |
+| `middleware/licensing.js` | Subscription gate — blocks expired/suspended users |
 | `utils/gemini.js` | Gemini 2.5 Flash init, `repairLedgerBatch()` with 503 retry logic |
 | `utils/mailer.js` | Resend email bridge with attachment support |
 
@@ -63,18 +70,18 @@ The world's most elite, AI-driven financial command center for professional phot
 
 | File | Purpose |
 |------|---------|
-| `Dashboard.jsx` | Executive summary — charts, burn rate, category breakdown, forecasts |
-| `Transactions.jsx` | Full ledger — filtering, sorting, audit mode, bulk edit, manual entry |
+| `DashboardV2.jsx` | Business Analytics — executive KPIs, charts, forecasts, operational intelligence |
+| `Transactions.jsx` | Full ledger — filtering, sorting, audit mode, stale-import badge, receipt view via signed URL |
 | `Tax.jsx` | Tax workbench — Schedule C mapping, deduction totals, PDF export |
-| `Import.jsx` | Bank import wizard — drag-drop CSV, auto-detect bank format, Plaid (collapsed) |
+| `Import.jsx` | Bank import wizard — drag-drop CSV, auto-detect bank format |
 | `Invoice.jsx` | Invoice builder — line items, client info, tax/discount, PDF, email |
 | `Assets.jsx` | Equipment registry — depreciation calculator, purchase/disposal tracking |
-| `Mileage.jsx` | Mileage tracker — log by date, IRS rate lookup, yearly summaries |
+| `Mileage.jsx` | Mileage tracker — log by date, Google Maps automation, IRS rate lookup |
 | `Rules.jsx` | Classification rules editor — vendor matching with retroactive apply |
 | `CRM.jsx` | Lead pipeline — kanban board (New Lead, Quoted, Booked), archive |
-| `Backup.jsx` | Studio Control Center — 6-tab settings hub (Profile, AI, Automation, Infrastructure, Help, SaaS) |
+| `Backup.jsx` | Studio Control Center — 6-tab settings hub |
 | `Login.jsx` | Auth — email/password, Google OAuth, beta code signup |
-| `Home.jsx` | Landing page — hero section, call-to-action |
+| `Home.jsx` | Public landing page — hero section, feature grid, CTA |
 | `Privacy.jsx` | Privacy policy (static) |
 | `Terms.jsx` | Terms of service (static) |
 
@@ -83,11 +90,11 @@ The world's most elite, AI-driven financial command center for professional phot
 | File | Purpose |
 |------|---------|
 | `AuthContext.jsx` | Global auth provider — session, subscription status, settings |
-| `TransactionDrawer.jsx` | Transaction form drawer — create/edit/delete with receipt upload |
+| `TransactionDrawer.jsx` | Transaction form — create/edit/delete + receipt upload. Double-tap guard. Auto-closes on save. |
 | `AssistantSidebar.jsx` | AI chat panel — floating sidebar for financial Q&A |
 | `CategorySelect.jsx` | Shared category dropdown — optgroups (Expense/Income/Misc), custom entry |
 | `PlaidLink.jsx` | Plaid Link SDK — account connection, sync, disconnect |
-| `ModalContext.jsx` | Branded modal provider — replaces native confirm/alert dialogs |
+| `ModalContext.jsx` | Branded modal provider — replaces native browser confirm/alert |
 
 **Control Center (`/components/control-center/`)**
 
@@ -97,11 +104,11 @@ The world's most elite, AI-driven financial command center for professional phot
 | `IntelligenceTab.jsx` | AI Brain — Gemini key management, repair triggers, feature toggles |
 | `AutomationTab.jsx` | Rule automation — create/manage classification rules |
 | `InfrastructureTab.jsx` | System health — DB checks, mailer readiness, activity logging |
-| `SaasTab.jsx` | SaaS dashboard — Plaid links, subscriptions, beta codes |
+| `SaasTab.jsx` | SaaS admin — beta codes, subscriptions, engagement pulse. Admin-only. |
 | `HelpTab.jsx` | Help & FAQ — troubleshooting, support links |
 | `ChangeLogModal.jsx` | Version changelog — release notes display |
 
-#### Database — SQL Schemas (project root)
+#### Database — SQL Schemas
 
 | File | Purpose |
 |------|---------|
@@ -111,35 +118,37 @@ The world's most elite, AI-driven financial command center for professional phot
 | `supabase_schema_activity.sql` | Daily user activity tracking |
 | `supabase_schema_leads.sql` | CRM leads & clients with relationships |
 | `supabase_schema_plaid.sql` | Plaid integration tables (items, accounts, sync cursors) |
-| `supabase_fix_admin_rls.sql` | Disables RLS on admin-only tables for server-side access |
+| `supabase_fix_admin_rls.sql` | Adjusts RLS on admin-only tables for server-side service role access |
 
 ---
 
 ### Key Data Patterns
 
-- **Currency**: Stored as `amount_cents` (BIGINT). All UI conversion uses `amount_cents / 100`.
-- **Dates**: `expense_date` (expenses), `log_date` (mileage), `purchase_date` (assets). Always `YYYY-MM-DD`.
+- **Currency**: Stored as `amount_cents` (BIGINT). All UI conversion: `amount_cents / 100`.
+- **Dates**: `expense_date` (expenses), `log_date` (mileage), `purchase_date` (assets). Always `YYYY-MM-DD`. iOS date formats normalized via `z.preprocess()` in Zod schema.
 - **Equipment**: `cost_cents` (BIGINT), `description` (name), `depreciation_method`, `useful_life_years`.
 - **Sources**: `manual`, `plaid`, `rocketmoney`, `chase`, `usbank`, `bankofamerica`, `wellsfargo`, `applecard`, `capitalone`, `usaa`, `navyfcu`, `wise`.
 - **Dedup**: CSV import uses two-pass detection — exact match (`date|vendor|amount_cents`) + fuzzy cross-source match (`date|amount_cents`).
+- **Receipts**: Stored as relative paths in Supabase Storage. Always accessed via `/api/receipts/signed-url?path=` endpoint. Never direct storage URLs.
+- **Cache**: `fetchAllExpenses` uses in-memory stale-while-revalidate. `getExpensesCache()` exported for component-level detection.
 
 ---
 
 ### Supported Bank Import Profiles
 
-| Key | Bank | Notes |
-|-----|------|-------|
-| `rocketmoney` | Rocket Money | Positive = expense, negative = income |
-| `chase` | Chase | Negative amounts = expenses |
-| `usbank` | US Bank | Single Amount column |
-| `bankofamerica` | Bank of America | Negative amounts = expenses |
-| `wellsfargo` | Wells Fargo | Standard activity export |
-| `applecard` | Apple Card | iPhone Wallet export |
-| `capitalone` | Capital One | Separate Debit/Credit columns |
-| `usaa` | USAA | Date, Description, Amount format |
-| `navyfcu` | Navy Federal | Transaction and Post date headers |
-| `wise` | Wise | Multi-currency, merchant headers |
-| `universal` | Generic | Fallback — matches Date, Amount, Vendor headers |
+| Key | Bank |
+|-----|------|
+| `rocketmoney` | Rocket Money |
+| `chase` | Chase |
+| `usbank` | US Bank |
+| `bankofamerica` | Bank of America |
+| `wellsfargo` | Wells Fargo |
+| `applecard` | Apple Card |
+| `capitalone` | Capital One |
+| `usaa` | USAA |
+| `navyfcu` | Navy Federal |
+| `wise` | Wise |
+| `universal` | Generic CSV fallback |
 
 ---
 
@@ -158,31 +167,42 @@ The world's most elite, AI-driven financial command center for professional phot
 | `PLAID_CLIENT_ID` | No | Plaid banking integration |
 | `PLAID_SECRET` | No | Plaid API secret |
 | `CRON_SECRET` | No | Admin cron job authentication |
-| `CF_TUNNEL_TOKEN` | No | Cloudflare tunnel |
+| `VITE_GOOGLE_MAPS_API_KEY` | No | Google Maps mileage automation |
+
+---
+
+### System Reliability & Monitoring
+
+| Monitor Layer | Type | Action / Link | Purpose |
+|---------------|------|---------------|---------|
+| **Layer 1** | UptimeRobot | [UptimeRobot Dashboard](https://uptimerobot.com) | 5-minute external HTTP ping to `/api/health`. Alerts on complete server/Vercel failure. |
+| **Layer 2** | Vercel Cron | `vercel.json` -> `/api/admin/watchdog` | Hourly internal check of Supabase DB and Resend SMTP API keys. Sends `🚨 URGENT: Lumière Ledger Alert`. |
 
 ---
 
 ### Acceptance Criteria
 
-- [x] **Data Integrity**: Newest transactions processed first during AI repairs. Cross-source duplicates detected on import. Safe auto-pagination prevents row truncation.
-- [/] **Privacy**: (HARDENING IN PROGRESS) Row-Level Security enforces complete tenant isolation. User A never sees User B's data.
-- [x] **Mobile UX**: Decimal/numeric keyboards for currency fields. Dark-mode calendar icons. Scrollable modals.
-- [x] **Resilience**: Gemini 503 errors trigger automatic retries before surfacing failure.
-- [x] **Branding**: All AI feedback uses "Studio Assistant" persona. No raw JSON in user-facing messages.
-- [x] **CRUD Complete**: Transactions can be created, read, updated, and deleted from the UI.
-- [x] **Tax Alignment**: Expense categories map to IRS Schedule C line items. Mileage uses current IRS rates.
-- [x] **Bank Import**: 11+ bank CSV formats supported with auto-detection and cross-source dedup.
-- [x] **Operational Intelligence**: Multi-timeframe metrics filtering (Full Year, Last Year, YTD, Current Month), predictive cash flow, and persistent active vendor ignoral states seamlessly bypass performance latency.
+- [x] **Data Integrity**: Newest transactions processed first. Cross-source dedup on import. Safe auto-pagination prevents row truncation.
+- [x] **Privacy**: RLS enforces tenant isolation. `requireRole()` uses service role for `user_roles` lookup. Admin UUID verified.
+- [x] **Mobile UX**: Decimal/numeric keyboards. Dark-mode calendar icons. Drawer auto-closes on save. Double-tap guard on Save button.
+- [x] **Resilience**: Gemini 503 errors trigger automatic retries. Receipt signed URL fetched on demand.
+- [x] **Branding**: All AI feedback uses branded persona. No raw JSON in user-facing messages. Styled modal replaces browser alert.
+- [x] **CRUD Complete**: Transactions created, read, updated, deleted. Receipt attached, viewed, and securely fetched.
+- [x] **Tax Alignment**: Categories map to IRS Schedule C. Mileage uses current IRS rates.
+- [x] **Bank Import**: 11+ CSV formats with auto-detection and dedup.
+- [x] **Performance**: Stale-while-revalidate cache shows first 25 rows instantly on cold start.
+- [x] **Admin Access**: `requireRole('admin')` correctly routes the admin user via service role DB lookup.
 - [ ] **Plaid Sync**: Live bank auto-sync (pending Plaid account approval).
 - [ ] **Subscription Billing**: Paid SaaS tier with Stripe integration.
+- [ ] **Rebrand**: Full transition to Lumière Ledger / lumiereleadger.com (May 2026).
 
 ---
 
-### Non-Goals
-- Global data sharing or anonymous benchmarking (until Phase 4).
-- Hosting user-uploaded high-res photo galleries (metadata tracking only).
+### Non-Goals (Current Phase)
+- Global data sharing or anonymous benchmarking.
+- Hosting user-uploaded high-res photo galleries.
 - Real-time stock portfolio tracking.
-- Multi-currency conversion (single-currency per user for now).
+- Multi-currency conversion (single-currency per user).
 
 ---
 

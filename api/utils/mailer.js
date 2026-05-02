@@ -1,5 +1,5 @@
 /**
- * Studio Tracker Mailer Bridge
+ * Lumière Ledger Mailer Bridge
  * Connects the Expense Tracker to external transactional email services.
  * 
  * RECOMMENDED: Use Resend (resend.com) for high-delivery studio emails.
@@ -29,7 +29,7 @@ async function sendInvoiceEmail({ to, subject, body, attachments, fromName, repl
     }
 
     try {
-        const baseDomainEmail = process.env.RESEND_FROM || 'Studio Tracker <support@throughthelens.media>';
+        const baseDomainEmail = process.env.RESEND_FROM || 'Lumière Ledger <support@lumiereledger.com>';
         const matches = baseDomainEmail.match(/<([^>]+)>/);
         const emailOnly = matches ? matches[1] : baseDomainEmail;
         const fromEmail = fromName ? `${fromName} <${emailOnly}>` : baseDomainEmail;
@@ -73,14 +73,14 @@ async function sendInviteEmail({ to, name, code }) {
         const html = `
             <div style="background-color: #0f172a; color: white; padding: 40px; font-family: 'Inter', sans-serif; border-radius: 12px; max-width: 600px; margin: 0 auto;">
                 <div style="text-align: center; margin-bottom: 30px;">
-                    <h1 style="font-size: 24px; font-weight: 900; letter-spacing: -0.02em; margin: 0;">STUDIO TRACKER</h1>
+                    <h1 style="font-size: 24px; font-weight: 900; letter-spacing: -0.02em; margin: 0;">LUMIÈRE LEDGER</h1>
                     <div style="height: 2px; width: 40px; background: #f97316; margin: 10px auto;"></div>
                 </div>
                 
                 <p style="font-size: 16px; line-height: 1.6; color: #94a3b8;">Hello ${name || 'Photographer'},</p>
                 
                 <p style="font-size: 16px; line-height: 1.6; color: #94a3b8;">
-                    You've been invited to join the <strong>Studio Tracker</strong>. 
+                    You've been invited to join the <strong>Lumière Ledger</strong>. 
                     Manage your transactions, track gear depreciation, and automate your tax workflow with ease.
                 </p>
 
@@ -102,7 +102,7 @@ async function sendInviteEmail({ to, name, code }) {
         const data = await resend.emails.send({
             from: fromEmail,
             to: [to],
-            subject: 'Invite: Welcome to the Studio Tracker',
+            subject: 'Invite: Welcome to the Lumière Ledger',
             html: html
         });
 
@@ -153,7 +153,7 @@ async function sendDailyReportEmail({ to, activityRows }) {
                 </div>
 
                 <p style="font-size: 12px; color: #475569; text-align: center; margin-top: 30px;">
-                    This is an automated production report from the Studio Tracker.
+                    This is an automated production report from Lumière Ledger.
                 </p>
             </div>
         `;
@@ -178,8 +178,8 @@ async function sendPromoEmail({ to, subject }) {
     if (!resend) return { success: false, error: "Mailer service not configured" };
 
     try {
-        const fromEmail = process.env.RESEND_FROM || 'Studio Tracker <support@throughthelens.media>';
-        const subjectLine = subject || '📸 Level Up Your Photography Business with Studio Tracker';
+        const fromEmail = process.env.RESEND_FROM || 'Lumière Ledger <support@lumiereledger.com>';
+        const subjectLine = subject || '📸 Level Up Your Photography Business with Lumière Ledger';
 
         const html = `
             <!DOCTYPE html>
@@ -211,7 +211,7 @@ async function sendPromoEmail({ to, subject }) {
                     <div class="hero">
                         <h1>Stop Tracking.<br/>Start Operating.</h1>
                         <p>The elite financial command center designed exclusively for photography studios.</p>
-                        <a href="https://throughthelens.media" class="btn">Experience Studio Tracker</a>
+                        <a href="https://lumiereledger.com" class="btn">Experience Lumière Ledger</a>
                     </div>
                     
                     <div style="text-align: center; margin-bottom: 40px;">
@@ -239,7 +239,7 @@ async function sendPromoEmail({ to, subject }) {
                     </div>
 
                     <div class="testimonial">
-                        "Studio Tracker transformed how I view my business profitability. It's not just an expense tracker; it's a growth engine."
+                        "Lumière Ledger transformed how I view my business profitability. It's not just an expense tracker; it's a growth engine."
                     </div>
                     
                     <div style="background: rgba(47, 107, 255, 0.1); border-radius: 18px; padding: 30px; text-align: center;">
@@ -277,7 +277,7 @@ async function sendContactRelayEmail({ senderName, senderEmail, messageContent }
     if (!resend) return { success: false, error: "Mailer service not configured" };
 
     try {
-        const fromEmail = 'Studio Tracker Inbound <support@throughthelens.media>';
+        const fromEmail = 'Lumière Ledger Inbound <support@lumiereledger.com>';
         const adminEmail = 'joshua.deuermeyer@gmail.com';
 
         const escapeHtml = (unsafe) => {
@@ -295,7 +295,7 @@ async function sendContactRelayEmail({ senderName, senderEmail, messageContent }
 
         const html = `
             <div style="background-color: #0f172a; color: white; padding: 30px; font-family: sans-serif; border-radius: 12px; max-width: 600px;">
-                <h2 style="color: #2f6bff; margin-top: 0;">New Inquiry from Facebook / Studio Tracker</h2>
+                <h2 style="color: #2f6bff; margin-top: 0;">New Inquiry from Facebook / Lumière Ledger</h2>
                 <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 8px; margin: 20px 0;">
                     <p><strong>From:</strong> ${safeName || 'Anonymous'} (${safeEmail})</p>
                     <p style="white-space: pre-wrap; line-height: 1.6; color: #e9eefc;">${safeMessage}</p>
@@ -335,7 +335,7 @@ async function sendInvoiceApprovalEmail({
     if (!resend) return { success: false, error: 'Mailer service not configured' };
 
     try {
-        const fromEmail = process.env.RESEND_FROM || 'Studio Tracker <support@throughthelens.media>';
+        const fromEmail = process.env.RESEND_FROM || 'Lumière Ledger <support@lumiereledger.com>';
         const appUrl = process.env.APP_URL || 'https://app.throughthelens.media';
         const totalDollars = (totalCents / 100).toFixed(2);
         const signedDate = new Date(signedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
@@ -360,7 +360,7 @@ async function sendInvoiceApprovalEmail({
 
     <!-- Header -->
     <div style="text-align:center; margin-bottom:32px;">
-      <div style="font-size:22px; font-weight:900; letter-spacing:-0.02em; color:#fff;">STUDIO TRACKER</div>
+      <div style="font-size:22px; font-weight:900; letter-spacing:-0.02em; color:#fff;">LUMIÈRE LEDGER</div>
       <div style="height:2px; width:40px; background:#f97316; margin:10px auto 0;"></div>
     </div>
 
@@ -393,19 +393,19 @@ async function sendInvoiceApprovalEmail({
       <div style="font-size:11px; font-weight:900; color:#38bdf8; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:16px;">What to Do Next</div>
       <ol style="margin:0; padding-left:20px; font-size:14px; color:#cbd5e1; line-height:2;">
         <li>Verify payment has arrived in your bank or payment app</li>
-        <li>Log into Studio Tracker and mark the invoice as <strong style="color:#4ade80;">PAID</strong></li>
+        <li>Log into Lumière Ledger and mark the invoice as <strong style="color:#4ade80;">PAID</strong></li>
         <li>Update the client status in your CRM pipeline as needed</li>
       </ol>
     </div>
 
     <!-- Deep-link CTA -->
     <div style="text-align:center; margin-bottom:32px;">
-      <a href="${appUrl}/crm/financials" style="display:inline-block; background:#f97316; color:#fff; padding:14px 28px; border-radius:10px; font-weight:900; font-size:14px; text-decoration:none;">View in Studio Tracker &rarr;</a>
+      <a href="${appUrl}/crm/financials" style="display:inline-block; background:#f97316; color:#fff; padding:14px 28px; border-radius:10px; font-weight:900; font-size:14px; text-decoration:none;">View in Lumière Ledger &rarr;</a>
     </div>
 
     <!-- Footer -->
     <p style="text-align:center; font-size:12px; color:#334155; margin:0;">
-      This is an automated notification from Studio Tracker &mdash; sent because a client approved an invoice for ${studioName}.
+      This is an automated notification from Lumière Ledger &mdash; sent because a client approved an invoice for ${studioName}.
     </p>
   </div>
 </body>
@@ -430,6 +430,40 @@ async function sendInvoiceApprovalEmail({
     }
 }
 
+async function sendHealthAlertEmail({ to, issues }) {
+    console.log(`[MAILER] Sending Health Alert to ${to}...`);
+    const resend = getResend();
+    if (!resend) return { success: false, error: "Mailer service not configured" };
+
+    try {
+        const fromEmail = process.env.RESEND_FROM || 'Studio Alerts <support@throughthelens.media>';
+        const html = `
+            <div style="background-color: #0f172a; color: white; padding: 40px; font-family: sans-serif; border-radius: 12px; max-width: 600px;">
+                <h2 style="color: #ef4444; margin-top: 0;">🚨 LUMIÈRE LEDGER ALERT: SYSTEM DEGRADED</h2>
+                <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <p style="margin-top: 0; font-weight: bold; color: #fca5a5;">The internal watchdog detected the following critical issues:</p>
+                    <ul style="color: #f8fafc; line-height: 1.6;">
+                        ${issues.map(i => `<li>${i}</li>`).join('')}
+                    </ul>
+                </div>
+                <p style="font-size: 12px; color: #94a3b8;">This is an automated production alert from the Vercel Cron Watchdog.</p>
+            </div>
+        `;
+
+        const data = await resend.emails.send({
+            from: fromEmail,
+            to: [to],
+            subject: `🚨 URGENT: Lumière Ledger Alert`,
+            html: html
+        });
+
+        return { success: true, data };
+    } catch (error) {
+        console.error("[MAILER] Alert Dispatch failed:", error);
+        return { success: false, error: error.message };
+    }
+}
+
 module.exports = { 
     sendInvoiceEmail, 
     sendInviteEmail, 
@@ -437,4 +471,5 @@ module.exports = {
     sendPromoEmail,
     sendContactRelayEmail,
     sendInvoiceApprovalEmail,
+    sendHealthAlertEmail,
 };

@@ -107,7 +107,7 @@ export default function Backup() {
             {/* Header */}
             <div style={{ marginBottom: '30px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', textAlign: 'center' }}>
                 <div>
-                    <h1 style={{ fontSize: '2.4rem', fontWeight: 950, marginBottom: '6px', color: '#38bdf8' }}>Studio Control Center</h1>
+                    <h1 style={{ fontSize: '2.4rem', fontWeight: 950, marginBottom: '6px', color: '#38bdf8' }}>Ledger Control Center</h1>
                     <div className="muted" style={{ fontWeight: 600, fontSize: '15px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
                         <span>Infrastructure Management & Intelligence Engine</span>
                     </div>
@@ -119,7 +119,7 @@ export default function Backup() {
                     <button className={`pill ${activeTab === 'intelligence' ? 'active' : ''}`} onClick={() => setActiveTab('intelligence')}>🧠 AI Intelligence</button>
                     {isAdmin && <button className={`pill ${activeTab === 'infrastructure' ? 'active' : ''}`} onClick={() => setActiveTab('infrastructure')}>🔒 Infrastructure</button>}
                     <button className={`pill ${activeTab === 'help' ? 'active' : ''}`} onClick={() => setActiveTab('help')}>❓ Documentation</button>
-                    {isAdmin && <button className={`pill ${activeTab === 'saas' ? 'active' : ''}`} onClick={() => setActiveTab('saas')}>💎 SaaS Studio Mgmt</button>}
+                    {isAdmin && <button className={`pill ${activeTab === 'saas' ? 'active' : ''}`} onClick={() => setActiveTab('saas')}>💎 SaaS Ledger Mgmt</button>}
                 </nav>
             </div>
 

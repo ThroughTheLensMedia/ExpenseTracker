@@ -16,7 +16,7 @@ export default function Home() {
       <div style={{ textAlign: 'center', maxWidth: '800px', marginTop: '60px' }}>
         <img 
           src="/icon.png" 
-          alt="Studio Tracker Logo" 
+          alt="Lumière Ledger Logo" 
           width="140"
           height="140"
           style={{ 
@@ -36,16 +36,9 @@ export default function Home() {
           Financial Intelligence for <span style={{ color: 'var(--accent)' }}>Today's Photographer</span>
         </h1>
         
-        <p style={{ 
-          fontSize: '1.2rem', 
-          color: '#94a3b8', 
-          lineHeight: '1.6', 
-          maxWidth: '600px', 
-          margin: '0 auto 40px auto',
-          fontWeight: 500
-        }}>
-          Studio Tracker is the elite command center for photographers. 
-          Automate your tax data, manage gear assets, and monitor your business health with precision.
+        <p className="muted" style={{ fontSize: '20px', lineHeight: 1.6, maxWidth: '600px', margin: '0 auto', marginBottom: '40px' }}>
+          Lumière Ledger is the elite command center for photographers. 
+          Automate your Schedule C tax mapping, track gear depreciation, and manage your pipeline in one unified hub.
         </p>
 
         <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
@@ -55,7 +48,7 @@ export default function Home() {
             borderRadius: '16px',
             textDecoration: 'none'
           }}>
-            ENTER THE STUDIO
+            ENTER LUMIÈRE
           </NavLink>
         </div>
       </div>
@@ -76,12 +69,12 @@ export default function Home() {
         </div>
         <div className="card glass" style={{ padding: '30px', textAlign: 'center' }}>
           <div style={{ fontSize: '2rem', marginBottom: '15px' }}>⚖️</div>
-          <h3 style={{ fontWeight: 800, marginBottom: '10px' }}>Tax Optimization</h3>
+          <h3 style={{ fontWeight: '800', marginBottom: '10px' }}>Tax Optimization</h3>
           <p className="muted" style={{ fontSize: '14px' }}>Automated Schedule C categories and mileage tracking designed specifically for photographers.</p>
         </div>
         <div className="card glass" style={{ padding: '30px', textAlign: 'center' }}>
           <div style={{ fontSize: '2rem', marginBottom: '15px' }}>📸</div>
-          <h3 style={{ fontWeight: 800, marginBottom: '10px' }}>Asset Command</h3>
+          <h3 style={{ fontWeight: '800', marginBottom: '10px' }}>Asset Command</h3>
           <p className="muted" style={{ fontSize: '14px' }}>Manage camera gear value, depreciation and equipment insurance data in one place.</p>
         </div>
       </div>
@@ -92,8 +85,14 @@ export default function Home() {
             <NavLink to="/privacy" style={{ color: 'rgba(255,255,255,0.4)', textDecoration: 'none', fontSize: '11px', fontWeight: 800, letterSpacing: '0.05em' }}>PRIVACY POLICY</NavLink>
             <NavLink to="/terms" style={{ color: 'rgba(255,255,255,0.4)', textDecoration: 'none', fontSize: '11px', fontWeight: 800, letterSpacing: '0.05em' }}>TERMS OF SERVICE</NavLink>
           </div>
-          <div className="muted" style={{ fontSize: '10px', fontWeight: 900, letterSpacing: '0.15em', opacity: 0.6, textAlign: 'center' }}>
-            STUDIO TRACKER © 2026 • PROFESSIONAL EDITION
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginTop: '10px' }}>
+            <img src="/icon.png" alt="Lumière Ledger Logo" style={{ width: '40px', height: '40px', borderRadius: '10px' }} />
+            <div style={{ textAlign: 'left' }}>
+              <div className="title" style={{ fontSize: '1.4rem', fontWeight: 950, letterSpacing: '-0.02em', whiteSpace: 'nowrap', lineHeight: 1 }}>LUMIÈRE LEDGER</div>
+              <div className="muted" style={{ fontSize: '10px', fontWeight: 900, letterSpacing: '0.15em', opacity: 0.6, marginTop: '4px' }}>
+                © 2026 • PROFESSIONAL EDITION
+              </div>
+            </div>
           </div>
         </div>
       </footer>

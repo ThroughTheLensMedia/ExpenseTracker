@@ -1,4 +1,4 @@
-# Studio Tracker — Hardening Fix Checklist
+# Lumière Ledger — Hardening Fix Checklist
 
 > Focus: Architecture · Security · QA · DevOps
 > Stripe and Plaid deferred until this list is complete.
@@ -115,14 +115,14 @@
 | 7 | Create invoice with $50 discount on $500 subtotal — check email, pay page | Total = $450 |
 | 8 | Kill DB connection mid-request → check licensing response | 503, not 200 |
 | 9 | Trigger Vercel cron via dashboard → check admin email inbox | Daily report received |
-| 10 | Click "EXTEND ACCESS" on any non-SCC page | Navigates to Studio Control Center |
+| 10 | Click "EXTEND ACCESS" on any non-SCC page | Navigates to Ledger Control Center |
 | 11 | Trigger invoice approval → check email for "Download PDF" link | Link absent or working |
 
 ---
 
 ## Deferred (Do Not Start Until Above Is Complete)
 - [ ] Stripe billing integration (checkout, webhook, subscription lifecycle)
-- [ ] Stripe Customer Portal in Studio Control Center
+- [ ] Stripe Customer Portal in Ledger Control Center
 - [ ] Plaid access token encryption at rest
 - [ ] Plaid per-connection error isolation in sync loop
 - [ ] Subscriber pricing page + onboarding flow

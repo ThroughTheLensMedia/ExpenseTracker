@@ -388,7 +388,7 @@ export default function PayInvoice() {
             {/* Footer */}
             <div style={{ textAlign: 'center', padding: '24px 0 40px', fontSize: '12px', color: '#cbd5e1' }}>
                 {studio.business_name}{studio.email ? ` · ${studio.email}` : ''}{studio.phone ? ` · ${studio.phone}` : ''}
-                <br /><span style={{ opacity: 0.5 }}>Powered by Studio Tracker</span>
+                <br /><span style={{ opacity: 0.5 }}>Powered by Lumière Ledger</span>
             </div>
         </div>
     );

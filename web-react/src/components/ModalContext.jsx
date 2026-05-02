@@ -68,7 +68,7 @@ export function ModalProvider({ children }) {
                                 letterSpacing: '0.12em', color: 'rgba(165,180,252,0.9)',
                                 textTransform: 'uppercase'
                             }}>
-                                Studio Tracker's Engine says...
+                                Lumière Ledger's Engine says...
                             </span>
                         </div>
 
