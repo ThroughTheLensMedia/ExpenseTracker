@@ -152,4 +152,3 @@ export function AuthProvider({ children }) {
 }
 
 export const useAuth = () => useContext(AuthContext);
-export { supabase }; // Export for direct usage elsewhere if needed
