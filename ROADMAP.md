@@ -26,6 +26,21 @@ This document outlines the strategic evolution of Lumière Ledger from a financi
 
 ---
 
+## ✅ PHASE 1.5: WEBSITE LEAD CAPTURE & ADD-ON PLATFORM (COMPLETED v7.1.0)
+
+*Bridges the TTLM public website and Lumière Ledger in real time. Establishes the add-on revenue layer.*
+
+*   [x] **Real-Time Lead Intake**: `POST /api/intake` — public server-to-server endpoint receives booking form submissions. Validates per-user API key, inserts lead, returns `ok: true` within milliseconds.
+*   [x] **Client Deduplication**: Email-based lookup before insert. Returning clients link to existing record — no duplicate cards. `isReturning` flag appended to lead notes.
+*   [x] **Multi-Tenant Intake Keys**: `intake_keys` table stores per-user API keys. Each user generates their own `ll-xxxx` key in the Integrations tab. Keys are rotatable (revoke + re-generate). Service role bypasses RLS for server-side key lookup.
+*   [x] **Legacy Env Fallback**: Single-owner setup using `LUMIERE_INTAKE_SECRET` env var still works without DB migration for existing users.
+*   [x] **Real-Time In-App Notifications**: Supabase Realtime `postgres_changes` subscription fires on `leads` INSERT filtered by `user_id`. Delivers slide-in toast (8s auto-dismiss, click → CRM) and badge counter on nav + dropdown.
+*   [x] **Integrations Tab**: Control Center tab at `?tab=integration` for key management — generate, label, copy, revoke, view env var setup panel and code snippet.
+*   [x] **Add-On Marketplace (`/addons`)**: Surfaces available add-ons (Website Lead Capture — active) and coming-soon add-ons (Website Builder, Client Portal, Contract E-Sign). Accessible from main nav dropdown.
+*   [x] **TTLM Form Worker Updated**: `functions/api/form.js` v2.0.0 — success gate is Turnstile + owner email only. GAS, D1, customer email, and Lumière intake are all fire-and-forget via `context.waitUntil`. Non-blocking.
+
+---
+
 ## 🧠 PHASE 2: AI AGENTIC CAPABILITIES ("STUDIO HANDS")
 *   [ ] **AI Function Calling**:
     *   Grant the "Your Assistant" sidebar the ability to write to the database (create/update records).
@@ -63,6 +78,19 @@ This document outlines the strategic evolution of Lumière Ledger from a financi
     *   Connect live bank feeds via Plaid. (Pushed out to prioritize core platform autonomy).
 *   [ ] **Paid Subscriptions / Saas Upgrades**:
     *   Advanced tiering and paywalls for premium functionality.
+
+---
+
+## 🧩 PHASE 6: ADD-ON PLATFORM & PHOTOGRAPHER WEBSITE BUSINESS
+
+*Revenue expansion — Lumière Ledger becomes the backend for a photography website business.*
+
+*   [x] **Phase 6 Foundation**: Intake key infrastructure + Add-On Marketplace page shipped.
+*   [ ] **Photography Website Builder**: Conversion-optimized Cloudflare Pages template pre-wired to Lumière intake. One product sale = one live website + one active integration key.
+*   [ ] **Website Builder Pricing Tier**: Subscription add-on billed through Lumière Ledger. Admin assigns key + domain on purchase.
+*   [ ] **Client Portal**: Branded portal for clients to review invoices, approve quotes, and download deliverables. Syncs status back to CRM automatically.
+*   [ ] **Contract E-Sign**: Send, sign, and store contracts directly from the CRM pipeline. Pre-built photography contract templates included.
+*   [ ] **Add-On Billing**: Stripe integration for per-add-on recurring charges. Admin dashboard tracks revenue per add-on per user.
 
 ---
 

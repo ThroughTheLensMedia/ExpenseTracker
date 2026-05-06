@@ -7,26 +7,49 @@ const express = require("express");
 const router = express.Router();
 const { supabase } = require("../db");
 
-// Joshua's Supabase user_id — intake leads are always scoped to this account
-const OWNER_USER_ID = "49e7efcb-6434-4f0c-9563-3151a6d50df9";
+// Fallback for the original single-owner setup (env var still works for backward compat)
+const LEGACY_resolvedUserId = "49e7efcb-6434-4f0c-9563-3151a6d50df9";
+const LEGACY_INTAKE_SECRET  = process.env.LUMIERE_INTAKE_SECRET || "";
 
 router.post("/", async (req, res) => {
     try {
         const secret = req.headers["x-intake-secret"] || req.body?.intake_secret;
         const INTAKE_SECRET = process.env.LUMIERE_INTAKE_SECRET;
 
-        if (!INTAKE_SECRET) {
-            console.error("[INTAKE] LUMIERE_INTAKE_SECRET env var is not set.");
-            return res.status(500).json({ ok: false, error: "Intake not configured." });
-        }
-
-        if (!secret || secret !== INTAKE_SECRET) {
-            console.warn("[INTAKE] Rejected request — invalid or missing intake secret.");
-            return res.status(401).json({ ok: false, error: "Unauthorized." });
+        if (!secret) {
+            return res.status(401).json({ ok: false, error: "Missing intake secret." });
         }
 
         if (!supabase) {
             return res.status(500).json({ ok: false, error: "Database unavailable." });
+        }
+
+        // ---- Resolve user_id from intake key ----
+        // Priority 1: DB-managed key (multi-tenant)
+        // Priority 2: Legacy env var (backward compat for original owner)
+        let resolvedUserId = null;
+
+        const { data: keyRecord, error: keyErr } = await supabase
+            .from("intake_keys")
+            .select("user_id, id")
+            .eq("key", secret)
+            .maybeSingle();
+
+        if (keyRecord) {
+            resolvedUserId = keyRecord.user_id;
+            // Update last_used_at (fire-and-forget)
+            supabase.from("intake_keys")
+                .update({ last_used_at: new Date().toISOString() })
+                .eq("id", keyRecord.id)
+                .then(() => {})
+                .catch(() => {});
+        } else if (LEGACY_INTAKE_SECRET && secret === LEGACY_INTAKE_SECRET) {
+            resolvedUserId = LEGACY_resolvedUserId;
+        }
+
+        if (!resolvedUserId) {
+            console.warn("[INTAKE] Rejected — key not found in DB or env fallback.");
+            return res.status(401).json({ ok: false, error: "Unauthorized." });
         }
 
         const {
@@ -44,26 +67,64 @@ router.post("/", async (req, res) => {
             return res.status(400).json({ ok: false, error: "name and email are required." });
         }
 
-        // Build a readable notes field from the form details
+        const cleanEmail = String(email).trim().toLowerCase();
+        const cleanName  = String(name).trim();
+        const cleanPhone = String(phone || "").trim();
+
+        // ---- Client deduplication: find or create by email ----
+        let clientId = null;
+        let isReturning = false;
+
+        const { data: existingClient } = await supabase
+            .from("clients")
+            .select("id, name")
+            .eq("user_id", resolvedUserId)
+            .ilike("email", cleanEmail)
+            .maybeSingle();
+
+        if (existingClient) {
+            // Returning customer — link to existing record
+            clientId = existingClient.id;
+            isReturning = true;
+            console.log(`[INTAKE] Returning client matched — id:${clientId} email:${cleanEmail}`);
+        } else {
+            // New customer — create a client record first
+            const { data: newClient, error: clientErr } = await supabase
+                .from("clients")
+                .insert({ user_id: resolvedUserId, name: cleanName, email: cleanEmail, phone: cleanPhone })
+                .select("id")
+                .single();
+
+            if (clientErr) {
+                console.warn("[INTAKE] Client creation failed (non-fatal):", clientErr.message);
+            } else {
+                clientId = newClient.id;
+                console.log(`[INTAKE] New client created — id:${clientId} email:${cleanEmail}`);
+            }
+        }
+
+        // ---- Build notes ----
         const noteParts = [];
-        if (idealDate)  noteParts.push(`Ideal Date: ${idealDate}`);
-        if (location)   noteParts.push(`Location: ${location}`);
-        if (message)    noteParts.push(`Message: ${message}`);
-        if (sourceUrl)  noteParts.push(`Source: ${sourceUrl}`);
+        if (isReturning)  noteParts.push(`⟳ Returning client`);
+        if (idealDate)    noteParts.push(`Ideal Date: ${idealDate}`);
+        if (location)     noteParts.push(`Location: ${location}`);
+        if (message)      noteParts.push(`Message: ${message}`);
+        if (sourceUrl)    noteParts.push(`Source: ${sourceUrl}`);
         const notes = noteParts.join("\n");
 
+        // ---- Insert lead ----
         const { data, error } = await supabase
             .from("leads")
             .insert({
-                user_id:            OWNER_USER_ID,
-                name:               String(name  || "").trim(),
-                email:              String(email || "").trim(),
-                phone:              String(phone || "").trim(),
+                user_id:            resolvedUserId,
+                client_id:          clientId,
+                name:               cleanName,
+                email:              cleanEmail,
+                phone:              cleanPhone,
                 project_type:       String(shootType || "Other").trim(),
                 quoted_value_cents: 0,
                 status:             "New Lead",
-                notes,
-                client_id:          null
+                notes
             })
             .select()
             .single();
@@ -73,8 +134,8 @@ router.post("/", async (req, res) => {
             return res.status(500).json({ ok: false, error: "Failed to save lead." });
         }
 
-        console.log(`[INTAKE] Lead created — id:${data.id} name:${data.name} email:${data.email}`);
-        return res.json({ ok: true, id: data.id });
+        console.log(`[INTAKE] Lead created — id:${data.id} returning:${isReturning} client_id:${clientId}`);
+        return res.json({ ok: true, id: data.id, returning: isReturning });
 
     } catch (err) {
         console.error("[INTAKE] Unexpected error:", err.message);

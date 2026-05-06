@@ -26,7 +26,8 @@ const activityRouter = require("./routes/activity");
 const brainRouter = require("./routes/brain"); // AI Intelligence Engine
 const plaidRouter = require("./routes/plaid"); // Plaid Bank Sync
 const payRouter = require("./routes/pay");    // Public Payment Portal (no auth)
-const intakeRouter = require("./routes/intake"); // Public TTLM website lead intake (no auth)
+const intakeRouter     = require("./routes/intake");      // Public TTLM website lead intake (no auth)
+const intakeKeysRouter = require("./routes/intake-keys"); // Authenticated key management
 const metricsRouter = require("./routes/metrics"); // Dashboard metrics layer
 const vendorsRouter = require("./routes/vendors"); // Vendor specific settings
 
@@ -136,6 +137,7 @@ apiRouter.use("/assets", assetsRouter);
 apiRouter.use("/invoices", invoiceRouter);
 apiRouter.use("/admin", adminRouter);
 apiRouter.use("/leads", leadsRouter);
+apiRouter.use("/intake-keys", intakeKeysRouter);
 apiRouter.use("/pwa", pwaRouter);
 apiRouter.use("/settings", settingsRouter);
 apiRouter.use("/subscription", subscriptionRouter);

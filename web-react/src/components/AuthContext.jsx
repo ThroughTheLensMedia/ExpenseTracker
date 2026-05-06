@@ -8,9 +8,12 @@ if (!supabaseUrl || !supabaseKey) {
   console.error("Supabase credentials missing! Ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set in Vercel.");
 }
 
-const supabase = (supabaseUrl && supabaseKey) 
+const supabase = (supabaseUrl && supabaseKey)
   ? createClient(supabaseUrl, supabaseKey)
   : null;
+
+// Export so hooks (e.g. useLeadsRealtime) can subscribe to Realtime without creating a second client
+export { supabase };
 
 const AuthContext = createContext();
 

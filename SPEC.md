@@ -1,7 +1,7 @@
 # Lumière Ledger v7.0 — Master Engineering Specification
 > ✅ **REBRAND COMPLETE**: This product has been transitioned to **Lumière Ledger** (`lumiereledger.com`) as of May 2026.
 
-**Last updated:** 2026-04-14
+**Last updated:** 2026-05-06
 
 ---
 
@@ -58,6 +58,8 @@ The world's most elite, AI-driven financial command center for professional phot
 | `routes/subscription.js` | Beta code redemption, subscription status tracking |
 | `routes/activity.js` | Engagement pulse — daily active minutes tracking |
 | `routes/leads.js` | CRM lead/client management |
+| `routes/intake.js` | **Public** server-to-server endpoint — receives leads from external websites. Validates `x-intake-secret`, resolves owning user via `intake_keys` table (falls back to legacy env var), deduplicates clients by email, inserts lead. No auth required. |
+| `routes/intake-keys.js` | **Authenticated** CRUD for per-user intake API keys. `GET /intake-keys`, `POST /intake-keys` (generates `ll-` prefixed UUID key), `DELETE /intake-keys/:id`. |
 | `routes/pwa.js` | PWA quick-snap receipt capture endpoint |
 | `middleware/auth.js` | JWT auth + `requireRole()`. Uses adminClient (service role) for role lookups to bypass RLS. |
 | `middleware/licensing.js` | Subscription gate — blocks expired/suspended users |
@@ -79,7 +81,8 @@ The world's most elite, AI-driven financial command center for professional phot
 | `Mileage.jsx` | Mileage tracker — log by date, Google Maps automation, IRS rate lookup |
 | `Rules.jsx` | Classification rules editor — vendor matching with retroactive apply |
 | `CRM.jsx` | Lead pipeline — kanban board (New Lead, Quoted, Booked), archive |
-| `Backup.jsx` | Studio Control Center — 6-tab settings hub |
+| `Backup.jsx` | Studio Control Center — 7-tab settings hub |
+| `AddOns.jsx` | Add-On Marketplace — lists available and coming-soon platform extensions. Routes to integration setup. |
 | `Login.jsx` | Auth — email/password, Google OAuth, beta code signup |
 | `Home.jsx` | Public landing page — hero section, feature grid, CTA |
 | `Privacy.jsx` | Privacy policy (static) |
@@ -106,6 +109,7 @@ The world's most elite, AI-driven financial command center for professional phot
 | `InfrastructureTab.jsx` | System health — DB checks, mailer readiness, activity logging |
 | `SaasTab.jsx` | SaaS admin — beta codes, subscriptions, engagement pulse. Admin-only. |
 | `HelpTab.jsx` | Help & FAQ — troubleshooting, support links |
+| `IntegrationTab.jsx` | Website Lead Capture management — generate/revoke intake API keys, copy env vars, view integration code snippet. |
 | `ChangeLogModal.jsx` | Version changelog — release notes display |
 
 #### Database — SQL Schemas
@@ -118,6 +122,7 @@ The world's most elite, AI-driven financial command center for professional phot
 | `supabase_schema_activity.sql` | Daily user activity tracking |
 | `supabase_schema_leads.sql` | CRM leads & clients with relationships |
 | `supabase_schema_plaid.sql` | Plaid integration tables (items, accounts, sync cursors) |
+| `supabase_schema_intake_keys.sql` | `intake_keys` table — per-user API keys for website lead capture. Includes RLS policy + lookup index. |
 | `supabase_fix_admin_rls.sql` | Adjusts RLS on admin-only tables for server-side service role access |
 
 ---
@@ -168,6 +173,7 @@ The world's most elite, AI-driven financial command center for professional phot
 | `PLAID_SECRET` | No | Plaid API secret |
 | `CRON_SECRET` | No | Admin cron job authentication |
 | `VITE_GOOGLE_MAPS_API_KEY` | No | Google Maps mileage automation |
+| `LUMIERE_INTAKE_SECRET` | No | Legacy single-owner intake secret (env fallback for backward compat) |
 
 ---
 
@@ -192,6 +198,10 @@ The world's most elite, AI-driven financial command center for professional phot
 - [x] **Bank Import**: 11+ CSV formats with auto-detection and dedup.
 - [x] **Performance**: Stale-while-revalidate cache shows first 25 rows instantly on cold start.
 - [x] **Admin Access**: `requireRole('admin')` correctly routes the admin user via service role DB lookup.
+- [x] **Website Lead Capture**: Multi-tenant intake key system routes external booking forms into the CRM in real time.
+- [x] **Client Deduplication**: Returning clients link to existing records — no duplicate contacts.
+- [x] **Real-Time Notifications**: Supabase Realtime subscription fires in-app toast + badge on new lead INSERT.
+- [x] **Add-On Marketplace**: `/addons` page surfaces available and coming-soon platform extensions.
 - [ ] **Plaid Sync**: Live bank auto-sync (pending Plaid account approval).
 - [ ] **Subscription Billing**: Paid SaaS tier with Stripe integration.
 - [ ] **Rebrand**: Full transition to Lumière Ledger / lumiereleadger.com (May 2026).

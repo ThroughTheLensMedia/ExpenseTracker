@@ -9,6 +9,7 @@ import AutomationTab from '../components/control-center/AutomationTab.jsx';
 import InfrastructureTab from '../components/control-center/InfrastructureTab.jsx';
 import HelpTab from '../components/control-center/HelpTab.jsx';
 import SaasTab from '../components/control-center/SaasTab.jsx';
+import IntegrationTab from '../components/control-center/IntegrationTab.jsx';
 
 const DEFAULT_SETTINGS = {
     business_name: '', contact_name: '', website: '', email: '', phone: '', address: '',
@@ -40,7 +41,7 @@ export default function Backup() {
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const t = params.get('tab');
-        if (t && ['automation', 'profile', 'infrastructure', 'help', 'saas', 'intelligence'].includes(t)) {
+        if (t && ['automation', 'profile', 'infrastructure', 'help', 'saas', 'intelligence', 'integration'].includes(t)) {
             setActiveTab(t);
         }
     }, [window.location.search]);
@@ -118,6 +119,7 @@ export default function Backup() {
                     <button className={`pill ${activeTab === 'automation' ? 'active' : ''}`} onClick={() => setActiveTab('automation')}>⚡ Automation</button>
                     <button className={`pill ${activeTab === 'intelligence' ? 'active' : ''}`} onClick={() => setActiveTab('intelligence')}>🧠 AI Intelligence</button>
                     {isAdmin && <button className={`pill ${activeTab === 'infrastructure' ? 'active' : ''}`} onClick={() => setActiveTab('infrastructure')}>🔒 Infrastructure</button>}
+                    <button className={`pill ${activeTab === 'integration' ? 'active' : ''}`} onClick={() => setActiveTab('integration')}>🔗 Integrations</button>
                     <button className={`pill ${activeTab === 'help' ? 'active' : ''}`} onClick={() => setActiveTab('help')}>❓ Documentation</button>
                     {isAdmin && <button className={`pill ${activeTab === 'saas' ? 'active' : ''}`} onClick={() => setActiveTab('saas')}>💎 SaaS Ledger Mgmt</button>}
                 </nav>
@@ -149,6 +151,7 @@ export default function Backup() {
             {activeTab === 'intelligence' && <IntelligenceTab settings={settings} setSettings={setSettings} user={user} loading={loading} setLoading={setLoading} onReload={loadData} />}
             {activeTab === 'automation' && <AutomationTab rules={rules} allExpenses={allExpenses} onReload={loadData} />}
             {activeTab === 'infrastructure' && <InfrastructureTab subscription={subscription} onReload={loadData} />}
+            {activeTab === 'integration' && <IntegrationTab />}
             {activeTab === 'help' && <HelpTab />}
             {activeTab === 'saas' && <SaasTab user={user} allSubscriptions={allSubscriptions} betaCodes={betaCodes} dailyStats={dailyStats} statusMsg={statusMsg} onReload={loadData} />}
         </section>

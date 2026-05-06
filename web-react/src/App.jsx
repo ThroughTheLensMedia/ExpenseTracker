@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useActivityPulse } from "./hooks/useActivityPulse";
+import { useLeadsRealtime } from "./hooks/useLeadsRealtime";
 import { BrowserRouter as Router, Routes, Route, NavLink, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './components/AuthContext';
 import { ModalProvider } from './components/ModalContext';
@@ -16,6 +17,7 @@ import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import Home from './pages/Home';
 import PayInvoice from './pages/PayInvoice';
+import AddOns from './pages/AddOns';
 import AssistantSidebar from './components/AssistantSidebar';
 
 
@@ -43,6 +45,7 @@ function PrivateRoute({ children }) {
 
 function AppContent() {
   useActivityPulse();
+  const { newLeadCount, clearBadge } = useLeadsRealtime();
   const [apiStatus, setApiStatus] = useState('Checking...');
   const { user, loading, logout, subscription, settings } = useAuth();
   const location = useLocation();
@@ -212,8 +215,8 @@ function AppContent() {
             <NavLink to="/import" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
               📥 Bank Import
             </NavLink>
-            <NavLink to="/crm" end onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-              🤝 CRM Pipeline
+            <NavLink to="/crm" end onClick={() => { setMobileMenuOpen(false); clearBadge(); }} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
+              🤝 CRM Pipeline {newLeadCount > 0 && <span style={{ background: '#ef4444', color: 'white', borderRadius: '50%', fontSize: '9px', fontWeight: 900, padding: '1px 5px', marginLeft: '6px' }}>{newLeadCount > 9 ? '9+' : newLeadCount}</span>}
             </NavLink>
             <NavLink to="/crm/financials" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
               🧾 Business Invoicing
@@ -245,9 +248,12 @@ function AppContent() {
             >
                ⚙️ Ledger Control Center
             </NavLink>
-            <NavLink 
-                to="/StudioControlCenter?tab=help" 
-                onClick={() => setMobileMenuOpen(false)} 
+            <NavLink to="/addons" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
+              🧩 Add-Ons
+            </NavLink>
+            <NavLink
+                to="/StudioControlCenter?tab=help"
+                onClick={() => setMobileMenuOpen(false)}
                 className={() => `dropdown-item ${location.pathname === '/StudioControlCenter' && location.search.includes('tab=help') ? 'active' : ''}`}
             >
                ❓ Ledger Documentation & FAQ
@@ -290,6 +296,7 @@ function AppContent() {
           <Route path="/backup" element={<Navigate to="/StudioControlCenter" replace />} />
            <Route path="/crm/*" element={<CRM />} />
            <Route path="/import" element={<Import />} />
+           <Route path="/addons" element={<AddOns />} />
            <Route path="/privacy" element={<Privacy />} />
            <Route path="/terms" element={<Terms />} />
            {/* Public: client payment portal, also accessible when logged in */}
@@ -312,8 +319,15 @@ function AppContent() {
           <span className="bottom-nav-icon">🚗</span>
           <span>Trips</span>
         </NavLink>
-        <NavLink to="/crm" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
-          <span className="bottom-nav-icon">👥</span>
+        <NavLink to="/crm" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`} onClick={clearBadge}>
+          <span className="bottom-nav-icon" style={{ position: 'relative', display: 'inline-block' }}>
+            👥
+            {newLeadCount > 0 && (
+              <span style={{ position: 'absolute', top: '-6px', right: '-8px', background: '#ef4444', color: 'white', borderRadius: '50%', fontSize: '9px', fontWeight: 900, minWidth: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>
+                {newLeadCount > 9 ? '9+' : newLeadCount}
+              </span>
+            )}
+          </span>
           <span>Leads</span>
         </NavLink>
       </nav>
