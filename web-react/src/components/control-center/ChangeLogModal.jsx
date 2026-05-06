@@ -1,6 +1,14 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.1.0', date: 'MAY 6, 2026', color: '#38bdf8', items: [
+        '<strong>Website Lead Capture:</strong> Booking form submissions on your photography website now route directly into the CRM pipeline in real time — no Zapier, no manual imports.',
+        '<strong>Client Deduplication:</strong> Returning clients are automatically matched by email and linked to their existing profile. No duplicate contact cards.',
+        '<strong>Real-Time Notifications:</strong> New leads trigger an instant in-app toast notification and a red badge counter on the CRM nav link — so you know the moment a client books.',
+        '<strong>Multi-Tenant Intake Keys:</strong> Every user can generate their own API key to connect their website. Keys are labeled, rotatable, and manageable from the new Integrations tab.',
+        '<strong>Integrations Tab:</strong> New tab in the Ledger Control Center with full setup instructions — copy your intake URL, secret key, and code snippet in one place.',
+        '<strong>Add-Ons Marketplace:</strong> New <code>/addons</code> page surfaces available platform extensions. Website Lead Capture is live; Website Builder, Client Portal, and Contract E-Sign are in development.',
+    ]},
     { version: '7.0.0', date: 'MAY 1, 2026', color: '#f97316', items: [
         '<strong>Lumière Ledger Rebrand:</strong> The platform is officially Lumière Ledger! Overhauled the UI, replaced all instances of the old branding, and implemented the new premium app icon.',
         '<strong>Layer 2 System Watchdog:</strong> Added an hourly internal cron job to test DB/SMTP health and alert the admin if degraded.',

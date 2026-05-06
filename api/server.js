@@ -1,5 +1,5 @@
-// Load environment variables (Fails gracefully if .env is missing)
-require("dotenv").config(); 
+// Load environment variables (graceful — no .env in Vercel production)
+try { require("dotenv").config(); } catch (e) { /* env vars come from Vercel dashboard */ }
 
 const express = require("express");
 const cors = require("cors");
