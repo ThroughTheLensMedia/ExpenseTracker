@@ -227,9 +227,15 @@ export default function Login() {
           <div style={{ marginTop: '20px' }}>
             <button
               onClick={() => setShowRequestForm(true)}
-              style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: '13px', fontWeight: 800 }}
+              style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: '13px', fontWeight: 800, marginBottom: '15px', display: 'block', width: '100%' }}
             >
               Need an Account?
+            </button>
+            <button
+              onClick={() => { setIsLogin(false); setShowRequestForm(false); }}
+              style={{ background: 'none', border: 'none', color: '#4ade80', cursor: 'pointer', fontSize: '13px', fontWeight: 800, display: 'block', width: '100%' }}
+            >
+              Have an invite code? Sign Up
             </button>
           </div>
         )}

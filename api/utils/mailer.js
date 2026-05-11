@@ -67,8 +67,8 @@ async function sendInviteEmail({ to, name, code }) {
     if (!resend) return { success: false, error: "Mailer service not configured" };
 
     try {
-        const fromEmail = process.env.RESEND_FROM || 'Studio <support@throughthelens.media>';
-        const signupUrl = `${process.env.APP_URL || 'https://app.throughthelens.media'}/login?code=${code}&email=${encodeURIComponent(to)}`;
+        const fromEmail = process.env.RESEND_FROM || 'Lumière Ledger <support@lumiereledger.com>';
+        const signupUrl = `${process.env.APP_URL || 'https://lumiereledger.com'}/login?code=${code}&email=${encodeURIComponent(to)}`;
 
         const html = `
             <div style="background-color: #0f172a; color: white; padding: 40px; font-family: 'Inter', sans-serif; border-radius: 12px; max-width: 600px; margin: 0 auto;">
@@ -90,11 +90,11 @@ async function sendInviteEmail({ to, name, code }) {
                 </div>
 
                 <div style="text-align: center;">
-                    <a href="${signupUrl}" style="background-color: #f97316; color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: 900; display: inline-block; font-size: 14px;">ENTER THE STUDIO</a>
+                    <a href="${signupUrl}" style="background-color: #f97316; color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: 900; display: inline-block; font-size: 14px;">ENTER LUMIÈRE LEDGER</a>
                 </div>
 
                 <p style="font-size: 12px; color: #475569; text-align: center; margin-top: 40px;">
-                    This project is currently in private beta. If you have questions, please contact your studio administrator.
+                    This project is currently in private beta. If you have questions, please contact your administrator.
                 </p>
             </div>
         `;
@@ -119,7 +119,7 @@ async function sendDailyReportEmail({ to, activityRows }) {
     if (!resend) return { success: false, error: "Mailer service not configured" };
 
     try {
-        const fromEmail = process.env.RESEND_FROM || 'Studio Stats <support@throughthelens.media>';
+        const fromEmail = process.env.RESEND_FROM || 'Lumière Stats <support@lumiereledger.com>';
         const dateStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
         const rowsHtml = activityRows.map(r => `
