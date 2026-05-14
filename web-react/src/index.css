@@ -235,9 +235,15 @@ textarea {
   resize: vertical;
 }
 
+/* Date input: color-scheme:dark renders the icon white natively — no invert needed.
+   We just guarantee full opacity, a visible size, and tap-friendliness. */
 input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: invert(1) brightness(200%) !important;
+  filter: brightness(0) invert(1) !important; /* Force pure white regardless of OS theme */
+  opacity: 1 !important;
   cursor: pointer;
+  padding: 2px;
+  min-width: 18px;
+  min-height: 18px;
 }
 
 small {

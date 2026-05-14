@@ -27,10 +27,11 @@ export default function Transactions() {
     const [sortCol, setSortCol] = useState('expense_date');
     const [sortDir, setSortDir] = useState('desc');
 
-    // Compute days since the most recent transaction was added to the system
+    // Compute days since the most recent IMPORTED (non-manual) transaction was added
     const daysSinceImport = useMemo(() => {
         if (!expenses.length) return null;
         const latest = expenses.reduce((best, e) => {
+            if (!e.source || e.source === 'manual') return best; // skip manual entries
             const t = new Date(e.created_at || e.expense_date || 0).getTime();
             return t > best ? t : best;
         }, 0);
@@ -108,7 +109,11 @@ export default function Transactions() {
         'navyfcu': '⚓ Navy Federal',
         'wise': '🌍 Wise',
         'plaid': '🏦 Plaid',
-        'manual': '➕ Manual'
+        'manual': '➕ Manual',
+        'delta_amex': '🔵 Delta Amex Card',
+        'amex_gold': '🟡 Amex Gold Card',
+        'amex_platinum': '⬜ Amex Platinum Card',
+        'amex_blue': '🔵 Amex Blue Cash',
     };
 
     const { vendors: vendorOptions, accounts: accountOptions } = useFilterOptions(expenses, start, end);
@@ -290,7 +295,11 @@ export default function Transactions() {
                             <div style={{ textAlign: 'right', flexShrink: 0 }}>
                                 <div style={{ fontWeight: 950, fontSize: '18px', color: Number(r.amount_cents) < 0 ? '#4ade80' : '#fff' }}>{formatMoney(r.amount_cents)}</div>
                                 <div style={{ marginTop: '6px' }}>
-                                    {r.receipt_link ? <span className="tag ok" style={{ fontSize: '9px' }}>DOC SAVED</span> : r.tax_deductible ? <span className="tag bad" style={{ fontSize: '9px' }}>MISSING DOC</span> : null}
+                                    {r.receipt_link
+                                    ? <span className="tag ok" style={{ fontSize: '9px' }}>DOC SAVED</span>
+                                    : (r.tax_deductible && Number(r.amount_cents || 0) > 7500)
+                                        ? <span className="tag bad" style={{ fontSize: '9px' }}>MISSING DOC</span>
+                                        : null}
                                 </div>
                             </div>
                         </div>
@@ -325,7 +334,7 @@ export default function Transactions() {
                                         <td className="text-truncate" style={{ opacity: 0.9 }} title={r.category}>{r.category || <span className="muted">—</span>}</td>
                                         <td style={{ fontWeight: 700, textAlign: 'right' }}>{formatMoney(r.amount_cents)}</td>
                                         <td style={{ textAlign: 'center' }}>
-                                        {r.receipt_link ? (
+                                            {r.receipt_link ? (
                                                 <button
                                                     className="tag ok"
                                                     style={{ fontSize: '10px', padding: '2px 8px', cursor: 'pointer', border: 'none', background: 'none' }}
@@ -340,6 +349,8 @@ export default function Transactions() {
                                                         }
                                                     }}
                                                 >View</button>
+                                            ) : (r.tax_deductible && Number(r.amount_cents || 0) > 7500) ? (
+                                                <span className="tag bad" style={{ fontSize: '9px', padding: '2px 6px' }}>⚠️ Missing</span>
                                             ) : (
                                                 <span className="muted">—</span>
                                             )}
@@ -370,6 +381,7 @@ export default function Transactions() {
                         invalidateExpensesCache();
                         loadData(true);
                     }}
+                    userSources={accountOptions}
                 />
             )}
 

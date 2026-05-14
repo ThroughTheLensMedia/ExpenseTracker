@@ -4,6 +4,43 @@ This document outlines the strategic evolution of Lumière Ledger from a financi
 
 ---
 
+## 🏃 ACTIVE SPRINT — May 2026
+
+> Last reviewed: 2026-05-13
+
+### 🔥 NOW — Unblock & Ship
+These are blocking the public SaaS launch. Nothing else starts until these are closed.
+
+| Item | Owner | Notes |
+|------|-------|-------|
+| **Rebrand launch** — domain, OAuth, Supabase, code | Joshua | Target was May 2026 — in progress. See `REBRAND_ROADMAP.md` |
+| **Purchase `lumiereleadger.com`** | Joshua | Domain not yet confirmed purchased |
+| **Logo concept selection** | Joshua | 3 concepts ready — decision needed |
+| **Google OAuth redirect updated** | Joshua | Add new domain to GCP Console before switching |
+| **Supabase auth redirect updated** | Joshua | Add `lumiereleadger.com` to allowlist before switching |
+| **Vercel: `REDIS_URL` env var** | Joshua | Required to activate email queueing |
+| **RLS full activation verification** | Dev | Policies written — final multi-tenant audit pending |
+| **Security validation checklist** | Dev | See `LAUNCH_FIXES.md` — Post-Hardening tests not yet run |
+
+### ⏭ NEXT — After Rebrand Ships
+| Item | Notes |
+|------|-------|
+| Maps Autopilot (mileage) | In progress — Google Maps A→B→A round-trip |
+| Stripe billing integration | Deferred until launch hardening complete |
+| Fast Receipt Processing (Phase 3) | Drag-drop + Vision model auto-extract |
+| User-Defined Accounts (Phase 5) | See feature spec below |
+
+### 🔭 LATER — Backlog
+| Item | Notes |
+|------|-------|
+| AI Function Calling (Phase 2) | Write to DB from chat |
+| RAG document indexing (Phase 3) | PDF receipts + contracts |
+| Semantic search / pgvector (Phase 4) | Natural language ledger recall |
+| Plaid live bank sync | Pending Plaid approval + `cryptoUtil.js` real impl |
+| Website Builder add-on (Phase 6) | Post-SaaS launch |
+
+---
+
 ## ✅ PHASE 0: FOUNDATION & INVOICING (COMPLETED v5.2.0)
 *   **Professional Invoicing Core**: Native 1" margin PDF generation, Invoice Cloning, and Pay Portal.
 *   **Digital Signatures**: Dual e-signature capture for photographers and clients.
@@ -23,6 +60,18 @@ This document outlines the strategic evolution of Lumière Ledger from a financi
 *   [x] **Manual Transaction Sovereignty**: First-class support for logging Venmo, Cash, and Apple Pay directly to the ledger.
 *   [x] **Admin Diagnostic Transparency**: Real-time service key validation and "Key Hint" dashboard for SaaS owners.
 *   [ ] **Maps Autopilot (IN PROGRESS)**: Google Maps A→B→A round-trip integration for mileage tracking with auto-calculated distance.
+
+### Phase 1 — Mobile UX Patch (2026-05-13)
+*Fixes applied during mobile field-testing sprint.*
+
+*   [x] **Import clock integrity**: Days-since-import badge now ignores manual entries — only reflects actual bank/CSV imports.
+*   [x] **Calendar icon visibility**: `filter: brightness(0) invert(1)` forces white icon regardless of OS color scheme. Tap area padded to 18×18px minimum.
+*   [x] **Amount field UX**: New transactions open with empty amount field (not pre-filled `0.00`). Field also self-clears on focus if value is zero.
+*   [x] **Checkbox row layout**: "Tax Deductible" and "Recurring" flags now render on one line with `flex-nowrap`. No wrapping on any screen width.
+*   [x] **Dynamic account source dropdown**: Source selector now builds itself from the logged-in user's own imported data via `useFilterOptions`. Zero hardcoded card names. Each user sees only their own accounts. New users see a hint to import or connect Plaid. (See Phase 5 for User-Defined Accounts upgrade path.)
+*   [x] **Receipt upload — gallery + file access**: Removed `capture="environment"` which forced camera-only on mobile. Users can now select from photo library, Files app, iCloud Drive, or saved email attachments.
+*   [x] **Missing doc threshold**: MISSING DOC badge now only appears on transactions where `amount > $75` AND tax deductible AND no receipt. Applied consistently to both mobile card view and desktop table Doc column.
+*   [x] **PWA session persistence**: Supabase client initialized with `autoRefreshToken: true`, `persistSession: true`, and stable `storageKey`. Added `visibilitychange` listener to refresh token on every app foreground — eliminates forced logout when PWA is closed and re-opened.
 
 ---
 
@@ -52,11 +101,11 @@ This document outlines the strategic evolution of Lumière Ledger from a financi
 ---
 
 ## 📷 PHASE 3: COMPUTER VISION & RAG (DOCUMENT ANALYST)
+*   [ ] **Fast Receipt Processing** *(NEXT SPRINT)*:
+    *   Drag-and-drop receipt capture in the transaction ledger that instantly logs vendor and amount via Vision models before the user even clicks "save".
 *   [ ] **RAG (Retrieval-Augmented Generation)**:
     *   Direct indexing of uploaded PDF receipts, contracts, and lease agreements.
     *   Extract critical data (Serial #s, Term dates, Interest rates) instantly into the database.
-*   [ ] **Fast Receipt Processing**:
-    *   Drag-and-drop receipt capture in the transaction ledger that instantly logs vendor and amount via Vision models before the user even clicks "save".
 *   [ ] **Smart Receipt Scanner (DEFERRED)**:
     *   Adobe Scan-style edge detection using WebAssembly (OpenCV.js) for mobile camera capture.
     *   Perspective warp + contrast enhancement before uploading. ~1.5MB load cost.
@@ -72,11 +121,45 @@ This document outlines the strategic evolution of Lumière Ledger from a financi
 
 ---
 
-## 🏦 PHASE 5: ENTERPRISE INTEGRATIONS & MAPPING (DELAYED)
-*   [ ] **Strategic Account Mapping & Plaid Integration**:
-    *   Map external financial sources to internal profiles.
-    *   Connect live bank feeds via Plaid. (Pushed out to prioritize core platform autonomy).
-*   [ ] **Paid Subscriptions / Saas Upgrades**:
+## 🏦 PHASE 5: ENTERPRISE INTEGRATIONS & ACCOUNT MANAGEMENT
+
+### Strategic Account Mapping & Plaid Integration (Deferred)
+*   [ ] Connect live bank feeds via Plaid. Pushed out to prioritize core platform autonomy.
+*   [ ] `cryptoUtil.js` — Replace stub with real `libsodium-wrappers` async implementation before Plaid goes live.
+*   [ ] Add `ENCRYPTION_KEY` to Vercel production env.
+
+### User-Defined Accounts *(Option 3 — Planned)*
+
+> **Context:** The current account source dropdown is dynamically built from each user's imported data (Option 2, shipped 2026-05-13). Option 3 replaces that with user-managed named accounts — the right architecture for a mature multi-user product.
+
+**Why this matters at scale:**
+- At 100+ users, everyone has different cards and accounts. A dynamic read from import data works, but users can't *name* their accounts in a way that's meaningful to them.
+- "delta_amex" in the ledger is a code key — "Delta SkyMiles Amex Business" is what the user wants to see everywhere in the UI.
+- User-defined accounts also enables future features: per-account spend limits, per-account tax rules, account-level reconciliation.
+
+**Feature spec:**
+*   [ ] **Accounts settings page** (Control Center → Accounts tab):
+    *   Add account: name, type (checking / savings / credit card / cash), last 4 digits (optional), institution.
+    *   Each account generates a stable internal key used as the `source` field value.
+    *   Edit and delete accounts (with guard if transactions reference the account).
+*   [ ] **Source dropdown migration**:
+    *   Replace `useFilterOptions` dynamic extraction with a fetch from the user's saved accounts.
+    *   Preserve backward compatibility — any legacy source key not in the accounts table falls back to the label map and raw key display (no data loss).
+*   [ ] **Account reconciliation view** (Phase 5 stretch):
+    *   Per-account transaction list with running balance.
+    *   Flag when imported statement balance diverges from ledger total.
+*   [ ] **Plaid account linking** (Phase 5, post-Plaid approval):
+    *   Link a user-defined account to a live Plaid account ID.
+    *   Auto-tag imported Plaid transactions with the correct user-defined account.
+
+**Implementation order:**
+1. `accounts` table in Supabase (idempotent migration, RLS-secured per user_id)
+2. Accounts tab in Control Center (CRUD UI)
+3. Source dropdown reads from accounts table
+4. Backward-compatible fallback for legacy source keys
+5. Plaid account linking (deferred until Plaid work begins)
+
+*   [ ] **Paid Subscriptions / SaaS Upgrades**:
     *   Advanced tiering and paywalls for premium functionality.
 
 ---

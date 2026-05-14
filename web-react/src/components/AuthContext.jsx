@@ -9,7 +9,14 @@ if (!supabaseUrl || !supabaseKey) {
 }
 
 const supabase = (supabaseUrl && supabaseKey)
-  ? createClient(supabaseUrl, supabaseKey)
+  ? createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+        storageKey: 'lumiere-ledger-auth',
+      }
+    })
   : null;
 
 // Export so hooks (e.g. useLeadsRealtime) can subscribe to Realtime without creating a second client
@@ -92,10 +99,28 @@ export function AuthProvider({ children }) {
       }
     });
 
+    // 3. PWA re-open guard: refresh the token when the app becomes visible again
+    // (PWA backgrounding prevents the SDK's auto-refresh interval from running)
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible') {
+        try {
+          const { data: { session: refreshed } } = await supabase.auth.getSession();
+          if (refreshed) {
+            setSession(refreshed);
+            setUser(refreshed.user);
+          }
+        } catch (e) {
+          console.warn('[AUTH] Visibility refresh failed:', e);
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       if (authListener?.subscription) {
         authListener.subscription.unsubscribe();
       }
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 

@@ -16,6 +16,8 @@ function reducer(state, action) {
         case 'SET_FIELD':
             return { ...state, [action.field]: action.value };
         case 'LOAD_TRANSACTION':
+            // New transaction — keep defaults (empty fields, no pre-filled zeros)
+            if (!action.tx.id) return initialState;
             return {
                 ...initialState,
                 date: String(action.tx.expense_date || '').slice(0, 10),
@@ -42,7 +44,34 @@ function reducer(state, action) {
     }
 }
 
-export default function TransactionDrawer({ transaction, onClose, onSave, onDelete }) {
+// Human-readable display names for known source keys.
+// This is a presentation-only map — never drives business logic.
+// Users who have sources not in this map will see a capitalized/formatted version of their key.
+const SOURCE_LABELS = {
+    manual: '➕ Manual Entry',
+    plaid: '🏦 Plaid (Auto-Sync)',
+    rocketmoney: '🟣 Rocket Money',
+    chase: '🔵 Chase Bank',
+    usbank: '🔵 US Bank',
+    bankofamerica: '🔴 Bank of America',
+    wellsfargo: '🟡 Wells Fargo',
+    applecard: '⬛ Apple Card',
+    capitalone: '🔴 Capital One',
+    usaa: '🦅 USAA',
+    navyfcu: '⚓ Navy Federal',
+    wise: '🌍 Wise',
+    delta_amex: '🔵 Delta Amex Card',
+    amex_gold: '🟡 Amex Gold Card',
+    amex_platinum: '⬜ Amex Platinum Card',
+    amex_blue: '🔵 Amex Blue Cash',
+};
+
+// Formats an unknown source key into a readable label (e.g. "my_bank_csv" → "My Bank Csv")
+function formatSourceKey(key) {
+    return key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+export default function TransactionDrawer({ transaction, onClose, onSave, onDelete, userSources = [] }) {
     const modal = useModal();
     const [state, dispatch] = useReducer(reducer, initialState);
     const { date, amount, vendor, category, taxBucket, bizPct, deduct, isSub, notes,
@@ -168,11 +197,23 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
                     <div className="row two">
                         <div>
                             <small className="muted">Date</small>
-                            <input type="date" value={date} onChange={e => field('date', e.target.value)} style={{ colorScheme: 'dark' }} />
+                            <input
+                                type="date"
+                                value={date}
+                                onChange={e => field('date', e.target.value)}
+                                style={{ colorScheme: 'dark' }}
+                            />
                         </div>
                         <div>
                             <small className="muted">Amount</small>
-                            <input type="text" inputMode="decimal" value={amount} onChange={e => field('amount', e.target.value)} placeholder="0.00" />
+                            <input
+                                type="text"
+                                inputMode="decimal"
+                                value={amount}
+                                onFocus={() => { if (!amount || amount === '0.00' || amount === '0') field('amount', ''); }}
+                                onChange={e => field('amount', e.target.value)}
+                                placeholder="0.00"
+                            />
                         </div>
                     </div>
 
@@ -238,14 +279,16 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
                         </div>
                     </div>
 
-                    <div className="row" style={{ marginTop: '10px', display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-                        <label className="tag" style={{ display: 'flex', gap: '10px', alignItems: 'center', width: 'max-content' }}>
-                            <input type="checkbox" checked={deduct} onChange={e => field('deduct', e.target.checked)} style={{ width: 'auto', margin: 0 }} />
-                            {Number(amount || 0) < 0 ? 'Business Income (Schedule C Line 1)' : 'Tax Deductible'}
+                    <div className="row" style={{ marginTop: '10px', display: 'flex', gap: '10px', flexWrap: 'nowrap', alignItems: 'center' }}>
+                        <label className="tag" style={{ display: 'flex', gap: '8px', alignItems: 'center', flex: 1, minWidth: 0 }}>
+                            <input type="checkbox" checked={deduct} onChange={e => field('deduct', e.target.checked)} style={{ width: 'auto', margin: 0, flexShrink: 0 }} />
+                            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {Number(amount || 0) < 0 ? 'Biz Income' : 'Tax Deductible'}
+                            </span>
                         </label>
-                        <label className="tag" style={{ display: 'flex', gap: '10px', alignItems: 'center', width: 'max-content', background: 'rgba(56, 189, 248, 0.05)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.2)' }}>
-                            <input type="checkbox" checked={isSub} onChange={e => field('isSub', e.target.checked)} style={{ width: 'auto', margin: 0 }} />
-                            Recurring Subscription Flag
+                        <label className="tag" style={{ display: 'flex', gap: '8px', alignItems: 'center', flex: 1, minWidth: 0, background: 'rgba(56, 189, 248, 0.05)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.2)' }}>
+                            <input type="checkbox" checked={isSub} onChange={e => field('isSub', e.target.checked)} style={{ width: 'auto', margin: 0, flexShrink: 0 }} />
+                            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Recurring</span>
                         </label>
                     </div>
 
@@ -267,27 +310,41 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
                         <div>
                             <small className="muted">Account / Source</small>
                             <select value={source} onChange={e => field('source', e.target.value)} style={{ width: '100%', padding: '8px' }}>
-                                <option value="manual">➕ Manual Entry</option>
-                                <option value="plaid">🏦 Plaid (Auto-Sync)</option>
-                                <option value="rocketmoney">🟣 Rocket Money</option>
-                                <option value="chase">🔵 Chase Bank</option>
-                                <option value="usbank">🔵 US Bank</option>
-                                <option value="bankofamerica">🔴 Bank of America</option>
-                                <option value="wellsfargo">🟡 Wells Fargo</option>
-                                <option value="applecard">⬛ Apple Card</option>
-                                <option value="capitalone">🔴 Capital One</option>
-                                <option value="usaa">🦅 USAA</option>
-                                <option value="navyfcu">⚓ Navy Federal</option>
-                                <option value="wise">🌍 Wise</option>
+                                {/* Manual entry is always available */}
+                                <option value="manual">{SOURCE_LABELS.manual}</option>
+
+                                {/* Dynamically built from this user's own imported data.
+                                    Each user sees only the accounts that exist in their ledger. */}
+                                {userSources
+                                    .filter(s => s && s !== 'manual')
+                                    .map(s => (
+                                        <option key={s} value={s}>
+                                            {SOURCE_LABELS[s] || formatSourceKey(s)}
+                                        </option>
+                                    ))
+                                }
+
+                                {/* If the current transaction has a source not yet in the user's list
+                                    (e.g. editing an old record), surface it so the field doesn't go blank */}
+                                {source && source !== 'manual' && !userSources.includes(source) && (
+                                    <option value={source}>
+                                        {SOURCE_LABELS[source] || formatSourceKey(source)}
+                                    </option>
+                                )}
                             </select>
+                            {userSources.filter(s => s && s !== 'manual').length === 0 && (
+                                <div className="muted" style={{ fontSize: '11px', marginTop: '6px' }}>
+                                    Import a bank CSV or connect Plaid to see your accounts here.
+                                </div>
+                            )}
                         </div>
                     </div>
 
                     <div className="row" style={{ marginTop: '10px' }}>
                         <div>
-                            <small className="muted">Upload local receipt</small>
-                            <input type="file" accept="image/*,.pdf" capture="environment" onChange={e => field('receiptFile', e.target.files[0])} />
-                            <div className="muted" style={{ marginTop: '6px' }}>If uploaded, the tracker auto-links it to this transaction.</div>
+                            <small className="muted">Upload receipt</small>
+                            <input type="file" accept="image/*,.pdf" onChange={e => field('receiptFile', e.target.files[0])} />
+                            <div className="muted" style={{ marginTop: '6px' }}>Choose from your photo library, files, or email attachments. Auto-links to this transaction.</div>
                         </div>
                     </div>
 
