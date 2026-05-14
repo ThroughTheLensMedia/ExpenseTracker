@@ -53,6 +53,12 @@ app.use(express.json({ limit: "10mb" }));
 // Routing
 const apiRouter = express.Router();
 
+// Lightweight keep-alive endpoint — hit by Vercel cron every 5 minutes to prevent cold starts.
+// No DB calls, no auth, returns instantly.
+apiRouter.get("/ping", (_req, res) => {
+  res.json({ ok: true, ts: Date.now() });
+});
+
 // Public Health check
 apiRouter.get("/health", async (req, res) => {
   try {

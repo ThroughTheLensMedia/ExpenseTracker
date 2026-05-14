@@ -8,7 +8,7 @@
 
 | Property | Value |
 |----------|-------|
-| **Version** | v7.3.0 |
+| **Version** | v7.3.1 |
 | **Status** | Active Development — Pre-SaaS Launch |
 | **Deploy target** | `lumiereledger.com` (rebrand in progress from `app.throughthelens.media`) |
 | **Deployment** | Vercel (auto-deploy on `git push origin main`) |
@@ -84,7 +84,10 @@ Express 4.19 API (api/)
 ### Vercel
 - **Purpose:** Hosting, auto-deploy, cron jobs
 - **Deploy:** Push to `main` branch — Vercel builds and deploys automatically
-- **Cron:** `vercel.json` → `GET /api/admin/watchdog` runs hourly. Checks Supabase DB + Resend SMTP. Sends alert email on failure.
+- **Cron jobs (vercel.json):**
+  - `GET /api/ping` — every 5 minutes (`*/5 * * * *`). Keep-alive only — no DB calls. Requires Vercel Pro.
+  - `GET /api/admin/watchdog` — daily at 8am UTC (`0 8 * * *`). Checks Supabase DB + Resend SMTP. Sends alert email on failure.
+  - `GET /api/admin/daily-report?email=true` — daily at 11:45pm UTC (`45 23 * * *`).
 - **Required env vars in Vercel Production Panel:**
   - ✅ `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`
   - ✅ `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
