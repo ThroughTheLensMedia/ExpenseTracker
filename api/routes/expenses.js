@@ -218,4 +218,65 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+// PATCH /expenses/:id/resolve-review
+// Resolves a near-duplicate review flag. action: 'keep_both' | 'delete_this' | 'delete_pair'
+router.patch("/:id/resolve-review", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { action } = req.body;
+    if (!['keep_both', 'delete_this', 'delete_pair'].includes(action)) {
+      return res.status(400).json({ error: "action must be keep_both, delete_this, or delete_pair" });
+    }
+
+    const { data: tx, error: txErr } = await req.sb
+      .from("expenses").select("id, review_pair_id").eq("id", id).eq("user_id", req.user.id).single();
+    if (txErr || !tx) return res.status(404).json({ error: "Transaction not found" });
+
+    const pairId = tx.review_pair_id;
+
+    if (action === "keep_both") {
+      // Clear flags on both rows — user confirmed they are intentionally different
+      if (pairId) await req.sb.from("expenses").update({ needs_review: false, review_pair_id: null }).eq("review_pair_id", pairId).eq("user_id", req.user.id);
+    } else if (action === "delete_this") {
+      await req.sb.from("expenses").delete().eq("id", id).eq("user_id", req.user.id);
+      if (pairId) await req.sb.from("expenses").update({ needs_review: false, review_pair_id: null }).eq("review_pair_id", pairId).eq("user_id", req.user.id);
+    } else if (action === "delete_pair") {
+      // Delete the other row, keep this one
+      if (pairId) {
+        await req.sb.from("expenses").delete().eq("review_pair_id", pairId).neq("id", id).eq("user_id", req.user.id);
+        await req.sb.from("expenses").update({ needs_review: false, review_pair_id: null }).eq("id", id).eq("user_id", req.user.id);
+      }
+    }
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: String(e.message || e) });
+  }
+});
+
+// POST /expenses/manual-merge
+// User selects two transactions and merges them. keepId is kept, deleteId is removed.
+router.post("/manual-merge", async (req, res) => {
+  try {
+    const { keepId, deleteId } = req.body;
+    if (!keepId || !deleteId) return res.status(400).json({ error: "keepId and deleteId required" });
+    if (keepId === deleteId) return res.status(400).json({ error: "Cannot merge a transaction with itself" });
+
+    // Verify both belong to this user (RLS + explicit filter)
+    const { data: keep } = await req.sb.from("expenses").select("*").eq("id", keepId).eq("user_id", req.user.id).single();
+    const { data: del }  = await req.sb.from("expenses").select("*").eq("id", deleteId).eq("user_id", req.user.id).single();
+    if (!keep || !del) return res.status(404).json({ error: "One or both transactions not found" });
+
+    // Add a merge note to the kept transaction
+    const mergeNote = `[Manually merged — removed $${(Math.abs(del.amount_cents)/100).toFixed(2)} ${del.vendor} on ${del.expense_date}]`;
+    const updatedNotes = keep.notes ? `${keep.notes} | ${mergeNote}` : mergeNote;
+
+    await req.sb.from("expenses").update({ needs_review: false, review_pair_id: null, notes: updatedNotes }).eq("id", keepId).eq("user_id", req.user.id);
+    await req.sb.from("expenses").delete().eq("id", deleteId).eq("user_id", req.user.id);
+
+    res.json({ ok: true, kept: { ...keep, notes: updatedNotes } });
+  } catch (e) {
+    res.status(500).json({ error: String(e.message || e) });
+  }
+});
+
 module.exports = router;

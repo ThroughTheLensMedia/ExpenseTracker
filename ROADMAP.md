@@ -91,12 +91,39 @@ These are blocking the public SaaS launch. Nothing else starts until these are c
 ---
 
 ## 🧠 PHASE 2: AI AGENTIC CAPABILITIES ("STUDIO HANDS")
-*   [ ] **AI Function Calling**:
-    *   Grant the "Your Assistant" sidebar the ability to write to the database (create/update records).
-    *   **Prompt**: *"I just finished the Miller shoot. Link the $500 deposit to their lead and mark it as Booked."*
-*   [ ] **Automated CRM & Invoicing**:
-    *   Voice/Chat command to automatically generate draft invoices based on quoted lead values.
-    *   Trigger workflow automations natively without manual clicks.
+
+> **Implementation order is fixed — do not skip steps. Each step is a safety gate for the next.**
+
+### Step 1 — Read-Only Tool Calls (backend only, zero write risk)
+*Files: `api/routes/brain.js`, `api/utils/gemini.js`*
+- [ ] Wire Gemini function calling API into `brain.js` with `tools` declarations
+- [ ] Define 4 read tools: `search_transactions`, `get_lead`, `get_invoice_summary`, `get_metrics_snapshot`
+- [ ] Handle `functionCall` response parts: execute → return `functionResponse` → get final answer
+- [ ] No UI changes needed — AI answers questions using live data mid-conversation
+- [ ] Deliverable: prompt "What did I spend on meals this quarter?" returns real DB data
+
+### Step 2 — Confirmation UI (frontend only, before any writes exist)
+*Files: `web-react/src/components/AssistantSidebar.jsx`*
+- [ ] API returns `pendingActions[]` array alongside text response when a write is requested
+- [ ] Sidebar renders action cards: what AI wants to do, exact data it would write, Approve / Reject buttons
+- [ ] Approve → `POST /api/brain/execute-action` with signed action payload
+- [ ] Reject → nothing executes, AI is notified via follow-up message
+- [ ] Safety rule: **no write tool goes live until this UI is tested and confirmed**
+
+### Step 3 — Write Tools (gated by Step 2 confirmation)
+*Files: `api/routes/brain.js`, new `api/routes/brain-execute.js`*
+- [ ] `create_transaction(date, vendor, amount, category, tax_deductible)` → POST /expenses
+- [ ] `update_lead_status(lead_id, new_status)` → PATCH /leads/:id
+- [ ] `link_transaction_to_lead(transaction_id, lead_id)` → PATCH /expenses/:id
+- [ ] All writes route through existing authenticated Express endpoints — no new DB logic
+- [ ] Deliverable: *"I just finished the Miller shoot. Link the $500 deposit to their lead and mark them as Booked."* executes correctly with confirmation
+
+### Step 4 — Invoice Generation
+*Files: `api/routes/brain-execute.js`, `web-react/src/components/AssistantSidebar.jsx`*
+- [ ] `create_invoice_draft(client_name, line_items, due_date)` → POST /invoices
+- [ ] Most complex: invoice data is structured (line items, client, due date, tax)
+- [ ] Implement last, after Steps 1–3 are stable and battle-tested
+- [ ] Deliverable: *"Draft an invoice for the Miller wedding — $2,400 for full-day coverage, due in 30 days."*
 
 ---
 

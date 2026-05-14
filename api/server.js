@@ -30,6 +30,7 @@ const intakeRouter     = require("./routes/intake");      // Public TTLM website
 const intakeKeysRouter = require("./routes/intake-keys"); // Authenticated key management
 const metricsRouter = require("./routes/metrics"); // Dashboard metrics layer
 const vendorsRouter = require("./routes/vendors"); // Vendor specific settings
+const feedbackRouter = require("./routes/feedback"); // In-app feedback form
 
 // Initialize Database — log clearly if it fails
 if (!initDb()) {
@@ -127,6 +128,9 @@ apiRouter.post("/account-request", async (req, res) => {
 // --- ATTACH LOCKDOWN MIDDLEWARE ---
 // Every route below this line is protected by Supabase Auth
 apiRouter.use(authMiddleware);
+
+// Feedback — auth required, not license-gated (any user can report issues)
+apiRouter.use("/feedback", feedbackRouter);
 
 // --- ATTACH LICENSING MIDDLEWARE ---
 // Every route below this line is restricted by subscription status

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { fetchAllExpenses, formatMoney, formatDate, invalidateExpensesCache, apiGet, getExpensesCache } from '../api';
+import { fetchAllExpenses, formatMoney, formatDate, invalidateExpensesCache, apiGet, apiPost, apiPatch, getExpensesCache } from '../api';
 import TransactionDrawer from '../components/TransactionDrawer';
 import { useModal } from '../components/ModalContext.jsx';
 import CategorySelect from '../components/CategorySelect.jsx';
@@ -42,6 +42,18 @@ export default function Transactions() {
     // Editor
     const [editingId, setEditingId] = useState(null);
     const modal = useModal();
+
+    // Near-duplicate review
+    const [reviewingTx, setReviewingTx] = useState(null); // tx whose flag was clicked
+    const [needsReviewOnly, setNeedsReviewOnly] = useState(false);
+
+    // Manual multi-select merge
+    const [selectedIds, setSelectedIds] = useState(new Set());
+    const toggleSelect = (id) => setSelectedIds(prev => {
+        const next = new Set(prev);
+        next.has(id) ? next.delete(id) : next.add(id);
+        return next;
+    });
 
     // Feedback
     const [normalizing, setNormalizing] = useState(false);
@@ -129,7 +141,11 @@ export default function Transactions() {
         account: searchAccount, notes: searchNotes, deductOnly, missingReceiptOnly,
     }, [isAuditMode, start, end, searchVendor, searchCategory, searchAccount, searchNotes, deductOnly, missingReceiptOnly]);
 
-    const { filtered } = useExpenseFilters(auditBase, filters, sortCol, sortDir);
+
+    const { filtered: filteredBase } = useExpenseFilters(auditBase, filters, sortCol, sortDir);
+    const filtered = useMemo(() =>
+        needsReviewOnly ? filteredBase.filter(r => r.needs_review) : filteredBase,
+    [filteredBase, needsReviewOnly]);
 
     const exportCsv = () => {
         const qs = new URLSearchParams();
@@ -143,6 +159,45 @@ export default function Transactions() {
         setDeductOnly(false); setMissingReceiptOnly(false);
         setToast({ ok: true, msg: 'All filters cleared. Showing full ledger.' });
         setTimeout(() => setToast(null), 3000);
+    };
+
+    const handleResolveReview = async (txId, action) => {
+        try {
+            await apiPatch(`/expenses/${txId}/resolve-review`, { action });
+            setReviewingTx(null);
+            invalidateExpensesCache();
+            await loadData(true);
+            setToast({ ok: true, msg: action === 'keep_both' ? 'Marked as intentionally different — flag cleared.' : 'Transaction resolved.' });
+            setTimeout(() => setToast(null), 4000);
+        } catch (e) {
+            setToast({ ok: false, msg: `Resolve failed: ${e.message}` });
+            setTimeout(() => setToast(null), 4000);
+        }
+    };
+
+    const handleManualMerge = async () => {
+        const ids = [...selectedIds];
+        if (ids.length !== 2) return;
+        const txA = expenses.find(e => e.id === ids[0]);
+        const txB = expenses.find(e => e.id === ids[1]);
+        if (!txA || !txB) return;
+        // Prompt user which to keep
+        const keepA = await modal.confirm(
+            `Keep "${txA.vendor}" ${formatMoney(txA.amount_cents)} (${txA.expense_date}) and remove the other?`
+        );
+        const keepId = keepA ? ids[0] : ids[1];
+        const deleteId = keepA ? ids[1] : ids[0];
+        try {
+            await apiPost('/expenses/manual-merge', { keepId, deleteId });
+            setSelectedIds(new Set());
+            invalidateExpensesCache();
+            await loadData(true);
+            setToast({ ok: true, msg: 'Transactions merged. Merge note added to kept entry.' });
+            setTimeout(() => setToast(null), 4000);
+        } catch (e) {
+            setToast({ ok: false, msg: `Merge failed: ${e.message}` });
+            setTimeout(() => setToast(null), 4000);
+        }
     };
 
     const handleNormalizeVendors = async () => {
@@ -277,6 +332,10 @@ export default function Transactions() {
                                     <input type="checkbox" checked={missingReceiptOnly} onChange={e => setMissingReceiptOnly(e.target.checked)} style={{ width: 'auto', margin: '0 8px 0 0' }} />
                                     ⚠️ Missing Docs
                                 </label>
+                                <label className="tag clickable" style={{ padding: '6px 12px', borderColor: needsReviewOnly ? '#f97316' : 'var(--line)', background: needsReviewOnly ? 'rgba(249,115,22,0.1)' : 'transparent' }}>
+                                    <input type="checkbox" checked={needsReviewOnly} onChange={e => setNeedsReviewOnly(e.target.checked)} style={{ width: 'auto', margin: '0 8px 0 0' }} />
+                                    🚩 Needs Review
+                                </label>
                             </div>
                         </div>
                     </div>
@@ -286,13 +345,20 @@ export default function Transactions() {
             {/* ─── Mobile View (Cards) ─── */}
             <div className="mobile-only" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {filtered.map(r => (
-                    <div key={r.id} className="card glass" style={{ margin: 0, padding: '16px', maxWidth: '100vw', overflow: 'hidden' }} onClick={() => setEditingId(r.id)}>
+                    <div key={r.id} className="card glass" style={{ margin: 0, padding: '16px', maxWidth: '100vw', overflow: 'hidden', position: 'relative', borderLeft: r.needs_review ? '3px solid #f97316' : undefined }} onClick={() => setEditingId(r.id)}>
+                        {r.needs_review && (
+                            <button
+                                onClick={e => { e.stopPropagation(); setReviewingTx(r); }}
+                                title="Near-duplicate flagged — tap to review"
+                                style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.5)', borderRadius: '6px', padding: '2px 6px', fontSize: '11px', cursor: 'pointer', color: '#f97316', fontWeight: 900, zIndex: 2 }}
+                            >🚩</button>
+                        )}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
                             <div style={{ minWidth: 0, flex: 1 }}>
                                 <div className="text-truncate" style={{ fontWeight: 950, fontSize: '16px' }}>{r.vendor || 'Unknown Vendor'}</div>
                                 <div className="muted text-truncate" style={{ fontSize: '11px', marginTop: '4px' }}>{formatDate(r.expense_date)} • {r.category}</div>
                             </div>
-                            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                            <div style={{ textAlign: 'right', flexShrink: 0, paddingRight: r.needs_review ? '28px' : 0 }}>
                                 <div style={{ fontWeight: 950, fontSize: '18px', color: Number(r.amount_cents) < 0 ? '#4ade80' : '#fff' }}>{formatMoney(r.amount_cents)}</div>
                                 <div style={{ marginTop: '6px' }}>
                                     {r.receipt_link
@@ -313,6 +379,15 @@ export default function Transactions() {
                     <table style={{ fontSize: '12.5px', tableLayout: 'fixed', width: '100%', minWidth: '100%' }}>
                         <thead style={{ position: 'sticky', top: 0, zIndex: 10, background: '#0b1220' }}>
                             <tr>
+                                <th style={{ width: '28px', textAlign: 'center' }}>
+                                    <input type="checkbox" title="Select all visible" style={{ width: 'auto', cursor: 'pointer' }}
+                                        onChange={e => {
+                                            if (e.target.checked) setSelectedIds(new Set(filtered.slice(0, 1000).map(r => r.id)));
+                                            else setSelectedIds(new Set());
+                                        }}
+                                        checked={selectedIds.size > 0 && filtered.slice(0, 1000).every(r => selectedIds.has(r.id))}
+                                    />
+                                </th>
                                 <th style={{ width: '45px' }}></th>
                                 <th onClick={() => handleSort('expense_date')} style={{ cursor: 'pointer', width: '9%' }}>Date<SortIcon col="expense_date" /></th>
                                 <th onClick={() => handleSort('source')} style={{ cursor: 'pointer', width: '13%' }}>Account<SortIcon col="source" /></th>
@@ -325,8 +400,12 @@ export default function Transactions() {
                         </thead>
                         <tbody>
                             {filtered.slice(0, 1000).map(r => {
+                                const isSelected = selectedIds.has(r.id);
                                 return (
-                                    <tr key={r.id}>
+                                    <tr key={r.id} style={{ background: isSelected ? 'rgba(99,102,241,0.08)' : r.needs_review ? 'rgba(249,115,22,0.04)' : undefined, borderLeft: r.needs_review ? '3px solid #f97316' : undefined }}>
+                                        <td style={{ textAlign: 'center' }}>
+                                            <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(r.id)} style={{ width: 'auto', cursor: 'pointer' }} onClick={e => e.stopPropagation()} />
+                                        </td>
                                         <td><button className="btn secondary" style={{ fontSize: '11px', padding: '4px 8px' }} onClick={() => setEditingId(r.id)}>Edit</button></td>
                                         <td style={{ opacity: 0.8 }}>{formatDate(r.expense_date)}</td>
                                         <td style={{ fontSize: '11px', fontWeight: 700 }}>{ACCOUNT_LABELS[r.source] || r.source || 'manual'}</td>
@@ -355,10 +434,17 @@ export default function Transactions() {
                                                 <span className="muted">—</span>
                                             )}
                                         </td>
-                                        <td>
+                                        <td style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'nowrap' }}>
                                             <span className="tag" style={{ fontSize: '9px', padding: '1px 4px', opacity: 0.8 }}>
                                                 {Number(r.amount_cents || 0) < 0 ? 'Income' : 'Expense'}
                                             </span>
+                                            {r.needs_review && (
+                                                <button
+                                                    onClick={e => { e.stopPropagation(); setReviewingTx(r); }}
+                                                    title="Near-duplicate flagged — click to review"
+                                                    style={{ background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.5)', borderRadius: '4px', padding: '1px 5px', fontSize: '10px', cursor: 'pointer', color: '#f97316', fontWeight: 900, lineHeight: 1.2 }}
+                                                >🚩</button>
+                                            )}
                                         </td>
                                     </tr>
                                 );
@@ -383,6 +469,87 @@ export default function Transactions() {
                     }}
                     userSources={accountOptions}
                 />
+            )}
+
+            {/* ─── Near-Duplicate Review Modal ─── */}
+            {reviewingTx && (() => {
+                const pair = reviewingTx.review_pair_id
+                    ? expenses.find(e => e.id !== reviewingTx.id && e.review_pair_id === reviewingTx.review_pair_id)
+                    : null;
+                return (
+                    <div style={{ position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+                        onClick={() => setReviewingTx(null)}>
+                        <div style={{ background: '#0f1a33', border: '1px solid rgba(249,115,22,0.4)', borderRadius: '16px', padding: '28px', maxWidth: '720px', width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}
+                            onClick={e => e.stopPropagation()}>
+                            <div style={{ marginBottom: '20px' }}>
+                                <div style={{ fontSize: '18px', fontWeight: 950, marginBottom: '4px' }}>🚩 Near-Duplicate Flagged</div>
+                                <div className="muted" style={{ fontSize: '12px' }}>These transactions are similar in vendor, date, and amount — possibly a tip adjustment or duplicate import.</div>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: pair ? '1fr 1fr' : '1fr', gap: '16px', marginBottom: '24px' }}>
+                                {[reviewingTx, pair].filter(Boolean).map((tx, i) => (
+                                    <div key={tx.id} style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${i === 0 ? 'rgba(249,115,22,0.4)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '12px', padding: '16px' }}>
+                                        <div style={{ fontSize: '10px', fontWeight: 800, color: i === 0 ? '#f97316' : 'var(--muted)', marginBottom: '8px', letterSpacing: '0.08em' }}>
+                                            {i === 0 ? 'THIS TRANSACTION' : 'PAIRED TRANSACTION'}
+                                        </div>
+                                        <div style={{ fontWeight: 900, fontSize: '16px', marginBottom: '4px' }}>{tx.vendor || '—'}</div>
+                                        <div style={{ fontSize: '22px', fontWeight: 950, color: Number(tx.amount_cents) < 0 ? '#4ade80' : '#fff', marginBottom: '8px' }}>{formatMoney(tx.amount_cents)}</div>
+                                        <div className="muted" style={{ fontSize: '11px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                            <span>📅 {formatDate(tx.expense_date)}</span>
+                                            <span>🏷️ {tx.category || 'No category'}</span>
+                                            <span>🏦 {ACCOUNT_LABELS[tx.source] || tx.source || 'manual'}</span>
+                                            {tx.notes && <span>📝 {tx.notes}</span>}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Action buttons */}
+                            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                                <button className="btn secondary" onClick={() => setReviewingTx(null)} style={{ fontSize: '12px', padding: '8px 16px' }}>Cancel</button>
+                                <button
+                                    className="btn secondary"
+                                    style={{ fontSize: '12px', padding: '8px 16px', borderColor: 'rgba(74,222,128,0.4)', color: '#4ade80' }}
+                                    onClick={() => handleResolveReview(reviewingTx.id, 'keep_both')}
+                                >✅ Keep Both</button>
+                                {pair && (
+                                    <>
+                                        <button
+                                            className="btn secondary"
+                                            style={{ fontSize: '12px', padding: '8px 16px', borderColor: 'rgba(255,77,77,0.4)', color: '#ff4d4d' }}
+                                            onClick={() => handleResolveReview(reviewingTx.id, 'delete_this')}
+                                        >🗑 Delete This One</button>
+                                        <button
+                                            className="btn secondary"
+                                            style={{ fontSize: '12px', padding: '8px 16px', borderColor: 'rgba(255,77,77,0.4)', color: '#ff4d4d' }}
+                                            onClick={() => handleResolveReview(reviewingTx.id, 'delete_pair')}
+                                        >🗑 Delete Paired One</button>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
+
+            {/* ─── Multi-Select Floating Action Bar ─── */}
+            {selectedIds.size >= 2 && (
+                <div style={{ position: 'fixed', bottom: '28px', left: '50%', transform: 'translateX(-50%)', zIndex: 9999, display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(10,20,42,0.97)', border: '1px solid rgba(99,102,241,0.5)', borderRadius: '14px', padding: '12px 20px', boxShadow: '0 8px 40px rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)' }}>
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent)' }}>{selectedIds.size} selected</span>
+                    <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.15)' }} />
+                    {selectedIds.size === 2 && (
+                        <button
+                            className="btn"
+                            style={{ fontSize: '12px', padding: '8px 18px', fontWeight: 900, background: 'rgba(99,102,241,0.2)', borderColor: 'rgba(99,102,241,0.6)' }}
+                            onClick={handleManualMerge}
+                        >🔀 Merge Selected</button>
+                    )}
+                    <button
+                        className="btn secondary"
+                        style={{ fontSize: '12px', padding: '8px 14px' }}
+                        onClick={() => setSelectedIds(new Set())}
+                    >✕ Clear</button>
+                </div>
             )}
 
             {toast && (

@@ -8,7 +8,7 @@
 
 | Property | Value |
 |----------|-------|
-| **Version** | v7.3.1 |
+| **Version** | v7.3.2 |
 | **Status** | Active Development — Pre-SaaS Launch |
 | **Deploy target** | `lumiereledger.com` (rebrand in progress from `app.throughthelens.media`) |
 | **Deployment** | Vercel (auto-deploy on `git push origin main`) |
@@ -74,6 +74,8 @@ Express 4.19 API (api/)
 ## External Service Connections
 
 ### Supabase
+- **Plan:** Free
+- **Free plan limits:** 500MB database, 1GB file storage, 50MB max upload, 2 active projects. **Projects pause after 7 days of inactivity** — auth token refresh will fail while paused, causing user logouts. Keep the project active by ensuring at least one API call per week (the daily watchdog cron handles this).
 - **Purpose:** PostgreSQL database, Auth (email/password + Google OAuth), Storage (receipts), Realtime (live lead notifications)
 - **Admin UUID:** `49e7efcb-6434-4f0c-9563-3151a6d50df9`
 - **Env vars:** `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (server — bypasses RLS), `SUPABASE_ANON_KEY`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
@@ -82,10 +84,12 @@ Express 4.19 API (api/)
 - **Storage:** Receipts stored as relative paths, always accessed via `/api/receipts/signed-url?path=`. Never use direct Storage URLs.
 
 ### Vercel
+- **Plan:** Free (Hobby)
 - **Purpose:** Hosting, auto-deploy, cron jobs
 - **Deploy:** Push to `main` branch — Vercel builds and deploys automatically
+- **Free plan limits:** Daily cron jobs only (no sub-daily schedules). The `*/5 * * * *` ping cron in `vercel.json` is silently ignored on the free plan — it does not error, it just never runs.
 - **Cron jobs (vercel.json):**
-  - `GET /api/ping` — every 5 minutes (`*/5 * * * *`). Keep-alive only — no DB calls. Requires Vercel Pro.
+  - `GET /api/ping` — every 5 minutes (`*/5 * * * *`). ⚠️ Requires Vercel Pro — inactive on free plan.
   - `GET /api/admin/watchdog` — daily at 8am UTC (`0 8 * * *`). Checks Supabase DB + Resend SMTP. Sends alert email on failure.
   - `GET /api/admin/daily-report?email=true` — daily at 11:45pm UTC (`45 23 * * *`).
 - **Required env vars in Vercel Production Panel:**

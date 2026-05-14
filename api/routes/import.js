@@ -376,7 +376,7 @@ async function parseCsvAndImport(sb, filePath, profileKey, res) {
 
         const { data: existing } = await sb
             .from('expenses')
-            .select('id, expense_date, vendor, amount_cents, source, category, notes, receipt_link, tax_deductible, tax_bucket, business_use_pct')
+            .select('id, expense_date, vendor, amount_cents, source, category, notes, receipt_link, tax_deductible, tax_bucket, business_use_pct, needs_review, review_pair_id')
             .gte('expense_date', windowStart)
             .lte('expense_date', windowEnd);
 
@@ -448,6 +448,54 @@ async function parseCsvAndImport(sb, filePath, profileKey, res) {
             }
 
             toInsert.push(item);
+        }
+
+        // ── Near-Duplicate (Tip Amount) Detection ─────────────────────────────
+        // Catches the case where a manual entry includes a tip ($18.50) and the
+        // bank import has the pre-tip amount ($15.00). Neither exact nor fuzzy dedup
+        // catches these. Flag both rows for user review rather than silently merging.
+        //
+        // Criteria: same vendor (case-insensitive), date ±1 day, amount differs by
+        // > $0 and ≤ $50 (5000¢) and ≤ 40% of the lower amount.
+        const nearDupFlagUpdates = []; // existing DB rows to flag
+        for (const item of toInsert) {
+            if (item.needs_review) continue; // already flagged
+            if (!item.amount_cents || item.amount_cents <= 0) continue; // expenses only
+            const vendorA = (item.vendor || '').toLowerCase().trim();
+
+            for (const ex of (existing || [])) {
+                if (ex.review_pair_id) continue; // already in a review pair
+                if (!ex.amount_cents || ex.amount_cents <= 0) continue;
+                if (ex.amount_cents === item.amount_cents) continue; // same amount → handled by merge
+
+                // Vendor match (substring or equality, case-insensitive)
+                const vendorB = (ex.vendor || '').toLowerCase().trim();
+                const vendorMatch = vendorA === vendorB ||
+                    vendorA.includes(vendorB) || vendorB.includes(vendorA);
+                if (!vendorMatch) continue;
+
+                if (dayDiff(item.expense_date, ex.expense_date) > 1) continue;
+
+                const diff = Math.abs(item.amount_cents - ex.amount_cents);
+                const lower = Math.min(item.amount_cents, ex.amount_cents);
+                if (diff > 5000 || diff / lower > 0.40) continue;
+
+                // Near-duplicate pair confirmed
+                const pairId = require('crypto').randomUUID();
+                item.needs_review = true;
+                item.review_pair_id = pairId;
+                nearDupFlagUpdates.push({ id: ex.id, review_pair_id: pairId });
+                errors.push({
+                    row: items.indexOf(item) + 1,
+                    type: 'near_duplicate',
+                    error: `Near-duplicate flagged: "${item.vendor}" $${(Math.abs(item.amount_cents)/100).toFixed(2)} vs existing $${(Math.abs(ex.amount_cents)/100).toFixed(2)} on ${ex.expense_date} — flagged for review (possible tip difference)`
+                });
+                break;
+            }
+        }
+        // Flag existing rows that are part of a near-dup pair
+        for (const upd of nearDupFlagUpdates) {
+            await sb.from('expenses').update({ needs_review: true, review_pair_id: upd.review_pair_id }).eq('id', upd.id);
         }
 
         // 🧠 AI BRAIN INTERVENTION (Silent Mode) — only on new inserts

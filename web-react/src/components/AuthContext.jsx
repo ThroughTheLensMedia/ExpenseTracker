@@ -112,15 +112,25 @@ export function AuthProvider({ children }) {
       }
     });
 
-    // 3. PWA re-open guard: refresh the token when the app becomes visible again
-    // (PWA backgrounding prevents the SDK's auto-refresh interval from running)
+    // 3. PWA re-open guard: force a token refresh when the app becomes visible.
+    // getSession() only reads from storage — it will return an expired token without
+    // attempting renewal. refreshSession() hits the Supabase auth server and issues
+    // a new access token using the stored refresh token.
+    // NOTE: If the Supabase project is paused (free plan, 7-day inactivity), this
+    // call will fail. The user will be redirected to login — expected behavior.
     const handleVisibilityChange = async () => {
       if (document.visibilityState === 'visible') {
         try {
-          const { data: { session: refreshed } } = await supabase.auth.getSession();
-          if (refreshed) {
-            setSession(refreshed);
-            setUser(refreshed.user);
+          const { data, error } = await supabase.auth.refreshSession();
+          if (error) {
+            // Refresh token expired or project paused — clear session and redirect to login
+            console.warn('[AUTH] Session refresh failed — token expired or project paused:', error.message);
+            await supabase.auth.signOut();
+            return;
+          }
+          if (data?.session) {
+            setSession(data.session);
+            setUser(data.session.user);
           }
         } catch (e) {
           console.warn('[AUTH] Visibility refresh failed:', e);
