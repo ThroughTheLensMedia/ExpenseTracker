@@ -5,6 +5,18 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.2.1] — 2026-05-13
+
+### Documentation & Project Standards
+
+#### Added
+- **`CLAUDE.md`** — Project root instructions file. First file read by Claude in every session. Points to `SPEC.md`, states non-negotiable rules (changelog always updated, file scope discipline, no guessing), lists key planning files, current version, and deploy workflow.
+
+#### Changed
+- **`SPEC.md`** — Full update to v7.2. Added: Engineering Standards section (changelog rule, version numbering convention, commit format, file modification rules, deploy workflow), Multi-Tenant Architecture section, Mobile/PWA Requirements section. Updated: version to v7.2.0, Sources data pattern (new Amex keys, `formatSourceKey` fallback), `TransactionDrawer.jsx` and `AuthContext.jsx` descriptions, Acceptance Criteria (new v7.2.0 items), env vars table (`ENCRYPTION_KEY` and `REDIS_URL` flagged as missing), `cryptoUtil.js` flagged as stub.
+
+---
+
 ## [v7.2.0] — 2026-05-13
 
 ### Mobile UX Sprint & Multi-Tenant Account Architecture
