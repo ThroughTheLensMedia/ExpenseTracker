@@ -11,5 +11,21 @@ export default defineConfig({
         changeOrigin: true,
       }
     }
+  },
+  build: {
+    // Warn when any individual chunk exceeds 600KB
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // React core — changes almost never; maximum cache hit rate
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          // Supabase SDK — large, infrequently updated
+          'vendor-supabase': ['@supabase/supabase-js'],
+          // Chart.js — ~200KB, only needed on Dashboard / Tax pages
+          'vendor-charts': ['chart.js'],
+        }
+      }
+    }
   }
 })

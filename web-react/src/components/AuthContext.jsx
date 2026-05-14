@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -31,11 +31,19 @@ export function AuthProvider({ children }) {
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Guard: prevents getSession() and onAuthStateChange from both firing
+  // fetchSubscription on the initial session restore (two parallel hits to
+  // /subscription/status and /settings on every cold load).
+  // Reset to false on SIGNED_OUT so re-login fetches fresh data.
+  const subscriptionFetchedRef = useRef(false);
+
   const fetchSubscription = async (userId) => {
+    if (subscriptionFetchedRef.current) return;
+    subscriptionFetchedRef.current = true;
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const headers = { 'Authorization': `Bearer ${session?.access_token}` };
-      
+
       const [subRes, setRes] = await Promise.all([
         fetch('/api/subscription/status', { headers }),
         fetch('/api/settings', { headers })
@@ -51,6 +59,7 @@ export function AuthProvider({ children }) {
       }
     } catch (e) {
       console.error("Failed to fetch profile data:", e);
+      subscriptionFetchedRef.current = false; // allow retry on next auth event
     }
   };
 
@@ -90,12 +99,16 @@ export function AuthProvider({ children }) {
 
     // 2. Auth State Listener
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (_event === 'SIGNED_OUT') {
+        // Reset ref so the next sign-in triggers a fresh fetch
+        subscriptionFetchedRef.current = false;
+        setSubscription(null);
+        setSettings(null);
+      }
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchSubscription(session.user.id);
-      } else {
-        setSubscription(null);
+        fetchSubscription(session.user.id); // no-op if ref already true
       }
     });
 

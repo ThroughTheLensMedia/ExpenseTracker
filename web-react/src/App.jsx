@@ -1,24 +1,38 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useActivityPulse } from "./hooks/useActivityPulse";
 import { useLeadsRealtime } from "./hooks/useLeadsRealtime";
 import { BrowserRouter as Router, Routes, Route, NavLink, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './components/AuthContext';
 import { ModalProvider } from './components/ModalContext';
-import DashboardV2 from './pages/DashboardV2';
-import Transactions from './pages/Transactions';
-import Tax from './pages/Tax';
-import Backup from './pages/Backup';
-import Assets from './pages/Assets';
-import CRM from './pages/CRM';
-import Import from './pages/Import';
-import Login from './pages/Login';
-import Mileage from './pages/Mileage';
-import Privacy from './pages/Privacy';
-import Terms from './pages/Terms';
-import Home from './pages/Home';
-import PayInvoice from './pages/PayInvoice';
-import AddOns from './pages/AddOns';
-import AssistantSidebar from './components/AssistantSidebar';
+
+// Code-split every page — only load the chunk when the user navigates to it
+const DashboardV2    = lazy(() => import('./pages/DashboardV2'));
+const Transactions   = lazy(() => import('./pages/Transactions'));
+const Tax            = lazy(() => import('./pages/Tax'));
+const Backup         = lazy(() => import('./pages/Backup'));
+const Assets         = lazy(() => import('./pages/Assets'));
+const CRM            = lazy(() => import('./pages/CRM'));
+const Import         = lazy(() => import('./pages/Import'));
+const Login          = lazy(() => import('./pages/Login'));
+const Mileage        = lazy(() => import('./pages/Mileage'));
+const Privacy        = lazy(() => import('./pages/Privacy'));
+const Terms          = lazy(() => import('./pages/Terms'));
+const Home           = lazy(() => import('./pages/Home'));
+const PayInvoice     = lazy(() => import('./pages/PayInvoice'));
+const AddOns         = lazy(() => import('./pages/AddOns'));
+const AssistantSidebar = lazy(() => import('./components/AssistantSidebar'));
+
+// Shared route-level loading fallback — matches app's existing spinner style
+function PageSpinner() {
+  return (
+    <div style={{ minHeight: '40vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ textAlign: 'center' }}>
+        <div className="spinner" style={{ marginBottom: '12px' }}></div>
+        <div style={{ fontWeight: 800, letterSpacing: '0.1em', fontSize: '11px', opacity: 0.4 }}>LOADING MODULE...</div>
+      </div>
+    </div>
+  );
+}
 
 
 // Higher Order Component to protect routes
@@ -75,7 +89,7 @@ function AppContent() {
     const timer = setInterval(checkVersion, 60000); // Check every minute
     checkVersion();
     return () => clearInterval(timer);
-  }, [user, location.pathname]);
+  }, [user]); // location.pathname removed — restarting the timer on every nav is unnecessary
 
   // Calculate days left
   const daysLeft = subscription?.expires_at 
@@ -114,7 +128,7 @@ function AppContent() {
     };
 
     checkApi();
-    const interval = setInterval(checkApi, 15000);
+    const interval = setInterval(checkApi, 60000); // 60s — sub-minute API status is not actionable
     return () => clearInterval(interval);
   }, [user]);
 
@@ -131,21 +145,23 @@ function AppContent() {
 
   if (!user) {
     return (
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/privacy" element={<Privacy />} />
-        <Route path="/terms" element={<Terms />} />
-        {/* Public: no login required — client payment portal */}
-        <Route path="/pay/:token" element={<PayInvoice />} />
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
+      <Suspense fallback={<PageSpinner />}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
+          {/* Public: no login required — client payment portal */}
+          <Route path="/pay/:token" element={<PayInvoice />} />
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </Suspense>
     );
   }
 
   return (
     <div className="wrap">
-      <AssistantSidebar />
+      <Suspense fallback={null}><AssistantSidebar /></Suspense>
       {/* Expiration Banner */}
       {daysLeft !== null && daysLeft <= 7 && (
         <div style={{ 
@@ -286,23 +302,25 @@ function AppContent() {
       </header>
 
       <main style={{ marginTop: '16px', minHeight: 'calc(100vh - 160px)', animation: 'fadeIn 0.3s ease-out' }}>
-        <Routes>
-          <Route path="/" element={<DashboardV2 apiStatus={apiStatus} />} />
-          <Route path="/transactions" element={<Transactions />} />
-          <Route path="/tax" element={<Tax />} />
-          <Route path="/mileage" element={<Mileage />} />
-          <Route path="/equipment" element={<Assets />} />
-          <Route path="/StudioControlCenter" element={<Backup />} />
-          <Route path="/backup" element={<Navigate to="/StudioControlCenter" replace />} />
-           <Route path="/crm/*" element={<CRM />} />
-           <Route path="/import" element={<Import />} />
-           <Route path="/addons" element={<AddOns />} />
-           <Route path="/privacy" element={<Privacy />} />
-           <Route path="/terms" element={<Terms />} />
-           {/* Public: client payment portal, also accessible when logged in */}
-           <Route path="/pay/:token" element={<PayInvoice />} />
-           <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
+        <Suspense fallback={<PageSpinner />}>
+          <Routes>
+            <Route path="/" element={<DashboardV2 apiStatus={apiStatus} />} />
+            <Route path="/transactions" element={<Transactions />} />
+            <Route path="/tax" element={<Tax />} />
+            <Route path="/mileage" element={<Mileage />} />
+            <Route path="/equipment" element={<Assets />} />
+            <Route path="/StudioControlCenter" element={<Backup />} />
+            <Route path="/backup" element={<Navigate to="/StudioControlCenter" replace />} />
+            <Route path="/crm/*" element={<CRM />} />
+            <Route path="/import" element={<Import />} />
+            <Route path="/addons" element={<AddOns />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
+            {/* Public: client payment portal, also accessible when logged in */}
+            <Route path="/pay/:token" element={<PayInvoice />} />
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </Suspense>
       </main>
 
       {/* Focused Mobile Navigation */}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import OperationalIntelligenceSection from '../components/dashboard/OperationalIntelligenceSection.jsx';
-import { apiGet } from '../api';
+import { fetchDashboardMetrics, getDashboardMetricsCache } from '../api';
 
 export default function DashboardV2({ apiStatus }) {
     const navigate = useNavigate();
@@ -27,9 +27,22 @@ export default function DashboardV2({ apiStatus }) {
 
     useEffect(() => {
         const loadMetrics = async () => {
+            // Stale-while-revalidate: if cached data exists, show it instantly
+            // then silently refresh in the background
+            const cached = getDashboardMetricsCache(targetYear);
+            if (cached) {
+                setMetrics(cached);
+                setLoading(false);
+                // Background refresh — update data without showing a loading state
+                fetchDashboardMetrics(targetYear, true)
+                    .then(({ data }) => setMetrics(data))
+                    .catch(() => {}); // silent — user already sees data
+                return;
+            }
+            // Cold load: no cache yet
             try {
                 setLoading(true);
-                const data = await apiGet(`/metrics/summary?year=${targetYear}`);
+                const { data } = await fetchDashboardMetrics(targetYear);
                 setMetrics(data);
                 setError(null);
             } catch (e) {

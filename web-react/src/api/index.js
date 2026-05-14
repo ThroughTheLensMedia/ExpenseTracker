@@ -299,6 +299,32 @@ export function invalidateAssetsCache() { invalidateCache('assets'); }
 export function invalidateInvoicesCache() { invalidateCache('invoices'); }
 export function invalidateLeadsCache() { invalidateCache('leads'); }
 
+// ─── Dashboard Metrics Cache ───
+// Returns { data, isStale } so the caller can show cached data immediately
+// and trigger a background refresh when isStale is true.
+export async function fetchDashboardMetrics(year, force = false) {
+    const key = `metrics_${year}`;
+    if (!force) {
+        const cached = getCached(key);
+        if (cached) return { data: cached, isStale: false };
+    }
+    const data = await apiGet(`/metrics/summary?year=${year}`);
+    setCache(key, data);
+    return { data, isStale: false };
+}
+
+export function getDashboardMetricsCache(year) {
+    return getCached(`metrics_${year}`);
+}
+
+export function invalidateDashboardMetricsCache(year) {
+    if (year) { invalidateCache(`metrics_${year}`); }
+    else {
+        // Bust all year keys (used on transaction save/delete)
+        Object.keys(_cache).filter(k => k.startsWith('metrics_')).forEach(k => delete _cache[k]);
+    }
+}
+
 export function formatMoney(cents) {
     const n = Number(cents || 0) / 100;
     const abs = Math.abs(n);
