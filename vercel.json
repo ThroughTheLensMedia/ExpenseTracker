@@ -27,18 +27,5 @@
             "destination": "/web-react/index.html"
         }
     ],
-    "crons": [
-        {
-            "path": "/api/admin/daily-report?email=true",
-            "schedule": "45 23 * * *"
-        },
-        {
-            "path": "/api/admin/watchdog",
-            "schedule": "0 8 * * *"
-        },
-        {
-            "path": "/api/ping",
-            "schedule": "*/5 * * * *"
-        }
-    ]
+    "crons": []
 }

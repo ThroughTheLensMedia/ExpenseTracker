@@ -8,7 +8,7 @@
 
 | Property | Value |
 |----------|-------|
-| **Version** | v7.3.6 |
+| **Version** | v7.3.7 |
 | **Status** | Active Development — Pre-SaaS Launch |
 | **Deploy target** | `www.lumiereledger.com` (primary) — `app.throughthelens.media` 301 redirects to it |
 | **Deployment** | Vercel (auto-deploy on `git push origin main`) |
@@ -106,13 +106,9 @@ Express 4.19 API (api/)
 
 ### Vercel
 - **Plan:** Free (Hobby)
-- **Purpose:** Hosting, auto-deploy, cron jobs
+- **Purpose:** Hosting, auto-deploy
 - **Deploy:** Push to `main` branch — Vercel builds and deploys automatically
-- **Free plan limits:** Daily cron jobs only. Any sub-daily expression (`*/5 * * * *`) in `vercel.json` causes a **fatal deploy error** — blocks ALL deployments. Use `0 X * * *` only.
-- **Cron jobs (vercel.json):**
-  - `GET /api/ping` — daily at 8am UTC (`0 8 * * *`)
-  - `GET /api/admin/watchdog` — daily at 8am UTC (`0 8 * * *`). Checks Supabase DB + Resend. Sends alert on failure.
-  - `GET /api/admin/daily-report?email=true` — daily at 11:45pm UTC (`45 23 * * *`)
+- **Cron jobs:** Removed — monitored by external system (UptimeRobot). `vercel.json` has `"crons": []`. Do not add crons back without Joshua's direction.
 - **Required env vars — Vercel Production Panel:**
   - ✅ `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`
   - ✅ `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`

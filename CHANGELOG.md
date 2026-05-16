@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.3.7] — 2026-05-16
+
+### Remove Vercel Cron Jobs
+
+#### Changed
+- **`vercel.json`** — Removed all cron job entries (`/api/ping`, `/api/admin/watchdog`, `/api/admin/daily-report`). Uptime and scheduling handled by external monitoring system. Empty `"crons": []` retained to prevent accidental re-addition.
+- **`CLAUDE.md`** — Vercel section updated to reflect crons removed; note added to not re-add without direction.
+
+---
+
 ## [v7.3.6] — 2026-05-16
 
 ### Operational Docs — Roadmap Consolidation + Session Rules
