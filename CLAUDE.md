@@ -1,6 +1,6 @@
 # Lumière Ledger — Claude Operational Brief
 
-**Read this file first. Then read `SPEC.md` before touching any code.**
+**Read this file first. Then read `ROADMAP.md` and `SPEC.md` before touching any code.**
 
 ---
 
@@ -8,9 +8,9 @@
 
 | Property | Value |
 |----------|-------|
-| **Version** | v7.3.2 |
+| **Version** | v7.3.6 |
 | **Status** | Active Development — Pre-SaaS Launch |
-| **Deploy target** | `lumiereledger.com` (rebrand in progress from `app.throughthelens.media`) |
+| **Deploy target** | `www.lumiereledger.com` (primary) — `app.throughthelens.media` 301 redirects to it |
 | **Deployment** | Vercel (auto-deploy on `git push origin main`) |
 | **Database** | Supabase (PostgreSQL + Auth + Storage + Realtime) |
 | **Owner** | Joshua Deuermeyer — Through The Lens Media, Las Vegas NV |
@@ -19,13 +19,34 @@
 
 ## Non-Negotiable Rules
 
-1. **Update `CHANGELOG.md` on every change** — version number, date, plain-English description. No exceptions. No silent commits.
-2. **Update `SPEC.md`** if architecture, file map, tech stack, data patterns, or acceptance criteria change.
-3. **Only modify files explicitly in scope** — do not touch unrelated files.
-4. **Never guess** — if something is unclear, ask Joshua before proceeding.
-5. **One file per response, max 500 lines** — if output is truncated, wait for "CONTINUE".
-6. **Preserve existing working logic** — do not refactor what isn't broken.
-7. **Database changes must be idempotent** — never write a migration that fails on re-run or destroys data.
+1. **Read `ROADMAP.md` before every session** — understand what's in scope, what's blocked, and what's next before writing a single line of code.
+2. **Update `CHANGELOG.md` on every change** — version number, date, plain-English description of every file touched and why. No exceptions. No silent commits.
+3. **Check off completed roadmap items** — after any change, update `ROADMAP.md` to mark newly completed items and remove them from the active sprint if done.
+4. **Update `SPEC.md`** if architecture, file map, tech stack, data patterns, or acceptance criteria change.
+5. **Only modify files explicitly in scope** — do not touch unrelated files.
+6. **Never guess** — if something is unclear, ask Joshua before proceeding.
+7. **One file per response, max 500 lines** — if output is truncated, wait for "CONTINUE".
+8. **Preserve existing working logic** — do not refactor what isn't broken.
+9. **Database changes must be idempotent** — never write a migration that fails on re-run or destroys data.
+
+---
+
+## Out-of-Scope Request Protocol
+
+Before making any change, check whether the request is within the current sprint scope in `ROADMAP.md`.
+
+**If the request is out of scope:** Do not implement it. Notify Joshua and add it to `ROADMAP.md` under the correct category, then stop and wait for direction.
+
+### Roadmap Categories for Out-of-Scope Items
+
+| Category | Use When |
+|----------|----------|
+| **Need** | Required for core functionality or launch — will break something if not done |
+| **Clean Up** | Technical debt, dead code, naming inconsistencies, structural improvements |
+| **Broken** | Something is confirmed not working correctly in production |
+| **Good to Have** | Nice UX improvement or feature addition — not blocking anything |
+
+Add the item under the appropriate category in the relevant phase or backlog section with a one-line description of what it is and why it was flagged.
 
 ---
 
@@ -35,7 +56,7 @@
 1. Make changes in /web-react/src or /api/routes
 2. Update CHANGELOG.md
 3. Update SPEC.md (if architecture/stack changed)
-4. Commit: "v7.2.1 — Short title\n\n- file.jsx — why\n- Update CHANGELOG.md"
+4. Commit: "v7.3.5 — Short title\n\n- file.jsx — why\n- Update CHANGELOG.md"
 5. git push origin main → Vercel auto-builds and deploys
 ```
 
@@ -75,66 +96,75 @@ Express 4.19 API (api/)
 
 ### Supabase
 - **Plan:** Free
-- **Free plan limits:** 500MB database, 1GB file storage, 50MB max upload, 2 active projects. **Projects pause after 7 days of inactivity** — auth token refresh will fail while paused, causing user logouts. Keep the project active by ensuring at least one API call per week (the daily watchdog cron handles this).
+- **Free plan limits:** 500MB database, 1GB file storage, 50MB max upload, 2 active projects. **Projects pause after 7 days of inactivity** — auth token refresh will fail while paused, causing user logouts. The daily watchdog cron keeps the project active.
 - **Purpose:** PostgreSQL database, Auth (email/password + Google OAuth), Storage (receipts), Realtime (live lead notifications)
 - **Admin UUID:** `49e7efcb-6434-4f0c-9563-3151a6d50df9`
 - **Env vars:** `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (server — bypasses RLS), `SUPABASE_ANON_KEY`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
 - **Key behavior:** `autoRefreshToken: true`, `persistSession: true`, `storageKey: 'lumiere-ledger-auth'`. PWA uses `visibilitychange` listener to refresh token on foreground.
-- **Auth redirect URLs:** Must be allowlisted in Supabase → Settings → Auth. Currently includes `app.throughthelens.media`. Add `lumiereledger.com` before domain switch.
+- **Auth redirect URLs:** `https://www.lumiereledger.com/**` is allowlisted (added 2026-05-14). `app.throughthelens.media` remains active during parallel-run period.
 - **Storage:** Receipts stored as relative paths, always accessed via `/api/receipts/signed-url?path=`. Never use direct Storage URLs.
 
 ### Vercel
 - **Plan:** Free (Hobby)
 - **Purpose:** Hosting, auto-deploy, cron jobs
 - **Deploy:** Push to `main` branch — Vercel builds and deploys automatically
-- **Free plan limits:** Daily cron jobs only (no sub-daily schedules). The `*/5 * * * *` ping cron in `vercel.json` is silently ignored on the free plan — it does not error, it just never runs.
+- **Free plan limits:** Daily cron jobs only. Any sub-daily expression (`*/5 * * * *`) in `vercel.json` causes a **fatal deploy error** — blocks ALL deployments. Use `0 X * * *` only.
 - **Cron jobs (vercel.json):**
-  - `GET /api/ping` — every 5 minutes (`*/5 * * * *`). ⚠️ Requires Vercel Pro — inactive on free plan.
-  - `GET /api/admin/watchdog` — daily at 8am UTC (`0 8 * * *`). Checks Supabase DB + Resend SMTP. Sends alert email on failure.
-  - `GET /api/admin/daily-report?email=true` — daily at 11:45pm UTC (`45 23 * * *`).
-- **Required env vars in Vercel Production Panel:**
+  - `GET /api/ping` — daily at 8am UTC (`0 8 * * *`)
+  - `GET /api/admin/watchdog` — daily at 8am UTC (`0 8 * * *`). Checks Supabase DB + Resend. Sends alert on failure.
+  - `GET /api/admin/daily-report?email=true` — daily at 11:45pm UTC (`45 23 * * *`)
+- **Required env vars — Vercel Production Panel:**
   - ✅ `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`
   - ✅ `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
-  - ✅ `JWT_SECRET`
+  - ✅ `JWT_SECRET`, `CRON_SECRET`, `NODE_ENV=production`
   - ✅ `RESEND_API_KEY`, `RESEND_FROM`
+  - ✅ `VITE_GOOGLE_MAPS_API_KEY`
   - ⚠️ `REDIS_URL` — **NOT YET SET** — required to activate email queueing
   - ⚠️ `ENCRYPTION_KEY` — **NOT YET SET** — required before Plaid goes live
-  - ⚠️ `CRON_SECRET` — confirm present (`vercel env ls`)
-  - ⚠️ `NODE_ENV=production` — confirm explicitly set
-  - Optional: `PLAID_CLIENT_ID`, `PLAID_SECRET`, `VITE_GOOGLE_MAPS_API_KEY`, `LUMIERE_INTAKE_SECRET`
+  - Optional: `PLAID_CLIENT_ID`, `PLAID_SECRET`, `APP_URL`, `LUMIERE_INTAKE_SECRET`
+- **Deploy tokens (local .env only — never commit):**
+  - `VERCEL_TOKEN` — Vercel personal access token (`vcp_...`). Used for CLI deploys if GitHub webhook fails.
+  - `GITHUB_TOKEN` — GitHub PAT with `repo` scope. Used by Cowork agent to push commits.
+  - **Webhook note:** If auto-deploy stops, go to Vercel → project → Settings → Git → Disconnect → Reconnect `ThroughTheLensMedia/ExpenseTracker`.
+
+### Resend
+- **Purpose:** Transactional email — invoices, daily admin reports, beta invitations, feedback
+- **Env vars:** `RESEND_API_KEY`, `RESEND_FROM`
+- **Verified sending domain:** `throughthelens.media` ONLY. `lumiereledger.com` is NOT verified — Resend silently drops all mail from unverified domains (API returns 200, nothing delivers).
+- **Correct `RESEND_FROM`:** `Lumière Ledger <support@throughthelens.media>` — branded display name, verified sending domain.
+- **⚠️ Known gap:** `api/server.js` line 115 and `api/utils/mailer.js` line 32 have hardcoded fallback `support@lumiereledger.com`. If `RESEND_FROM` env var is ever missing, email silently breaks. Fix pending (see ROADMAP.md Launch Gate).
+- **Queueing:** `emailQueue.js` exists with direct fallback. Redis-backed queuing not yet active (`REDIS_URL` missing in Vercel).
 
 ### Google Gemini 2.5 Flash
 - **Purpose:** AI financial intelligence — chat, ledger repair, batch categorization
 - **Model:** `@google/generative-ai` — Gemini 2.5 Flash
-- **BYOB Architecture:** Users supply their own Gemini API keys (privacy + cost control). Stored per-user in settings table.
+- **BYOB Architecture:** Users supply their own Gemini API keys. Stored per-user in settings table.
 - **Reliability:** 503 errors trigger automatic retries via `repairLedgerBatch()` in `utils/gemini.js`
-- **Persona:** "Lumière Assistant" (ensure all references use this — not "Studio Assistant")
-- **Note:** All AI features use Gemini exclusively — no OpenAI or other providers
-
-### Resend
-- **Purpose:** Transactional email — invoices, daily admin reports, beta invitations
-- **Env vars:** `RESEND_API_KEY`, `RESEND_FROM`
-- **Files:** `api/utils/mailer.js` — email bridge with attachment support
-- **Queueing:** Redis-backed queueing planned but not yet active (missing `REDIS_URL` in Vercel)
+- **Persona:** "Lumière Assistant" — not "Studio Assistant"
+- **Note:** All AI features use Gemini exclusively. No OpenAI or other providers.
 
 ### Plaid (Pending)
-- **Purpose:** Live bank account sync — transactions pulled automatically
-- **Status:** API integration built (`api/routes/plaid.js`, `PlaidLink.jsx`). **Blocked by:**
-  - Plaid account approval (pending)
-  - `cryptoUtil.js` is a **stub** — replace with real `libsodium-wrappers` async implementation before going live
-  - `ENCRYPTION_KEY` not yet set in Vercel
-- **Do not use `cryptoUtil.js` in production in its current state**
+- **Status:** API built (`api/routes/plaid.js`, `PlaidLink.jsx`). **Hard-blocked — do not activate:**
+  - Plaid account approval pending
+  - `cryptoUtil.js` is a stub — replace with real `libsodium-wrappers` async implementation
+  - `ENCRYPTION_KEY` not set in Vercel
 
 ### Google Cloud Console (OAuth + Maps)
-- **OAuth:** Used for Google sign-in. GCP project name: update to "Lumiere Ledger" before rebrand.
-- **Required GCP updates for rebrand:**
-  - Add `lumiereledger.com` to Authorized Domains
-  - Add `https://lumiereledger.com/auth/callback` to Authorized Redirect URIs
-  - Keep `app.throughthelens.media` entries active during parallel-run period
-- **Maps API:** `VITE_GOOGLE_MAPS_API_KEY` — Powers mileage A→B→A round-trip automation (in progress). Add `lumiereledger.com/*` to allowed referrers before domain switch.
+- **OAuth:** Google sign-in. `lumiereledger.com` added to authorized domains + redirect URIs (done 2026-05-16).
+- **Maps API:** `VITE_GOOGLE_MAPS_API_KEY` set in Vercel. Powers mileage A→B→A round-trip (in progress).
 
 ### UptimeRobot
-- **Purpose:** Layer 1 external monitoring — pings `/api/health` every 5 minutes. Alerts on complete server/Vercel failure.
+- **Purpose:** Layer 1 external monitoring — pings `/api/health` every 5 minutes.
+
+---
+
+## Known Code Gaps (not yet fixed — see ROADMAP.md)
+
+| Gap | File | Impact |
+|-----|------|--------|
+| `ALLOWED_ORIGINS` missing `https://www.lumiereledger.com` | `api/server.js` | CORS failures on new domain |
+| `APP_URL` fallback still `app.throughthelens.media` | `api/routes/invoices.js` line 236 | Pay portal links in emails point to old domain |
+| Mailer fallback from-address `support@lumiereledger.com` | `api/server.js` line 115, `api/utils/mailer.js` line 32 | Email silent-fails if `RESEND_FROM` env var missing |
 
 ---
 
@@ -144,52 +174,28 @@ Express 4.19 API (api/)
 |------|---------|
 | `SPEC.md` | **Master engineering spec — read before every session** |
 | `CHANGELOG.md` | Version history — update on every change |
-| `ROADMAP.md` | Product roadmap with active sprint priorities |
-| `REBRAND_ROADMAP.md` | Domain migration plan (`app.throughthelens.media` → `lumiereledger.com`) |
-| `FIX_ROADMAP.md` | Tactical fix tracking across all phases |
-| `LAUNCH_FIXES.md` | Security hardening checklist (Passes 1–11) |
+| `ROADMAP.md` | **Single source of truth for all roadmap, fixes, and launch gate** |
+
+> `FIX_ROADMAP.md` and `LAUNCH_FIXES.md` are archived — `ROADMAP.md` supersedes both.
 
 ### Backend Entry Points
 | File | Purpose |
 |------|---------|
-| `api/server.js` | Express entry — middleware, route mounting |
+| `api/server.js` | Express entry — middleware, route mounting, CORS config |
 | `api/db.js` | Supabase service role client (bypasses RLS — server-side only) |
 | `api/middleware/auth.js` | JWT auth + `requireRole()` using service role client |
 | `api/middleware/licensing.js` | Subscription gate — fail-closed (503 on DB error, not pass-through) |
+| `api/utils/emailQueue.js` | Email queue with direct Resend fallback |
+| `api/utils/mailer.js` | Resend email bridge — invoices, invites, alerts |
 
 ### Critical Frontend Files
 | File | Purpose |
 |------|---------|
 | `web-react/src/components/AuthContext.jsx` | Global auth + session persistence. Exports `supabase` client. |
 | `web-react/src/pages/DashboardV2.jsx` | Business analytics — KPIs, charts, forecasts |
-| `web-react/src/pages/Transactions.jsx` | Full ledger — filtering, sorting, audit, import clock badge |
+| `web-react/src/pages/Transactions.jsx` | Full ledger — filtering, sorting, audit, near-duplicate review |
 | `web-react/src/components/TransactionDrawer.jsx` | Transaction form — CRUD, receipt upload, dynamic source dropdown |
-
----
-
-## Roadmap Summary (as of 2026-05-14)
-
-### 🔥 Blocking — Must Ship Before SaaS Launch
-- [ ] Purchase and configure `lumiereledger.com` domain
-- [ ] Update Google OAuth redirect URIs for new domain
-- [ ] Update Supabase auth redirect allowlist for new domain
-- [ ] Add `REDIS_URL` to Vercel (email queueing)
-- [ ] Final multi-tenant RLS audit
-- [ ] Run all Post-Hardening Validation tests in `LAUNCH_FIXES.md`
-- [ ] Select final logo concept (3 ready — decision needed)
-
-### ⏭ Next Sprint
-- Maps Autopilot — Google Maps A→B→A mileage round-trip (in progress)
-- Stripe subscription billing
-- Fast Receipt Processing — Vision model auto-extract on drag-drop
-- User-Defined Accounts (Phase 5 — see `ROADMAP.md` for full spec)
-
-### 🔭 Backlog
-- Plaid live bank sync (pending approval + `cryptoUtil.js` real impl + `ENCRYPTION_KEY`)
-- AI Function Calling — write to DB from chat ("Studio Hands")
-- RAG document indexing — PDF receipts, contracts
-- Semantic search via pgvector
-- Phase 6: Website Builder add-on, Client Portal, Contract E-Sign
+| `web-react/src/pages/Backup.jsx` | Ledger Control Center — SaaS, feedback, integrations, profile tabs |
 
 ---
 
@@ -198,11 +204,12 @@ Express 4.19 API (api/)
 | Pattern | Rule |
 |---------|------|
 | Currency | Stored as `amount_cents` (BIGINT). UI: `amount_cents / 100`. $75 threshold = 7500 cents |
+| Discount | `discount_cents` stores percent×100 (basis points). Divide by 10000 to get fraction. e.g. `500 = 5%` → `500 / 10000 = 0.05` |
 | Dates | Always `YYYY-MM-DD`. iOS formats normalized via `z.preprocess()` in Zod schema |
 | Sources | `source` field is user-scoped. Display via `SOURCE_LABELS` + `formatSourceKey()` fallback |
-| Dedup | Two-pass: exact (`date|vendor|amount_cents`) + fuzzy cross-source (`date|amount_cents`) |
-| Receipts | Stored as relative paths. Always access via `/api/receipts/signed-url?path=` |
-| Missing doc | Badge: `amount_cents > 7500` AND `tax_deductible = true` AND `receipt_link` null |
+| Dedup | Three-pass: exact (`date|vendor|amount_cents`) + fuzzy cross-source (`date|amount_cents`) + near-duplicate (vendor substring + ±1 day + ≤$50 diff) |
+| Receipts | Stored as relative paths. Always access via `/api/receipts/signed-url?path=`. Never use direct Storage URLs. |
+| Missing doc | Badge fires when: `amount_cents > 7500` AND `tax_deductible = true` AND `receipt_link` is null |
 | Import clock | `daysSinceImport` ignores `source === 'manual'` — only bank/CSV imports reset the clock |
 
 ---
@@ -210,9 +217,9 @@ Express 4.19 API (api/)
 ## Security Rules
 
 - **Never pass the Supabase service role key to the frontend**
-- `requireRole()` uses the service role client (admin client) to bypass RLS on `user_roles` lookup only
-- `isLocalDev` check in `auth.js` uses AND logic: `!process.env.VERCEL && process.env.NODE_ENV !== 'production'` — dev bypass cannot activate on Vercel
-- Licensing middleware is fail-closed: DB error → 503, not pass-through
+- `requireRole()` uses the service role client to bypass RLS on `user_roles` lookup only
+- `isLocalDev` in `auth.js` uses AND logic: `!process.env.VERCEL && process.env.NODE_ENV !== 'production'` — dev bypass cannot activate on Vercel
+- Licensing middleware fail-closed: DB error → 503, not pass-through
 - All destructive operations (DELETE) include `.eq('user_id', req.user.id)` as defense-in-depth beyond RLS
 - `cryptoUtil.js` is a stub — do not use in production
 

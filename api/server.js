@@ -41,6 +41,8 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 const ALLOWED_ORIGINS = [
+  'https://www.lumiereledger.com',
+  'https://lumiereledger.com',
   'https://app.throughthelens.media',
   'http://localhost:5173',
   'http://localhost:3000',
@@ -112,7 +114,7 @@ apiRouter.post("/account-request", async (req, res) => {
     const { Resend } = require("resend");
     const resend = new Resend(process.env.RESEND_API_KEY);
     await resend.emails.send({
-      from: process.env.RESEND_FROM || "Lumière Ledger <support@lumiereledger.com>",
+      from: process.env.RESEND_FROM || "Lumière Ledger <support@throughthelens.media>",
       to: [adminEmail],
       subject: "NEW LUMIÈRE LEDGER ACCOUNT REQUEST",
       html

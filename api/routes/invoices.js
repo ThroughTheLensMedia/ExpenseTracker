@@ -233,7 +233,7 @@ router.patch("/:id", async (req, res) => {
 
             const studioName = settings?.business_name || 'Your Photographer';
             const studioEmail = settings?.email || null;
-            const appUrl = process.env.APP_URL || 'https://app.throughthelens.media';
+            const appUrl = process.env.APP_URL || 'https://www.lumiereledger.com';
             const payUrl = `${appUrl}/pay/${paymentToken}`;
 
             if (fullInvoice && fullInvoice.clients?.email) {

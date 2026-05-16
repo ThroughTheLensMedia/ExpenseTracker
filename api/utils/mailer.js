@@ -29,7 +29,7 @@ async function sendInvoiceEmail({ to, subject, body, attachments, fromName, repl
     }
 
     try {
-        const baseDomainEmail = process.env.RESEND_FROM || 'Lumière Ledger <support@lumiereledger.com>';
+        const baseDomainEmail = process.env.RESEND_FROM || 'Lumière Ledger <support@throughthelens.media>';
         const matches = baseDomainEmail.match(/<([^>]+)>/);
         const emailOnly = matches ? matches[1] : baseDomainEmail;
         const fromEmail = fromName ? `${fromName} <${emailOnly}>` : baseDomainEmail;
@@ -67,7 +67,7 @@ async function sendInviteEmail({ to, name, code }) {
     if (!resend) return { success: false, error: "Mailer service not configured" };
 
     try {
-        const fromEmail = process.env.RESEND_FROM || 'Lumière Ledger <support@lumiereledger.com>';
+        const fromEmail = process.env.RESEND_FROM || 'Lumière Ledger <support@throughthelens.media>';
         const signupUrl = `${process.env.APP_URL || 'https://lumiereledger.com'}/login?code=${code}&email=${encodeURIComponent(to)}`;
 
         const html = `
@@ -178,7 +178,7 @@ async function sendPromoEmail({ to, subject }) {
     if (!resend) return { success: false, error: "Mailer service not configured" };
 
     try {
-        const fromEmail = process.env.RESEND_FROM || 'Lumière Ledger <support@lumiereledger.com>';
+        const fromEmail = process.env.RESEND_FROM || 'Lumière Ledger <support@throughthelens.media>';
         const subjectLine = subject || '📸 Level Up Your Photography Business with Lumière Ledger';
 
         const html = `
@@ -335,7 +335,7 @@ async function sendInvoiceApprovalEmail({
     if (!resend) return { success: false, error: 'Mailer service not configured' };
 
     try {
-        const fromEmail = process.env.RESEND_FROM || 'Lumière Ledger <support@lumiereledger.com>';
+        const fromEmail = process.env.RESEND_FROM || 'Lumière Ledger <support@throughthelens.media>';
         const appUrl = process.env.APP_URL || 'https://app.throughthelens.media';
         const totalDollars = (totalCents / 100).toFixed(2);
         const signedDate = new Date(signedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
