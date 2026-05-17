@@ -680,7 +680,7 @@ export default function Invoice() {
         }
     };
 
-    const handleCreateInvoice = async (e) => {
+    const handleCreateInvoice = async (e, andSend = false) => {
         if (e) e.preventDefault();
         setStatusMsg(null);
 
@@ -746,19 +746,27 @@ export default function Invoice() {
                 }))
             };
 
+            const savedNumber = formData.number;
             if (editingId) {
                 await apiPatch(`/invoices/${editingId}`, payload);
             } else {
                 await apiPost('/invoices', payload);
             }
 
-            // Success handshake
             setLoading(false);
             setIsCreatorOpen(false);
             resetFormData();
 
-            // Async non-blocking load
-            setTimeout(load, 10);
+            if (andSend) {
+                const freshInvs = await fetchAllInvoices(true);
+                setInvoices(freshInvs);
+                const targetInv = freshInvs.find(i =>
+                    editingId ? i.id === editingId : i.invoice_number === savedNumber
+                );
+                if (targetInv) setTimeout(() => handleSendEmail(targetInv), 150);
+            } else {
+                setTimeout(load, 10);
+            }
         } catch (err) {
             let errorText = err.message;
             try {
@@ -1130,7 +1138,13 @@ export default function Invoice() {
                                         }}
                                     >
                                         <option value="">-- No lead selected --</option>
-                                        {leads.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                                        {leads.map(l => (
+                            <option key={l.id} value={l.id}>
+                                {l.name}
+                                {l.shoot_type ? ` — ${l.shoot_type}` : ''}
+                                {l.created_at ? ` (${l.created_at.slice(0, 10)})` : ''}
+                            </option>
+                        ))}
                                     </select>
                                 </div>
                             )}
@@ -1138,11 +1152,20 @@ export default function Invoice() {
                             <div className="grid two">
                                 <div>
                                     <small className="muted" style={{ fontWeight: 800 }}>CLIENT NAME</small>
-                                    <input required value={formData.clientName || ''} onChange={e => setFormData({ ...formData, clientName: e.target.value })} />
+                                    <input
+                                        required
+                                        autoComplete="off"
+                                        value={formData.clientName || ''}
+                                        onChange={e => setFormData({ ...formData, clientName: e.target.value, clientId: '' })}
+                                    />
                                 </div>
                                 <div>
                                     <small className="muted" style={{ fontWeight: 800 }}>CLIENT EMAIL</small>
-                                    <input value={formData.clientEmail || ''} onChange={e => setFormData({ ...formData, clientEmail: e.target.value })} />
+                                    <input
+                                        autoComplete="off"
+                                        value={formData.clientEmail || ''}
+                                        onChange={e => setFormData({ ...formData, clientEmail: e.target.value, clientId: '' })}
+                                    />
                                 </div>
                             </div>
 
@@ -1244,15 +1267,26 @@ export default function Invoice() {
                                     {statusMsg.text}
                                 </div>
                             )}
-                            <button
-                                type="button"
-                                onClick={handleCreateInvoice}
-                                disabled={loading}
-                                className="btn glow-blue"
-                                style={{ height: '56px', fontSize: '1.2rem', width: '100%' }}
-                            >
-                                {loading ? '⏳ SAVING...' : (editingId ? 'UPDATE INVOICE' : 'SAVE DRAFT INVOICE')}
-                            </button>
+                            <div style={{ display: 'flex', gap: '12px' }}>
+                                <button
+                                    type="button"
+                                    onClick={(e) => handleCreateInvoice(e, false)}
+                                    disabled={loading}
+                                    className="btn secondary"
+                                    style={{ height: '56px', fontSize: '1rem', flex: 1 }}
+                                >
+                                    {loading ? '⏳ SAVING...' : (editingId ? 'UPDATE DRAFT' : 'SAVE DRAFT')}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={(e) => handleCreateInvoice(e, true)}
+                                    disabled={loading}
+                                    className="btn glow-blue"
+                                    style={{ height: '56px', fontSize: '1rem', flex: 2 }}
+                                >
+                                    {loading ? '⏳ SAVING...' : (editingId ? 'UPDATE & SEND EMAIL' : 'SAVE & SEND EMAIL')}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

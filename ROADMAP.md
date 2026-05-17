@@ -196,17 +196,18 @@ Items added here when a request falls outside the current sprint. Review with Jo
 ### Broken
 > *Confirmed not working correctly in production.*
 
-<!-- add items here -->
+- ~~**Invoice client name autocomplete overrides input**~~ ✅ Fixed v7.3.8
+- ~~**Duplicate leads in CRM Import dropdown**~~ ✅ Fixed v7.3.8
 
 ### Clean Up
 > *Technical debt, dead code, naming inconsistencies, structural improvements.*
 
-<!-- add items here -->
+- **Validation Tests 3 & 4 — non-admin 403 check** — Re-run `POST /api/admin/beta-codes` and `DELETE /api/admin/beta-codes/:code` with a non-admin user's token to confirm 403 is returned. Requires a second test account. Code audit confirmed `requireRole('admin')` is on all routes — this is a live smoke test only. (Flagged 2026-05-16)
 
 ### Good to Have
 > *Nice UX or feature additions — not blocking anything.*
 
-<!-- add items here -->
+- ~~**Invoice send flow — single step**~~ ✅ Fixed v7.3.8 — "SAVE & SEND EMAIL" button added to invoice form
 
 ---
 
