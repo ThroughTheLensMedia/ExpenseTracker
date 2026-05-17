@@ -56,7 +56,7 @@ router.post("/", async (req, res) => {
     const { Resend } = require("resend");
     const resend = new Resend(process.env.RESEND_API_KEY);
 
-    await resend.emails.send({
+    const result = await resend.emails.send({
       from: process.env.RESEND_FROM || "Lumière Ledger <support@lumiereledger.com>",
       to: ["joshua.deuermeyer@gmail.com"],
       replyTo: senderEmail !== "unknown" ? senderEmail : undefined,
@@ -64,6 +64,7 @@ router.post("/", async (req, res) => {
       html,
     });
 
+    console.log("[FEEDBACK] Resend result:", JSON.stringify(result));
     res.json({ ok: true });
   } catch (e) {
     console.error("[FEEDBACK]", e);

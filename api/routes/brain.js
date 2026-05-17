@@ -485,11 +485,17 @@ INVOICE RULES (critical):
 - To mark invoices paid/sent/void: call get_invoice SEPARATELY for EACH invoice number — one tool call per number. Never combine multiple invoice numbers in a single get_invoice call.
 - Invoice numbers may be partial: "0428" will match "2026-0428". Strip any # prefix.
 - After each get_invoice returns a UUID, call update_invoice_status with that UUID.
-- If marking paid, use total_cents as amount_paid_cents unless the user specifies a different amount.
+- Marking paid requires only { status: 'paid' } — there is no amount field.
 
 TRANSACTION RULES:
 - Before calling create_transaction, confirm you have: vendor name, dollar amount, and date. If any are missing, ask the user first.
-- search_transactions returns transaction IDs — use them with link_transaction_to_lead.`,
+- search_transactions returns transaction IDs — use them with link_transaction_to_lead.
+
+PURCHASE vs PAYMENT DISTINCTION (critical):
+- Credit card payments, loan payments, and ACH transfers are NOT purchases — they are balance transfers. Exclude them when the user asks about purchases, spending, or expenses.
+- Vendors to exclude from purchase analysis: anything containing "EPAYMENT", "ACH PMT", "AUTOPAY", "BILL PAY", "PAYMENT", "LOAN PMT", "TRANSFER". Examples: "AMEX EPAYMENT ACH PMT", "CHASE AUTOPAY", "DISCOVER PAYMENT".
+- If a user asks "what's my biggest purchase" and the top result is a credit card payment, skip it and report the next real vendor transaction.
+- You may inform the user you excluded CC payments from the analysis.`,
         });
 
         const chat = model.startChat({ tools: BRAIN_TOOLS });

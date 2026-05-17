@@ -1,6 +1,6 @@
 {
-  "version": "7.5.1",
+  "version": "7.5.2",
   "release_date": "2026-05-17",
   "codename": "Lumière Ledger",
-  "notes": "v7.5.1: Brain invoice fix — computed totals from line items, removed non-existent column references."
+  "notes": "v7.5.2: Brain payment exclusion — CC payments no longer reported as purchases."
 }

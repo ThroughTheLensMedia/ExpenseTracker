@@ -2,8 +2,8 @@
 
 > ✅ **REBRAND COMPLETE**: This product has been transitioned to **Lumière Ledger** (`lumiereledger.com`) as of May 2026.
 
-**Current version:** v7.2.0
-**Last updated:** 2026-05-13
+**Current version:** v7.3.4
+**Last updated:** 2026-05-15
 
 ---
 
@@ -212,7 +212,7 @@ This is a shared-database, shared-schema SaaS. Every table that contains user da
 - **Dates**: `expense_date` (expenses), `log_date` (mileage), `purchase_date` (assets). Always `YYYY-MM-DD`. iOS date formats normalized via `z.preprocess()` in Zod schema.
 - **Equipment**: `cost_cents` (BIGINT), `description` (name), `depreciation_method`, `useful_life_years`.
 - **Sources**: The `source` field on expenses is a string key identifying the import origin. It is user-scoped — the source dropdown in TransactionDrawer is built dynamically from the user's own data, not from a hardcoded list. Display labels are handled by `SOURCE_LABELS` in `TransactionDrawer.jsx` and `ACCOUNT_LABELS` in `Transactions.jsx`. Known keys: `manual`, `plaid`, `rocketmoney`, `chase`, `usbank`, `bankofamerica`, `wellsfargo`, `applecard`, `capitalone`, `usaa`, `navyfcu`, `wise`, `delta_amex`, `amex_gold`, `amex_platinum`, `amex_blue`. Unknown keys fall back to `formatSourceKey()` (capitalizes underscored key).
-- **Dedup**: CSV import uses two-pass detection — exact match (`date|vendor|amount_cents`) + fuzzy cross-source match (`date|amount_cents`).
+- **Dedup**: CSV import uses three-pass detection — exact match (`date|vendor|amount_cents`) + fuzzy cross-source match (`date|amount_cents`) + near-duplicate detection (vendor substring match, date ±1 day, amount diff ≤$50 AND ≤40% of lower). Near-duplicates are flagged `needs_review = true` with a shared `review_pair_id` UUID.
 - **Receipts**: Stored as relative paths in Supabase Storage. Always accessed via `/api/receipts/signed-url?path=` endpoint. Never direct storage URLs.
 - **Cache**: `fetchAllExpenses` uses in-memory stale-while-revalidate. `getExpensesCache()` exported for component-level detection.
 - **Import clock**: `daysSinceImport` in `Transactions.jsx` computes the most recent `created_at` across non-manual expenses only. Manual entries do not reset the clock.
@@ -248,8 +248,8 @@ This is a shared-database, shared-schema SaaS. Every table that contains user da
 | `VITE_SUPABASE_URL` | Yes | Frontend Supabase URL |
 | `VITE_SUPABASE_ANON_KEY` | Yes | Frontend Supabase key |
 | `JWT_SECRET` | Yes | Token signing |
-| `RESEND_API_KEY` | No | Email delivery (invoices, reports) |
-| `RESEND_FROM` | No | Sender email address |
+| `RESEND_API_KEY` | No | Email delivery (invoices, reports). Active key labeled "LumiereLedger" in Resend dashboard. |
+| `RESEND_FROM` | No | Sender address — must use `@throughthelens.media` domain. `lumiereledger.com` is NOT a verified Resend sending domain (costs $20/mo extra). Use: `Lumière Ledger <support@throughthelens.media>` |
 | `PLAID_CLIENT_ID` | No | Plaid banking integration |
 | `PLAID_SECRET` | No | Plaid API secret |
 | `ENCRYPTION_KEY` | No | ⚠️ Required before Plaid goes live — not yet set |
@@ -265,7 +265,7 @@ This is a shared-database, shared-schema SaaS. Every table that contains user da
 | Layer | Type | Action | Purpose |
 |-------|------|--------|---------|
 | **Layer 1** | UptimeRobot | External HTTP ping | 5-minute ping to `/api/health`. Alerts on complete server/Vercel failure. |
-| **Layer 2** | Vercel Cron | `vercel.json` → `/api/admin/watchdog` | Hourly internal check of Supabase DB and Resend SMTP. Sends `🚨 URGENT: Lumière Ledger Alert`. |
+| **Layer 2** | Vercel Cron | `vercel.json` → `/api/admin/watchdog` | Daily at 8am UTC. Internal check of Supabase DB and Resend SMTP. Sends `🚨 URGENT: Lumière Ledger Alert`. Hobby plan = daily crons only. |
 
 ---
 

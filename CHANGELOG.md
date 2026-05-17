@@ -5,6 +5,19 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.5.2] — 2026-05-17
+
+### Brain — credit card payment exclusion from purchase analysis
+
+#### Fixed
+- **`api/routes/brain.js`** — System instruction updated with PURCHASE vs PAYMENT DISTINCTION rules. When the user asks about "biggest purchase" or spending analysis, Gemini now knows to exclude credit card payments, ACH transfers, and auto-pay transactions (vendors containing "EPAYMENT", "ACH PMT", "AUTOPAY", "BILL PAY", "PAYMENT", "TRANSFER") — these are balance transfers, not purchases. Previously, "AMEX EPAYMENT ACH PMT" was surfaced as the biggest single purchase.
+- **`api/routes/brain.js`** — Removed stale `amount_paid_cents` reference from INVOICE RULES in system instruction (column doesn't exist — already fixed in v7.5.1 executor).
+
+#### Added
+- **`ROADMAP.md`** — Phase 2 Step 5 added: Brain Chart/Analysis Output Popup. When user requests a visual analysis, the Brain returns structured data; AssistantSidebar renders a Chart.js modal with Download CSV. Flagged 2026-05-17.
+
+---
+
 ## [v7.5.1] — 2026-05-17
 
 ### Brain — invoice total computation fix: non-existent column references

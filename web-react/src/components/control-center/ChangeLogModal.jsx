@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.5.2', date: 'MAY 17, 2026', color: '#10b981', items: [
+        '<strong>Brain — Smarter Purchase Analysis:</strong> Credit card payments (AMEX EPAYMENT, ACH PMT, AUTOPAY, etc.) are no longer reported as purchases. When you ask "what\'s my biggest purchase?" the Brain now skips balance transfers and payment transactions — only real vendor purchases count.',
+    ]},
     { version: '7.5.1', date: 'MAY 17, 2026', color: '#f97316', items: [
         '<strong>Brain — Invoice Total Fix:</strong> Invoices don\'t store a pre-computed total column — the total is calculated from your line items. The Brain now computes totals correctly from your invoice items, tax rate, and discount. Previously this caused a database error on every invoice lookup or status update.',
         '<strong>Brain — Mark Paid Simplified:</strong> Marking an invoice paid now sends only the status change — no phantom payment amount field that doesn\'t exist on the invoice record.',

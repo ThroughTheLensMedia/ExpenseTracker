@@ -135,6 +135,13 @@ Implementation order is fixed — do not skip steps.
 - [ ] **Step 4 — Invoice Generation** (after Step 3 is stable)
   - `create_invoice_draft(client_name, line_items, due_date)`
 
+- [ ] **Step 5 — Brain Chart/Analysis Output Popup** (Good to Have — flagged 2026-05-17)
+  - When the user requests an analysis with a visual output (spending breakdown, trend, category comparison, etc.), the Brain returns structured chart data alongside its text response
+  - AssistantSidebar renders a modal popup with: chart (bar/line/pie via Chart.js), summary table, and a Download CSV button
+  - Scope: read-only — triggered when Gemini determines a chart would improve the answer (e.g., "show me a breakdown", "chart my spending", "visualize my categories")
+  - The popup does not replace the text answer — it supplements it
+  - Download exports the raw data as a `.csv` file for external processing
+
 ---
 
 ## 📷 Phase 3: Computer Vision & RAG
