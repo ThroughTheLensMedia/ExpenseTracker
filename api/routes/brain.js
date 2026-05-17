@@ -59,10 +59,12 @@ const BRAIN_TOOLS = [{
         },
         {
             name: 'get_accounts',
-            description: 'List all bank accounts and credit cards that have transactions in the ledger. Use when the user asks about their accounts, banks, cards, or sources.',
+            description: 'List all bank accounts and credit cards that have transactions in the ledger. Use when the user asks about their accounts, banks, cards, or sources. Optionally filter by year.',
             parameters: {
                 type: 'OBJECT',
-                properties: {}
+                properties: {
+                    year: { type: 'INTEGER', description: 'Filter to only accounts with transactions in this year (e.g. 2026). Omit for all-time.' }
+                }
             }
         }
     ]
@@ -214,11 +216,14 @@ async function executeTool(name, args, sb, userId) {
         }
 
         case 'get_accounts': {
-            const { data, error } = await sb
-                .from('expenses')
-                .select('source')
+            let q = sb.from('expenses')
+                .select('source, expense_date')
                 .eq('user_id', userId)
                 .not('source', 'is', null);
+            if (args.year) {
+                q = q.gte('expense_date', `${args.year}-01-01`).lte('expense_date', `${args.year}-12-31`);
+            }
+            const { data, error } = await q;
             if (error) return { error: error.message };
 
             const counts = {};
@@ -230,6 +235,7 @@ async function executeTool(name, args, sb, userId) {
                 .map(([source, txCount]) => ({ account: source, transactions: txCount }));
 
             return {
+                year_filter: args.year || 'all-time',
                 total_accounts: accounts.length,
                 accounts
             };
