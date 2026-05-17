@@ -189,16 +189,33 @@ function AppContent() {
               <div className="muted" style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.05em', marginTop: '2px', opacity: 0.6 }}>INTEL FOR TODAY'S PHOTOGRAPHER</div>
             </div>
           </div>
-          {newVersion && (
-            <button
-              onClick={() => window.location.reload(true)}
-              className="tag ok glow-green"
-              style={{ marginLeft: '12px', cursor: 'pointer', border: 'none', padding: '4px 10px', fontSize: '9px', fontWeight: 900, letterSpacing: '0.05em' }}
-            >
-              UPDATE AVAILABLE — REFRESH
-            </button>
-          )}
         </div>
+
+        {/* Center: Update Banner */}
+        {newVersion && (
+          <button
+            onClick={() => window.location.reload(true)}
+            className="glow-green"
+            style={{
+              position: 'absolute',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              cursor: 'pointer',
+              border: '1px solid rgba(16,185,129,0.4)',
+              borderRadius: '10px',
+              background: 'rgba(16,185,129,0.12)',
+              color: '#10b981',
+              padding: '10px 24px',
+              fontSize: '12px',
+              fontWeight: 900,
+              letterSpacing: '0.08em',
+              whiteSpace: 'nowrap',
+              boxShadow: '0 0 18px rgba(16,185,129,0.2)',
+            }}
+          >
+            UPDATE AVAILABLE — CLICK TO REFRESH
+          </button>
+        )}
 
         {/* Right Side: Toggle */}
         <div className="mobile-toggle" style={{ cursor: 'pointer', padding: '10px' }} onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>

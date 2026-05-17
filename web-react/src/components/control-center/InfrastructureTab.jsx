@@ -92,16 +92,6 @@ export default function InfrastructureTab({ subscription, onReload }) {
                 <a href="/api/admin/export-all" download className="btn secondary" style={{ padding: '20px 50px', fontSize: '16px', fontWeight: 900 }}>DOWNLOAD ARCHIVE</a>
             </div>
 
-            <div style={{ marginTop: '20px', padding: '20px 28px', display: 'flex', gap: '40px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                <div>
-                    <small className="muted" style={{ fontWeight: 900, display: 'block', marginBottom: '4px', fontSize: '10px' }}>VERSION</small>
-                    <span style={{ fontWeight: 800, fontSize: '13px', color: 'var(--accent)' }}>7.4.0</span>
-                </div>
-                <div>
-                    <small className="muted" style={{ fontWeight: 900, display: 'block', marginBottom: '4px', fontSize: '10px' }}>LIVE ENDPOINT</small>
-                    <span style={{ fontWeight: 800, fontSize: '13px' }}>{window.location.hostname}</span>
-                </div>
-            </div>
         </div>
     );
 }
