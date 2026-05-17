@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.3.9] — 2026-05-16
+
+### Invoice — Mark Paid on Draft, Edit on Paid
+
+#### Fixed
+- **`web-react/src/pages/Invoice.jsx`** — Mark Paid button now appears on **draft** invoices (not just sent). Enables logging portal-paid clients (e.g., FotoFetch) without triggering an unwanted email send.
+- **`web-react/src/pages/Invoice.jsx`** — Edit button now available on **paid** invoices. Previously disappeared after marking paid, preventing corrections and record access. All statuses (draft, sent, paid) now allow editing.
+
+---
+
 ## [v7.3.8] — 2026-05-16
 
 ### Invoice — Client Override Fix, Duplicate Leads, Save & Send

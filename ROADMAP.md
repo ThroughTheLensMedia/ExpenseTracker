@@ -191,7 +191,8 @@ Items added here when a request falls outside the current sprint. Review with Jo
 ### Need
 > *Required for core functionality or launch — will break something if not done.*
 
-<!-- add items here -->
+- ~~**Mark Paid on draft invoices**~~ ✅ Fixed v7.3.9
+- ~~**Edit/Preview accessible on paid invoices**~~ ✅ Fixed v7.3.9
 
 ### Broken
 > *Confirmed not working correctly in production.*

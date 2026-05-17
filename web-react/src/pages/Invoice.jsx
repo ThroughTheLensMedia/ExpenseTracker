@@ -1026,17 +1026,20 @@ export default function Invoice() {
                                                 <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
                                                     <button className="btn sm secondary" onClick={() => handlePreview(inv)}>Preview</button>
                                                     <button className="btn sm secondary" onClick={() => handleDuplicate(inv)}>Clone</button>
-                                                    {(inv.status === 'draft' || inv.status === 'sent') && (
+                                                    {(inv.status === 'draft' || inv.status === 'sent' || inv.status === 'paid') && (
                                                         <button className="btn sm secondary" onClick={() => handleEdit(inv)}>Edit</button>
                                                     )}
                                                     {inv.status === 'draft' && (
-                                                        <button 
-                                                            className="btn sm glow-blue" 
-                                                            onClick={() => handleSendEmail(inv)}
-                                                            disabled={sendingId === inv.id}
-                                                        >
-                                                            {sendingId === inv.id ? '⏳ Emailing...' : 'Send Email'}
-                                                        </button>
+                                                        <>
+                                                            <button
+                                                                className="btn sm glow-blue"
+                                                                onClick={() => handleSendEmail(inv)}
+                                                                disabled={sendingId === inv.id}
+                                                            >
+                                                                {sendingId === inv.id ? '⏳ Emailing...' : 'Send Email'}
+                                                            </button>
+                                                            <button className="btn sm primary" onClick={() => handleMarkPaid(inv.id)}>Mark Paid</button>
+                                                        </>
                                                     )}
                                                     {inv.status === 'sent' && (
                                                         <>
