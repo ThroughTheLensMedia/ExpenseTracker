@@ -36,11 +36,19 @@ function renderMarkdown(text) {
 }
 
 export default function AssistantSidebar() {
-    const { settings } = useAuth();
+    const { settings, user } = useAuth();
+
+    // Derive first name: contact_name → business_name → email prefix
+    const rawName = settings?.contact_name || settings?.business_name || user?.email || '';
+    const firstName = rawName.split(/[\s@.]/)[0];
+    const greeting = firstName
+        ? `Hello, ${firstName.charAt(0).toUpperCase() + firstName.slice(1)}! I'm your assistant. How can I help you?`
+        : "Hello! I'm your assistant. How can I help you?";
+
     const [isOpen, setIsOpen] = useState(false);
     const [query, setQuery] = useState('');
     const [messages, setMessages] = useState([
-        { role: 'assistant', text: "Hello! I'm Your Assistant. How can I help you optimize your studio's finances today?" }
+        { role: 'assistant', text: greeting }
     ]);
     const [loading, setLoading] = useState(false);
     const [pendingActions, setPendingActions] = useState([]);
