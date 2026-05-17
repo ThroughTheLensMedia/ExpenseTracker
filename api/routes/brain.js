@@ -10,7 +10,7 @@ const BRAIN_TOOLS = [{
     functionDeclarations: [
         {
             name: 'search_transactions',
-            description: 'Search expenses and transactions from the ledger. Use for spending questions, category totals, vendor lookups, date-range queries, or tax deduction totals.',
+            description: 'Search expenses and transactions from the ledger. Use for spending questions, category totals, vendor lookups, date-range queries, or tax deduction totals. Returns transaction IDs that can be used with link_transaction_to_lead.',
             parameters: {
                 type: 'OBJECT',
                 properties: {
@@ -69,11 +69,11 @@ const BRAIN_TOOLS = [{
         },
         {
             name: 'get_invoice',
-            description: 'Look up one or more invoices by invoice number, client name, or status. Use this before update_invoice_status to get the invoice UUID and amount. Invoice numbers are formatted like "2026-0428" — strip the leading # if present.',
+            description: 'Look up a SINGLE invoice by number, client name, or status. Call this ONCE PER INVOICE — never combine multiple invoice numbers into one call. Invoice numbers may be stored as "2026-0428"; partial matches work so "0428" will find "2026-0428". Strip any leading # before passing.',
             parameters: {
                 type: 'OBJECT',
                 properties: {
-                    invoice_number: { type: 'STRING', description: 'Invoice number to look up, e.g. "2026-0428". Omit # prefix.' },
+                    invoice_number: { type: 'STRING', description: 'ONE invoice number only, e.g. "0428" or "2026-0428". Never pass multiple numbers here.' },
                     client_name:    { type: 'STRING', description: 'Client name — partial match' },
                     status:         { type: 'STRING', description: 'Filter by status: draft, sent, paid, void' },
                     limit:          { type: 'INTEGER', description: 'Max results (default 10)' }
@@ -96,17 +96,18 @@ const BRAIN_TOOLS = [{
         },
         {
             name: 'create_transaction',
-            description: 'Create a new expense or income transaction in the ledger. Returns a pending action for user confirmation — never executes directly.',
+            description: 'Create a new expense or income transaction in the ledger. Returns a pending action for user confirmation — never executes directly. If vendor, amount, or date are missing, ask the user before calling this tool.',
             parameters: {
                 type: 'OBJECT',
                 properties: {
-                    vendor:         { type: 'STRING',  description: 'Vendor or payee name' },
-                    amount_dollars: { type: 'NUMBER',  description: 'Amount in dollars — positive for expense, negative for income/refund' },
-                    date:           { type: 'STRING',  description: 'Transaction date YYYY-MM-DD' },
+                    vendor:         { type: 'STRING',  description: 'Vendor or payee name — required' },
+                    amount_dollars: { type: 'NUMBER',  description: 'Amount in dollars — required. Positive for expense, negative for income/refund.' },
+                    date:           { type: 'STRING',  description: 'Transaction date YYYY-MM-DD — required. Use today if the user says "today".' },
                     category:       { type: 'STRING',  description: 'Category name' },
                     account:        { type: 'STRING',  description: 'Account or source name' },
                     notes:          { type: 'STRING',  description: 'Optional notes' }
-                }
+                },
+                required: ['vendor', 'amount_dollars', 'date']
             }
         },
         {
@@ -150,7 +151,7 @@ async function executeTool(name, args, sb, userId) {
 
         case 'search_transactions': {
             let q = sb.from('expenses')
-                .select('vendor, amount_cents, expense_date, category, tax_deductible, tax_bucket, notes')
+                .select('id, vendor, amount_cents, expense_date, category, tax_deductible, tax_bucket, notes')
                 .eq('user_id', userId);
             if (args.category)           q = q.eq('category', args.category);
             if (args.start_date)         q = q.gte('expense_date', args.start_date);
@@ -167,6 +168,7 @@ async function executeTool(name, args, sb, userId) {
                 count: data?.length || 0,
                 total: fmt(toDollars(total)),
                 transactions: (data || []).map(r => ({
+                    id: r.id,
                     vendor: r.vendor,
                     amount: fmt(toDollars(r.amount_cents)),
                     date: r.expense_date,
@@ -358,7 +360,10 @@ async function executeTool(name, args, sb, userId) {
         }
 
         case 'create_transaction': {
-            const amountCents = Math.round((args.amount_dollars || 0) * 100);
+            if (!args.vendor)         return { error: 'Missing vendor name. Ask the user for it before creating the transaction.' };
+            if (!args.amount_dollars) return { error: 'Missing amount. Ask the user for the dollar amount before creating the transaction.' };
+            if (!args.date)           return { error: 'Missing date. Ask the user for the transaction date before creating the transaction.' };
+            const amountCents = Math.round(args.amount_dollars * 100);
             const display = `$${Math.abs(args.amount_dollars).toFixed(2)} — ${args.vendor} on ${args.date}${args.category ? ` [${args.category}]` : ''}`;
             return {
                 __pending: true,
@@ -455,20 +460,32 @@ router.post("/ask", async (req, res) => {
             systemInstruction: `You are the Lumière Assistant — an elite financial AI advisor for ${businessName}, a professional photography business. Today is ${today}. Current view: ${context?.page || "dashboard"}.
 
 You have live tools to query and update the ledger, invoices, CRM, and metrics.
+
+RULES:
 - For data questions: call the appropriate read tool and answer with real numbers.
-- For write requests: always use a read tool first to look up the exact record and get its UUID, then call the write tool. Write tools return a pending confirmation — tell the user what will happen and that Approve/Reject buttons will appear.
-- For invoice status changes (mark paid, mark sent, etc.): call get_invoice first with the invoice number (strip any # prefix), get the UUID, then call update_invoice_status. If marking paid, use the invoice's total_cents as amount_paid_cents unless told otherwise.
-- For multiple invoices in a single request: call get_invoice once per invoice number, then call update_invoice_status for each one.
-- Never fabricate data. Never guess a UUID. Be direct and specific.`,
+- For write requests: always use a read tool first to get the exact UUID, then call the write tool.
+- Write tools return a pending confirmation — tell the user Approve/Reject cards will appear.
+- Never fabricate data. Never guess a UUID. If a lookup returns no results, tell the user exactly what was searched.
+
+INVOICE RULES (critical):
+- To mark invoices paid/sent/void: call get_invoice SEPARATELY for EACH invoice number — one tool call per number. Never combine multiple invoice numbers in a single get_invoice call.
+- Invoice numbers may be partial: "0428" will match "2026-0428". Strip any # prefix.
+- After each get_invoice returns a UUID, call update_invoice_status with that UUID.
+- If marking paid, use total_cents as amount_paid_cents unless the user specifies a different amount.
+
+TRANSACTION RULES:
+- Before calling create_transaction, confirm you have: vendor name, dollar amount, and date. If any are missing, ask the user first.
+- search_transactions returns transaction IDs — use them with link_transaction_to_lead.`,
         });
 
         const chat = model.startChat({ tools: BRAIN_TOOLS });
         let result = await chat.sendMessage(prompt);
 
-        // Function calling loop — max 3 rounds
+        // Function calling loop — max 6 rounds
+        // Supports multi-step requests (e.g. look up 2 invoices then write 2 updates = 4 rounds)
         // result is GenerateContentResult; text/functionCalls live on result.response
         const pendingActions = [];
-        for (let round = 0; round < 3; round++) {
+        for (let round = 0; round < 6; round++) {
             const calls = result.response.functionCalls?.() ?? [];
             if (calls.length === 0) break;
 

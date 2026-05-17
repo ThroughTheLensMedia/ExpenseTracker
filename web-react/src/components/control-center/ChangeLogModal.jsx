@@ -1,6 +1,12 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.4.9', date: 'MAY 17, 2026', color: '#f97316', items: [
+        '<strong>Brain — Multi-Invoice Fix:</strong> "Mark invoice 0428 and 1001 as paid" now works correctly. The Brain calls get_invoice separately for each number instead of combining them into a single broken query.',
+        '<strong>Brain — Deeper Reasoning:</strong> The function-calling loop raised from 3 to 6 rounds — multi-step requests (look up 2 invoices, update both) no longer stall midway.',
+        '<strong>Brain — Transaction Safety:</strong> Creating a transaction without a vendor, amount, or date now prompts you for the missing info instead of silently creating a $0 record.',
+        '<strong>Brain — Link Transactions to Leads:</strong> Transaction search results now include IDs, enabling the Brain to link a specific expense to a CRM lead.',
+    ]},
     { version: '7.4.8', date: 'MAY 17, 2026', color: '#38bdf8', items: [
         '<strong>Brain — Invoice Actions:</strong> You can now ask the Assistant to mark invoices as paid, sent, or draft. "Mark invoice #2026-0428 and #1001 as paid" — the Brain looks up both invoices, pulls the totals, and surfaces confirmation cards before changing anything.',
         '<strong>Brain — Multi-Invoice Support:</strong> Multiple invoice numbers in a single request are each resolved and queued as separate confirmation cards — approve or reject individually.',
