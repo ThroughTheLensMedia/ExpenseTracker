@@ -22,14 +22,18 @@ export default function Backup() {
     const { user, subscription, refreshSubscription } = useAuth();
     const [activeTab, setActiveTab] = useState('automation');
 
-    // Shared state
-    const [stats, setStats] = useState({ expenses: 0, equipment: 0, invoices: 0, clients: 0 });
+    // Base state (loaded immediately — lightweight)
+    const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+    const [isHealthy, setIsHealthy] = useState(null);   // null = not yet checked
+    const [isMailerReady, setIsMailerReady] = useState(null);
+    const [healthCheckedAt, setHealthCheckedAt] = useState(null);
+    const [baseLoaded, setBaseLoaded] = useState(false);
+
+    // Tab-specific state (loaded on demand)
     const [allExpenses, setAllExpenses] = useState([]);
     const [rules, setRules] = useState([]);
-    const [settings, setSettings] = useState(DEFAULT_SETTINGS);
     const [loading, setLoading] = useState(false);
-    const [isHealthy, setIsHealthy] = useState(true);
-    const [isMailerReady, setIsMailerReady] = useState(false);
+    const [showSkeleton, setShowSkeleton] = useState(false);
 
     // Admin state
     const [allSubscriptions, setAllSubscriptions] = useState([]);
@@ -47,62 +51,85 @@ export default function Backup() {
         }
     }, [window.location.search]);
 
-    const loadData = async (silent = false) => {
-        if (!silent) setLoading(true);
+    // Base load: health + settings only — fast, fires once on mount
+    const loadBase = async () => {
         try {
-            const [exps, eq, inv, lds, rls, hlth, st] = await Promise.all([
-                fetchAllExpenses().catch(() => []),
-                fetchAllAssets().catch(() => []),
-                fetchAllInvoices().catch(() => []),
-                fetchAllLeads().catch(() => ({ leads: [] })),
-                apiGet('/rules').catch(() => ({ rules: [] })),
+            const [hlth, st] = await Promise.all([
                 apiGet('/health').catch(() => ({ ok: false })),
                 apiGet('/settings').catch(() => ({}))
             ]);
-
-            setAllExpenses(exps);
-            setRules(rls.rules || []);
-            setIsHealthy(hlth.ok && (hlth.db !== false));
+            setIsHealthy(hlth.ok && hlth.db !== false);
             setIsMailerReady(!!hlth.mailer);
+            setHealthCheckedAt(new Date());
+            setSettings(st || {});
+        } catch (e) {
+            console.error('Base load failed', e);
+        } finally {
+            setBaseLoaded(true);
+        }
+    };
 
-            if (activeTab !== 'profile' || !settings.business_name && !settings.email) setSettings(st || {});
-
-            const activeLeads = (lds.leads || []).filter(l => l.status !== 'Lost');
-            setStats({ expenses: exps.length, equipment: eq.length, invoices: inv.length, clients: activeLeads.length });
-
-            if (isAdmin) {
-                try {
+    // Tab-specific load: only fetches what the active tab actually needs
+    const loadTabData = async (tab, silent = false) => {
+        if (!silent) {
+            setLoading(true);
+            const skeletonTimer = setTimeout(() => setShowSkeleton(true), 800);
+            try {
+                if (tab === 'automation') {
+                    const [exps, rls] = await Promise.all([
+                        fetchAllExpenses().catch(() => []),
+                        apiGet('/rules').catch(() => ({ rules: [] }))
+                    ]);
+                    setAllExpenses(exps);
+                    setRules(rls.rules || []);
+                } else if (tab === 'saas' && isAdmin) {
                     const [subs, codes, adminStatus, dStats] = await Promise.all([
-                        apiGet('/admin/subscriptions'),
-                        apiGet('/admin/beta-codes'),
-                        apiGet('/admin/check-status').catch(err => ({ error: err.message, type: 'bad' })),
+                        apiGet('/admin/subscriptions').catch(() => []),
+                        apiGet('/admin/beta-codes').catch(() => []),
+                        apiGet('/admin/check-status').catch(err => ({ error: err.message })),
                         apiGet('/admin/daily-report').catch(() => ({ data: [] }))
                     ]);
                     setAllSubscriptions(subs || []);
                     setBetaCodes(codes || []);
                     setDailyStats(dStats.data || []);
-                    if (adminStatus.error) setStatusMsg({ type: 'bad', text: "Admin Data Fetch Failed: " + adminStatus.error });
-                    else if (adminStatus.diagnostics?.service_key_degraded && !adminStatus.diagnostics?.queries_ok) setStatusMsg({ type: 'bad', text: "Admin Service Key is degraded or missing. Some admin functions may not work correctly." });
+                    if (adminStatus.error) setStatusMsg({ type: 'bad', text: 'Admin fetch failed: ' + adminStatus.error });
+                    else if (adminStatus.diagnostics?.service_key_degraded) setStatusMsg({ type: 'bad', text: 'Admin service key degraded.' });
                     else setStatusMsg(null);
-                } catch (err) {
-                    if (!silent) setStatusMsg({ type: 'bad', text: "Admin Data Fetch Failed: " + err.message });
                 }
+                // profile, intelligence, infrastructure, integration, help, feedback: no heavy fetch needed
+            } finally {
+                clearTimeout(skeletonTimer);
+                setLoading(false);
+                setShowSkeleton(false);
             }
-        } catch (e) {
-            console.error("Master load failed", e);
-        } finally {
-            if (!silent) setLoading(false);
+        } else {
+            // Silent refresh — same logic, no loading state
+            if (tab === 'automation') {
+                const [exps, rls] = await Promise.all([
+                    fetchAllExpenses().catch(() => []),
+                    apiGet('/rules').catch(() => ({ rules: [] }))
+                ]);
+                setAllExpenses(exps);
+                setRules(rls.rules || []);
+            }
         }
     };
 
-    useEffect(() => {
-        loadData();
-        if (activeTab === 'profile') return;
-        const timer = setInterval(() => loadData(true), 60000);
-        return () => clearInterval(timer);
-    }, [activeTab, user]);
+    const loadData = (silent = false) => loadTabData(activeTab, silent);
 
-    if (loading && !allExpenses.length) return <div style={{ padding: '60px', textAlign: 'center' }}><div className="spinner" /></div>;
+    useEffect(() => { loadBase(); }, [user]);
+
+    useEffect(() => {
+        if (!baseLoaded) return;
+        loadTabData(activeTab);
+        const timer = setInterval(() => loadTabData(activeTab, true), 60000);
+        return () => clearInterval(timer);
+    }, [activeTab, baseLoaded]);
+
+    const formatCheckedAt = (d) => {
+        if (!d) return '—';
+        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    };
 
     return (
         <section className="dashboard" style={{ maxWidth: '1400px', margin: '0 auto', paddingBottom: '100px' }}>
@@ -127,36 +154,58 @@ export default function Backup() {
                 </nav>
             </div>
 
-            {/* System Health HUD */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', alignItems: 'start', marginBottom: '40px' }}>
-                {[
-                    { label: 'LIVE TRANSACTIONS', value: stats.expenses, color: 'var(--accent)', showHealth: true },
-                    { label: 'GEAR ASSETS', value: stats.equipment, color: '#38bdf8' },
-                    { label: 'INVOICES', value: stats.invoices, color: '#f97316' },
-                    { label: 'PIPELINE CRM', value: stats.clients, color: '#818cf8' },
-                ].map(s => (
-                    <div key={s.label} className="card glass" style={{ margin: 0, borderTop: `3px solid ${s.color}`, padding: '24px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', minHeight: '160px' }}>
-                        <div className="muted extra-small" style={{ fontWeight: 900, letterSpacing: '0.05em' }}>{s.label}</div>
-                        <div style={{ fontSize: '2.4rem', fontWeight: 950, marginTop: '6px', lineHeight: 1 }}>{s.value.toLocaleString()}</div>
-                        {s.showHealth && (
-                            <div style={{ display: 'flex', gap: '10px', marginTop: '12px', justifyContent: 'center' }}>
-                                <span className={`health-dot ${isHealthy ? 'health-ok' : 'health-bad'}`} title={isHealthy ? 'DB Connected' : 'DB Link Offline'} />
-                                <span className={`health-dot ${isMailerReady ? 'health-ok' : 'health-bad'}`} title={isMailerReady ? 'SMTP Ready' : 'SMTP Missing'} />
+            {/* System Status Panel */}
+            <div className="card glass" style={{ margin: '0 0 32px', padding: '20px 28px', borderTop: '3px solid rgba(56,189,248,0.4)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                    <div style={{ fontSize: '10px', fontWeight: 900, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' }}>System Status</div>
+                    <div style={{ display: 'flex', gap: '28px', flexWrap: 'wrap', alignItems: 'center' }}>
+                        {[
+                            { label: 'Database', ok: isHealthy, okText: 'Connected', badText: 'Offline' },
+                            { label: 'Email / SMTP', ok: isMailerReady, okText: 'Ready', badText: 'Not Configured' },
+                        ].map(({ label, ok, okText, badText }) => (
+                            <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{
+                                    width: '8px', height: '8px', borderRadius: '50%', display: 'inline-block', flexShrink: 0,
+                                    background: ok === null ? 'rgba(255,255,255,0.2)' : ok ? '#10b981' : '#ef4444',
+                                    boxShadow: ok === null ? 'none' : ok ? '0 0 6px #10b981' : '0 0 6px #ef4444'
+                                }} />
+                                <span style={{ fontSize: '12px', fontWeight: 700, color: 'rgba(255,255,255,0.7)' }}>{label}</span>
+                                <span style={{ fontSize: '11px', fontWeight: 600, color: ok === null ? 'rgba(255,255,255,0.3)' : ok ? '#10b981' : '#ef4444' }}>
+                                    {ok === null ? 'Checking…' : ok ? okText : badText}
+                                </span>
+                            </div>
+                        ))}
+                        {healthCheckedAt && (
+                            <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.25)', fontWeight: 600 }}>
+                                Last checked {formatCheckedAt(healthCheckedAt)}
                             </div>
                         )}
                     </div>
-                ))}
+                    <button
+                        onClick={() => loadBase()}
+                        style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'rgba(255,255,255,0.4)', fontSize: '10px', fontWeight: 800, padding: '4px 12px', cursor: 'pointer', letterSpacing: '0.04em' }}
+                    >
+                        REFRESH
+                    </button>
+                </div>
             </div>
 
             {/* Tab Content */}
-            {activeTab === 'profile' && <ProfileTab settings={settings} setSettings={setSettings} onReload={loadData} />}
-            {activeTab === 'intelligence' && <IntelligenceTab settings={settings} setSettings={setSettings} user={user} loading={loading} setLoading={setLoading} onReload={loadData} />}
-            {activeTab === 'automation' && <AutomationTab rules={rules} allExpenses={allExpenses} onReload={loadData} />}
-            {activeTab === 'infrastructure' && <InfrastructureTab subscription={subscription} onReload={loadData} />}
-            {activeTab === 'integration' && <IntegrationTab />}
-            {activeTab === 'help' && <HelpTab />}
-            {activeTab === 'feedback' && <FeedbackTab />}
-            {activeTab === 'saas' && <SaasTab user={user} allSubscriptions={allSubscriptions} betaCodes={betaCodes} dailyStats={dailyStats} statusMsg={statusMsg} onReload={loadData} />}
+            {showSkeleton && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '10px 0' }}>
+                    {[80, 60, 90, 50].map((w, i) => (
+                        <div key={i} style={{ height: '18px', width: `${w}%`, borderRadius: '6px', background: 'rgba(255,255,255,0.06)', animation: 'pulse 1.4s ease-in-out infinite' }} />
+                    ))}
+                </div>
+            )}
+            {!showSkeleton && activeTab === 'profile' && <ProfileTab settings={settings} setSettings={setSettings} onReload={loadData} />}
+            {!showSkeleton && activeTab === 'intelligence' && <IntelligenceTab settings={settings} setSettings={setSettings} user={user} loading={loading} setLoading={setLoading} onReload={loadData} />}
+            {!showSkeleton && activeTab === 'automation' && <AutomationTab rules={rules} allExpenses={allExpenses} onReload={loadData} />}
+            {!showSkeleton && activeTab === 'infrastructure' && <InfrastructureTab subscription={subscription} onReload={loadData} />}
+            {!showSkeleton && activeTab === 'integration' && <IntegrationTab />}
+            {!showSkeleton && activeTab === 'help' && <HelpTab />}
+            {!showSkeleton && activeTab === 'feedback' && <FeedbackTab />}
+            {!showSkeleton && activeTab === 'saas' && <SaasTab user={user} allSubscriptions={allSubscriptions} betaCodes={betaCodes} dailyStats={dailyStats} statusMsg={statusMsg} onReload={loadData} />}
         </section>
     );
 }

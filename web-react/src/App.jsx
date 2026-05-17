@@ -213,66 +213,74 @@ function AppContent() {
 
         {/* Studio Command Center (Dropdown) */}
         {mobileMenuOpen && (
-          <div className="dropdown-menu" style={{ 
-            position: 'absolute', 
-            top: '90px', 
+          <div className="dropdown-menu" style={{
+            position: 'absolute',
+            top: '90px',
             right: '15px',
             animation: 'fadeInDown 0.2s ease-out'
           }}>
+            {/* Financials */}
+            <div style={{ padding: '6px 16px 4px', fontSize: '9px', fontWeight: 900, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>Financials</div>
             <NavLink to="/" end onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
               Dashboard
             </NavLink>
             <NavLink to="/transactions" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
               Transaction Ledger
             </NavLink>
+            <NavLink to="/tax" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
+              Tax Data / Sch C
+            </NavLink>
+
+            {/* Operations */}
+            <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '10px 12px 6px' }} />
+            <div style={{ padding: '2px 16px 4px', fontSize: '9px', fontWeight: 900, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>Operations</div>
             <NavLink to="/mileage" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-              🚗 Mileage Log
+              Mileage Log
             </NavLink>
             <NavLink to="/import" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-              📥 Bank Import
-            </NavLink>
-            <NavLink to="/crm" end onClick={() => { setMobileMenuOpen(false); clearBadge(); }} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-              🤝 CRM Pipeline {newLeadCount > 0 && <span style={{ background: '#ef4444', color: 'white', borderRadius: '50%', fontSize: '9px', fontWeight: 900, padding: '1px 5px', marginLeft: '6px' }}>{newLeadCount > 9 ? '9+' : newLeadCount}</span>}
-            </NavLink>
-            <NavLink to="/crm/financials" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-              🧾 Business Invoicing
-            </NavLink>
-            <NavLink to="/tax" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-              ⚖️ Tax Data / Sch C
+              Bank Import
             </NavLink>
             <NavLink to="/equipment" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-              📸 Camera Gear
+              Camera Gear
             </NavLink>
 
-            <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '16px 12px' }} />
-            
-            <NavLink 
-                to="/StudioControlCenter?tab=profile" 
-                onClick={() => setMobileMenuOpen(false)} 
+            {/* Client Work */}
+            <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '10px 12px 6px' }} />
+            <div style={{ padding: '2px 16px 4px', fontSize: '9px', fontWeight: 900, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>Client Work</div>
+            <NavLink to="/crm" end onClick={() => { setMobileMenuOpen(false); clearBadge(); }} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
+              CRM Pipeline {newLeadCount > 0 && <span style={{ background: '#ef4444', color: 'white', borderRadius: '50%', fontSize: '9px', fontWeight: 900, padding: '1px 5px', marginLeft: '6px' }}>{newLeadCount > 9 ? '9+' : newLeadCount}</span>}
+            </NavLink>
+            <NavLink to="/crm/financials" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
+              Business Invoicing
+            </NavLink>
+
+            {/* Settings */}
+            <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '10px 12px 6px' }} />
+            <div style={{ padding: '2px 16px 4px', fontSize: '9px', fontWeight: 900, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>Settings</div>
+            <NavLink
+                to="/StudioControlCenter?tab=profile"
+                onClick={() => setMobileMenuOpen(false)}
                 className={() => `dropdown-item ${location.pathname === '/StudioControlCenter' && location.search.includes('tab=profile') ? 'active' : ''}`}
             >
-              👤 Business Profile
+              Business Profile
             </NavLink>
-
-            <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '16px 12px' }} />
-
-            <NavLink 
-                to="/StudioControlCenter" 
-                end 
-                onClick={() => setMobileMenuOpen(false)} 
+            <NavLink
+                to="/StudioControlCenter"
+                end
+                onClick={() => setMobileMenuOpen(false)}
                 className={({ isActive }) => `dropdown-item ${isActive && !location.search ? 'active' : ''}`}
             >
-               ⚙️ Ledger Control Center
+              Ledger Control Center
             </NavLink>
             <NavLink to="/addons" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-              🧩 Add-Ons
+              Add-Ons
             </NavLink>
             <NavLink
                 to="/StudioControlCenter?tab=help"
                 onClick={() => setMobileMenuOpen(false)}
                 className={() => `dropdown-item ${location.pathname === '/StudioControlCenter' && location.search.includes('tab=help') ? 'active' : ''}`}
             >
-               ❓ Ledger Documentation & FAQ
+              Documentation & FAQ
             </NavLink>
             
             <div style={{ marginTop: '12px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '16px', paddingBottom: '4px' }}>
