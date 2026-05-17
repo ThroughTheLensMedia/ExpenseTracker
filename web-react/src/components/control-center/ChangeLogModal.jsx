@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.5.7', date: 'MAY 17, 2026', color: '#f97316', items: [
+        '<strong>Brain — Setup Prompt for New Users:</strong> Users without a Gemini API key now see an activation card instead of a hidden or broken chat. It explains the BYOB model, links to Google AI Studio for a free key, shows example questions, and links directly to the Control Center to enter the key.',
+        '<strong>Brain — No Shared Tokens:</strong> Each user\'s Brain runs on their own Gemini API key and quota. The assistant button remains visible to all users as an onboarding prompt.',
+    ]},
     { version: '7.5.6', date: 'MAY 17, 2026', color: '#f97316', items: [
         '<strong>Brain — Self-Describing Capabilities:</strong> Ask <strong>"what can you do?"</strong> and the Assistant gives you an accurate, complete list of what it can look up, what it can change (with your approval), and what it cannot do yet. No more discovery by trial and error.',
         '<strong>Brain — Updated Greeting:</strong> The Assistant now introduces itself with a prompt to ask about capabilities so you know where to start.',

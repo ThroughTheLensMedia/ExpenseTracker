@@ -5,6 +5,17 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.5.7] — 2026-05-17
+
+### Brain — API key setup CTA for unconfigured users
+
+#### Changed
+- **`web-react/src/components/AssistantSidebar.jsx`** — Sidebar no longer hides entirely when no Gemini API key is configured. Button is still visible (dimmed). Opening the panel shows a setup card: explains BYOB architecture, links to Google AI Studio to get a free key, links directly to Control Center → Intelligence tab to enter it, and shows example questions so users understand the value before setting up.
+- **`web-react/src/components/AssistantSidebar.jsx`** — Chat interface and input are gated behind `hasKey` — unconfigured users see only the setup card, not a broken chat.
+- Prevents unconfigured users from hitting a raw 400 error mid-conversation, and eliminates shared token consumption — each user drives their own Gemini quota.
+
+---
+
 ## [v7.5.6] — 2026-05-17
 
 ### Brain — self-describing capabilities

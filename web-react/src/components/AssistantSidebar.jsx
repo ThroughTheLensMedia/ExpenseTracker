@@ -137,21 +137,21 @@ export default function AssistantSidebar() {
         setMessages(prev => [...prev, { role: 'assistant', text: `Cancelled — no changes made.` }]);
     };
 
-    if (!settings?.gemini_api_key) return null; // Only show if AI is configured
+    const hasKey = !!settings?.gemini_api_key;
 
     return (
         <>
             {/* Floating Toggle Button */}
-            <button 
+            <button
                 onClick={() => setIsOpen(!isOpen)}
                 style={{
                     position: 'fixed',
-                    bottom: '100px', // Above mobile nav
+                    bottom: '100px',
                     right: '30px',
                     width: '60px',
                     height: '60px',
                     borderRadius: '50%',
-                    background: 'var(--accent)',
+                    background: hasKey ? 'var(--accent)' : 'rgba(249,115,22,0.5)',
                     border: 'none',
                     boxShadow: '0 8px 32px rgba(249, 115, 22, 0.4)',
                     cursor: 'pointer',
@@ -194,8 +194,48 @@ export default function AssistantSidebar() {
                     <button onClick={() => setIsOpen(false)} style={{ background: 'none', border: 'none', color: 'white', opacity: 0.5, cursor: 'pointer', fontSize: '20px' }}>✕</button>
                 </div>
 
+                {/* No API Key — Setup CTA */}
+                {!hasKey && (
+                    <div style={{ flex: 1, padding: '28px 24px', display: 'flex', flexDirection: 'column', gap: '20px', overflowY: 'auto' }}>
+                        <div style={{ padding: '20px', background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.3)', borderRadius: '14px' }}>
+                            <div style={{ fontSize: '13px', fontWeight: 900, letterSpacing: '0.06em', color: '#f97316', marginBottom: '10px' }}>🧠 ACTIVATE YOUR AI BRAIN</div>
+                            <p style={{ margin: '0 0 12px', fontSize: '14px', lineHeight: '1.7', opacity: 0.9 }}>
+                                Your Lumière Assistant runs on <strong>your own Gemini API key</strong> — so your financial data stays private, you get your own token quota, and you unlock full functionality.
+                            </p>
+                            <p style={{ margin: '0 0 16px', fontSize: '13px', lineHeight: '1.6', opacity: 0.7 }}>
+                                Google's free tier includes <strong>1,000 requests/day</strong> — more than enough for daily use. Takes 2 minutes to set up.
+                            </p>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                <a
+                                    href="https://aistudio.google.com/app/apikey"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{ display: 'block', padding: '11px 16px', background: '#f97316', color: 'white', borderRadius: '8px', fontWeight: 800, fontSize: '13px', textAlign: 'center', textDecoration: 'none' }}
+                                >
+                                    Get Your Free Gemini API Key →
+                                </a>
+                                <button
+                                    onClick={() => { setIsOpen(false); window.location.href = '/StudioControlCenter?tab=intelligence'; }}
+                                    style={{ padding: '11px 16px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: 'white', borderRadius: '8px', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}
+                                >
+                                    Enter Key in Control Center
+                                </button>
+                            </div>
+                        </div>
+                        <div style={{ fontSize: '13px', opacity: 0.5, lineHeight: '1.7' }}>
+                            <strong style={{ opacity: 1 }}>Once connected, you can ask:</strong>
+                            <ul style={{ margin: '8px 0 0 0', paddingLeft: '18px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <li>"How much did I spend on travel this quarter?"</li>
+                                <li>"Mark invoice #0428 as paid"</li>
+                                <li>"What's my top spending category this year?"</li>
+                                <li>"Move the FotoFetch lead to Booked"</li>
+                            </ul>
+                        </div>
+                    </div>
+                )}
+
                 {/* Chat Contents */}
-                <div style={{ flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {hasKey && <div style={{ flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
                     {messages.map((m, i) => (
                         <div key={i} style={{
                             alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
@@ -247,10 +287,10 @@ export default function AssistantSidebar() {
 
                     {loading && <div className="muted small" style={{ fontStyle: 'italic', paddingLeft: '10px' }}>Thinking...</div>}
                     <div ref={endRef} />
-                </div>
+                </div>}
 
-                {/* Input Area */}
-                <div style={{ padding: '20px', borderTop: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.2)' }}>
+                {/* Input Area — only when key is configured */}
+                {hasKey && <div style={{ padding: '20px', borderTop: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.2)' }}>
                     <div style={{ position: 'relative' }}>
                         <textarea
                             value={query}
@@ -298,7 +338,7 @@ export default function AssistantSidebar() {
                     <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.25)', marginTop: '6px', textAlign: 'right' }}>
                         Enter to send · Shift+Enter for new line
                     </div>
-                </div>
+                </div>}
             </div>
         </>
     );

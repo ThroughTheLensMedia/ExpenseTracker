@@ -1,6 +1,6 @@
 {
-  "version": "7.5.6",
+  "version": "7.5.7",
   "release_date": "2026-05-17",
   "codename": "Lumière Ledger",
-  "notes": "v7.5.6: Brain self-describes capabilities on demand — ask 'what can you do?'"
+  "notes": "v7.5.7: Brain setup CTA for users without an API key."
 }
