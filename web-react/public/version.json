@@ -1,6 +1,6 @@
 {
-  "version": "7.5.4",
+  "version": "7.5.5",
   "release_date": "2026-05-17",
   "codename": "Lumière Ledger",
-  "notes": "v7.5.4: Brain conversation memory + junk category exclusion from metrics."
+  "notes": "v7.5.5: Brain payment query — per-account breakdown + context-sensitive exclusion rules."
 }

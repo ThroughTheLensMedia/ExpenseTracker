@@ -10,7 +10,7 @@ const BRAIN_TOOLS = [{
     functionDeclarations: [
         {
             name: 'search_transactions',
-            description: 'Search expenses and transactions from the ledger. Use for spending questions, category totals, vendor lookups, date-range queries, or tax deduction totals. Returns transaction IDs that can be used with link_transaction_to_lead.',
+            description: 'Search expenses and transactions from the ledger. Use for spending questions, category totals, vendor lookups, date-range queries, tax deduction totals, or payment history. Returns transaction IDs, per-transaction account/source, and an account_breakdown array (account name + total) useful for grouping payments or expenses by card/bank account.',
             parameters: {
                 type: 'OBJECT',
                 properties: {
@@ -150,7 +150,7 @@ async function executeTool(name, args, sb, userId) {
 
         case 'search_transactions': {
             let q = sb.from('expenses')
-                .select('id, vendor, amount_cents, expense_date, category, tax_deductible, tax_bucket, notes')
+                .select('id, vendor, amount_cents, expense_date, category, source, tax_deductible, tax_bucket, notes')
                 .eq('user_id', userId);
             if (args.category)           q = q.ilike('category', `%${args.category}%`);
             if (args.start_date)         q = q.gte('expense_date', args.start_date);
@@ -163,15 +163,28 @@ async function executeTool(name, args, sb, userId) {
             const { data, error } = await q;
             if (error) return { error: error.message };
             const total = (data || []).reduce((s, r) => s + (Number(r.amount_cents) || 0), 0);
+
+            // Compute per-account breakdown — useful for payment/transfer category queries
+            const byAccount = {};
+            (data || []).forEach(r => {
+                const acct = r.source || 'Unknown';
+                byAccount[acct] = (byAccount[acct] || 0) + toDollars(r.amount_cents);
+            });
+            const accountBreakdown = Object.entries(byAccount)
+                .sort((a, b) => b[1] - a[1])
+                .map(([account, amt]) => ({ account, total: fmt(amt) }));
+
             return {
                 count: data?.length || 0,
                 total: fmt(toDollars(total)),
+                account_breakdown: accountBreakdown,
                 transactions: (data || []).map(r => ({
                     id: r.id,
                     vendor: r.vendor,
                     amount: fmt(toDollars(r.amount_cents)),
                     date: r.expense_date,
                     category: r.category,
+                    account: r.source || 'Unknown',
                     tax_deductible: r.tax_deductible
                 }))
             };
@@ -512,10 +525,9 @@ CATEGORY NAMES (use these exact strings or partial matches — category filter u
 - Mileage (tracked separately in mileage_logs — do not search expenses for mileage)
 
 PURCHASE vs PAYMENT DISTINCTION (critical):
-- Credit card payments, loan payments, and ACH transfers are NOT purchases — they are balance transfers. Exclude them when the user asks about purchases, spending, or expenses.
-- Vendors to exclude from purchase analysis: anything containing "EPAYMENT", "ACH PMT", "AUTOPAY", "BILL PAY", "PAYMENT", "LOAN PMT", "TRANSFER". Examples: "AMEX EPAYMENT ACH PMT", "CHASE AUTOPAY", "DISCOVER PAYMENT".
-- If a user asks "what's my biggest purchase" and the top result is a credit card payment, skip it and report the next real vendor transaction.
-- You may inform the user you excluded CC payments from the analysis.`,
+- Credit card payments, loan payments, ACH transfers, and internal transfers are NOT purchases — they are balance transfers between accounts.
+- EXCLUDE them when the user asks about purchases, biggest expenses, spending totals, or top categories. Vendors to skip: anything containing "EPAYMENT", "ACH PMT", "AUTOPAY", "BILL PAY", "LOAN PMT", "INTERNAL TRANSFER". If a purchase query returns one of these as the top result, skip it and report the next real vendor transaction. Inform the user you excluded payment entries.
+- INCLUDE them — with a per-account breakdown — when the user explicitly asks about credit card payments, how much they paid toward cards, payment history, or what they paid per account. Use search_transactions with category "Credit Card Payment" or "Internal Transfer" and present the account_breakdown field from the response grouped by account name and total.`,
         });
 
         // Seed chat with prior conversation so follow-up questions retain context

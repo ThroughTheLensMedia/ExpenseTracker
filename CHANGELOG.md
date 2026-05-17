@@ -5,6 +5,17 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.5.5] — 2026-05-17
+
+### Brain — context-sensitive payment handling + per-account breakdown
+
+#### Fixed
+- **`api/routes/brain.js`** — `search_transactions` now selects and returns `source` (account) on every transaction. Added `account_breakdown` to the response — an array of `{ account, total }` sorted by amount. Enables Gemini to present per-card payment totals without a second query.
+- **`api/routes/brain.js`** — Payment exclusion rule refined: CC payments and internal transfers are excluded from *general* spending/purchase analysis only. When the user explicitly asks about credit card payments or how much they paid per account, the Brain uses `search_transactions` with the payment category and presents `account_breakdown` grouped by card/account. Previously the blanket exclusion made explicit payment queries return nothing useful.
+- **`api/routes/brain.js`** — `search_transactions` tool description updated to document `account_breakdown` field so Gemini knows to use it for per-card grouping.
+
+---
+
 ## [v7.5.4] — 2026-05-17
 
 ### Brain — conversation memory + metrics cleanup

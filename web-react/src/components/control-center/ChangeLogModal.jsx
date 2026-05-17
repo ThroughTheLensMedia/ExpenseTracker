@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.5.5', date: 'MAY 17, 2026', color: '#38bdf8', items: [
+        '<strong>Brain — Credit Card Payment Breakdown:</strong> Ask "how much did I pay toward credit cards in April?" and you\'ll get a breakdown by card — Delta SkyMiles, VentureOne, Checking, etc. — with totals per account.',
+        '<strong>Brain — Smarter Context Rules:</strong> CC payments are excluded from general spending analysis (they\'re not real purchases) but fully visible when you explicitly ask about payments. The Brain now knows the difference.',
+    ]},
     { version: '7.5.4', date: 'MAY 17, 2026', color: '#a78bfa', items: [
         '<strong>Brain — Conversation Memory:</strong> The Assistant now remembers what you were just talking about. Follow-up questions like "what about in 2026?" or "break that down by month" carry the context of your prior question — no need to repeat yourself.',
         '<strong>Brain — Cleaner Spending Breakdown:</strong> Internal Transfers and Credit Card Payments no longer appear in your top spending categories. Financial analysis now shows real business expense categories only.',
