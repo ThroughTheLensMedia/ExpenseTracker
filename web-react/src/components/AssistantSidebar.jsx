@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { apiPost } from '../api';
+import { apiPost, apiPatch } from '../api';
 import { useAuth } from './AuthContext';
 
 // Lightweight markdown renderer — handles bullets, bold, italic, line breaks
@@ -43,6 +43,7 @@ export default function AssistantSidebar() {
         { role: 'assistant', text: "Hello! I'm Your Assistant. How can I help you optimize your studio's finances today?" }
     ]);
     const [loading, setLoading] = useState(false);
+    const [pendingActions, setPendingActions] = useState([]);
     const endRef = useRef(null);
 
     useEffect(() => {
@@ -67,11 +68,35 @@ export default function AssistantSidebar() {
                 }
             });
             setMessages(prev => [...prev, { role: 'assistant', text: res.answer }]);
+            if (res.pendingActions?.length) setPendingActions(prev => [...prev, ...res.pendingActions]);
         } catch (err) {
             setMessages(prev => [...prev, { role: 'assistant', text: `I'm having trouble: ${err.message}` }]);
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleApprove = async (action) => {
+        setPendingActions(prev => prev.filter(a => a.id !== action.id));
+        try {
+            if (action.type === 'update_lead_status') {
+                await apiPatch(`/leads/${action.payload.leadId}`, { status: action.payload.status });
+                setMessages(prev => [...prev, { role: 'assistant', text: `Done — **${action.payload.leadName}** is now **${action.payload.status}**.` }]);
+            } else if (action.type === 'create_transaction') {
+                await apiPost('/expenses', action.payload);
+                setMessages(prev => [...prev, { role: 'assistant', text: `Done — transaction added to your ledger.` }]);
+            } else if (action.type === 'link_transaction_to_lead') {
+                await apiPatch(`/expenses/${action.payload.transactionId}`, { lead_id: action.payload.leadId });
+                setMessages(prev => [...prev, { role: 'assistant', text: `Done — transaction linked to the lead.` }]);
+            }
+        } catch (err) {
+            setMessages(prev => [...prev, { role: 'assistant', text: `Action failed: ${err.message}` }]);
+        }
+    };
+
+    const handleReject = (action) => {
+        setPendingActions(prev => prev.filter(a => a.id !== action.id));
+        setMessages(prev => [...prev, { role: 'assistant', text: `Cancelled — no changes made.` }]);
     };
 
     if (!settings?.gemini_api_key) return null; // Only show if AI is configured
@@ -149,6 +174,39 @@ export default function AssistantSidebar() {
                                 : m.text}
                         </div>
                     ))}
+                    {/* Pending Action Confirmation Cards */}
+                    {pendingActions.map(action => (
+                        <div key={action.id} style={{
+                            alignSelf: 'flex-start',
+                            width: '100%',
+                            padding: '16px 18px',
+                            background: 'rgba(249,115,22,0.07)',
+                            border: '1px solid rgba(249,115,22,0.35)',
+                            borderRadius: '12px',
+                            fontSize: '13px'
+                        }}>
+                            <div style={{ fontSize: '9px', fontWeight: 900, letterSpacing: '0.08em', color: '#f97316', marginBottom: '8px' }}>
+                                PENDING ACTION — CONFIRM TO EXECUTE
+                            </div>
+                            <div style={{ marginBottom: '14px', lineHeight: 1.6 }}
+                                dangerouslySetInnerHTML={renderMarkdown(action.description)} />
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <button
+                                    onClick={() => handleApprove(action)}
+                                    style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', background: '#10b981', color: 'white', fontWeight: 900, fontSize: '12px', cursor: 'pointer', letterSpacing: '0.04em' }}
+                                >
+                                    APPROVE
+                                </button>
+                                <button
+                                    onClick={() => handleReject(action)}
+                                    style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: 'rgba(255,255,255,0.6)', fontWeight: 900, fontSize: '12px', cursor: 'pointer', letterSpacing: '0.04em' }}
+                                >
+                                    REJECT
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+
                     {loading && <div className="muted small" style={{ fontStyle: 'italic', paddingLeft: '10px' }}>Thinking...</div>}
                     <div ref={endRef} />
                 </div>

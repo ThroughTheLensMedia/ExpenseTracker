@@ -66,6 +66,48 @@ const BRAIN_TOOLS = [{
                     year: { type: 'INTEGER', description: 'Filter to only accounts with transactions in this year (e.g. 2026). Omit for all-time.' }
                 }
             }
+        },
+
+        // ── Write Tools (return pending confirmation — never execute directly) ──
+        {
+            name: 'update_lead_status',
+            description: 'Update the status of a CRM lead. Always call get_lead first to get the exact lead ID. Returns a pending action for user confirmation — never executes directly.',
+            parameters: {
+                type: 'OBJECT',
+                properties: {
+                    lead_id:   { type: 'STRING', description: 'UUID of the lead — get this from get_lead first' },
+                    lead_name: { type: 'STRING', description: 'Lead name for display' },
+                    status:    { type: 'STRING', description: 'New status: Inquiry, Contacted, Booked, Completed, Lost' }
+                }
+            }
+        },
+        {
+            name: 'create_transaction',
+            description: 'Create a new expense or income transaction in the ledger. Returns a pending action for user confirmation — never executes directly.',
+            parameters: {
+                type: 'OBJECT',
+                properties: {
+                    vendor:         { type: 'STRING',  description: 'Vendor or payee name' },
+                    amount_dollars: { type: 'NUMBER',  description: 'Amount in dollars — positive for expense, negative for income/refund' },
+                    date:           { type: 'STRING',  description: 'Transaction date YYYY-MM-DD' },
+                    category:       { type: 'STRING',  description: 'Category name' },
+                    account:        { type: 'STRING',  description: 'Account or source name' },
+                    notes:          { type: 'STRING',  description: 'Optional notes' }
+                }
+            }
+        },
+        {
+            name: 'link_transaction_to_lead',
+            description: 'Link an existing transaction to a CRM lead. Returns a pending action for user confirmation — never executes directly.',
+            parameters: {
+                type: 'OBJECT',
+                properties: {
+                    transaction_id:     { type: 'STRING', description: 'UUID of the transaction' },
+                    transaction_vendor: { type: 'STRING', description: 'Vendor name for display' },
+                    lead_id:            { type: 'STRING', description: 'UUID of the lead' },
+                    lead_name:          { type: 'STRING', description: 'Lead name for display' }
+                }
+            }
         }
     ]
 }];
@@ -241,6 +283,59 @@ async function executeTool(name, args, sb, userId) {
             };
         }
 
+        // ── Write tools — resolve entity, return pending (never write directly) ──
+
+        case 'update_lead_status': {
+            const { data: lead } = await sb.from('leads').select('id, name, status')
+                .eq('id', args.lead_id).eq('user_id', userId).maybeSingle();
+            if (!lead) return { error: `Lead not found with ID: ${args.lead_id}. Call get_lead first to find the correct ID.` };
+            return {
+                __pending: true,
+                pendingAction: {
+                    id: `pending_${Date.now()}`,
+                    type: 'update_lead_status',
+                    description: `Mark **${lead.name}** as **${args.status}** (currently: ${lead.status})`,
+                    payload: { leadId: lead.id, leadName: lead.name, status: args.status }
+                },
+                message: `Pending confirmation: update ${lead.name} status to ${args.status}.`
+            };
+        }
+
+        case 'create_transaction': {
+            const amountCents = Math.round((args.amount_dollars || 0) * 100);
+            const display = `$${Math.abs(args.amount_dollars).toFixed(2)} — ${args.vendor} on ${args.date}${args.category ? ` [${args.category}]` : ''}`;
+            return {
+                __pending: true,
+                pendingAction: {
+                    id: `pending_${Date.now()}`,
+                    type: 'create_transaction',
+                    description: `Add **${args.vendor}** — **$${Math.abs(args.amount_dollars || 0).toFixed(2)}** on ${args.date}${args.category ? ` · ${args.category}` : ''}`,
+                    payload: {
+                        vendor: args.vendor,
+                        amount_cents: amountCents,
+                        expense_date: args.date,
+                        category: args.category || null,
+                        source: args.account || 'manual',
+                        notes: args.notes || null
+                    }
+                },
+                message: `Pending confirmation: add transaction ${display}.`
+            };
+        }
+
+        case 'link_transaction_to_lead': {
+            return {
+                __pending: true,
+                pendingAction: {
+                    id: `pending_${Date.now()}`,
+                    type: 'link_transaction_to_lead',
+                    description: `Link **${args.transaction_vendor || args.transaction_id}** → **${args.lead_name || args.lead_id}**`,
+                    payload: { transactionId: args.transaction_id, leadId: args.lead_id }
+                },
+                message: `Pending confirmation: link transaction to lead.`
+            };
+        }
+
         default:
             return { error: `Unknown tool: ${name}` };
     }
@@ -268,7 +363,10 @@ router.post("/ask", async (req, res) => {
             model: "gemini-2.5-flash",
             systemInstruction: `You are the Lumière Assistant — an elite financial AI advisor for ${businessName}, a professional photography business. Today is ${today}. Current view: ${context?.page || "dashboard"}.
 
-You have live tools to query the ledger, invoices, CRM, and metrics. Always call a tool to get real data before answering financial questions. Be direct and specific — reference actual dollar amounts and dates from tool results. Never fabricate numbers.`,
+You have live tools to query and update the ledger, invoices, CRM, and metrics.
+- For data questions: call the appropriate read tool and answer with real numbers.
+- For write requests (updating a lead, adding a transaction, etc.): first use a read tool to look up the exact record if needed, then call the write tool. Write tools return a pending confirmation — tell the user what will happen and that Approve/Reject buttons will appear.
+- Never fabricate data. Be direct and specific.`,
         });
 
         const chat = model.startChat({ tools: BRAIN_TOOLS });
@@ -276,6 +374,7 @@ You have live tools to query the ledger, invoices, CRM, and metrics. Always call
 
         // Function calling loop — max 3 rounds
         // result is GenerateContentResult; text/functionCalls live on result.response
+        const pendingActions = [];
         for (let round = 0; round < 3; round++) {
             const calls = result.response.functionCalls?.() ?? [];
             if (calls.length === 0) break;
@@ -284,6 +383,11 @@ You have live tools to query the ledger, invoices, CRM, and metrics. Always call
                 calls.map(async (call) => {
                     console.log(`[AI Brain] Tool call: ${call.name}`, call.args);
                     const toolResult = await executeTool(call.name, call.args || {}, req.sb, req.user.id);
+                    // Collect pending write actions; send clean status back to Gemini
+                    if (toolResult.__pending) {
+                        pendingActions.push(toolResult.pendingAction);
+                        return { functionResponse: { name: call.name, response: { status: 'pending_confirmation', message: toolResult.message } } };
+                    }
                     return { functionResponse: { name: call.name, response: toolResult } };
                 })
             );
@@ -294,7 +398,7 @@ You have live tools to query the ledger, invoices, CRM, and metrics. Always call
         const text = result.response.text().trim();
         if (!text) return res.status(500).json({ error: "The Brain returned an empty response. Try again." });
 
-        res.json({ ok: true, answer: text });
+        res.json({ ok: true, answer: text, pendingActions: pendingActions.length > 0 ? pendingActions : undefined });
 
     } catch (e) {
         console.error("[AI Brain] Critical Execution Error:", e);
