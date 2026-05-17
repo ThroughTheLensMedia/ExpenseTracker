@@ -5,6 +5,18 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.5.3] — 2026-05-17
+
+### Brain — category partial match + search-before-create
+
+#### Fixed
+- **`api/routes/brain.js`** — `search_transactions` category filter changed from `.eq()` exact match to `.ilike()` partial match. Root cause of "You have not spent anything on travel" when the DB category is "Travel & Vacation" — Gemini passed "Travel", exact match returned 0 rows, Brain incorrectly reported no spending.
+- **`api/routes/brain.js`** — System instruction updated with explicit category name list (Travel & Vacation, Camera & Equipment, Software & Subscriptions, etc.) so Gemini passes the right string rather than guessing. Partial match is a safety net; correct names are now in the prompt.
+- **`api/routes/brain.js`** — Added SEARCH BEFORE CREATE rule: when a user mentions past purchases or spending, Brain must call `search_transactions` first. Only offers `create_transaction` if the search confirms no existing records. Previously the Brain jumped straight to record creation when a user described their purchases.
+- **`api/routes/brain.js`** — Added retry guidance: if a category search returns 0 results, broaden the search (different keyword, no category filter, date range) before telling the user they have no spending.
+
+---
+
 ## [v7.5.2] — 2026-05-17
 
 ### Brain — credit card payment exclusion from purchase analysis

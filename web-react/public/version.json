@@ -1,6 +1,6 @@
 {
-  "version": "7.5.2",
+  "version": "7.5.3",
   "release_date": "2026-05-17",
   "codename": "Lumière Ledger",
-  "notes": "v7.5.2: Brain payment exclusion — CC payments no longer reported as purchases."
+  "notes": "v7.5.3: Brain category matching fix — partial match on category names, search-before-create rule."
 }

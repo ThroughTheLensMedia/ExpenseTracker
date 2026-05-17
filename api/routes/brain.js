@@ -152,7 +152,7 @@ async function executeTool(name, args, sb, userId) {
             let q = sb.from('expenses')
                 .select('id, vendor, amount_cents, expense_date, category, tax_deductible, tax_bucket, notes')
                 .eq('user_id', userId);
-            if (args.category)           q = q.eq('category', args.category);
+            if (args.category)           q = q.ilike('category', `%${args.category}%`);
             if (args.start_date)         q = q.gte('expense_date', args.start_date);
             if (args.end_date)           q = q.lte('expense_date', args.end_date);
             if (args.vendor)             q = q.ilike('vendor', `%${args.vendor}%`);
@@ -490,6 +490,22 @@ INVOICE RULES (critical):
 TRANSACTION RULES:
 - Before calling create_transaction, confirm you have: vendor name, dollar amount, and date. If any are missing, ask the user first.
 - search_transactions returns transaction IDs — use them with link_transaction_to_lead.
+- When a user says they have purchased something, spent money, or mentions past expenses, ALWAYS call search_transactions first to check if those records already exist. Only offer create_transaction if the search returns no matching results.
+- If a search returns 0 results, broaden the search — try a different vendor keyword, remove the category filter, or search by date range. Never confidently tell the user they have no spending in a category without trying at least 2 search variations.
+
+CATEGORY NAMES (use these exact strings or partial matches — category filter uses partial match so "Travel" finds "Travel & Vacation"):
+- Travel & Vacation (flights, hotels, rental cars, parking, gas for trips)
+- Camera & Equipment (gear, lenses, accessories, batteries)
+- Software & Subscriptions (apps, SaaS tools, cloud services)
+- Dining & Drinks (restaurants, coffee, food)
+- Marketing & Advertising (ads, promotions, printing)
+- Office & Supplies (paper, ink, office gear)
+- Education & Training (courses, books, workshops)
+- Vehicle & Transportation (local gas, Uber, car maintenance)
+- Professional Services (accountant, legal, contractors)
+- Insurance (business policies)
+- Utilities (phone, internet, power)
+- Mileage (tracked separately in mileage_logs — do not search expenses for mileage)
 
 PURCHASE vs PAYMENT DISTINCTION (critical):
 - Credit card payments, loan payments, and ACH transfers are NOT purchases — they are balance transfers. Exclude them when the user asks about purchases, spending, or expenses.

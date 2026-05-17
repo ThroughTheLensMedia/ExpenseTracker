@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.5.3', date: 'MAY 17, 2026', color: '#10b981', items: [
+        '<strong>Brain — Category Search Fixed:</strong> "How much have I spent on travel?" now returns correct results. The Brain was searching for "Travel" (exact) but your ledger uses "Travel & Vacation" — fixed to use partial matching so any reasonable keyword finds the right category.',
+        '<strong>Brain — Search Before Create:</strong> When you mention past purchases ("I bought Delta tickets, gas, hotels"), the Brain now searches your existing ledger first before offering to create new records. It will also retry with broader search terms before telling you a category has zero spending.',
+    ]},
     { version: '7.5.2', date: 'MAY 17, 2026', color: '#10b981', items: [
         '<strong>Brain — Smarter Purchase Analysis:</strong> Credit card payments (AMEX EPAYMENT, ACH PMT, AUTOPAY, etc.) are no longer reported as purchases. When you ask "what\'s my biggest purchase?" the Brain now skips balance transfers and payment transactions — only real vendor purchases count.',
     ]},
