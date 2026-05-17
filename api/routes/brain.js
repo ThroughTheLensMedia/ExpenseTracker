@@ -236,25 +236,26 @@ You have live tools to query the ledger, invoices, CRM, and metrics. Always call
         });
 
         const chat = model.startChat({ tools: BRAIN_TOOLS });
-        let response = await chat.sendMessage(prompt);
+        let result = await chat.sendMessage(prompt);
 
         // Function calling loop — max 3 rounds
+        // result is GenerateContentResult; text/functionCalls live on result.response
         for (let round = 0; round < 3; round++) {
-            const calls = response.functionCalls?.() ?? [];
+            const calls = result.response.functionCalls?.() ?? [];
             if (calls.length === 0) break;
 
             const toolResults = await Promise.all(
                 calls.map(async (call) => {
                     console.log(`[AI Brain] Tool call: ${call.name}`, call.args);
-                    const result = await executeTool(call.name, call.args || {}, req.sb, req.user.id);
-                    return { functionResponse: { name: call.name, response: result } };
+                    const toolResult = await executeTool(call.name, call.args || {}, req.sb, req.user.id);
+                    return { functionResponse: { name: call.name, response: toolResult } };
                 })
             );
 
-            response = await chat.sendMessage(toolResults);
+            result = await chat.sendMessage(toolResults);
         }
 
-        const text = response.text?.()?.trim();
+        const text = result.response.text().trim();
         if (!text) return res.status(500).json({ error: "The Brain returned an empty response. Try again." });
 
         res.json({ ok: true, answer: text });

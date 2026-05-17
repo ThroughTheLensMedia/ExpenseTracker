@@ -434,17 +434,19 @@ export default function Transactions() {
                                                 <span className="muted">—</span>
                                             )}
                                         </td>
-                                        <td style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'nowrap' }}>
-                                            <span className="tag" style={{ fontSize: '9px', padding: '1px 4px', opacity: 0.8 }}>
-                                                {Number(r.amount_cents || 0) < 0 ? 'Income' : 'Expense'}
-                                            </span>
-                                            {r.needs_review && (
-                                                <button
-                                                    onClick={e => { e.stopPropagation(); setReviewingTx(r); }}
-                                                    title="Near-duplicate flagged — click to review"
-                                                    style={{ background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.5)', borderRadius: '4px', padding: '1px 5px', fontSize: '10px', cursor: 'pointer', color: '#f97316', fontWeight: 900, lineHeight: 1.2 }}
-                                                >🚩</button>
-                                            )}
+                                        <td>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'nowrap' }}>
+                                                <span className="tag" style={{ fontSize: '9px', padding: '1px 4px', opacity: 0.8 }}>
+                                                    {Number(r.amount_cents || 0) < 0 ? 'Income' : 'Expense'}
+                                                </span>
+                                                {r.needs_review && (
+                                                    <button
+                                                        onClick={e => { e.stopPropagation(); setReviewingTx(r); }}
+                                                        title="Near-duplicate flagged — click to review"
+                                                        style={{ background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.5)', borderRadius: '4px', padding: '1px 5px', fontSize: '10px', cursor: 'pointer', color: '#f97316', fontWeight: 900, lineHeight: 1.2 }}
+                                                    >🚩</button>
+                                                )}
+                                            </div>
                                         </td>
                                     </tr>
                                 );
