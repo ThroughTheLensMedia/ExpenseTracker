@@ -84,25 +84,25 @@ export default function IntelligenceTab({ settings, setSettings, user, loading, 
                         {isAdmin && (
                             <div style={{ marginTop: '25px', padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                                    <small style={{ fontWeight: 900, color: 'var(--accent)', fontSize: '10px' }}>GOOGLE AI STUDIO PERFORMANCE HUB</small>
-                                    <div className="tag extra-small ok">FREE TIER ACTIVE</div>
+                                    <small style={{ fontWeight: 900, color: 'var(--accent)', fontSize: '10px' }}>GOOGLE AI STUDIO — STUDIOTRACKER PROJECT</small>
+                                    <div className="tag extra-small ok">TIER 1 ACTIVE</div>
                                 </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px', textAlign: 'center' }}>
                                     <div>
-                                        <div style={{ fontSize: '18px', fontWeight: 950 }}>1 / 5</div>
-                                        <div className="muted extra-small" style={{ fontWeight: 800 }}>RPM (Load)</div>
+                                        <div style={{ fontSize: '18px', fontWeight: 950 }}>1,000</div>
+                                        <div className="muted extra-small" style={{ fontWeight: 800 }}>RPM LIMIT</div>
                                     </div>
                                     <div>
-                                        <div style={{ fontSize: '18px', fontWeight: 950 }}>168 / 250K</div>
-                                        <div className="muted extra-small" style={{ fontWeight: 800 }}>TPM (Token)</div>
+                                        <div style={{ fontSize: '18px', fontWeight: 950 }}>1M</div>
+                                        <div className="muted extra-small" style={{ fontWeight: 800 }}>TPM LIMIT</div>
                                     </div>
                                     <div>
-                                        <div style={{ fontSize: '18px', fontWeight: 950 }}>1 / 20</div>
-                                        <div className="muted extra-small" style={{ fontWeight: 800 }}>RPD (Daily)</div>
+                                        <div style={{ fontSize: '18px', fontWeight: 950 }}>10,000</div>
+                                        <div className="muted extra-small" style={{ fontWeight: 800 }}>RPD LIMIT</div>
                                     </div>
                                 </div>
-                                <div style={{ marginTop: '15px', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden' }}>
-                                    <div style={{ width: '20%', height: '100%', background: 'var(--accent)' }}></div>
+                                <div className="muted" style={{ marginTop: '12px', fontSize: '10px', textAlign: 'center', opacity: 0.5 }}>
+                                    Reference limits — click MONITOR QUOTA for real-time usage
                                 </div>
                             </div>
                         )}
@@ -172,7 +172,7 @@ export default function IntelligenceTab({ settings, setSettings, user, loading, 
                             Have messy data from older imports? This tool scans your entire history and uses AI to fix incorrect vendor names and missing accounts.
                         </p>
                         <div className="tag extra-small warning" style={{ marginTop: '12px', background: 'rgba(245,158,11,0.1)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.2)' }}>
-                            ⚠️ Runs through Gemini 2.0 Flash in batches. May take 10-20 seconds.
+                            ⚠️ Runs through Gemini 2.5 Flash in batches. May take 10-20 seconds.
                         </div>
                     </div>
                     <button

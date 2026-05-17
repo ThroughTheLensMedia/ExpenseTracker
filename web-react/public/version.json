@@ -1,6 +1,6 @@
 {
-  "version": "7.4.2",
-  "release_date": "2026-05-16",
+  "version": "7.4.3",
+  "release_date": "2026-05-17",
   "codename": "Lumière Ledger",
-  "notes": "v7.4.1: Nav cleanup, LCC performance overhaul, system status panel, intake URL updated."
+  "notes": "v7.4.3: What's New button, Tier 1 AI quota panel, Gemini version fix."
 }

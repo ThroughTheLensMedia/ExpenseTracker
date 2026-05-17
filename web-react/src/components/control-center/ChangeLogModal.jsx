@@ -1,6 +1,11 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.4.3', date: 'MAY 17, 2026', color: '#10b981', items: [
+        '<strong>What\'s New Button:</strong> A new "WHAT\'S NEW" button now appears in the header after each update. Click it to see release notes — it dismisses automatically and reappears only when a new version ships.',
+        '<strong>AI Engine — Tier 1 Quota Panel:</strong> The Brain Connectivity panel now correctly reflects your Tier 1 limits (1,000 RPM / 1M TPM / 10,000 RPD) under the StudioTracker project. Previous panel showed incorrect Free Tier limits.',
+        '<strong>AI Engine — Gemini Version Fix:</strong> Retroactive Ledger Repair now correctly identifies as Gemini 2.5 Flash (was showing 2.0 Flash).',
+    ]},
     { version: '7.4.2', date: 'MAY 16, 2026', color: '#10b981', items: [
         '<strong>Update Notifications Fixed:</strong> The "Update Available" banner in the header was stuck and had not fired since v7.0.0. Version tracking is now live — you\'ll see a prompt to refresh within 5 minutes of any new release going live.',
         '<strong>Update Banner:</strong> Cleaner text, no emoji. Checks every 5 minutes instead of every 60 seconds.',
