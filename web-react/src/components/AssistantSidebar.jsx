@@ -42,8 +42,8 @@ export default function AssistantSidebar() {
     const rawName = settings?.contact_name || settings?.business_name || user?.email || '';
     const firstName = rawName.split(/[\s@.]/)[0];
     const greeting = firstName
-        ? `Hello, ${firstName.charAt(0).toUpperCase() + firstName.slice(1)}! I'm your assistant. How can I help you?`
-        : "Hello! I'm your assistant. How can I help you?";
+        ? `Hello, ${firstName.charAt(0).toUpperCase() + firstName.slice(1)}! I'm your Lumière Assistant — I have live access to your ledger, invoices, and CRM. Ask me anything, or say **"what can you do?"** to see a full list of capabilities.`
+        : `Hello! I'm your Lumière Assistant — I have live access to your ledger, invoices, and CRM. Ask me anything, or say **"what can you do?"** to see a full list of capabilities.`;
 
     const [isOpen, setIsOpen] = useState(false);
     const [query, setQuery] = useState('');

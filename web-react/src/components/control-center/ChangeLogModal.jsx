@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.5.6', date: 'MAY 17, 2026', color: '#f97316', items: [
+        '<strong>Brain — Self-Describing Capabilities:</strong> Ask <strong>"what can you do?"</strong> and the Assistant gives you an accurate, complete list of what it can look up, what it can change (with your approval), and what it cannot do yet. No more discovery by trial and error.',
+        '<strong>Brain — Updated Greeting:</strong> The Assistant now introduces itself with a prompt to ask about capabilities so you know where to start.',
+    ]},
     { version: '7.5.5', date: 'MAY 17, 2026', color: '#38bdf8', items: [
         '<strong>Brain — Credit Card Payment Breakdown:</strong> Ask "how much did I pay toward credit cards in April?" and you\'ll get a breakdown by card — Delta SkyMiles, VentureOne, Checking, etc. — with totals per account.',
         '<strong>Brain — Smarter Context Rules:</strong> CC payments are excluded from general spending analysis (they\'re not real purchases) but fully visible when you explicitly ask about payments. The Brain now knows the difference.',

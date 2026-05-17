@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.5.6] — 2026-05-17
+
+### Brain — self-describing capabilities
+
+#### Added
+- **`api/routes/brain.js`** — CAPABILITIES block added to system instruction. Covers: what the Brain can look up (transactions, metrics, invoices, leads, accounts, payment history), what it can change with user approval (create transaction, update lead, mark invoice, link transaction to lead), and what it cannot do yet (create invoices, upload receipts, access mileage logs directly, Plaid real-time sync, send emails, external accounting). When asked "what can you do?" Gemini recites this accurately rather than guessing.
+- **`web-react/src/components/AssistantSidebar.jsx`** — Greeting updated to invite the capability question: "I have live access to your ledger, invoices, and CRM. Ask me anything, or say 'what can you do?' to see a full list of capabilities."
+
+---
+
 ## [v7.5.5] — 2026-05-17
 
 ### Brain — context-sensitive payment handling + per-account breakdown
