@@ -67,6 +67,19 @@ const BRAIN_TOOLS = [{
                 }
             }
         },
+        {
+            name: 'get_invoice',
+            description: 'Look up one or more invoices by invoice number, client name, or status. Use this before update_invoice_status to get the invoice UUID and amount. Invoice numbers are formatted like "2026-0428" — strip the leading # if present.',
+            parameters: {
+                type: 'OBJECT',
+                properties: {
+                    invoice_number: { type: 'STRING', description: 'Invoice number to look up, e.g. "2026-0428". Omit # prefix.' },
+                    client_name:    { type: 'STRING', description: 'Client name — partial match' },
+                    status:         { type: 'STRING', description: 'Filter by status: draft, sent, paid, void' },
+                    limit:          { type: 'INTEGER', description: 'Max results (default 10)' }
+                }
+            }
+        },
 
         // ── Write Tools (return pending confirmation — never execute directly) ──
         {
@@ -107,6 +120,21 @@ const BRAIN_TOOLS = [{
                     lead_id:            { type: 'STRING', description: 'UUID of the lead' },
                     lead_name:          { type: 'STRING', description: 'Lead name for display' }
                 }
+            }
+        },
+        {
+            name: 'update_invoice_status',
+            description: 'Mark an invoice as paid, sent, draft, or void. Always call get_invoice first to get the invoice UUID and total. Returns a pending action for user confirmation — never executes directly.',
+            parameters: {
+                type: 'OBJECT',
+                properties: {
+                    invoice_id:     { type: 'STRING', description: 'UUID of the invoice — get this from get_invoice first' },
+                    invoice_number: { type: 'STRING', description: 'Invoice number for display, e.g. "2026-0428"' },
+                    client_name:    { type: 'STRING', description: 'Client name for display' },
+                    status:         { type: 'STRING', description: 'New status: paid, sent, draft, void' },
+                    amount_paid_cents: { type: 'INTEGER', description: 'Amount paid in cents — required when marking paid. Use the invoice total_cents if paid in full.' }
+                },
+                required: ['invoice_id', 'status']
             }
         }
     ]
@@ -258,6 +286,33 @@ async function executeTool(name, args, sb, userId) {
             };
         }
 
+        case 'get_invoice': {
+            let q = sb.from('invoices')
+                .select('id, invoice_number, client_name, status, total_cents, amount_paid_cents, issue_date, due_date')
+                .eq('user_id', userId);
+            if (args.invoice_number) q = q.ilike('invoice_number', `%${args.invoice_number.replace(/^#/, '')}%`);
+            if (args.client_name)    q = q.ilike('client_name', `%${args.client_name}%`);
+            if (args.status)         q = q.eq('status', args.status);
+            q = q.order('issue_date', { ascending: false }).limit(args.limit || 10);
+
+            const { data, error } = await q;
+            if (error) return { error: error.message };
+            return {
+                count: data?.length || 0,
+                invoices: (data || []).map(r => ({
+                    id: r.id,
+                    invoice_number: r.invoice_number,
+                    client: r.client_name,
+                    status: r.status,
+                    total: fmt(toDollars(r.total_cents)),
+                    total_cents: r.total_cents,
+                    amount_paid: fmt(toDollars(r.amount_paid_cents)),
+                    issued: r.issue_date,
+                    due: r.due_date
+                }))
+            };
+        }
+
         case 'get_accounts': {
             let q = sb.from('expenses')
                 .select('source, expense_date')
@@ -337,6 +392,41 @@ async function executeTool(name, args, sb, userId) {
             };
         }
 
+        case 'update_invoice_status': {
+            const { data: inv } = await sb.from('invoices')
+                .select('id, invoice_number, client_name, status, total_cents')
+                .eq('id', args.invoice_id).eq('user_id', userId).maybeSingle();
+            if (!inv) return { error: `Invoice not found with ID: ${args.invoice_id}. Call get_invoice first.` };
+
+            const newStatus = args.status;
+            const isPaid = newStatus === 'paid';
+            const amountPaidCents = isPaid
+                ? (args.amount_paid_cents ?? inv.total_cents)
+                : undefined;
+
+            const displayTotal = fmt(toDollars(inv.total_cents));
+            const desc = isPaid
+                ? `Mark invoice **#${inv.invoice_number}** (${inv.client_name}) as **Paid** — ${displayTotal}`
+                : `Mark invoice **#${inv.invoice_number}** (${inv.client_name}) as **${newStatus}** (currently: ${inv.status})`;
+
+            return {
+                __pending: true,
+                pendingAction: {
+                    id: `pending_${Date.now()}`,
+                    type: 'update_invoice_status',
+                    description: desc,
+                    payload: {
+                        invoiceId: inv.id,
+                        invoiceNumber: inv.invoice_number,
+                        clientName: inv.client_name,
+                        status: newStatus,
+                        ...(amountPaidCents !== undefined && { amount_paid_cents: amountPaidCents })
+                    }
+                },
+                message: `Pending confirmation: update invoice #${inv.invoice_number} to ${newStatus}.`
+            };
+        }
+
         default:
             return { error: `Unknown tool: ${name}` };
     }
@@ -366,8 +456,10 @@ router.post("/ask", async (req, res) => {
 
 You have live tools to query and update the ledger, invoices, CRM, and metrics.
 - For data questions: call the appropriate read tool and answer with real numbers.
-- For write requests (updating a lead, adding a transaction, etc.): first use a read tool to look up the exact record if needed, then call the write tool. Write tools return a pending confirmation — tell the user what will happen and that Approve/Reject buttons will appear.
-- Never fabricate data. Be direct and specific.`,
+- For write requests: always use a read tool first to look up the exact record and get its UUID, then call the write tool. Write tools return a pending confirmation — tell the user what will happen and that Approve/Reject buttons will appear.
+- For invoice status changes (mark paid, mark sent, etc.): call get_invoice first with the invoice number (strip any # prefix), get the UUID, then call update_invoice_status. If marking paid, use the invoice's total_cents as amount_paid_cents unless told otherwise.
+- For multiple invoices in a single request: call get_invoice once per invoice number, then call update_invoice_status for each one.
+- Never fabricate data. Never guess a UUID. Be direct and specific.`,
         });
 
         const chat = model.startChat({ tools: BRAIN_TOOLS });

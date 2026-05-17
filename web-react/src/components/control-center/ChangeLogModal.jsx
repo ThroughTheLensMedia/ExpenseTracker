@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.4.8', date: 'MAY 17, 2026', color: '#38bdf8', items: [
+        '<strong>Brain — Invoice Actions:</strong> You can now ask the Assistant to mark invoices as paid, sent, or draft. "Mark invoice #2026-0428 and #1001 as paid" — the Brain looks up both invoices, pulls the totals, and surfaces confirmation cards before changing anything.',
+        '<strong>Brain — Multi-Invoice Support:</strong> Multiple invoice numbers in a single request are each resolved and queued as separate confirmation cards — approve or reject individually.',
+    ]},
     { version: '7.4.7', date: 'MAY 17, 2026', color: '#10b981', items: [
         '<strong>Brain — Live Page Refresh:</strong> After you approve an action (update lead, add transaction, link records), the page you\'re on automatically reloads the affected data — no manual refresh needed.',
         '<strong>Brain — Multiline Input:</strong> The assistant chat now supports multi-line messages. Use <strong>Shift+Enter</strong> to add a new line; Enter alone sends the message. Input auto-expands as you type.',
