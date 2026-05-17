@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.5.4', date: 'MAY 17, 2026', color: '#a78bfa', items: [
+        '<strong>Brain — Conversation Memory:</strong> The Assistant now remembers what you were just talking about. Follow-up questions like "what about in 2026?" or "break that down by month" carry the context of your prior question — no need to repeat yourself.',
+        '<strong>Brain — Cleaner Spending Breakdown:</strong> Internal Transfers and Credit Card Payments no longer appear in your top spending categories. Financial analysis now shows real business expense categories only.',
+    ]},
     { version: '7.5.3', date: 'MAY 17, 2026', color: '#10b981', items: [
         '<strong>Brain — Category Search Fixed:</strong> "How much have I spent on travel?" now returns correct results. The Brain was searching for "Travel" (exact) but your ledger uses "Travel & Vacation" — fixed to use partial matching so any reasonable keyword finds the right category.',
         '<strong>Brain — Search Before Create:</strong> When you mention past purchases ("I bought Delta tickets, gas, hotels"), the Brain now searches your existing ledger first before offering to create new records. It will also retry with broader search terms before telling you a category has zero spending.',

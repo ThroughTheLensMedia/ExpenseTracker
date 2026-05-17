@@ -75,8 +75,15 @@ export default function AssistantSidebar() {
         setLoading(true);
 
         try {
+            // Send the last 10 messages as history so Brain retains conversation context
+            const history = messages
+                .filter(m => m.role === 'user' || m.role === 'assistant')
+                .slice(-10)
+                .map(m => ({ role: m.role, text: m.text }));
+
             const res = await apiPost('/brain/ask', {
                 prompt: userMsg,
+                history,
                 context: {
                     page: window.location.pathname,
                     business: settings?.business_name

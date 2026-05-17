@@ -5,6 +5,17 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.5.4] — 2026-05-17
+
+### Brain — conversation memory + metrics cleanup
+
+#### Fixed
+- **`web-react/src/components/AssistantSidebar.jsx`** — Each message to the Brain now includes the last 10 messages as conversation history. Root cause of follow-up questions losing context ("what about in 2026" had no idea the prior question was about Travel). History is sent as `{ role, text }[]` and converted to Gemini's `{ role, parts: [{ text }] }[]` format server-side.
+- **`api/routes/brain.js`** — `/ask` handler now accepts `history[]` from the request body and seeds `model.startChat({ history: geminiHistory })` so Gemini carries prior context into each new message. History is sanitized to ensure it starts with a user turn and has no consecutive same-role entries (Gemini constraint).
+- **`api/routes/brain.js`** — `get_metrics_snapshot` top category list now excludes "Internal Transfer", "Credit Card Payment", "Transfer", and "Payment" categories — these are ledger bookkeeping entries, not real business expenses. Previously they dominated the top spending list and distorted financial analysis.
+
+---
+
 ## [v7.5.3] — 2026-05-17
 
 ### Brain — category partial match + search-before-create

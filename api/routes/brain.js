@@ -203,9 +203,13 @@ async function executeTool(name, args, sb, userId) {
             const totalMiles     = (mileage || []).reduce((s, r) => s + (r.miles || 0), 0);
             const irsRate        = mileageRate?.rate_per_mile || 0.70;
 
+            // Exclude non-expense categories from top category analysis
+            const JUNK_CATEGORIES = ['internal transfer', 'credit card payment', 'transfer', 'payment'];
             const categoryTotals = {};
             (expenses || []).forEach(r => {
-                if (r.category) categoryTotals[r.category] = (categoryTotals[r.category] || 0) + toDollars(r.amount_cents);
+                if (!r.category) return;
+                if (JUNK_CATEGORIES.some(j => r.category.toLowerCase().includes(j))) return;
+                categoryTotals[r.category] = (categoryTotals[r.category] || 0) + toDollars(r.amount_cents);
             });
             const topCategories = Object.entries(categoryTotals)
                 .sort((a, b) => b[1] - a[1]).slice(0, 6)
@@ -455,7 +459,7 @@ async function executeTool(name, args, sb, userId) {
 
 router.post("/ask", async (req, res) => {
     try {
-        const { prompt, context } = req.body;
+        const { prompt, context, history = [] } = req.body;
 
         const { data: settings, error: settingsError } = await req.sb
             .from("settings").select("*").eq("user_id", req.user.id).maybeSingle();
@@ -514,7 +518,18 @@ PURCHASE vs PAYMENT DISTINCTION (critical):
 - You may inform the user you excluded CC payments from the analysis.`,
         });
 
-        const chat = model.startChat({ tools: BRAIN_TOOLS });
+        // Seed chat with prior conversation so follow-up questions retain context
+        // Gemini history format: alternating user/model roles, parts array
+        const geminiHistory = [];
+        for (const msg of history) {
+            const role = msg.role === 'assistant' ? 'model' : 'user';
+            if (geminiHistory.length > 0 && geminiHistory[geminiHistory.length - 1].role === role) continue; // skip consecutive same-role (e.g. greeting)
+            geminiHistory.push({ role, parts: [{ text: msg.text }] });
+        }
+        // Gemini requires history to start with user and alternate — trim leading model messages
+        while (geminiHistory.length > 0 && geminiHistory[0].role !== 'user') geminiHistory.shift();
+
+        const chat = model.startChat({ tools: BRAIN_TOOLS, history: geminiHistory });
         let result = await chat.sendMessage(prompt);
 
         // Function calling loop — max 6 rounds
