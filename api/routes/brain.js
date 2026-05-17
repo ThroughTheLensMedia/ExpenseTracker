@@ -56,6 +56,14 @@ const BRAIN_TOOLS = [{
                     limit:  { type: 'INTEGER', description: 'Max results (default 20)' }
                 }
             }
+        },
+        {
+            name: 'get_accounts',
+            description: 'List all bank accounts and credit cards that have transactions in the ledger. Use when the user asks about their accounts, banks, cards, or sources.',
+            parameters: {
+                type: 'OBJECT',
+                properties: {}
+            }
         }
     ]
 }];
@@ -202,6 +210,28 @@ async function executeTool(name, args, sb, userId) {
                     project_type: r.project_type,
                     created: r.created_at?.slice(0, 10)
                 }))
+            };
+        }
+
+        case 'get_accounts': {
+            const { data, error } = await sb
+                .from('expenses')
+                .select('source')
+                .eq('user_id', userId)
+                .not('source', 'is', null);
+            if (error) return { error: error.message };
+
+            const counts = {};
+            (data || []).forEach(r => {
+                if (r.source) counts[r.source] = (counts[r.source] || 0) + 1;
+            });
+            const accounts = Object.entries(counts)
+                .sort((a, b) => b[1] - a[1])
+                .map(([source, txCount]) => ({ account: source, transactions: txCount }));
+
+            return {
+                total_accounts: accounts.length,
+                accounts
             };
         }
 
