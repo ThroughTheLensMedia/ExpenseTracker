@@ -1,6 +1,6 @@
 {
-  "version": "7.5.0",
+  "version": "7.5.1",
   "release_date": "2026-05-17",
   "codename": "Lumière Ledger",
-  "notes": "v7.5.0: Brain invoice fix — client name resolved via join, not missing column."
+  "notes": "v7.5.1: Brain invoice fix — computed totals from line items, removed non-existent column references."
 }

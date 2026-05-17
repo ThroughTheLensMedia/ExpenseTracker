@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.5.1', date: 'MAY 17, 2026', color: '#f97316', items: [
+        '<strong>Brain — Invoice Total Fix:</strong> Invoices don\'t store a pre-computed total column — the total is calculated from your line items. The Brain now computes totals correctly from your invoice items, tax rate, and discount. Previously this caused a database error on every invoice lookup or status update.',
+        '<strong>Brain — Mark Paid Simplified:</strong> Marking an invoice paid now sends only the status change — no phantom payment amount field that doesn\'t exist on the invoice record.',
+    ]},
     { version: '7.5.0', date: 'MAY 17, 2026', color: '#f97316', items: [
         '<strong>Brain — Invoice Query Fix:</strong> Resolved a schema mismatch that caused "error retrieving invoice" on every invoice lookup. Client names are stored in a linked table, not a direct column — all three invoice tools now use the correct join.',
     ]},

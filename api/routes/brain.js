@@ -132,8 +132,7 @@ const BRAIN_TOOLS = [{
                     invoice_id:     { type: 'STRING', description: 'UUID of the invoice — get this from get_invoice first' },
                     invoice_number: { type: 'STRING', description: 'Invoice number for display, e.g. "2026-0428"' },
                     client_name:    { type: 'STRING', description: 'Client name for display' },
-                    status:         { type: 'STRING', description: 'New status: paid, sent, draft, void' },
-                    amount_paid_cents: { type: 'INTEGER', description: 'Amount paid in cents — required when marking paid. Use the invoice total_cents if paid in full.' }
+                    status:         { type: 'STRING', description: 'New status: paid, sent, draft, void' }
                 },
                 required: ['invoice_id', 'status']
             }
@@ -236,8 +235,15 @@ async function executeTool(name, args, sb, userId) {
         }
 
         case 'get_invoice_summary': {
+            const calcTotal = (inv) => {
+                const subtotal = (inv.invoice_items || []).reduce((s, it) => s + (it.unit_price_cents * it.quantity), 0);
+                const tax = Math.round(subtotal * ((inv.tax_percent || 0) / 100));
+                const discountAmt = Math.round(subtotal * ((inv.discount_cents || 0) / 10000));
+                return subtotal + tax - discountAmt;
+            };
+
             let q = sb.from('invoices')
-                .select('status, total_cents, amount_paid_cents, issue_date, clients(name)')
+                .select('status, issue_date, tax_percent, discount_cents, clients(name), invoice_items(unit_price_cents, quantity)')
                 .eq('user_id', userId);
             if (args.status) q = q.eq('status', args.status);
             q = q.order('issue_date', { ascending: false }).limit(args.limit || 20);
@@ -245,8 +251,8 @@ async function executeTool(name, args, sb, userId) {
             const { data, error } = await q;
             if (error) return { error: error.message };
 
-            const paid        = (data || []).filter(i => i.status === 'paid').reduce((s, r) => s + toDollars(r.total_cents), 0);
-            const outstanding = (data || []).filter(i => i.status !== 'paid').reduce((s, r) => s + toDollars(r.total_cents) - toDollars(r.amount_paid_cents), 0);
+            const paid        = (data || []).filter(i => i.status === 'paid').reduce((s, r) => s + toDollars(calcTotal(r)), 0);
+            const outstanding = (data || []).filter(i => i.status !== 'paid').reduce((s, r) => s + toDollars(calcTotal(r)), 0);
 
             return {
                 count: data?.length || 0,
@@ -255,8 +261,7 @@ async function executeTool(name, args, sb, userId) {
                 invoices: (data || []).map(r => ({
                     client: r.clients?.name || 'Unknown',
                     status: r.status,
-                    total: fmt(toDollars(r.total_cents)),
-                    paid: fmt(toDollars(r.amount_paid_cents)),
+                    total: fmt(toDollars(calcTotal(r))),
                     date: r.issue_date
                 }))
             };
@@ -289,8 +294,15 @@ async function executeTool(name, args, sb, userId) {
         }
 
         case 'get_invoice': {
+            const calcInvTotal = (inv) => {
+                const subtotal = (inv.invoice_items || []).reduce((s, it) => s + (it.unit_price_cents * it.quantity), 0);
+                const tax = Math.round(subtotal * ((inv.tax_percent || 0) / 100));
+                const discountAmt = Math.round(subtotal * ((inv.discount_cents || 0) / 10000));
+                return subtotal + tax - discountAmt;
+            };
+
             let q = sb.from('invoices')
-                .select('id, invoice_number, status, total_cents, amount_paid_cents, issue_date, due_date, clients(name)')
+                .select('id, invoice_number, status, issue_date, due_date, tax_percent, discount_cents, clients(name), invoice_items(unit_price_cents, quantity)')
                 .eq('user_id', userId);
             if (args.invoice_number) q = q.ilike('invoice_number', `%${args.invoice_number.replace(/^#/, '')}%`);
             if (args.client_name)    q = q.ilike('clients.name', `%${args.client_name}%`);
@@ -301,17 +313,19 @@ async function executeTool(name, args, sb, userId) {
             if (error) return { error: error.message };
             return {
                 count: data?.length || 0,
-                invoices: (data || []).map(r => ({
-                    id: r.id,
-                    invoice_number: r.invoice_number,
-                    client: r.clients?.name || 'Unknown',
-                    status: r.status,
-                    total: fmt(toDollars(r.total_cents)),
-                    total_cents: r.total_cents,
-                    amount_paid: fmt(toDollars(r.amount_paid_cents)),
-                    issued: r.issue_date,
-                    due: r.due_date
-                }))
+                invoices: (data || []).map(r => {
+                    const totalCents = calcInvTotal(r);
+                    return {
+                        id: r.id,
+                        invoice_number: r.invoice_number,
+                        client: r.clients?.name || 'Unknown',
+                        status: r.status,
+                        total: fmt(toDollars(totalCents)),
+                        total_cents: totalCents,
+                        issued: r.issue_date,
+                        due: r.due_date
+                    };
+                })
             };
         }
 
@@ -399,19 +413,19 @@ async function executeTool(name, args, sb, userId) {
 
         case 'update_invoice_status': {
             const { data: inv } = await sb.from('invoices')
-                .select('id, invoice_number, status, total_cents, clients(name)')
+                .select('id, invoice_number, status, tax_percent, discount_cents, clients(name), invoice_items(unit_price_cents, quantity)')
                 .eq('id', args.invoice_id).eq('user_id', userId).maybeSingle();
             if (!inv) return { error: `Invoice not found with ID: ${args.invoice_id}. Call get_invoice first.` };
 
-            const newStatus = args.status;
-            const isPaid = newStatus === 'paid';
-            const amountPaidCents = isPaid
-                ? (args.amount_paid_cents ?? inv.total_cents)
-                : undefined;
+            const subtotal = (inv.invoice_items || []).reduce((s, it) => s + (it.unit_price_cents * it.quantity), 0);
+            const tax = Math.round(subtotal * ((inv.tax_percent || 0) / 100));
+            const discountAmt = Math.round(subtotal * ((inv.discount_cents || 0) / 10000));
+            const totalCents = subtotal + tax - discountAmt;
 
+            const newStatus = args.status;
             const clientName = inv.clients?.name || 'Unknown';
-            const displayTotal = fmt(toDollars(inv.total_cents));
-            const desc = isPaid
+            const displayTotal = fmt(toDollars(totalCents));
+            const desc = newStatus === 'paid'
                 ? `Mark invoice **#${inv.invoice_number}** (${clientName}) as **Paid** — ${displayTotal}`
                 : `Mark invoice **#${inv.invoice_number}** (${clientName}) as **${newStatus}** (currently: ${inv.status})`;
 
@@ -424,9 +438,8 @@ async function executeTool(name, args, sb, userId) {
                     payload: {
                         invoiceId: inv.id,
                         invoiceNumber: inv.invoice_number,
-                        clientName: clientName,
-                        status: newStatus,
-                        ...(amountPaidCents !== undefined && { amount_paid_cents: amountPaidCents })
+                        clientName,
+                        status: newStatus
                     }
                 },
                 message: `Pending confirmation: update invoice #${inv.invoice_number} to ${newStatus}.`

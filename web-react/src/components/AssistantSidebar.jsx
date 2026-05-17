@@ -113,9 +113,7 @@ export default function AssistantSidebar() {
                 dispatchRefresh('transactions');
                 dispatchRefresh('leads');
             } else if (action.type === 'update_invoice_status') {
-                const patch = { status: action.payload.status };
-                if (action.payload.amount_paid_cents !== undefined) patch.amount_paid_cents = action.payload.amount_paid_cents;
-                await apiPatch(`/invoices/${action.payload.invoiceId}`, patch);
+                await apiPatch(`/invoices/${action.payload.invoiceId}`, { status: action.payload.status });
                 const label = action.payload.status === 'paid'
                     ? `Invoice **#${action.payload.invoiceNumber}** marked **Paid**.`
                     : `Invoice **#${action.payload.invoiceNumber}** is now **${action.payload.status}**.`;
