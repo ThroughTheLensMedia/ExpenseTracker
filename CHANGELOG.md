@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.5.0] — 2026-05-17
+
+### Brain — invoice schema fix: client_name column does not exist
+
+#### Fixed
+- **`api/routes/brain.js`** — All three invoice tools (`get_invoice_summary`, `get_invoice`, `update_invoice_status`) were selecting `client_name` as a direct column. The `invoices` table has no such column — client info is stored in a separate `clients` table joined via `client_id`. Fixed all three SELECTs to use `clients(name)` join and all mappings to use `r.clients?.name`. Root cause of "error retrieving invoice details" on every Brain invoice lookup.
+
+---
+
 ## [v7.4.9] — 2026-05-17
 
 ### Brain — reliability fixes: multi-invoice, loop depth, required fields, transaction IDs

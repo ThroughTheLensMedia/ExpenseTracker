@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.5.0', date: 'MAY 17, 2026', color: '#f97316', items: [
+        '<strong>Brain — Invoice Query Fix:</strong> Resolved a schema mismatch that caused "error retrieving invoice" on every invoice lookup. Client names are stored in a linked table, not a direct column — all three invoice tools now use the correct join.',
+    ]},
     { version: '7.4.9', date: 'MAY 17, 2026', color: '#f97316', items: [
         '<strong>Brain — Multi-Invoice Fix:</strong> "Mark invoice 0428 and 1001 as paid" now works correctly. The Brain calls get_invoice separately for each number instead of combining them into a single broken query.',
         '<strong>Brain — Deeper Reasoning:</strong> The function-calling loop raised from 3 to 6 rounds — multi-step requests (look up 2 invoices, update both) no longer stall midway.',
