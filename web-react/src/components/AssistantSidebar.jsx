@@ -2,6 +2,39 @@ import React, { useState, useRef, useEffect } from 'react';
 import { apiPost } from '../api';
 import { useAuth } from './AuthContext';
 
+// Lightweight markdown renderer — handles bullets, bold, italic, line breaks
+function renderMarkdown(text) {
+    if (!text) return { __html: '' };
+    const escape = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const inline = s => escape(s)
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        .replace(/`(.+?)`/g, '<code style="background:rgba(255,255,255,0.1);padding:1px 5px;border-radius:4px;font-size:12px;">$1</code>');
+
+    const lines = text.split('\n');
+    let html = '';
+    let inList = false;
+
+    for (const line of lines) {
+        const trimmed = line.trim();
+        const isBullet = /^[\*\-•]\s/.test(trimmed);
+
+        if (isBullet) {
+            if (!inList) { html += '<ul style="margin:8px 0 8px 4px;padding-left:18px;list-style:disc;">'; inList = true; }
+            html += `<li style="margin:3px 0;">${inline(trimmed.replace(/^[\*\-•]\s/, ''))}</li>`;
+        } else {
+            if (inList) { html += '</ul>'; inList = false; }
+            if (trimmed === '') {
+                html += '<div style="height:6px;"></div>';
+            } else {
+                html += `<div style="margin:2px 0;">${inline(trimmed)}</div>`;
+            }
+        }
+    }
+    if (inList) html += '</ul>';
+    return { __html: html };
+}
+
 export default function AssistantSidebar() {
     const { settings } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
@@ -111,7 +144,9 @@ export default function AssistantSidebar() {
                             lineHeight: '1.6',
                             fontWeight: m.role === 'user' ? 700 : 500
                         }}>
-                            {m.text}
+                            {m.role === 'assistant'
+                                ? <div dangerouslySetInnerHTML={renderMarkdown(m.text)} />
+                                : m.text}
                         </div>
                     ))}
                     {loading && <div className="muted small" style={{ fontStyle: 'italic', paddingLeft: '10px' }}>Thinking...</div>}
