@@ -1,6 +1,6 @@
 # Lumière Ledger — Master Roadmap
 
-**Version:** v7.3.4 | **Last reviewed:** 2026-05-16  
+**Version:** v7.5.7 | **Last reviewed:** 2026-05-17  
 Source of truth for all sprint work, security status, and product phases. Replaces `FIX_ROADMAP.md` and `LAUNCH_FIXES.md` — those files are archived.
 
 ---
@@ -13,10 +13,12 @@ Source of truth for all sprint work, security status, and product phases. Replac
 | Email pipeline | ✅ Fixed — `RESEND_FROM` → `support@throughthelens.media` |
 | Marketing page | ✅ Live — `throughthelens.media/marketing/lumiere-ledger` |
 | Supabase auth redirect | ✅ `https://www.lumiereledger.com/**` allowlisted |
-| Domain + rebrand (Joshua) | ✅ Complete |
-| Google OAuth updated (Joshua) | ✅ Complete |
-| Logo selected (Joshua) | ✅ Complete |
-| Vercel env vars confirmed (Joshua) | ✅ Complete (`SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, `NODE_ENV`) |
+| Domain + rebrand | ✅ Complete |
+| Google OAuth updated | ✅ Complete |
+| Vercel env vars confirmed | ✅ Complete |
+| AI Brain — Phase 2 Steps 1–3 | ✅ Complete — read + write + confirmation UI live |
+| AI Brain — conversation memory | ✅ Complete — history sent with each request |
+| AI Brain — BYOB onboarding CTA | ✅ Complete — setup card for unconfigured users |
 | Post-hardening validation tests | 🔲 Never run — blocking Stripe/Plaid |
 | RLS multi-tenant audit | 🔲 Policies written, end-to-end verification pending |
 
@@ -24,18 +26,13 @@ Source of truth for all sprint work, security status, and product phases. Replac
 
 ## 🔥 Launch Gate — Must Ship Before SaaS Launch
 
-### 1. Code Fixes (3 gaps found in audit — 2026-05-16)
+### 1. Remaining Code Gaps
 
 | Item | File | Issue |
 |------|------|-------|
-| CORS — add `www.lumiereledger.com` | `api/server.js` ALLOWED_ORIGINS | New domain blocked by CORS — auth calls will fail |
-| APP_URL fallback | `api/routes/invoices.js` line 236 | Pay portal links still point to `app.throughthelens.media` |
-| Mailer fallback from-address | `api/server.js` line 115 + `api/utils/mailer.js` line 32 | Fallback uses `lumiereledger.com` (unverified Resend domain) — should be `support@throughthelens.media` |
 | `REDIS_URL` in Vercel | Vercel env panel | Required to activate email queueing |
 
 ### 2. Post-Hardening Validation (run after code fixes deployed)
-
-None of these have been executed. All 11 hardening passes are verified in code — these tests confirm live behavior.
 
 | # | Test | Expected |
 |---|------|----------|
@@ -59,7 +56,7 @@ None of these have been executed. All 11 hardening passes are verified in code �
 
 ---
 
-## ⏭ Next Sprint (after launch gate clears)
+## ⏭ Next Sprint
 
 | Item | Notes |
 |------|-------|
@@ -67,26 +64,57 @@ None of these have been executed. All 11 hardening passes are verified in code �
 | Stripe billing | Checkout, webhook, subscription lifecycle. Deferred until launch gate complete. |
 | Fast Receipt Processing | Drag-drop + Vision model auto-extract on transaction create |
 | User-Defined Accounts (Phase 5) | Replace dynamic source dropdown with user-managed named accounts |
+| Brain — Chart/Analysis Popup (Phase 2 Step 5) | Chart.js modal + Download CSV when user requests visual analysis |
+
+---
+
+## ✅ Completed — AI Brain (Phase 2, 2026-05-17)
+
+| Item | Version | Notes |
+|------|---------|-------|
+| Gemini function calling — 4 read tools | v7.4.4 | `search_transactions`, `get_lead`, `get_invoice_summary`, `get_metrics_snapshot` |
+| Confirmation UI — Approve/Reject cards | v7.4.5 | Write tools return `pendingActions[]`; UI gates all writes |
+| Write tools — CRM + transactions | v7.4.5 | `create_transaction`, `update_lead_status`, `link_transaction_to_lead` |
+| Accounts tool + chat formatting | v7.4.5 | `get_accounts`; markdown rendered in sidebar |
+| CRM lead ID fix — write now works | v7.4.6 | `get_lead` was missing `id` in SELECT; Brain couldn't pass UUID to `update_lead_status` |
+| Personalized greeting | v7.4.6 | First name from `contact_name` → `business_name` → email prefix |
+| Live page refresh after approve | v7.4.7 | `ll:refresh` CustomEvent dispatched after every approved action; CRM, Transactions, Invoices listeners added |
+| Shift+Enter multiline input | v7.4.7 | Enter submits; Shift+Enter inserts newline; textarea auto-grows |
+| Invoice read + write tools | v7.4.8 | `get_invoice` (by number/client/status) + `update_invoice_status` write tool |
+| Multi-invoice support | v7.4.9 | Loop raised 3→6 rounds; one `get_invoice` call per number; description rewritten to prevent combining |
+| `search_transactions` returns `id` | v7.4.9 | Enables `link_transaction_to_lead` to receive UUID from prior search |
+| `create_transaction` required field guards | v7.4.9 | Missing vendor/amount/date returns error + asks user |
+| Invoice schema fix — `clients(name)` join | v7.5.0 | `client_name` column doesn't exist; replaced with Supabase FK join |
+| Invoice total computed from line items | v7.5.1 | `total_cents`/`amount_paid_cents` don't exist; all three invoice tools now use `calcTotal()` from `invoice_items` |
+| CC payment exclusion from purchase analysis | v7.5.2 | EPAYMENT, ACH PMT, AUTOPAY, etc. excluded when user asks about purchases |
+| Category partial match | v7.5.3 | `search_transactions` changed from `.eq()` to `.ilike()` — "Travel" now finds "Travel & Vacation" |
+| Full category name list in system prompt | v7.5.3 | 12 categories listed with keywords; Brain passes correct strings |
+| Search-before-create rule | v7.5.3 | Brain must check existing ledger before offering `create_transaction` |
+| Conversation memory | v7.5.4 | Last 10 messages sent as history; Gemini chat seeded with prior context |
+| Junk category exclusion from metrics | v7.5.4 | Internal Transfer + Credit Card Payment excluded from `get_metrics_snapshot` top categories |
+| Per-account payment breakdown | v7.5.5 | `search_transactions` returns `source` + `account_breakdown[]`; explicit payment queries show per-card totals |
+| Context-sensitive payment rules | v7.5.5 | Payments excluded from general analysis; included with breakdown when explicitly requested |
+| Self-describing capabilities | v7.5.6 | CAPABILITIES block in system instruction; "what can you do?" returns accurate full list |
+| Updated greeting | v7.5.6 | Invites "what can you do?" on open |
+| BYOB setup CTA for unconfigured users | v7.5.7 | Setup card with Google AI Studio link + Control Center link replaces hidden sidebar |
 
 ---
 
 ## ✅ Completed — Security Hardening (All Passes Verified in Code)
 
-All items below are confirmed live in the codebase as of 2026-05-16.
-
 | Pass | Item | File |
 |------|------|------|
 | 1 | `.env`, `*.sqlite`, `data/` added to `.gitignore` | Root `.gitignore` |
-| 2 | `db.js` fails loudly on missing `SUPABASE_SERVICE_ROLE_KEY`; `server.js` checks `initDb()` on startup | `api/db.js`, `api/server.js` |
+| 2 | `db.js` fails loudly on missing `SUPABASE_SERVICE_ROLE_KEY` | `api/db.js`, `api/server.js` |
 | 3 | `isLocalDev` uses AND logic — dev bypass cannot activate on Vercel | `api/middleware/auth.js` |
-| 4 | Admin guard (`requireRole('admin')`) on all beta-code routes; cron auth uses `x-vercel-cron: 1` | `api/routes/admin.js` |
+| 4 | Admin guard (`requireRole('admin')`) on all beta-code routes | `api/routes/admin.js` |
 | 5 | DELETE expenses includes `.eq("user_id", req.user.id)` | `api/routes/expenses.js` |
-| 6 | Licensing middleware fail-closed — DB error → 503, not pass-through | `api/middleware/licensing.js` |
+| 6 | Licensing middleware fail-closed — DB error → 503 | `api/middleware/licensing.js` |
 | 7 | Discount math fixed: `discountPct = discount_cents / 10000` | `api/routes/invoices.js`, `api/routes/pay.js` |
 | 8 | Duplicate catch-all SPA rewrite removed from `vercel.json` | `vercel.json` |
-| 9 | `bypass_login=true` URL param removed from `AuthContext.jsx` | `web-react/src/components/AuthContext.jsx` |
-| 10 | "EXTEND ACCESS" button routes to `navigate('/StudioControlCenter?tab=saas')` | `web-react/src/App.jsx` |
-| 11 | Broken "Download PDF" link removed from invoice approval email | `api/utils/mailer.js` |
+| 9 | `bypass_login=true` URL param removed | `web-react/src/components/AuthContext.jsx` |
+| 10 | "EXTEND ACCESS" routes to Control Center | `web-react/src/App.jsx` |
+| 11 | Broken "Download PDF" link removed from invoice email | `api/utils/mailer.js` |
 
 ---
 
@@ -98,49 +126,35 @@ All items below are confirmed live in the codebase as of 2026-05-16.
 | Executive Dashboard KPIs | v5.2.0 | |
 | RLS fully activated on all tables | v5.2.0 | Verification pending (see Launch Gate) |
 | Watchdog cron + UptimeRobot | v5.2.0 | |
-| AI Brain (Gemini 2.5 Flash, BYOB) | v5.2.0 | Read-only queries |
-| AI retry mechanism (503 handling) | v5.2.0 | |
+| AI Brain base (Gemini 2.5 Flash, BYOB) | v5.2.0 | |
 | Mobile UX sprint | v6.x | iOS dates, receipt upload, PWA session persistence, tap targets |
 | Import dedup (exact + fuzzy + near-duplicate) | v7.3.2 | |
 | Near-duplicate review modal | v7.3.2 | |
-| Feedback widget + route | v7.3.2 | |
 | Real-time lead intake (`/api/intake`) | v7.1.0 | |
 | Intake key management (per-user `ll-xxxx` keys) | v7.1.0 | |
 | Supabase Realtime lead notifications | v7.1.0 | |
-| Add-On Marketplace page | v7.1.0 | |
-| TTLM form worker v2 (non-blocking) | v7.1.0 | |
-| Email pipeline fix (Resend from-address) | v7.3.4 | |
-| Marketing page rewrite | v7.3.4 | |
-| Supabase auth redirect for lumiereledger.com | v7.3.4 | |
+| CORS + APP_URL + mailer from-address fixes | v7.3.5 | |
+| Nav redesign — groups, no emojis | v7.4.0 | |
+| LCC lazy load + system status panel | v7.4.0 | |
+| Mark Paid on draft invoices | v7.3.9 | |
+| Edit restored on paid invoices | v7.3.9 | |
+| Invoice client override fix | v7.3.8 | |
+| Save & Send Email button | v7.3.8 | |
+| Update notification banner | v7.4.2 | |
+| What's New button | v7.4.3 | |
 
 ---
 
-## 🧠 Phase 2: AI Agentic Capabilities ("Studio Hands")
+## 🧠 Phase 2: AI Agentic Capabilities — Remaining
 
-Implementation order is fixed — do not skip steps.
+- [ ] **Step 4 — Invoice Creation** (next up)
+  - `create_invoice_draft(client_name, line_items, due_date)` write tool
+  - Returns pending confirmation card with line item summary before creating
 
-- [ ] **Step 1 — Read-Only Tool Calls** (`api/routes/brain.js`, `api/utils/gemini.js`)
-  - Wire Gemini function calling with 4 read tools: `search_transactions`, `get_lead`, `get_invoice_summary`, `get_metrics_snapshot`
-  - Deliverable: "What did I spend on meals this quarter?" returns live DB data
-
-- [ ] **Step 2 — Confirmation UI** (`web-react/src/components/AssistantSidebar.jsx`)
-  - API returns `pendingActions[]` alongside text when a write is requested
-  - Approve/Reject UI before any write executes
-  - **No write tools go live until this UI is confirmed working**
-
-- [ ] **Step 3 — Write Tools** (gated by Step 2)
-  - `create_transaction`, `update_lead_status`, `link_transaction_to_lead`
-  - All writes route through existing authenticated Express endpoints
-
-- [ ] **Step 4 — Invoice Generation** (after Step 3 is stable)
-  - `create_invoice_draft(client_name, line_items, due_date)`
-
-- [ ] **Step 5 — Brain Chart/Analysis Output Popup** (Good to Have — flagged 2026-05-17)
-  - When the user requests an analysis with a visual output (spending breakdown, trend, category comparison, etc.), the Brain returns structured chart data alongside its text response
-  - AssistantSidebar renders a modal popup with: chart (bar/line/pie via Chart.js), summary table, and a Download CSV button
-  - Scope: read-only — triggered when Gemini determines a chart would improve the answer (e.g., "show me a breakdown", "chart my spending", "visualize my categories")
-  - The popup does not replace the text answer — it supplements it
-  - Download exports the raw data as a `.csv` file for external processing
+- [ ] **Step 5 — Brain Chart/Analysis Output Popup**
+  - Structured chart data returned alongside text when user requests visual analysis
+  - AssistantSidebar renders Chart.js modal with Download CSV
+  - Triggered by: "show me a breakdown", "chart my spending", "visualize my categories"
 
 ---
 
@@ -148,7 +162,7 @@ Implementation order is fixed — do not skip steps.
 
 - [ ] Fast Receipt Processing — drag-drop → Vision model extracts vendor + amount before save
 - [ ] RAG — index uploaded PDF receipts and contracts; extract serial #s, term dates, interest rates
-- [ ] Smart Receipt Scanner (deferred) — OpenCV.js edge detection + perspective warp (~1.5MB load cost)
+- [ ] Smart Receipt Scanner (deferred) — OpenCV.js edge detection + perspective warp
 
 ---
 
@@ -161,9 +175,9 @@ Implementation order is fixed — do not skip steps.
 
 ## 🏦 Phase 5: Enterprise Integrations & Account Management
 
-- [ ] **User-Defined Accounts** — named accounts with type, institution, last 4 digits; source dropdown reads from accounts table with backward-compatible fallback
-- [ ] **Plaid Live Bank Sync** — blocked by: Plaid approval + `cryptoUtil.js` real `libsodium-wrappers` impl + `ENCRYPTION_KEY` in Vercel
-- [ ] **Stripe Billing** — checkout, webhooks, subscription lifecycle, Customer Portal in Control Center
+- [ ] **User-Defined Accounts** — named accounts with type, institution, last 4; source dropdown reads from accounts table
+- [ ] **Plaid Live Bank Sync** — blocked: Plaid approval + `cryptoUtil.js` real impl + `ENCRYPTION_KEY` in Vercel
+- [ ] **Stripe Billing** — checkout, webhooks, subscription lifecycle, Customer Portal
 
 ---
 
@@ -180,9 +194,6 @@ Foundation shipped (intake keys + marketplace page).
 
 ## 🔭 Backlog
 
-- AI Function Calling write-to-DB from chat ("Studio Hands" Phase 2+)
-- RAG document indexing — PDF receipts, contracts
-- Semantic search via pgvector
 - Rate limiting on `/subscription/redeem`
 - Error tracking (Sentry / Logtail)
 - Automated test suite (unit + integration)
@@ -191,31 +202,9 @@ Foundation shipped (intake keys + marketplace page).
 
 ---
 
-## 🚩 Flagged Items (Out-of-Scope — Pending Review)
+## 🚩 Clean Up / Flagged
 
-Items added here when a request falls outside the current sprint. Review with Joshua before promoting to an active sprint.
-
-### Need
-> *Required for core functionality or launch — will break something if not done.*
-
-- ~~**Mark Paid on draft invoices**~~ ✅ Fixed v7.3.9
-- ~~**Edit/Preview accessible on paid invoices**~~ ✅ Fixed v7.3.9
-
-### Broken
-> *Confirmed not working correctly in production.*
-
-- ~~**Invoice client name autocomplete overrides input**~~ ✅ Fixed v7.3.8
-- ~~**Duplicate leads in CRM Import dropdown**~~ ✅ Fixed v7.3.8
-
-### Clean Up
-> *Technical debt, dead code, naming inconsistencies, structural improvements.*
-
-- **Validation Tests 3 & 4 — non-admin 403 check** — Re-run `POST /api/admin/beta-codes` and `DELETE /api/admin/beta-codes/:code` with a non-admin user's token to confirm 403 is returned. Requires a second test account. Code audit confirmed `requireRole('admin')` is on all routes — this is a live smoke test only. (Flagged 2026-05-16)
-
-### Good to Have
-> *Nice UX or feature additions — not blocking anything.*
-
-- ~~**Invoice send flow — single step**~~ ✅ Fixed v7.3.8 — "SAVE & SEND EMAIL" button added to invoice form
+- **Validation Tests 3 & 4** — Re-run `POST /api/admin/beta-codes` and `DELETE` with a non-admin token to confirm 403. Requires a second test account. Code audit confirmed `requireRole('admin')` is in place — live smoke test only.
 
 ---
 
