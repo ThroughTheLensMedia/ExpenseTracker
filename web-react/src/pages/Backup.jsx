@@ -143,14 +143,14 @@ export default function Backup() {
                 </div>
 
                 <nav style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                    <button className={`pill ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>👤 Business Profile</button>
-                    <button className={`pill ${activeTab === 'automation' ? 'active' : ''}`} onClick={() => setActiveTab('automation')}>⚡ Automation</button>
-                    <button className={`pill ${activeTab === 'intelligence' ? 'active' : ''}`} onClick={() => setActiveTab('intelligence')}>🧠 AI Intelligence</button>
-                    {isAdmin && <button className={`pill ${activeTab === 'infrastructure' ? 'active' : ''}`} onClick={() => setActiveTab('infrastructure')}>🔒 Infrastructure</button>}
-                    <button className={`pill ${activeTab === 'integration' ? 'active' : ''}`} onClick={() => setActiveTab('integration')}>🔗 Integrations</button>
-                    <button className={`pill ${activeTab === 'help' ? 'active' : ''}`} onClick={() => setActiveTab('help')}>❓ Documentation</button>
-                    <button className={`pill ${activeTab === 'feedback' ? 'active' : ''}`} onClick={() => setActiveTab('feedback')}>💬 Feedback</button>
-                    {isAdmin && <button className={`pill ${activeTab === 'saas' ? 'active' : ''}`} onClick={() => setActiveTab('saas')}>💎 SaaS Ledger Mgmt</button>}
+                    <button className={`pill ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>Business Profile</button>
+                    <button className={`pill ${activeTab === 'automation' ? 'active' : ''}`} onClick={() => setActiveTab('automation')}>Automation</button>
+                    <button className={`pill ${activeTab === 'intelligence' ? 'active' : ''}`} onClick={() => setActiveTab('intelligence')}>AI Intelligence</button>
+                    {isAdmin && <button className={`pill ${activeTab === 'infrastructure' ? 'active' : ''}`} onClick={() => setActiveTab('infrastructure')}>Infrastructure</button>}
+                    <button className={`pill ${activeTab === 'integration' ? 'active' : ''}`} onClick={() => setActiveTab('integration')}>Integrations</button>
+                    <button className={`pill ${activeTab === 'help' ? 'active' : ''}`} onClick={() => setActiveTab('help')}>Documentation</button>
+                    <button className={`pill ${activeTab === 'feedback' ? 'active' : ''}`} onClick={() => setActiveTab('feedback')}>Feedback</button>
+                    {isAdmin && <button className={`pill ${activeTab === 'saas' ? 'active' : ''}`} onClick={() => setActiveTab('saas')}>SaaS Management</button>}
                 </nav>
             </div>
 

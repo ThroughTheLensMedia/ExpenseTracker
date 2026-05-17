@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { apiGet, apiPost } from '../../api';
 import { useModal } from '../ModalContext.jsx';
 
-const INTAKE_URL = 'https://app.throughthelens.media/api/intake';
+const INTAKE_URL = 'https://www.lumiereledger.com/api/intake';
 
 function CopyButton({ value, label = 'Copy' }) {
     const [copied, setCopied] = useState(false);
@@ -110,16 +110,13 @@ export default function IntegrationTab() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
             {/* Header */}
             <div className="card glass" style={{ margin: 0, padding: '28px', borderTop: '4px solid #38bdf8' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '12px' }}>
-                    <span style={{ fontSize: '32px' }}>🔗</span>
-                    <div>
-                        <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900 }}>Website Lead Capture</h2>
-                        <div className="muted" style={{ fontSize: '13px', marginTop: '4px' }}>Connect your photography website to route booking requests directly into your CRM pipeline.</div>
-                    </div>
+                <div style={{ marginBottom: '16px' }}>
+                    <h2 style={{ margin: '0 0 6px', fontSize: '1.4rem', fontWeight: 900 }}>Website Lead Capture</h2>
+                    <div className="muted" style={{ fontSize: '13px' }}>Connect your photography website to route booking requests directly into your CRM pipeline.</div>
                 </div>
-                <div style={{ display: 'flex', gap: '10px', marginTop: '8px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '10px', marginTop: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
                     <div style={{ background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.2)', borderRadius: '8px', padding: '10px 16px', fontSize: '12px', fontWeight: 700 }}>
-                        📍 Intake URL: <span style={{ color: '#38bdf8', fontFamily: 'monospace' }}>{INTAKE_URL}</span>
+                        Intake URL: <span style={{ color: '#38bdf8', fontFamily: 'monospace' }}>{INTAKE_URL}</span>
                     </div>
                     <CopyButton value={INTAKE_URL} label="Copy URL" />
                 </div>
@@ -148,7 +145,6 @@ export default function IntegrationTab() {
 
                 {!loading && keys.length === 0 && (
                     <div className="card glass" style={{ margin: 0, padding: '40px', textAlign: 'center' }}>
-                        <div style={{ fontSize: '32px', marginBottom: '12px' }}>🔑</div>
                         <div style={{ fontWeight: 800, marginBottom: '8px' }}>No integration keys yet</div>
                         <div className="muted" style={{ fontSize: '13px' }}>Generate a key above to connect your website.</div>
                     </div>

@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.4.1', date: 'MAY 16, 2026', color: '#a8b6dd', items: [
+        '<strong>Ledger Control Center — Polish:</strong> Tab pills now text-only, matching the nav. "Studio License Lock" renamed to "License Activation." Stale version string removed and replaced with current version.',
+        '<strong>Integration Tab:</strong> Intake URL updated to <code>www.lumiereledger.com/api/intake</code>. Emojis removed from the tab.',
+    ]},
     { version: '7.4.0', date: 'MAY 16, 2026', color: '#38bdf8', items: [
         '<strong>Navigation Redesign:</strong> Dropdown menu rebuilt — emojis removed, items grouped into labeled sections (Financials, Operations, Client Work, Settings). Cleaner and faster to scan.',
         '<strong>Ledger Control Center — Performance:</strong> LCC now loads in a fraction of the time. Previously fired 7–11 API calls on open; now fires 2. Heavy data loads only when you navigate to a tab that needs it.',
