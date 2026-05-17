@@ -21,6 +21,7 @@ const Home           = lazy(() => import('./pages/Home'));
 const PayInvoice     = lazy(() => import('./pages/PayInvoice'));
 const AddOns         = lazy(() => import('./pages/AddOns'));
 const AssistantSidebar = lazy(() => import('./components/AssistantSidebar'));
+import ChangeLogModal from './components/control-center/ChangeLogModal.jsx';
 
 // Shared route-level loading fallback — matches app's existing spinner style
 function PageSpinner() {
@@ -67,12 +68,19 @@ function AppContent() {
   const [showRedeem, setShowRedeem] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [newVersion, setNewVersion] = useState(false);
+  const [showWhatsNew, setShowWhatsNew] = useState(false);
+  const [showChangelogModal, setShowChangelogModal] = useState(false);
   const menuRef = useRef(null);
 
   // --- Version Check Hook ---
   // DEPLOY SOP: update CURRENT_VERSION here AND web-react/public/version.json on every release.
   useEffect(() => {
     const CURRENT_VERSION = "7.4.2";
+
+    // What's New: show button if user hasn't dismissed it for this version
+    const seen = localStorage.getItem('ll_whats_new_seen');
+    if (seen !== CURRENT_VERSION) setShowWhatsNew(true);
+
     const checkVersion = async () => {
       try {
         const res = await fetch('/version.json?v=' + Date.now());
@@ -86,6 +94,13 @@ function AppContent() {
     checkVersion();
     return () => clearInterval(timer);
   }, [user]);
+
+  const handleWhatsNewClick = () => {
+    const CURRENT_VERSION = "7.4.2";
+    localStorage.setItem('ll_whats_new_seen', CURRENT_VERSION);
+    setShowWhatsNew(false);
+    setShowChangelogModal(true);
+  };
 
   // Calculate days left
   const daysLeft = subscription?.expires_at 
@@ -217,11 +232,32 @@ function AppContent() {
           </button>
         )}
 
-        {/* Right Side: Toggle */}
-        <div className="mobile-toggle" style={{ cursor: 'pointer', padding: '10px' }} onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-          <div style={{ width: '22px', height: '2px', background: 'white', margin: '4px 0' }}></div>
-          <div style={{ width: '22px', height: '2px', background: 'white', margin: '4px 0' }}></div>
-          <div style={{ width: '16px', height: '2px', background: 'white', margin: '4px 0', marginLeft: 'auto' }}></div>
+        {/* Right Side: What's New + Toggle */}
+        <div style={{ flex: '1', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '12px' }}>
+          {showWhatsNew && (
+            <button
+              onClick={handleWhatsNewClick}
+              style={{
+                cursor: 'pointer',
+                border: '1px solid rgba(249,115,22,0.4)',
+                borderRadius: '10px',
+                background: 'rgba(249,115,22,0.1)',
+                color: '#f97316',
+                padding: '10px 20px',
+                fontSize: '12px',
+                fontWeight: 900,
+                letterSpacing: '0.06em',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              WHAT'S NEW
+            </button>
+          )}
+          <div className="mobile-toggle" style={{ cursor: 'pointer', padding: '10px' }} onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            <div style={{ width: '22px', height: '2px', background: 'white', margin: '4px 0' }}></div>
+            <div style={{ width: '22px', height: '2px', background: 'white', margin: '4px 0' }}></div>
+            <div style={{ width: '16px', height: '2px', background: 'white', margin: '4px 0', marginLeft: 'auto' }}></div>
+          </div>
         </div>
 
         {/* Studio Command Center (Dropdown) */}
@@ -343,6 +379,8 @@ function AppContent() {
           </Routes>
         </Suspense>
       </main>
+
+      {showChangelogModal && <ChangeLogModal onClose={() => setShowChangelogModal(false)} />}
 
       {/* Focused Mobile Navigation */}
       <nav className="bottom-nav mobile-only">
