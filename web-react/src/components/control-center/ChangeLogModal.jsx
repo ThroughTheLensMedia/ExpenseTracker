@@ -1,6 +1,11 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.4.4', date: 'MAY 17, 2026', color: '#a78bfa', items: [
+        '<strong>AI Brain Upgrade — Live Data Queries:</strong> The Lumière Assistant now uses Gemini function calling to pull real data from your ledger on demand. Ask specific questions like "What did I spend on camera gear this year?" and the Brain queries your actual transactions instead of working from a pre-loaded summary.',
+        '<strong>Four Live Tools:</strong> Search Transactions (filter by category, vendor, date, tax status), Financial Metrics Snapshot (YTD totals, burn rate, top categories), Invoice Summary (revenue, outstanding balances), and CRM Pipeline (lead status, booked value).',
+        '<strong>Faster & More Accurate:</strong> Replaced a 3,000-token upfront data dump with targeted queries — responses are faster, answers reference exact figures from your live ledger.',
+    ]},
     { version: '7.4.3', date: 'MAY 17, 2026', color: '#10b981', items: [
         '<strong>What\'s New Button:</strong> A new "WHAT\'S NEW" button now appears in the header after each update. Click it to see release notes — it dismisses automatically and reappears only when a new version ships.',
         '<strong>AI Engine — Tier 1 Quota Panel:</strong> The Brain Connectivity panel now correctly reflects your Tier 1 limits (1,000 RPM / 1M TPM / 10,000 RPD) under the StudioTracker project. Previous panel showed incorrect Free Tier limits.',
