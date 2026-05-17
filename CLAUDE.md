@@ -20,7 +20,7 @@
 ## Non-Negotiable Rules
 
 1. **Read `ROADMAP.md` before every session** — understand what's in scope, what's blocked, and what's next before writing a single line of code.
-2. **Update `CHANGELOG.md` on every change** — version number, date, plain-English description of every file touched and why. No exceptions. No silent commits.
+2. **Update `CHANGELOG.md` AND `ChangeLogModal.jsx` on every change** — `CHANGELOG.md` is the engineering record; `web-react/src/components/control-center/ChangeLogModal.jsx` is the in-app user-facing changelog. Both must be updated together on every version bump. Add a new entry at the top of the `RELEASES` array in `ChangeLogModal.jsx` with version, date, color, and user-friendly bullet points. No exceptions. No silent commits.
 3. **Check off completed roadmap items** — after any change, update `ROADMAP.md` to mark newly completed items and remove them from the active sprint if done.
 4. **Update `SPEC.md`** if architecture, file map, tech stack, data patterns, or acceptance criteria change.
 5. **Only modify files explicitly in scope** — do not touch unrelated files.

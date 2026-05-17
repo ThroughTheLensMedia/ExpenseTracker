@@ -1,6 +1,20 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.3.9', date: 'MAY 16, 2026', color: '#38bdf8', items: [
+        '<strong>Mark Paid on Draft Invoices:</strong> Portal-paid clients (e.g., FotoFetch) can now be marked paid directly from draft status — no unwanted email send required.',
+        '<strong>Edit Restored on Paid Invoices:</strong> Paid invoice records are now fully editable again. Access Edit on any invoice regardless of status for corrections and record-keeping.',
+    ]},
+    { version: '7.3.8', date: 'MAY 16, 2026', color: '#4ade80', items: [
+        '<strong>Client Override Fix:</strong> Fixed a bug where typing a new client name in the invoice form could silently reuse a prior client\'s record (Boris bug). Client fields now clear the linked ID on manual change.',
+        '<strong>CRM Import — Duplicate Disambiguation:</strong> The leads dropdown now shows shoot type and date alongside the name — so duplicate-named leads (e.g., two "FotoFetch" entries) are distinguishable at a glance.',
+        '<strong>Save &amp; Send Email:</strong> New single-step button in the invoice form footer. Saves the draft and immediately sends the client email — eliminates the two-step save → find → send workflow.',
+    ]},
+    { version: '7.3.5', date: 'MAY 16, 2026', color: '#f97316', items: [
+        '<strong>Domain Migration — CORS:</strong> <code>www.lumiereledger.com</code> added to allowed origins. Auth calls from the new domain no longer fail.',
+        '<strong>Pay Portal Links:</strong> Invoice email payment links now point to <code>www.lumiereledger.com</code> instead of the old domain.',
+        '<strong>Email Reliability:</strong> Hardcoded fallback from-addresses corrected to the verified Resend sending domain — eliminates silent email delivery failures if the env var is ever missing.',
+    ]},
     { version: '7.1.0', date: 'MAY 6, 2026', color: '#38bdf8', items: [
         '<strong>Website Lead Capture:</strong> Booking form submissions on your photography website now route directly into the CRM pipeline in real time — no Zapier, no manual imports.',
         '<strong>Client Deduplication:</strong> Returning clients are automatically matched by email and linked to their existing profile. No duplicate contact cards.',
