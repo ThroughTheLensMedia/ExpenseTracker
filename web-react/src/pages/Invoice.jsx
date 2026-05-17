@@ -513,6 +513,15 @@ export default function Invoice() {
 
     useEffect(() => { load(); }, []);
 
+    // Refresh when Brain Assistant approves a transaction/lead action that may affect invoices
+    useEffect(() => {
+        const handler = (e) => {
+            if (e.detail?.scope === 'leads' || e.detail?.scope === 'transactions') load();
+        };
+        window.addEventListener('ll:refresh', handler);
+        return () => window.removeEventListener('ll:refresh', handler);
+    }, []);
+
     const addItem = () => {
         setFormData(prev => ({
             ...prev,

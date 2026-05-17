@@ -1,6 +1,6 @@
 {
-  "version": "7.4.6",
+  "version": "7.4.7",
   "release_date": "2026-05-17",
   "codename": "Lumière Ledger",
-  "notes": "v7.4.6: Brain CRM fix — lead ID now returned so write tools can execute correctly."
+  "notes": "v7.4.7: Brain — live page refresh after actions; Shift+Enter multiline input."
 }

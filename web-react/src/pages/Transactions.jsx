@@ -98,6 +98,15 @@ export default function Transactions() {
         if (urlSearch) setSearchVendor(urlSearch);
     }, []); // intentionally run once on mount only
 
+    // Refresh when Brain Assistant approves a transaction action
+    useEffect(() => {
+        const handler = (e) => {
+            if (e.detail?.scope === 'transactions') loadData(true);
+        };
+        window.addEventListener('ll:refresh', handler);
+        return () => window.removeEventListener('ll:refresh', handler);
+    }, []);
+
 
     const handleSort = (col) => {
         if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');

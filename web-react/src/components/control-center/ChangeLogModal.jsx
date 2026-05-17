@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.4.7', date: 'MAY 17, 2026', color: '#10b981', items: [
+        '<strong>Brain — Live Page Refresh:</strong> After you approve an action (update lead, add transaction, link records), the page you\'re on automatically reloads the affected data — no manual refresh needed.',
+        '<strong>Brain — Multiline Input:</strong> The assistant chat now supports multi-line messages. Use <strong>Shift+Enter</strong> to add a new line; Enter alone sends the message. Input auto-expands as you type.',
+    ]},
     { version: '7.4.6', date: 'MAY 17, 2026', color: '#f97316', items: [
         '<strong>AI Brain — CRM Write Fix:</strong> "Mark as Completed/Booked/Lost" now works correctly. The Brain was finding the lead but not passing its unique ID to the update action — lead ID is now included in all CRM lookups so write tools can execute.',
         '<strong>Greeting Personalization:</strong> The Assistant sidebar now greets you by your first name (from your contact or business name in settings).',

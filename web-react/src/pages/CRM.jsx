@@ -50,6 +50,15 @@ function PipelineView() {
         }
     }, []);
 
+    // Refresh when Brain Assistant approves a lead action
+    useEffect(() => {
+        const handler = (e) => {
+            if (e.detail?.scope === 'leads') loadLeads(true);
+        };
+        window.addEventListener('ll:refresh', handler);
+        return () => window.removeEventListener('ll:refresh', handler);
+    }, []);
+
     const archiveStats = useMemo(() => {
         return {
             Paid: leads.filter(l => l.status === 'Paid'),

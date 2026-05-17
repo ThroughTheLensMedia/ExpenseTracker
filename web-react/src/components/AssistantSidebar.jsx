@@ -58,8 +58,15 @@ export default function AssistantSidebar() {
         if (endRef.current) endRef.current.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
-    const handleSend = async (e) => {
-        e.preventDefault();
+    // Shift+Enter = newline; Enter alone = submit
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            if (query.trim() && !loading) handleSend();
+        }
+    };
+
+    const handleSend = async () => {
         if (!query.trim() || loading) return;
 
         const userMsg = query.trim();
@@ -68,7 +75,7 @@ export default function AssistantSidebar() {
         setLoading(true);
 
         try {
-            const res = await apiPost('/brain/ask', { 
+            const res = await apiPost('/brain/ask', {
                 prompt: userMsg,
                 context: {
                     page: window.location.pathname,
@@ -84,18 +91,27 @@ export default function AssistantSidebar() {
         }
     };
 
+    // Dispatch refresh event so the currently-visible page reloads its data
+    const dispatchRefresh = (scope) => {
+        window.dispatchEvent(new CustomEvent('ll:refresh', { detail: { scope } }));
+    };
+
     const handleApprove = async (action) => {
         setPendingActions(prev => prev.filter(a => a.id !== action.id));
         try {
             if (action.type === 'update_lead_status') {
                 await apiPatch(`/leads/${action.payload.leadId}`, { status: action.payload.status });
                 setMessages(prev => [...prev, { role: 'assistant', text: `Done — **${action.payload.leadName}** is now **${action.payload.status}**.` }]);
+                dispatchRefresh('leads');
             } else if (action.type === 'create_transaction') {
                 await apiPost('/expenses', action.payload);
                 setMessages(prev => [...prev, { role: 'assistant', text: `Done — transaction added to your ledger.` }]);
+                dispatchRefresh('transactions');
             } else if (action.type === 'link_transaction_to_lead') {
                 await apiPatch(`/expenses/${action.payload.transactionId}`, { lead_id: action.payload.leadId });
                 setMessages(prev => [...prev, { role: 'assistant', text: `Done — transaction linked to the lead.` }]);
+                dispatchRefresh('transactions');
+                dispatchRefresh('leads');
             }
         } catch (err) {
             setMessages(prev => [...prev, { role: 'assistant', text: `Action failed: ${err.message}` }]);
@@ -220,35 +236,55 @@ export default function AssistantSidebar() {
                 </div>
 
                 {/* Input Area */}
-                <form onSubmit={handleSend} style={{ padding: '20px', borderTop: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.2)' }}>
+                <div style={{ padding: '20px', borderTop: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.2)' }}>
                     <div style={{ position: 'relative' }}>
-                        <input 
+                        <textarea
                             value={query}
                             onChange={e => setQuery(e.target.value)}
-                            placeholder="Ask for advice or status..."
+                            onKeyDown={handleKeyDown}
+                            placeholder="Ask for advice or status... (Shift+Enter for new line)"
+                            rows={1}
                             style={{
                                 width: '100%',
-                                padding: '16px 50px 16px 20px',
+                                padding: '14px 50px 14px 20px',
                                 borderRadius: '12px',
                                 background: 'rgba(255,255,255,0.05)',
                                 border: '1px solid rgba(255,255,255,0.1)',
                                 color: 'white',
-                                fontSize: '14px'
+                                fontSize: '14px',
+                                resize: 'none',
+                                overflowY: 'auto',
+                                maxHeight: '120px',
+                                lineHeight: '1.5',
+                                fontFamily: 'inherit',
+                                boxSizing: 'border-box'
+                            }}
+                            onInput={e => {
+                                // Auto-grow up to maxHeight
+                                e.target.style.height = 'auto';
+                                e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
                             }}
                         />
-                        <button type="submit" disabled={loading} style={{
-                            position: 'absolute',
-                            right: '10px',
-                            top: '50%',
-                            translate: '0 -50%',
-                            background: 'none',
-                            border: 'none',
-                            fontSize: '20px',
-                            cursor: 'pointer',
-                            opacity: query.trim() ? 1 : 0.3
-                        }}>🚀</button>
+                        <button
+                            onClick={handleSend}
+                            disabled={loading}
+                            style={{
+                                position: 'absolute',
+                                right: '10px',
+                                bottom: '10px',
+                                background: 'none',
+                                border: 'none',
+                                fontSize: '20px',
+                                cursor: 'pointer',
+                                opacity: query.trim() ? 1 : 0.3,
+                                lineHeight: 1
+                            }}
+                        >🚀</button>
                     </div>
-                </form>
+                    <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.25)', marginTop: '6px', textAlign: 'right' }}>
+                        Enter to send · Shift+Enter for new line
+                    </div>
+                </div>
             </div>
         </>
     );
