@@ -5,6 +5,30 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.4.6] — 2026-05-17
+
+### AI Brain — CRM write fix + greeting personalization
+
+#### Fixed
+- **`api/routes/brain.js`** — `get_lead` tool was not selecting `id` from the `leads` table. Gemini received lead data but no UUID, so `update_lead_status` always returned "I don't have a unique ID." Fixed: `id` added to SELECT and to the mapped response object. CRM write actions (mark as Completed/Booked/Lost/etc.) now work correctly.
+
+#### Changed
+- **`web-react/src/components/AssistantSidebar.jsx`** — Greeting message now uses the user's first name extracted from `settings.contact_name`, `settings.business_name`, or email prefix as fallback.
+- **`web-react/public/version.json`** — Bumped to 7.4.6
+- **`web-react/src/App.jsx`** — `CURRENT_VERSION` bumped to 7.4.6
+
+---
+
+## [v7.4.5] — 2026-05-17
+
+### AI Brain — Phase 2 Step 2: Confirmation UI + account tool + markdown rendering
+
+#### Added
+- **`api/routes/brain.js`** — Three write tools added (`update_lead_status`, `create_transaction`, `link_transaction_to_lead`). Write tools never execute directly — they return `{ __pending: true, pendingAction }`. The `/ask` endpoint collects all pending actions and returns them alongside the text answer. `get_accounts` tool added with optional `year` filter.
+- **`web-react/src/components/AssistantSidebar.jsx`** — Pending action confirmation cards rendered in chat. APPROVE routes by action type to the correct API call; REJECT dismisses with a "Cancelled" message. `renderMarkdown()` function added — converts `**bold**`, `*italic*`, `` `code` ``, and bullet lists to HTML. All assistant messages now rendered via `dangerouslySetInnerHTML`.
+
+---
+
 ## [v7.4.4] — 2026-05-17
 
 ### AI Brain — Phase 2 Step 1: Function Calling

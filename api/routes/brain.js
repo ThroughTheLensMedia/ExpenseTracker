@@ -234,7 +234,7 @@ async function executeTool(name, args, sb, userId) {
 
         case 'get_lead': {
             let q = sb.from('leads')
-                .select('name, status, quoted_value_cents, project_type, created_at')
+                .select('id, name, status, quoted_value_cents, project_type, created_at')
                 .eq('user_id', userId);
             if (args.status) q = q.eq('status', args.status);
             if (args.name)   q = q.ilike('name', `%${args.name}%`);
@@ -248,6 +248,7 @@ async function executeTool(name, args, sb, userId) {
                 count: data?.length || 0,
                 total_pipeline_value: fmt(totalValue),
                 leads: (data || []).map(r => ({
+                    id: r.id,
                     name: r.name,
                     status: r.status,
                     value: fmt(toDollars(r.quoted_value_cents)),

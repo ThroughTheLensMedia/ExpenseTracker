@@ -1,6 +1,15 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.4.6', date: 'MAY 17, 2026', color: '#f97316', items: [
+        '<strong>AI Brain — CRM Write Fix:</strong> "Mark as Completed/Booked/Lost" now works correctly. The Brain was finding the lead but not passing its unique ID to the update action — lead ID is now included in all CRM lookups so write tools can execute.',
+        '<strong>Greeting Personalization:</strong> The Assistant sidebar now greets you by your first name (from your contact or business name in settings).',
+    ]},
+    { version: '7.4.5', date: 'MAY 17, 2026', color: '#a78bfa', items: [
+        '<strong>AI Brain — Confirmation UI:</strong> Write actions (update lead status, add transaction, link records) now surface Approve / Reject confirmation cards before anything is saved — no accidental changes.',
+        '<strong>AI Brain — Account Tool:</strong> Ask "What accounts do I have?" or "List accounts with 2026 transactions" — the Brain now queries your actual sources from the ledger.',
+        '<strong>Chat Formatting:</strong> The Assistant now renders bold text, bullet lists, and inline code in its responses instead of raw markdown symbols.',
+    ]},
     { version: '7.4.4', date: 'MAY 17, 2026', color: '#a78bfa', items: [
         '<strong>AI Brain Upgrade — Live Data Queries:</strong> The Lumière Assistant now uses Gemini function calling to pull real data from your ledger on demand. Ask specific questions like "What did I spend on camera gear this year?" and the Brain queries your actual transactions instead of working from a pre-loaded summary.',
         '<strong>Four Live Tools:</strong> Search Transactions (filter by category, vendor, date, tax status), Financial Metrics Snapshot (YTD totals, burn rate, top categories), Invoice Summary (revenue, outstanding balances), and CRM Pipeline (lead status, booked value).',
