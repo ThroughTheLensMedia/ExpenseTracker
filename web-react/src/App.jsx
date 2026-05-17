@@ -70,26 +70,22 @@ function AppContent() {
   const menuRef = useRef(null);
 
   // --- Version Check Hook ---
+  // DEPLOY SOP: update CURRENT_VERSION here AND web-react/public/version.json on every release.
   useEffect(() => {
-    const CURRENT_VERSION = "7.0.0";
+    const CURRENT_VERSION = "7.4.1";
     const checkVersion = async () => {
       try {
         const res = await fetch('/version.json?v=' + Date.now());
         const data = await res.json();
         if (data.version && data.version !== CURRENT_VERSION) {
           setNewVersion(true);
-          // Only auto-reload if we haven't already marked it as new to avoid infinite loops
-          if (!newVersion && (location.pathname === '/login' || !user)) {
-             console.log("New version detected, updating...");
-             // window.location.reload(true); // Temporarily disable auto-reload to be safe
-          }
         }
       } catch (e) { /* silent fail */ }
     };
-    const timer = setInterval(checkVersion, 60000); // Check every minute
+    const timer = setInterval(checkVersion, 5 * 60 * 1000); // Check every 5 minutes
     checkVersion();
     return () => clearInterval(timer);
-  }, [user]); // location.pathname removed — restarting the timer on every nav is unnecessary
+  }, [user]);
 
   // Calculate days left
   const daysLeft = subscription?.expires_at 
@@ -194,12 +190,12 @@ function AppContent() {
             </div>
           </div>
           {newVersion && (
-            <button 
-              onClick={() => window.location.reload(true)} 
-              className="tag ok glow-green" 
-              style={{ marginLeft: '12px', cursor: 'pointer', border: 'none', padding: '4px 10px', fontSize: '9px', fontWeight: 900 }}
+            <button
+              onClick={() => window.location.reload(true)}
+              className="tag ok glow-green"
+              style={{ marginLeft: '12px', cursor: 'pointer', border: 'none', padding: '4px 10px', fontSize: '9px', fontWeight: 900, letterSpacing: '0.05em' }}
             >
-              🚀 REFRESH FOR UPDATES
+              UPDATE AVAILABLE — REFRESH
             </button>
           )}
         </div>

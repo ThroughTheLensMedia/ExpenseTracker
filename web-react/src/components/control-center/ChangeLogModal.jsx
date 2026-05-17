@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.4.2', date: 'MAY 16, 2026', color: '#10b981', items: [
+        '<strong>Update Notifications Fixed:</strong> The "Update Available" banner in the header was stuck and had not fired since v7.0.0. Version tracking is now live — you\'ll see a prompt to refresh within 5 minutes of any new release going live.',
+        '<strong>Update Banner:</strong> Cleaner text, no emoji. Checks every 5 minutes instead of every 60 seconds.',
+    ]},
     { version: '7.4.1', date: 'MAY 16, 2026', color: '#a8b6dd', items: [
         '<strong>Ledger Control Center — Polish:</strong> Tab pills now text-only, matching the nav. "Studio License Lock" renamed to "License Activation." Stale version string removed and replaced with current version.',
         '<strong>Integration Tab:</strong> Intake URL updated to <code>www.lumiereledger.com/api/intake</code>. Emojis removed from the tab.',

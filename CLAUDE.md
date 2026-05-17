@@ -54,13 +54,18 @@ Add the item under the appropriate category in the relevant phase or backlog sec
 
 ```
 1. Make changes in /web-react/src or /api/routes
-2. Update CHANGELOG.md
+2. Update CHANGELOG.md AND ChangeLogModal.jsx (both required — see Rule 2)
 3. Update SPEC.md (if architecture/stack changed)
-4. Commit: "v7.3.5 — Short title\n\n- file.jsx — why\n- Update CHANGELOG.md"
-5. git push origin main → Vercel auto-builds and deploys
+4. Update version in TWO places (required for user update banner to fire):
+   - web-react/public/version.json  → "version": "X.X.X"
+   - web-react/src/App.jsx          → CURRENT_VERSION = "X.X.X"  (comment says DEPLOY SOP)
+5. Commit: "vX.X.X — Short title\n\n- file.jsx — why\n- Update CHANGELOG.md"
+6. git push origin main → Vercel auto-builds and deploys
 ```
 
 No manual build step. Vercel runs `npm run build` automatically.
+
+**Version banner:** Users who already have the app open see "UPDATE AVAILABLE — REFRESH" in the header within 5 minutes of a new deploy. Clicking it hard-reloads their tab. Users who open the app fresh after deploy get the new code automatically — no banner needed.
 
 ---
 

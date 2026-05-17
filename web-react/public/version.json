@@ -1,6 +1,6 @@
 {
-  "version": "7.0.0",
-  "release_date": "2026-05-01",
+  "version": "7.4.2",
+  "release_date": "2026-05-16",
   "codename": "Lumière Ledger",
-  "notes": "v7.0.0: Transitioned Studio Tracker to Lumière Ledger. Added System Watchdog, Layer 1 Uptime Monitoring, and updated core UI branding."
+  "notes": "v7.4.1: Nav cleanup, LCC performance overhaul, system status panel, intake URL updated."
 }
