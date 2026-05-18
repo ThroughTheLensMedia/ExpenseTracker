@@ -48,12 +48,12 @@ Source of truth for all sprint work, security status, and product phases. Replac
 | 10 | Click "EXTEND ACCESS" → Ledger Control Center | ✅ Conditionally verified (code audited) |
 | 11 | Invoice approval email has no broken download link | ✅ Pass |
 
-### 3. RLS Multi-Tenant Audit
+### 3. RLS Multi-Tenant Audit — ✅ Complete 2026-05-18
 
-- [ ] Paste `api/tests/rls-audit.sql` into Supabase SQL Editor — 7 queries cover all checks
-- [ ] Verify all tables have `user_id = auth.uid()` RLS policies active in Supabase dashboard
-- [ ] Test: User A cannot read User B's expenses, leads, invoices, clients
-- [ ] Confirm `user_roles` table is service-role-only (no user-facing RLS bypass)
+- [x] All 17 remaining tables have RLS enabled — verified via `rls-audit.sql`
+- [x] Cross-user isolation confirmed — Test 6 in launch-gate.js
+- [x] `user_roles` policy is admin-read-only; writes restricted to service role
+- [x] 22 orphaned trading-app tables removed via `drop-trading-app-tables.sql` — storage recovered
 
 ---
 
@@ -61,10 +61,39 @@ Source of truth for all sprint work, security status, and product phases. Replac
 
 | Item | Notes |
 |------|-------|
+| **Stripe billing** | Launch gate cleared — ready to build. Full spec in `STRIPE_ROADMAP.md`. Waiting on Stripe account setup + price IDs from Joshua. |
+| **Accounts Page** | Per-account spending analytics derived from existing `source` field on expenses. No Plaid required. See spec below. |
+| **Bank Import UI Cleanup** | Remove emojis from source list, demote niche banks, surface Rocket Money as recommended. See Clean Up section. |
 | Maps Autopilot | In progress — Google Maps A→B→A mileage round-trip |
-| Stripe billing | Checkout, webhook, subscription lifecycle. Deferred until launch gate complete. |
-| User-Defined Accounts (Phase 5) | Replace dynamic source dropdown with user-managed named accounts |
+| User-Defined Accounts (Phase 5) | Replace dynamic source dropdown with user-managed named accounts — prerequisite for live balances |
 | Brain — Chart/Analysis Popup (Phase 2 Step 5) | Chart.js modal + Download CSV when user requests visual analysis |
+
+### Accounts Page — Spec
+
+No Plaid required. Derives account data from the existing `source` field on transactions.
+
+**Route:** `/accounts` (new page)  
+**Nav:** Bottom nav or hamburger → "Accounts"
+
+**What it shows per account:**
+- Account name (from `source` field), institution inferred from label
+- Account type badge: Checking / Credit Card (derived from known source names)
+- Total spent this month
+- Total spent YTD
+- Transaction count
+- Last import date
+- % of total monthly spend (visual bar)
+- Trend: this month vs. last month (up/down indicator)
+
+**Page-level summary:**
+- Total checking spend vs. total credit card spend
+- Net cash position this month (income − expenses, manual accounts only)
+- "Add Plaid" CTA when Plaid goes live — replaces manual with live balances
+
+**Implementation notes:**
+- Single query: `SELECT source, COUNT(*), SUM(amount_cents), MAX(expense_date) FROM expenses WHERE user_id = ? GROUP BY source`
+- Map known source keys to institution names + card types in frontend constant
+- Pairs with User-Defined Accounts (Phase 5) for user-customizable account names/types
 
 ---
 
@@ -220,6 +249,8 @@ Foundation shipped (intake keys + marketplace page).
 ---
 
 ## 🚩 Clean Up / Flagged
+
+- **Bank Import source list** — Remove emoji icons from all labels. Demote Navy Federal and Wise to bottom or fold into Universal (niche, no auto-detect advantage). Surface Rocket Money prominently as "Recommended — covers all accounts in one export." Keep Chase, BofA, Capital One, Wells Fargo, Apple Card, USAA, US Bank as named options. Consider adding auto-detect on CSV drop (headers already parsed in backend `detectBankProfile()`). Good to Have — not blocking launch.
 
 - **Validation Tests 3 & 4** — Re-run `POST /api/admin/beta-codes` and `DELETE` with a non-admin token to confirm 403. Requires a second test account. Code audit confirmed `requireRole('admin')` is in place — live smoke test only.
 - **Test 9 / Daily report cron** — ✅ Fixed v7.6.2. `/api/cron/daily-report` (in `cron.js`) is mounted before `authMiddleware` and handles automated firing. `/admin/daily-report` stripped to admin-UI-preview-only. **Action required: update cron-job.org job URL to `GET https://www.lumiereledger.com/api/cron/daily-report` with `Authorization: Bearer <CRON_SECRET>` header.**
