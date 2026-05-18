@@ -652,7 +652,13 @@ PURCHASE vs PAYMENT DISTINCTION (critical):
             result = await chat.sendMessage(toolResults);
         }
 
-        const text = result.response.text().trim();
+        let text = result.response.text().trim();
+
+        // Gemini sometimes returns empty text after queuing a pending action — synthesize a reply
+        if (!text && pendingActions.length > 0) {
+            text = pendingActions.map(a => `Ready for your approval:\n${a.description}`).join('\n\n');
+        }
+
         if (!text) return res.status(500).json({ error: "The Brain returned an empty response. Try again." });
 
         res.json({ ok: true, answer: text, pendingActions: pendingActions.length > 0 ? pendingActions : undefined });
