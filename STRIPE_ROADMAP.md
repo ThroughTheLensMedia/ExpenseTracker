@@ -231,10 +231,10 @@ const hasAccess = TIER_RANK[tier] >= TIER_RANK[minTier];
 |-----|-------|-------|
 | `STRIPE_SECRET_KEY` | Vercel + local `.env` | `sk_live_xxx` |
 | `STRIPE_WEBHOOK_SECRET` | Vercel + local `.env` | From Stripe dashboard → Webhooks |
-| `STRIPE_PRICE_CORE_MONTHLY` | Vercel + local `.env` | `price_xxx` — $9/mo |
-| `STRIPE_PRICE_CORE_ANNUAL` | Vercel + local `.env` | `price_xxx` — $86/yr |
-| `STRIPE_PRICE_STUDIO_MONTHLY` | Vercel + local `.env` | `price_xxx` — $19/mo |
-| `STRIPE_PRICE_STUDIO_ANNUAL` | Vercel + local `.env` | `price_xxx` — $182/yr |
+| `STRIPE_PRICE_CORE_MONTHLY` | Vercel + local `.env` | `price_1TYZtXCXjNrpxtAHB3ZL5DlF` — $9/mo ✅ |
+| `STRIPE_PRICE_CORE_ANNUAL` | Vercel + local `.env` | `price_1TYZvPCXjNrpxtAHaFtBiyno` — $86/yr ✅ |
+| `STRIPE_PRICE_STUDIO_MONTHLY` | Vercel + local `.env` | `price_1TYZvpCXjNrpxtAHdNTzia9o` — $19/mo ✅ |
+| `STRIPE_PRICE_STUDIO_ANNUAL` | Vercel + local `.env` | `price_1TYZw2CXjNrpxtAHwAiJ3hEy` — $182/yr ✅ |
 | `VITE_STRIPE_PUBLISHABLE_KEY` | Vercel + local `.env` | `pk_live_xxx` — frontend only |
 
 ---
@@ -267,12 +267,13 @@ Then build Plaid billing on top (P1–P10 in `PLAID_BILLING_SPEC.md`, ~4 hrs add
 
 - [ ] Create Stripe account at stripe.com (business email)
 - [ ] Complete business verification (EIN / SSN, bank account for payouts)
-- [ ] Create Product: "Lumière Core"
-  - [ ] Add Price: $9.00 / month recurring → copy `price_xxx` as `STRIPE_PRICE_CORE_MONTHLY`
-  - [ ] Add Price: $86.00 / year recurring → copy `price_xxx` as `STRIPE_PRICE_CORE_ANNUAL`
-- [ ] Create Product: "Lumière Studio"
-  - [ ] Add Price: $19.00 / month recurring → copy `price_xxx` as `STRIPE_PRICE_STUDIO_MONTHLY`
-  - [ ] Add Price: $182.00 / year recurring → copy `price_xxx` as `STRIPE_PRICE_STUDIO_ANNUAL`
+- [x] Create Product: "Lumière Core"
+  - [x] $9.00 / month → `price_1TYZtXCXjNrpxtAHB3ZL5DlF` → `STRIPE_PRICE_CORE_MONTHLY`
+  - [x] $86.00 / year → `price_1TYZvPCXjNrpxtAHaFtBiyno` → `STRIPE_PRICE_CORE_ANNUAL`
+- [x] Create Product: "Lumière Studio"
+  - [x] $19.00 / month → `price_1TYZvpCXjNrpxtAHdNTzia9o` → `STRIPE_PRICE_STUDIO_MONTHLY`
+  - [x] $182.00 / year → `price_1TYZw2CXjNrpxtAHwAiJ3hEy` → `STRIPE_PRICE_STUDIO_ANNUAL`
+- [ ] Add all env vars to Vercel (see block below)
 - [ ] Register webhook: `https://www.lumiereledger.com/api/stripe/webhook`
 - [ ] Select events: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`, `invoice.upcoming`, `invoice.payment_succeeded`
 - [ ] Copy webhook signing secret → `STRIPE_WEBHOOK_SECRET`
@@ -280,7 +281,7 @@ Then build Plaid billing on top (P1–P10 in `PLAID_BILLING_SPEC.md`, ~4 hrs add
 - [ ] Copy secret key → `STRIPE_SECRET_KEY`
 - [ ] Set invoice finalization window to **3 days** (Stripe Dashboard → Billing → Invoice finalization) — required for Plaid line items
 - [ ] Enable automatic invoice emails (Stripe Settings → Billing → Customer emails → Successful payments + Failed payments + Send finalized invoices)
-- [ ] ✉️ Send me all four price IDs — then I build everything
+- [x] ✉️ Price IDs confirmed — locked 2026-05-18
 
 ---
 
