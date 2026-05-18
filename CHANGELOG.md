@@ -7,6 +7,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ## [v7.6.3] — 2026-05-18
 
+### Bank import source list cleanup
+
+#### Changed
+- **`web-react/src/pages/Import.jsx`** — Removed emoji icons from all bank labels. Dropdown now uses grouped optgroups: "★ Recommended" (Rocket Money), "Major Banks" (Chase, BofA, Capital One, Wells Fargo, Apple Card, USAA, US Bank), "Other" (Navy Federal, Wise, Universal / Generic). Rocket Money option includes inline note — "covers all accounts in one export". Updated tip text for Rocket Money. Fixed import button label — removed emoji-stripping regex that was no longer needed.
+
+---
+
+## [v7.6.2] — 2026-05-18
+
 ### Launch gate — validation test suite + RLS audit queries
 
 #### Added

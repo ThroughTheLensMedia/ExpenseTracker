@@ -1,6 +1,11 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.6.3', date: 'MAY 18, 2026', color: '#4ade80', items: [
+        '<strong>Bank Import — No More Emoji:</strong> Cleaned up the bank source list — all emoji icons removed, labels are plain text. The dropdown is now grouped: Rocket Money at the top (Recommended), major banks in the middle, niche banks at the bottom.',
+        '<strong>Rocket Money Recommended:</strong> Rocket Money now appears first with a clear note — it covers all your accounts in one export, regardless of which banks you use. If you have multiple banks, this is the easiest path.',
+        '<strong>Auto-Detect Still Works:</strong> Drop a CSV and the format is still auto-detected. The "Detected: Chase" confirmation message now shows clean bank names without icons.',
+    ]},
     { version: '7.6.1', date: 'MAY 17, 2026', color: '#a78bfa', items: [
         '<strong>First-Run Onboarding:</strong> New users now see a setup modal on first login — guides you through adding your business name, Gemini API key, and first transactions. "GO TO SETUP" drops you directly into the Profile tab. Fires once; dismissed via "Skip for now" and never shown again.',
         '<strong>Admin Panel Fix:</strong> Changing a user\'s subscription plan (e.g., to Lifetime) now immediately reflects in the Subscriptions panel. Previously, the PATCH succeeded on the backend but the panel didn\'t re-fetch — changes appeared to have no effect until a manual page refresh.',

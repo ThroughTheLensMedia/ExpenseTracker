@@ -5,21 +5,21 @@ import { useAuth, supabase } from '../components/AuthContext';
 import PlaidLink from '../components/PlaidLink';
 
 const BANK_PROFILES = [
-    { key: 'rocketmoney', label: '🟣 Rocket Money' },
-    { key: 'usbank', label: '🔵 US Bank' },
-    { key: 'chase', label: '🔵 Chase' },
-    { key: 'bankofamerica', label: '🔴 Bank of America' },
-    { key: 'wellsfargo', label: '🟡 Wells Fargo' },
-    { key: 'applecard', label: '⬛ Apple Card' },
-    { key: 'capitalone', label: '🔴 Capital One' },
-    { key: 'usaa', label: '🦅 USAA' },
-    { key: 'navyfcu', label: '⚓ Navy Federal' },
-    { key: 'wise', label: '🌍 Wise Bank' },
-    { key: 'universal', label: '✨ Universal / Generic' },
+    { key: 'rocketmoney', label: 'Rocket Money', group: 'recommended' },
+    { key: 'chase', label: 'Chase', group: 'major' },
+    { key: 'bankofamerica', label: 'Bank of America', group: 'major' },
+    { key: 'capitalone', label: 'Capital One', group: 'major' },
+    { key: 'wellsfargo', label: 'Wells Fargo', group: 'major' },
+    { key: 'applecard', label: 'Apple Card', group: 'major' },
+    { key: 'usaa', label: 'USAA', group: 'major' },
+    { key: 'usbank', label: 'US Bank', group: 'major' },
+    { key: 'navyfcu', label: 'Navy Federal', group: 'other' },
+    { key: 'wise', label: 'Wise', group: 'other' },
+    { key: 'universal', label: 'Universal / Generic', group: 'other' },
 ];
 
 const BANK_TIPS = {
-    rocketmoney: 'Export from Rocket Money → Settings → Export. Positive = expense, negative = income.',
+    rocketmoney: 'Covers all your accounts in one export — checking, credit cards, and more — regardless of which banks you use. Export from Rocket Money → Settings → Export Transactions.',
     usbank: 'Download CSV from US Bank online → Accounts → Download. Personal accounts use a single Amount column.',
     chase: 'Download from Chase → Account Activity → Download. Negative amounts = expenses.',
     bankofamerica: 'Download from BofA → Account Details → Download. Negative amounts = expenses.',
@@ -409,7 +409,21 @@ export default function Import() {
                         {detectedSource && <span className="tag ok" style={{ fontSize: '10px', padding: '2px 8px' }}>Auto-detected</span>}
                     </div>
                     <select value={importSource} onChange={e => setImportSource(e.target.value)} style={{ width: '100%', fontSize: '14px', padding: '12px' }}>
-                        {BANK_PROFILES.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
+                        <optgroup label="★ Recommended">
+                            {BANK_PROFILES.filter(p => p.group === 'recommended').map(p => (
+                                <option key={p.key} value={p.key}>{p.label} — covers all accounts in one export</option>
+                            ))}
+                        </optgroup>
+                        <optgroup label="Major Banks">
+                            {BANK_PROFILES.filter(p => p.group === 'major').map(p => (
+                                <option key={p.key} value={p.key}>{p.label}</option>
+                            ))}
+                        </optgroup>
+                        <optgroup label="Other">
+                            {BANK_PROFILES.filter(p => p.group === 'other').map(p => (
+                                <option key={p.key} value={p.key}>{p.label}</option>
+                            ))}
+                        </optgroup>
                     </select>
                     <div className="muted" style={{ marginTop: '10px', fontSize: '12px', lineHeight: 1.6, background: 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '10px' }}>
                         💡 <strong>Pro Tip:</strong> {BANK_TIPS[importSource] || 'Select your bank above.'}
@@ -436,7 +450,7 @@ export default function Import() {
 
                 {pendingFile && !rmMsg.startsWith('✅') && !rmMsg.startsWith('Importing') && (
                     <button className="btn glow-blue" style={{ width: '100%', marginTop: '20px', fontSize: '16px', padding: '16px', fontWeight: 900 }} onClick={() => runImport(pendingFile, importSource)}>
-                        🚀 Start Import from {BANK_PROFILES.find(p => p.key === importSource)?.label?.replace(/^.\s/, '') || importSource}
+                        🚀 Start Import from {BANK_PROFILES.find(p => p.key === importSource)?.label || importSource}
                     </button>
                 )}
 
