@@ -632,7 +632,7 @@ PURCHASE vs PAYMENT DISTINCTION (critical):
         // Supports multi-step requests (e.g. look up 2 invoices then write 2 updates = 4 rounds)
         // result is GenerateContentResult; text/functionCalls live on result.response
         const pendingActions = [];
-        for (let round = 0; round < 6; round++) {
+        for (let round = 0; round < 10; round++) {
             const calls = result.response.functionCalls?.() ?? [];
             if (calls.length === 0) break;
 
@@ -652,7 +652,12 @@ PURCHASE vs PAYMENT DISTINCTION (critical):
             result = await chat.sendMessage(toolResults);
         }
 
-        let text = result.response.text().trim();
+        let text = '';
+        try {
+            text = result.response.text().trim();
+        } catch (_) {
+            // Gemini throws when the final response contains only function calls (no text part)
+        }
 
         // Gemini sometimes returns empty text after queuing a pending action — synthesize a reply
         if (!text && pendingActions.length > 0) {
