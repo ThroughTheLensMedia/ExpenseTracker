@@ -111,6 +111,15 @@ export default function Backup() {
                 ]);
                 setAllExpenses(exps);
                 setRules(rls.rules || []);
+            } else if (tab === 'saas' && isAdmin) {
+                const [subs, codes, dStats] = await Promise.all([
+                    apiGet('/admin/subscriptions').catch(() => []),
+                    apiGet('/admin/beta-codes').catch(() => []),
+                    apiGet('/admin/daily-report').catch(() => ({ data: [] }))
+                ]);
+                setAllSubscriptions(subs || []);
+                setBetaCodes(codes || []);
+                setDailyStats(dStats.data || []);
             }
         }
     };
