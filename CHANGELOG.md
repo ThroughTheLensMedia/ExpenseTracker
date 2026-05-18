@@ -5,6 +5,20 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.6.0] — 2026-05-17
+
+### Auth hardening — Beta code gate + confirm password
+
+#### Added
+- **`web-react/src/App.jsx`** — `BetaCodeGate` component: authenticated users with no subscription record (Google OAuth users who skipped the code step) now hit a full-screen code entry page instead of a broken empty dashboard. Calls `POST /api/subscription/redeem`, then refreshes subscription in AuthContext. Includes "Sign out and use a different account" link.
+- **`web-react/src/components/AuthContext.jsx`** — `subscriptionReady` boolean state: `false` until `fetchSubscription` resolves (success or error). Exported in context value. Resets to `false` on sign-out. Prevents the gate from flickering during initial load before the status check completes.
+- **`web-react/src/pages/Login.jsx`** — Confirm Password field added to the email/password signup form. Inline mismatch indicator (red border + message) shown live as user types. Validation fires before `signup()` is called.
+
+#### Fixed
+- Google OAuth users with no subscription record now see the code gate instead of a broken app shell.
+
+---
+
 ## [v7.5.9] — 2026-05-17
 
 ### Fast Receipt Processing — Scan at top, Gemini Vision auto-fill

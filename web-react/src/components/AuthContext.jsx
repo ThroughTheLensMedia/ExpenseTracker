@@ -28,6 +28,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [session, setSession] = useState(null);
   const [subscription, setSubscription] = useState(null);
+  const [subscriptionReady, setSubscriptionReady] = useState(false);
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -60,6 +61,8 @@ export function AuthProvider({ children }) {
     } catch (e) {
       console.error("Failed to fetch profile data:", e);
       subscriptionFetchedRef.current = false; // allow retry on next auth event
+    } finally {
+      setSubscriptionReady(true);
     }
   };
 
@@ -100,9 +103,10 @@ export function AuthProvider({ children }) {
     // 2. Auth State Listener
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (_event === 'SIGNED_OUT') {
-        // Reset ref so the next sign-in triggers a fresh fetch
+        // Reset ref and ready flag so the next sign-in triggers a fresh fetch
         subscriptionFetchedRef.current = false;
         setSubscription(null);
+        setSubscriptionReady(false);
         setSettings(null);
       }
       setSession(session);
@@ -183,6 +187,7 @@ export function AuthProvider({ children }) {
     user,
     session,
     subscription,
+    subscriptionReady,
     settings,
     loading,
     login,

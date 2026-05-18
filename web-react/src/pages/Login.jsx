@@ -18,6 +18,7 @@ export default function Login() {
   
   const [email, setEmail] = useState(params.get('email') || '');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [betaCode, setBetaCode] = useState(params.get('code') || '');
   
   const [loading, setLoading] = useState(false);
@@ -35,6 +36,8 @@ export default function Login() {
         navigate('/');
       } else {
         if (!betaCode) throw new Error("A valid Beta Code is required to create an account.");
+        if (!confirmPassword) throw new Error("Please confirm your password.");
+        if (password !== confirmPassword) throw new Error("Passwords do not match.");
         await signup(email, password);
         setSuccess("Ledger account created! Check your email to confirm, then use your code to activate.");
         setIsLogin(true);
@@ -137,15 +140,37 @@ export default function Login() {
 
           <div style={{ textAlign: 'left' }}>
             <label className="muted" style={{ fontSize: '12px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Password</label>
-            <input 
-              type="password" 
-              value={password} 
-              onChange={(e) => setPassword(e.target.value)} 
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               placeholder=" •••••••••••"
               style={{ marginTop: '8px', width: '100%' }}
               required
             />
           </div>
+
+          {!isLogin && (
+            <div style={{ textAlign: 'left' }}>
+              <label className="muted" style={{ fontSize: '12px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Confirm Password</label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder=" •••••••••••"
+                style={{
+                  marginTop: '8px', width: '100%',
+                  borderColor: confirmPassword && password !== confirmPassword ? '#ef4444' : undefined
+                }}
+                required
+              />
+              {confirmPassword && password !== confirmPassword && (
+                <div style={{ marginTop: '6px', fontSize: '11px', color: '#ef4444', fontWeight: 700 }}>
+                  Passwords do not match
+                </div>
+              )}
+            </div>
+          )}
 
           {error && (
             <div className="tag bad" style={{ padding: '12px', borderRadius: '8px', fontSize: '13px' }}>

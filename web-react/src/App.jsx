@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useActivityPulse } from "./hooks/useActivityPulse";
 import { useLeadsRealtime } from "./hooks/useLeadsRealtime";
 import { BrowserRouter as Router, Routes, Route, NavLink, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './components/AuthContext';
+import { AuthProvider, useAuth, supabase } from './components/AuthContext';
 import { ModalProvider } from './components/ModalContext';
 
 // Code-split every page — only load the chunk when the user navigates to it
@@ -58,11 +58,84 @@ function PrivateRoute({ children }) {
   return children;
 }
 
+// ── Beta Code Gate Component ─────────────────────────────────────────────────
+// Shown to authenticated users who have no subscription record.
+// Handles both: Google OAuth users who skipped the code step, and any
+// edge case where a subscription record is missing post-signup.
+function BetaCodeGate({ email, onSuccess, onLogout }) {
+  const [code, setCode] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleRedeem = async (e) => {
+    e.preventDefault();
+    if (!code.trim()) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/subscription/redeem', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
+        body: JSON.stringify({ code: code.trim().toUpperCase() })
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || json.message || 'Invalid code');
+      onSuccess(); // refreshes subscription in AuthContext → gate disappears
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{
+      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'radial-gradient(circle at top right, #1e293b, #0f172a)', padding: '20px'
+    }}>
+      <div className="card glass" style={{ maxWidth: '440px', width: '100%', padding: '50px 40px', textAlign: 'center' }}>
+        <img src="/icon.png" alt="Lumière Ledger" style={{ height: '80px', borderRadius: '20px', marginBottom: '24px', filter: 'drop-shadow(0 0 20px rgba(249,115,22,0.2))' }} />
+        <h2 style={{ margin: '0 0 8px', fontWeight: 900, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Invite Code Required</h2>
+        <p className="muted" style={{ fontSize: '13px', marginBottom: '28px', lineHeight: 1.6 }}>
+          Signed in as <strong style={{ color: 'white' }}>{email}</strong>.<br />
+          Enter your invite code to activate ledger access.
+        </p>
+        <form onSubmit={handleRedeem} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <input
+            type="text"
+            value={code}
+            onChange={e => setCode(e.target.value.toUpperCase())}
+            placeholder="ENTER YOUR 8-DIGIT CODE"
+            style={{ fontWeight: 900, letterSpacing: '0.15em', textAlign: 'center', borderColor: 'var(--accent)', fontSize: '16px', padding: '14px' }}
+            autoFocus
+          />
+          {error && (
+            <div className="tag bad" style={{ padding: '10px', borderRadius: '8px', fontSize: '13px' }}>{error}</div>
+          )}
+          <button type="submit" className="btn primary glow-orange" style={{ padding: '16px', fontSize: '15px', borderRadius: '12px' }} disabled={loading}>
+            {loading ? 'ACTIVATING...' : 'ACTIVATE ACCESS'}
+          </button>
+        </form>
+        <button
+          onClick={onLogout}
+          style={{ marginTop: '20px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', fontSize: '12px', fontWeight: 700 }}
+        >
+          Sign out and use a different account
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function AppContent() {
   useActivityPulse();
   const { newLeadCount, clearBadge } = useLeadsRealtime();
   const [apiStatus, setApiStatus] = useState('Checking...');
-  const { user, loading, logout, subscription, settings } = useAuth();
+  const { user, loading, logout, subscription, subscriptionReady, settings, refreshSubscription } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [showRedeem, setShowRedeem] = useState(false);
@@ -75,7 +148,7 @@ function AppContent() {
   // --- Version Check Hook ---
   // DEPLOY SOP: update CURRENT_VERSION here AND web-react/public/version.json on every release.
   useEffect(() => {
-    const CURRENT_VERSION = "7.5.9";
+    const CURRENT_VERSION = "7.6.0";
 
     // What's New: show button if user hasn't dismissed it for this version
     const seen = localStorage.getItem('ll_whats_new_seen');
@@ -96,7 +169,7 @@ function AppContent() {
   }, [user]);
 
   const handleWhatsNewClick = () => {
-    const CURRENT_VERSION = "7.5.9";
+    const CURRENT_VERSION = "7.6.0";
     localStorage.setItem('ll_whats_new_seen', CURRENT_VERSION);
     setShowWhatsNew(false);
     setShowChangelogModal(true);
@@ -168,6 +241,13 @@ function AppContent() {
         </Routes>
       </Suspense>
     );
+  }
+
+  // ── Beta Code Gate ────────────────────────────────────────────────────────
+  // Fires after auth is confirmed but subscription check is complete with no record.
+  // Catches Google OAuth users who signed in without entering an invite code.
+  if (subscriptionReady && !subscription && user?.email !== 'joshua.deuermeyer@gmail.com') {
+    return <BetaCodeGate email={user.email} onSuccess={refreshSubscription} onLogout={logout} />;
   }
 
   return (
@@ -288,7 +368,7 @@ function AppContent() {
                   letterSpacing: '0.08em', marginBottom: '4px',
                 }}
               >
-                ✦ WHAT'S NEW IN v7.5.9
+                ✦ WHAT'S NEW IN v7.6.0
               </button>
             )}
 
