@@ -2,6 +2,7 @@ const express = require("express");
 const multer = require("multer");
 const fileType = require("file-type");
 const { supabase } = require("../db");
+const { getGeminiModel } = require("../utils/gemini");
 
 const router = express.Router();
 
@@ -54,6 +55,63 @@ function getStoragePath(filename) {
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
+
+/**
+ * POST /receipts/extract
+ * Sends an uploaded image or PDF to Gemini Vision and returns extracted
+ * receipt fields: vendor, amount, date, category, notes.
+ * Uses the user's own BYOB Gemini API key from their settings row.
+ * This route is intentionally before /:table/:id so Express doesn't treat
+ * "extract" as a table name.
+ */
+router.post("/extract", upload.single("file"), async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ error: "No file provided" });
+
+        const { data: settings } = await req.sb
+            .from('settings').select('gemini_api_key').eq('user_id', req.user.id).maybeSingle();
+
+        const apiKey = settings?.gemini_api_key;
+        if (!apiKey) return res.status(400).json({ error: "no_key" });
+
+        const model = await getGeminiModel(apiKey);
+
+        const today = new Date().toISOString().slice(0, 10);
+        const prompt = `You are a receipt parser for a professional photographer's expense tracker.
+Extract these fields from the receipt image or PDF:
+- vendor: business name only (no address, no phone)
+- amount: total amount charged as a positive number (dollars.cents)
+- date: transaction date in YYYY-MM-DD format (use "${today}" if not visible)
+- category: best match from — Advertising, Auto & Transport, Bills & Utilities, Camera & Equipment, Clothing, Dining & Drinks, Education, Entertainment, Gas & Fuel, Groceries, Health & Medical, Home & Garden, Insurance (Business), Insurance (Personal), Office Supplies, Parking & Tolls, Personal Care, Pets, Photography, Professional Services, Rent / Lease, Repairs & Maintenance, Shopping, Software & Tech, Subscriptions, Supplies, Taxes & Licenses, Travel & Vacation, Personal Expense
+- notes: one short phrase about what was purchased (10 words max)
+
+Return ONLY a valid JSON object. Use null for any field you cannot read.
+Example: {"vendor":"Best Buy","amount":249.99,"date":"${today}","category":"Camera & Equipment","notes":"Memory cards and lens filter"}`;
+
+        const imagePart = {
+            inlineData: {
+                data: req.file.buffer.toString('base64'),
+                mimeType: req.file.mimetype
+            }
+        };
+
+        const result = await model.generateContent([prompt, imagePart]);
+        const raw = result.response.text().trim().replace(/```json|```/g, '').trim();
+
+        let extracted = {};
+        try {
+            extracted = JSON.parse(raw);
+        } catch (_) {
+            console.error('[Extract] JSON parse failed. Raw:', raw.slice(0, 300));
+            return res.status(500).json({ error: "Could not read receipt data — try a clearer photo." });
+        }
+
+        res.json(extracted);
+    } catch (e) {
+        console.error('[Extract] Error:', e.message);
+        res.status(500).json({ error: e.message });
+    }
+});
 
 // POST /receipts/snap (Quick capture for PWA/Dashboard)
 router.post("/snap", upload.single("file"), async (req, res) => {

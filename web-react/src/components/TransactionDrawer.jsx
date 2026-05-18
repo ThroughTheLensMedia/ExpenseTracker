@@ -1,14 +1,47 @@
 import React, { useReducer, useEffect } from 'react';
+import { jsPDF } from 'jspdf';
 import { apiPatch, apiPost, apiUpload, apiDelete } from '../api';
 import { useModal } from './ModalContext.jsx';
 import CategorySelect from './CategorySelect.jsx';
 import { ALL_CATEGORIES } from '../constants/categories.js';
+
+// ─── Image → PDF conversion (runs client-side, no server round-trip) ─────────
+// Scales the image to fit A4 width (595pt), preserves aspect ratio.
+// Returns a Blob with type application/pdf.
+async function imageToPdf(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const MAX_PT = 595; // A4 width in points
+                const ratio = Math.min(MAX_PT / img.width, MAX_PT / img.height);
+                const w = img.width * ratio;
+                const h = img.height * ratio;
+                const pdf = new jsPDF({
+                    orientation: w >= h ? 'landscape' : 'portrait',
+                    unit: 'pt',
+                    format: [w, h],
+                });
+                pdf.addImage(e.target.result, 'JPEG', 0, 0, w, h);
+                resolve(pdf.output('blob'));
+            };
+            img.onerror = reject;
+            img.src = e.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+// ─── State ───────────────────────────────────────────────────────────────────
 
 const initialState = {
     date: new Date().toISOString().slice(0, 10),
     amount: '', vendor: '', category: '', taxBucket: '',
     bizPct: 100, deduct: false, isSub: false, notes: '', receiptLink: '',
     receiptFile: null, source: 'manual', msg: '', savedId: null, saving: false,
+    scanning: false, scanMsg: '',
 };
 
 function reducer(state, action) {
@@ -16,7 +49,6 @@ function reducer(state, action) {
         case 'SET_FIELD':
             return { ...state, [action.field]: action.value };
         case 'LOAD_TRANSACTION':
-            // New transaction — keep defaults (empty fields, no pre-filled zeros)
             if (!action.tx.id) return initialState;
             return {
                 ...initialState,
@@ -44,9 +76,8 @@ function reducer(state, action) {
     }
 }
 
-// Human-readable display names for known source keys.
-// This is a presentation-only map — never drives business logic.
-// Users who have sources not in this map will see a capitalized/formatted version of their key.
+// ─── Source label helpers ─────────────────────────────────────────────────────
+
 const SOURCE_LABELS = {
     manual: '➕ Manual Entry',
     plaid: '🏦 Plaid (Auto-Sync)',
@@ -66,16 +97,17 @@ const SOURCE_LABELS = {
     amex_blue: '🔵 Amex Blue Cash',
 };
 
-// Formats an unknown source key into a readable label (e.g. "my_bank_csv" → "My Bank Csv")
 function formatSourceKey(key) {
     return key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function TransactionDrawer({ transaction, onClose, onSave, onDelete, userSources = [] }) {
     const modal = useModal();
     const [state, dispatch] = useReducer(reducer, initialState);
     const { date, amount, vendor, category, taxBucket, bizPct, deduct, isSub, notes,
-            receiptLink, receiptFile, source, msg, savedId } = state;
+            receiptLink, receiptFile, source, msg, savedId, scanning, scanMsg } = state;
 
     const field = (name, value) => dispatch({ type: 'SET_FIELD', field: name, value });
 
@@ -85,8 +117,54 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
 
     const effectiveId = savedId || transaction?.id;
 
+    // ── Receipt scan / auto-extract ──────────────────────────────────────────
+    const handleScan = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        e.target.value = ''; // allow re-selecting the same file
+
+        field('scanning', true);
+        field('scanMsg', '');
+
+        try {
+            // Send to Gemini Vision via extract endpoint
+            const fd = new FormData();
+            fd.append('file', file);
+            const extracted = await apiUpload('/receipts/extract', fd);
+
+            // Pre-fill form fields from extraction result
+            if (extracted.vendor)            field('vendor', extracted.vendor);
+            if (extracted.amount != null)    field('amount', String(extracted.amount));
+            if (extracted.date)              field('date', extracted.date);
+            if (extracted.category)          field('category', extracted.category);
+            if (extracted.notes && !notes)   field('notes', extracted.notes);
+
+            // Convert image to PDF for storage (PDFs pass through unchanged)
+            let storageFile = file;
+            if (!file.type.includes('pdf')) {
+                const pdfBlob = await imageToPdf(file);
+                const baseName = file.name.replace(/\.[^.]+$/, '');
+                storageFile = new File([pdfBlob], `${baseName}.pdf`, { type: 'application/pdf' });
+            }
+            field('receiptFile', storageFile);
+            field('scanMsg', '✓ Fields pre-filled — review and save.');
+
+        } catch (err) {
+            const msg = err.message || '';
+            if (msg === 'no_key' || msg.includes('no_key')) {
+                // No Gemini key — still attach the original file without extraction
+                field('receiptFile', file);
+                field('scanMsg', 'No Gemini key set in Control Center — file attached without auto-fill.');
+            } else {
+                field('scanMsg', `Scan failed: ${msg}`);
+            }
+        } finally {
+            field('scanning', false);
+        }
+    };
+
+    // ── Save transaction + optional receipt upload ───────────────────────────
     const handleSave = async () => {
-        // Guard against double-taps on mobile
         if (state.saving) return;
         dispatch({ type: 'SET_FIELD', field: 'saving', value: true });
         dispatch({ type: 'SET_MSG', value: 'Saving...' });
@@ -111,33 +189,47 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
             }
 
             if (receiptFile && !receiptLink) {
-                 dispatch({ type: 'SET_MSG', value: 'Uploading receipt...' });
-                 const fd = new FormData();
-                 fd.append('file', receiptFile);
-                 try {
-                     const withReceipt = await apiUpload(`/receipts/expenses/${updated.id}`, fd);
-                     updated = withReceipt;
-                     dispatch({ type: 'RECEIPT_UPLOADED', link: updated.receipt_link });
-                     dispatch({ type: 'SET_MSG', value: 'Saved with receipt.' });
-                 } catch (err) {
-                     const errMsg = err?.message || String(err);
-                     dispatch({ type: 'SET_MSG', value: `Saved, but receipt upload failed: ${errMsg}` });
-                 }
+                dispatch({ type: 'SET_MSG', value: 'Uploading receipt...' });
+                const fd = new FormData();
+                fd.append('file', receiptFile);
+                try {
+                    const withReceipt = await apiUpload(`/receipts/expenses/${updated.id}`, fd);
+                    updated = withReceipt;
+                    dispatch({ type: 'RECEIPT_UPLOADED', link: updated.receipt_link });
+                    dispatch({ type: 'SET_MSG', value: 'Saved with receipt.' });
+                } catch (err) {
+                    dispatch({ type: 'SET_MSG', value: `Saved, but receipt upload failed: ${err?.message || err}` });
+                }
             } else {
-                 if (!transaction?.id && !savedId) {
-                     dispatch({ type: 'SAVED_NEW', id: updated.id });
-                 } else {
-                     dispatch({ type: 'SET_MSG', value: 'Saved.' });
-                 }
+                if (!transaction?.id && !savedId) {
+                    dispatch({ type: 'SAVED_NEW', id: updated.id });
+                } else {
+                    dispatch({ type: 'SET_MSG', value: 'Saved.' });
+                }
             }
-            // Call onSave AFTER everything (including receipt upload) is complete
+
             if (onSave) onSave(updated);
             onClose();
         } catch (err) {
-            const errMsg = err?.message || String(err);
-            dispatch({ type: 'SET_MSG', value: `Save failed: ${errMsg}` });
+            dispatch({ type: 'SET_MSG', value: `Save failed: ${err?.message || err}` });
         } finally {
             dispatch({ type: 'SET_FIELD', field: 'saving', value: false });
+        }
+    };
+
+    // ── Manual receipt upload (for already-saved transactions) ───────────────
+    const handleUpload = async () => {
+        if (!receiptFile) { dispatch({ type: 'SET_MSG', value: 'Choose a file first.' }); return; }
+        if (!effectiveId) { dispatch({ type: 'SET_MSG', value: 'Save the transaction first.' }); return; }
+        dispatch({ type: 'SET_MSG', value: 'Uploading...' });
+        try {
+            const fd = new FormData();
+            fd.append('file', receiptFile);
+            const updated = await apiUpload(`/receipts/expenses/${effectiveId}`, fd);
+            dispatch({ type: 'RECEIPT_UPLOADED', link: updated.receipt_link });
+            if (onSave) onSave(updated);
+        } catch (err) {
+            dispatch({ type: 'SET_MSG', value: `Upload failed: ${err.message}` });
         }
     };
 
@@ -155,38 +247,20 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
         }
     };
 
-    const handleUpload = async () => {
-        if (!receiptFile) { dispatch({ type: 'SET_MSG', value: 'Choose a file first.' }); return; }
-        if (!effectiveId) { dispatch({ type: 'SET_MSG', value: 'Save the transaction first before uploading.' }); return; }
-        dispatch({ type: 'SET_MSG', value: 'Uploading...' });
-        try {
-            const fd = new FormData();
-            fd.append('file', receiptFile);
-            const updated = await apiUpload(`/receipts/expenses/${effectiveId}`, fd);
-            dispatch({ type: 'RECEIPT_UPLOADED', link: updated.receipt_link });
-            if (onSave) onSave(updated);
-        } catch (err) {
-            dispatch({ type: 'SET_MSG', value: `Upload failed: ${err.message}` });
-        }
-    };
-
     if (!transaction) return null;
+
+    const hasReceipt = !!(receiptFile || receiptLink);
 
     return (
         <div className="drawer" onClick={(e) => { if (e.target.className === 'drawer') onClose(); }}>
             <div className="drawer-panel" style={{ padding: 0, display: 'flex', flexDirection: 'column' }}>
+
+                {/* ── Sticky header ── */}
                 <div style={{
-                    position: 'sticky',
-                    top: 0,
-                    zIndex: 100,
-                    background: 'rgba(15, 26, 51, 1)',
-                    backdropFilter: 'blur(10px)',
-                    padding: '20px 24px',
-                    borderBottom: '1px solid var(--line)',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    gap: '10px',
-                    alignItems: 'center'
+                    position: 'sticky', top: 0, zIndex: 100,
+                    background: 'rgba(15, 26, 51, 1)', backdropFilter: 'blur(10px)',
+                    padding: '20px 24px', borderBottom: '1px solid var(--line)',
+                    display: 'flex', justifyContent: 'space-between', gap: '10px', alignItems: 'center'
                 }}>
                     <h3 style={{ margin: 0 }}>{effectiveId ? 'Edit Transaction' : 'New Transaction'}</h3>
                     <button className="btn secondary" onClick={onClose}>Close</button>
@@ -194,6 +268,72 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
 
                 <div className="drawer-content" style={{ padding: '24px', flex: 1, overflowY: 'auto' }}>
 
+                    {/* ── Receipt scanner (TOP) ──────────────────────── */}
+                    <div style={{
+                        marginBottom: '20px', padding: '14px 16px',
+                        background: 'rgba(255,255,255,0.03)', borderRadius: '10px',
+                        border: '1px solid var(--line)'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <small className="muted">Receipt</small>
+                            {hasReceipt && !scanning && (
+                                <span style={{ color: '#4ade80', fontSize: '12px' }}>✓ Attached</span>
+                            )}
+                        </div>
+
+                        {scanning ? (
+                            <div style={{ marginTop: '10px', color: 'var(--muted)', fontSize: '13px' }}>
+                                🔍 Scanning receipt…
+                            </div>
+                        ) : hasReceipt ? (
+                            <div style={{ marginTop: '10px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                <span style={{ fontSize: '12px', color: 'var(--muted)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {receiptFile ? receiptFile.name : receiptLink}
+                                </span>
+                                <button
+                                    className="btn secondary"
+                                    style={{ fontSize: '12px', padding: '4px 10px', flexShrink: 0 }}
+                                    onClick={() => { field('receiptFile', null); field('receiptLink', ''); field('scanMsg', ''); }}
+                                >
+                                    Remove
+                                </button>
+                            </div>
+                        ) : (
+                            <>
+                                <label style={{
+                                    display: 'flex', alignItems: 'center', gap: '12px',
+                                    cursor: 'pointer', marginTop: '10px', padding: '12px',
+                                    borderRadius: '8px', background: 'rgba(255,255,255,0.04)',
+                                    border: '1px dashed rgba(255,255,255,0.15)'
+                                }}>
+                                    <span style={{ fontSize: '22px' }}>📷</span>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ fontWeight: 600, fontSize: '14px' }}>Scan or Upload Receipt</div>
+                                        <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>Fields auto-fill · Saved as PDF</div>
+                                    </div>
+                                    {/* No capture attr — iOS shows native "Scan Documents" option in picker */}
+                                    <input type="file" accept="image/*,.pdf" style={{ display: 'none' }} onChange={handleScan} />
+                                </label>
+                                <input
+                                    value={receiptLink}
+                                    onChange={e => field('receiptLink', e.target.value)}
+                                    placeholder="Or paste a link (Google Drive, etc.)"
+                                    style={{ marginTop: '8px', fontSize: '12px' }}
+                                />
+                            </>
+                        )}
+
+                        {scanMsg && (
+                            <div style={{
+                                marginTop: '8px', fontSize: '12px',
+                                color: scanMsg.startsWith('✓') ? '#4ade80' : '#f59e0b'
+                            }}>
+                                {scanMsg}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* ── Date + Amount ── */}
                     <div className="row two">
                         <div>
                             <small className="muted">Date</small>
@@ -217,6 +357,7 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
                         </div>
                     </div>
 
+                    {/* ── Vendor + Category ── */}
                     <div className="row" style={{ marginTop: '10px' }}>
                         <div>
                             <small className="muted">Vendor</small>
@@ -251,6 +392,7 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
                         </div>
                     </div>
 
+                    {/* ── Tax bucket + Business use % ── */}
                     <div className="row two" style={{ marginTop: '10px' }}>
                         <div>
                             <small className="muted">Tax bucket</small>
@@ -279,6 +421,7 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
                         </div>
                     </div>
 
+                    {/* ── Checkboxes ── */}
                     <div className="row" style={{ marginTop: '10px', display: 'flex', gap: '10px', flexWrap: 'nowrap', alignItems: 'center' }}>
                         <label className="tag" style={{ display: 'flex', gap: '8px', alignItems: 'center', flex: 1, minWidth: 0 }}>
                             <input type="checkbox" checked={deduct} onChange={e => field('deduct', e.target.checked)} style={{ width: 'auto', margin: 0, flexShrink: 0 }} />
@@ -292,6 +435,7 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
                         </label>
                     </div>
 
+                    {/* ── Notes ── */}
                     <div className="row" style={{ marginTop: '10px' }}>
                         <div>
                             <small className="muted">Notes</small>
@@ -299,22 +443,12 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
                         </div>
                     </div>
 
-                    <div className="row" style={{ marginTop: '10px' }}>
-                        <div>
-                            <small className="muted">Receipt link - Google Drive, etc. (optional override)</small>
-                            <input value={receiptLink} onChange={e => field('receiptLink', e.target.value)} placeholder="https://..." />
-                        </div>
-                    </div>
-
+                    {/* ── Account / Source ── */}
                     <div className="row" style={{ marginTop: '10px' }}>
                         <div>
                             <small className="muted">Account / Source</small>
                             <select value={source} onChange={e => field('source', e.target.value)} style={{ width: '100%', padding: '8px' }}>
-                                {/* Manual entry is always available */}
                                 <option value="manual">{SOURCE_LABELS.manual}</option>
-
-                                {/* Dynamically built from this user's own imported data.
-                                    Each user sees only the accounts that exist in their ledger. */}
                                 {userSources
                                     .filter(s => s && s !== 'manual')
                                     .map(s => (
@@ -323,9 +457,6 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
                                         </option>
                                     ))
                                 }
-
-                                {/* If the current transaction has a source not yet in the user's list
-                                    (e.g. editing an old record), surface it so the field doesn't go blank */}
                                 {source && source !== 'manual' && !userSources.includes(source) && (
                                     <option value={source}>
                                         {SOURCE_LABELS[source] || formatSourceKey(source)}
@@ -340,19 +471,12 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
                         </div>
                     </div>
 
-                    <div className="row" style={{ marginTop: '10px' }}>
-                        <div>
-                            <small className="muted">Upload receipt</small>
-                            <input type="file" accept="image/*,.pdf" onChange={e => field('receiptFile', e.target.files[0])} />
-                            <div className="muted" style={{ marginTop: '6px' }}>Choose from your photo library, files, or email attachments. Auto-links to this transaction.</div>
-                        </div>
-                    </div>
-
+                    {/* ── Controls ── */}
                     <div className="controls" style={{ marginTop: '12px' }}>
                         <button className="btn" onClick={handleSave} disabled={state.saving} style={{ opacity: state.saving ? 0.5 : 1 }}>
                             {state.saving ? 'Saving...' : 'Save'}
                         </button>
-                        {effectiveId && (
+                        {effectiveId && receiptFile && !receiptLink && (
                             <button className="btn secondary" onClick={handleUpload}>Upload receipt</button>
                         )}
                         {effectiveId && (

@@ -1,6 +1,12 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.5.9', date: 'MAY 17, 2026', color: '#4ade80', items: [
+        '<strong>Fast Receipt Processing:</strong> The "Scan or Upload Receipt" button now appears at the <strong>top</strong> of the transaction form — before any other fields. Point your camera at a receipt (or pick a file), and Gemini Vision auto-fills vendor, amount, date, category, and notes.',
+        '<strong>PDF Storage:</strong> Images are automatically converted to PDF client-side before saving — smaller files, consistent format, no extra steps.',
+        '<strong>iOS Scan Documents:</strong> On iPhone or iPad, the file picker surfaces Apple\'s native "Scan Documents" option — no special camera mode required. Works the same on desktop with standard file upload.',
+        '<strong>No Key, No Problem:</strong> If you haven\'t set a Gemini key yet, the file still attaches — you just fill in the fields manually. Set your key in Control Center → Intelligence to enable auto-fill.',
+    ]},
     { version: '7.5.8', date: 'MAY 17, 2026', color: '#38bdf8', items: [
         '<strong>Import Staleness Badge — Calendar Fix:</strong> "Updated today" on the Transaction Ledger now means the actual calendar date matches today — not "within the last 24 hours." An import at 10 PM last night correctly shows "1 day since last import" this morning.',
         '<strong>Import Staleness Badge — Bank Import Portal:</strong> The same green/yellow/red freshness badge now appears on the Bank Data Import screen so you can see how stale your data is before deciding whether to run a new import.',

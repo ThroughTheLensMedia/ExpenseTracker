@@ -62,9 +62,20 @@ Source of truth for all sprint work, security status, and product phases. Replac
 |------|-------|
 | Maps Autopilot | In progress — Google Maps A→B→A mileage round-trip |
 | Stripe billing | Checkout, webhook, subscription lifecycle. Deferred until launch gate complete. |
-| Fast Receipt Processing | Drag-drop + Vision model auto-extract on transaction create |
 | User-Defined Accounts (Phase 5) | Replace dynamic source dropdown with user-managed named accounts |
 | Brain — Chart/Analysis Popup (Phase 2 Step 5) | Chart.js modal + Download CSV when user requests visual analysis |
+
+---
+
+## ✅ Completed — Fast Receipt Processing (v7.5.9, 2026-05-17)
+
+| Item | Notes |
+|------|-------|
+| Receipt scanner at top of transaction form | `TransactionDrawer.jsx` — scan card is first element in form |
+| Gemini Vision auto-extraction | `POST /api/receipts/extract` — vendor, amount, date, category, notes returned |
+| Image → PDF client-side conversion | jsPDF used in browser before storage — no server round-trip |
+| iOS "Scan Documents" support | No `capture` attr on file input — iOS native scanner surfaces automatically |
+| No-key graceful fallback | File attaches without extraction if Gemini key is not configured |
 
 ---
 
@@ -147,25 +158,25 @@ Source of truth for all sprint work, security status, and product phases. Replac
 
 ## 🧠 Phase 2: AI Agentic Capabilities — Remaining
 
-- [ ] **Step 4 — Edit Existing Transactions via AI**
-  - `update_transaction(id, fields)` write tool — modify vendor, category, notes, date on existing ledger entries
-  - Brain searches first, presents the record for confirmation, then patches on approve
-  - Enables: "rename these Venmo transactions", "recategorize my Michelle payment", "fix the vendor name on that $800"
+> **Status: Paused** — Brain is stable. Resuming after Fast Receipt Processing ships. Only easy bug fixes in the meantime.
 
-- [ ] **Step 5 — Invoice Creation** (next up)
+- [x] **Step 4 — Edit Existing Transactions via AI** ✅ shipped v7.3.9
+  - `update_transaction(id, fields)` — rename vendor, change category, fix notes/date/amount
+  - Confirmation card with before/after diff
+
+- [ ] **Step 5 — Invoice Creation** (deferred)
   - `create_invoice_draft(client_name, line_items, due_date)` write tool
   - Returns pending confirmation card with line item summary before creating
 
-- [ ] **Step 5 — Brain Chart/Analysis Output Popup**
+- [ ] **Step 6 — Brain Chart/Analysis Output Popup** (deferred)
   - Structured chart data returned alongside text when user requests visual analysis
   - AssistantSidebar renders Chart.js modal with Download CSV
-  - Triggered by: "show me a breakdown", "chart my spending", "visualize my categories"
 
 ---
 
 ## 📷 Phase 3: Computer Vision & RAG
 
-- [ ] Fast Receipt Processing — drag-drop → Vision model extracts vendor + amount before save
+- [x] **Fast Receipt Processing** ✅ shipped v7.5.9 — scan at top of transaction form, Gemini Vision auto-fills all fields, image saved as PDF
 - [ ] RAG — index uploaded PDF receipts and contracts; extract serial #s, term dates, interest rates
 - [ ] Smart Receipt Scanner (deferred) — OpenCV.js edge detection + perspective warp
 

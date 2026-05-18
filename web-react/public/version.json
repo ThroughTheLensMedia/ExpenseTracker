@@ -1,6 +1,6 @@
 {
-  "version": "7.5.8",
+  "version": "7.5.9",
   "release_date": "2026-05-17",
   "codename": "Lumière Ledger",
-  "notes": "v7.5.8: Import staleness badge uses calendar days; badge added to Import screen."
+  "notes": "v7.5.9: Fast Receipt Processing — scan receipt at top of transaction form, Gemini Vision auto-fills fields, image saved as PDF."
 }

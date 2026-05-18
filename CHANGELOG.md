@@ -5,6 +5,19 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.5.9] — 2026-05-17
+
+### Fast Receipt Processing — Scan at top, Gemini Vision auto-fill
+
+#### Added
+- **`api/routes/receipts.js`** — New `POST /receipts/extract` endpoint. Accepts image or PDF via multipart upload, sends it to Gemini Vision using the user's BYOB API key, returns extracted `vendor`, `amount`, `date`, `category`, `notes` as JSON. Mounted before the `/:table/:id` wildcard route.
+- **`web-react/src/components/TransactionDrawer.jsx`** — Receipt scanner card moved to the **top** of the transaction form. "Scan or Upload Receipt" button (no `capture` attr — iOS surfaces "Scan Documents" natively). On file select: (1) sends to `/receipts/extract` for Gemini Vision extraction, (2) pre-fills vendor/amount/date/category/notes from result, (3) converts image to PDF client-side via jsPDF before storage. If no Gemini key is configured, still attaches the file without pre-fill. Remove button clears the attachment. `scanMsg` shows extraction status in amber/green.
+
+#### Changed
+- **`web-react/src/components/TransactionDrawer.jsx`** — Removed old receipt input from bottom of form. Added `scanning` and `scanMsg` state fields. `imageToPdf()` utility lives outside the component. Existing save + manual upload flows preserved.
+
+---
+
 ## [v7.5.8] — 2026-05-17
 
 ### Import staleness badge — calendar-day fix + Import screen
