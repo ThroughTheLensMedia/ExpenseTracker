@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.6.4', date: 'MAY 18, 2026', color: '#38bdf8', items: [
+        '<strong>Information Security Policy Published:</strong> The platform\'s official ISP is now accessible from the Documentation tab under "Legal & Compliance." Covers data handling, encryption, access controls, incident response, and Plaid integration security.',
+        '<strong>Legal & Compliance Section:</strong> The Documentation tab now includes a dedicated compliance panel with direct links to the Information Security Policy (PDF), Privacy Policy, and Terms of Service — all in one place.',
+    ]},
     { version: '7.6.3', date: 'MAY 18, 2026', color: '#4ade80', items: [
         '<strong>Bank Import — No More Emoji:</strong> Cleaned up the bank source list — all emoji icons removed, labels are plain text. The dropdown is now grouped: Rocket Money at the top (Recommended), major banks in the middle, niche banks at the bottom.',
         '<strong>Rocket Money Recommended:</strong> Rocket Money now appears first with a clear note — it covers all your accounts in one export, regardless of which banks you use. If you have multiple banks, this is the easiest path.',

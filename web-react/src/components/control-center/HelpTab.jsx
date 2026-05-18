@@ -55,6 +55,123 @@ export default function HelpTab() {
                 </div>
             </div>
 
+            {/* Legal & Compliance */}
+            <div className="card glass" style={{ border: 'none', padding: '40px' }}>
+                <h2 style={{ fontSize: '1.8rem', margin: '0 0 8px 0' }}>Legal &amp; Compliance</h2>
+                <p className="muted" style={{ fontSize: '14px', marginBottom: '28px' }}>
+                    Official policy documents governing how Lumière Ledger handles your data,
+                    maintains security, and integrates with financial services.
+                </p>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {/* ISP */}
+                    <div style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        flexWrap: 'wrap', gap: '12px',
+                        padding: '18px 22px',
+                        background: 'rgba(56,189,248,0.06)',
+                        border: '1px solid rgba(56,189,248,0.18)',
+                        borderRadius: '10px'
+                    }}>
+                        <div>
+                            <div style={{ fontWeight: 800, fontSize: '15px', color: 'white', marginBottom: '4px' }}>
+                                Information Security Policy
+                            </div>
+                            <div className="muted" style={{ fontSize: '13px' }}>
+                                Covers access controls, encryption, incident response, data classification,
+                                and vendor risk management — including Plaid bank connectivity.
+                            </div>
+                        </div>
+                        <a
+                            href="/docs/Information_Security_Policy_TTLM.pdf"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="pill"
+                            style={{
+                                background: 'rgba(56,189,248,0.12)',
+                                color: '#38bdf8',
+                                border: '1px solid rgba(56,189,248,0.35)',
+                                textDecoration: 'none',
+                                whiteSpace: 'nowrap',
+                                flexShrink: 0
+                            }}
+                        >
+                            View PDF ↗
+                        </a>
+                    </div>
+
+                    {/* Privacy Policy */}
+                    <div style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        flexWrap: 'wrap', gap: '12px',
+                        padding: '18px 22px',
+                        background: 'rgba(255,255,255,0.03)',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        borderRadius: '10px'
+                    }}>
+                        <div>
+                            <div style={{ fontWeight: 800, fontSize: '15px', color: 'white', marginBottom: '4px' }}>
+                                Privacy Policy
+                            </div>
+                            <div className="muted" style={{ fontSize: '13px' }}>
+                                How we collect, use, store, and protect your personal and financial data.
+                            </div>
+                        </div>
+                        <a
+                            href="/privacy"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="pill"
+                            style={{
+                                background: 'rgba(255,255,255,0.05)',
+                                color: 'rgba(255,255,255,0.6)',
+                                border: '1px solid rgba(255,255,255,0.12)',
+                                textDecoration: 'none',
+                                whiteSpace: 'nowrap',
+                                flexShrink: 0
+                            }}
+                        >
+                            View ↗
+                        </a>
+                    </div>
+
+                    {/* Terms */}
+                    <div style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        flexWrap: 'wrap', gap: '12px',
+                        padding: '18px 22px',
+                        background: 'rgba(255,255,255,0.03)',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        borderRadius: '10px'
+                    }}>
+                        <div>
+                            <div style={{ fontWeight: 800, fontSize: '15px', color: 'white', marginBottom: '4px' }}>
+                                Terms of Service
+                            </div>
+                            <div className="muted" style={{ fontSize: '13px' }}>
+                                Acceptable use, subscription terms, and platform service agreement.
+                            </div>
+                        </div>
+                        <a
+                            href="/terms"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="pill"
+                            style={{
+                                background: 'rgba(255,255,255,0.05)',
+                                color: 'rgba(255,255,255,0.6)',
+                                border: '1px solid rgba(255,255,255,0.12)',
+                                textDecoration: 'none',
+                                whiteSpace: 'nowrap',
+                                flexShrink: 0
+                            }}
+                        >
+                            View ↗
+                        </a>
+                    </div>
+                </div>
+            </div>
+
             {showChangeLog && <ChangeLogModal onClose={() => setShowChangeLog(false)} />}
         </div>
     );

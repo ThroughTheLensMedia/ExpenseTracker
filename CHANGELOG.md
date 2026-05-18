@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.6.4] — 2026-05-18
+
+### Information Security Policy — published in-app
+
+#### Added
+- **`web-react/public/docs/Information_Security_Policy_TTLM.pdf`** — Full ISP document covering governance, access controls, encryption, network security, vendor risk (including Plaid), incident response, business continuity, and physical security. Generated to satisfy Plaid security questionnaire Q2 compliance requirement.
+- **`web-react/src/components/control-center/HelpTab.jsx`** — New "Legal & Compliance" section at the bottom of the Documentation tab. Shows three linked cards: Information Security Policy (PDF, opens in new tab), Privacy Policy, and Terms of Service. ISP card styled with accent border to distinguish it as a primary compliance document.
+
+---
+
 ## [v7.6.3] — 2026-05-18
 
 ### Bank import source list cleanup
