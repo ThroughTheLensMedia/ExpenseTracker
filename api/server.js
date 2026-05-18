@@ -91,6 +91,7 @@ const licensingMiddleware = require("./middleware/licensing");
 // Must be mounted BEFORE authMiddleware
 apiRouter.use("/pay", payRouter);
 apiRouter.use("/intake", intakeRouter); // TTLM website booking form → Lumiere Ledger
+apiRouter.use("/cron", require("./routes/cron")); // CRON_SECRET auth — no JWT needed
 
 // Account Request — public form that emails the admin
 apiRouter.post("/account-request", async (req, res) => {

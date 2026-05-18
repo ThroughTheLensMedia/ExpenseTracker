@@ -147,7 +147,12 @@ Source of truth for all sprint work, security status, and product phases. Replac
 
 ## 🧠 Phase 2: AI Agentic Capabilities — Remaining
 
-- [ ] **Step 4 — Invoice Creation** (next up)
+- [ ] **Step 4 — Edit Existing Transactions via AI**
+  - `update_transaction(id, fields)` write tool — modify vendor, category, notes, date on existing ledger entries
+  - Brain searches first, presents the record for confirmation, then patches on approve
+  - Enables: "rename these Venmo transactions", "recategorize my Michelle payment", "fix the vendor name on that $800"
+
+- [ ] **Step 5 — Invoice Creation** (next up)
   - `create_invoice_draft(client_name, line_items, due_date)` write tool
   - Returns pending confirmation card with line item summary before creating
 
@@ -205,6 +210,7 @@ Foundation shipped (intake keys + marketplace page).
 ## 🚩 Clean Up / Flagged
 
 - **Validation Tests 3 & 4** — Re-run `POST /api/admin/beta-codes` and `DELETE` with a non-admin token to confirm 403. Requires a second test account. Code audit confirmed `requireRole('admin')` is in place — live smoke test only.
+- **Test 9 / Daily report cron broken** — `GET /api/admin/daily-report` is mounted AFTER `authMiddleware` in `server.js`, so CRON_SECRET auth never fires — JWT check rejects first. Fix: extract cron routes into a dedicated router mounted before `authMiddleware`. Also: no Vercel cron scheduled to call it — daily report email has not been firing in production. Broken — needs a dedicated session to fix both the route ordering and the schedule.
 - **Invoice PDF formatting** — PDF export has formatting issues. Flagged 2026-05-17. Not blocking launch — Good to Have fix for later sprint.
 - **Client invoice history** — CRM should consolidate repeat clients (e.g. FotoFetch appears multiple times in invoice dropdown). Need single client record with full invoice + payment history view. Good to Have — Phase 5 or CRM sprint.
 
