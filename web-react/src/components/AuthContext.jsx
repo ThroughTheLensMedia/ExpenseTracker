@@ -183,11 +183,26 @@ export function AuthProvider({ children }) {
     if (user) fetchSubscription(user.id);
   };
 
+  // Derives effective tier from plan_type + admin_tier override.
+  // admin_tier is set on the server for friends/family grants — no billing impact.
+  function deriveTier(plan_type, admin_tier) {
+    if (admin_tier === 'studio') return 'studio';
+    if (admin_tier === 'core')   return 'core';
+    if (['studio_monthly', 'studio_annual'].includes(plan_type)) return 'studio';
+    if (['core_monthly',   'core_annual'  ].includes(plan_type)) return 'core';
+    return 'free';
+  }
+
+  const tier = subscription
+    ? deriveTier(subscription.plan_type, subscription.admin_tier)
+    : 'free';
+
   const value = {
     user,
     session,
     subscription,
     subscriptionReady,
+    tier,           // 'free' | 'core' | 'studio' — use this for all feature gating
     settings,
     loading,
     login,

@@ -19,7 +19,7 @@ const ADDONS = [
             'Works with any website, Cloudflare Workers, or backend',
         ],
         cta: 'Set Up Integration',
-        ctaPath: '/control-center?tab=integration',
+        ctaPath: '/StudioControlCenter?tab=integration',
     },
     {
         id: 'website-builder',
@@ -36,7 +36,9 @@ const ADDONS = [
             'Custom domain support',
             'One-click Lumière Ledger sync — no setup required',
         ],
-        cta: null,
+        cta: 'Visit Website Service',
+        ctaPath: null,
+        ctaExternal: 'https://websites.throughthelens.media',
     },
     {
         id: 'client-portal',
@@ -127,7 +129,7 @@ export default function AddOns() {
                         {addon.cta ? (
                             <button
                                 className="btn glow-blue"
-                                onClick={() => navigate(addon.ctaPath)}
+                                onClick={() => addon.ctaExternal ? window.open(addon.ctaExternal, '_blank', 'noopener,noreferrer') : navigate(addon.ctaPath)}
                                 style={{ alignSelf: 'flex-start', padding: '12px 24px', fontWeight: 900, marginTop: '4px' }}
                             >
                                 {addon.cta} →

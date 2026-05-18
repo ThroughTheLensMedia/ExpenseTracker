@@ -1,6 +1,12 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.6.5', date: 'MAY 18, 2026', color: '#a78bfa', items: [
+        '<strong>Subscription Tiers — Free, Core & Studio:</strong> Lumière Ledger now has three tiers. Free is free forever for current members. Core ($9/mo) unlocks AI Brain, receipt scanning, full CRM, and more. Studio ($19/mo) adds unlimited everything, mileage automation, and priority support.',
+        '<strong>Upgrade Gate:</strong> Premium features show a clean upgrade card when accessed on a lower tier — with a monthly/annual toggle and one-click checkout via Stripe.',
+        '<strong>Admin Tier Overrides:</strong> Friends and family can be granted Studio or Core access from the admin panel with no billing impact. Their subscription stays untouched.',
+        '<strong>Add-Ons Page Fixes:</strong> Website Lead Capture now routes correctly to the Integration tab. Photography Website Builder links directly to websites.throughthelens.media.',
+    ]},
     { version: '7.6.4', date: 'MAY 18, 2026', color: '#38bdf8', items: [
         '<strong>Information Security Policy Published:</strong> The platform\'s official ISP is now accessible from the Documentation tab under "Legal & Compliance." Covers data handling, encryption, access controls, incident response, and Plaid integration security.',
         '<strong>Legal & Compliance Section:</strong> The Documentation tab now includes a dedicated compliance panel with direct links to the Information Security Policy (PDF), Privacy Policy, and Terms of Service — all in one place.',

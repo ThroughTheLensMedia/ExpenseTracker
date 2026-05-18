@@ -83,9 +83,7 @@ export default function HelpTab() {
                             </div>
                         </div>
                         <a
-                            href="/docs/Information_Security_Policy_TTLM.pdf"
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            href="/security-policy"
                             className="pill"
                             style={{
                                 background: 'rgba(56,189,248,0.12)',
@@ -96,7 +94,7 @@ export default function HelpTab() {
                                 flexShrink: 0
                             }}
                         >
-                            View PDF ↗
+                            View ↗
                         </a>
                     </div>
 

@@ -61,7 +61,7 @@ Source of truth for all sprint work, security status, and product phases. Replac
 
 | Item | Notes |
 |------|-------|
-| **Stripe billing** | Launch gate cleared — ready to build. Full spec in `STRIPE_ROADMAP.md`. Waiting on Stripe account setup + price IDs from Joshua. |
+| **Stripe billing** | Launch gate cleared — ready to build. Full spec in `STRIPE_ROADMAP.md`. Plaid usage billing (per-account line items + Stripe fee pass-through) fully specced in `PLAID_BILLING_SPEC.md` — build AFTER base Stripe is complete. Waiting on Stripe account setup + price IDs from Joshua. |
 | **Accounts Page** | Per-account spending analytics derived from existing `source` field on expenses. No Plaid required. See spec below. |
 | **Bank Import UI Cleanup** | Remove emojis from source list, demote niche banks, surface Rocket Money as recommended. See Clean Up section. |
 | Maps Autopilot | In progress — Google Maps A→B→A mileage round-trip |

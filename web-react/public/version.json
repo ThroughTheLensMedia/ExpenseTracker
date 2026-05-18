@@ -1,6 +1,6 @@
 {
-  "version": "7.6.4",
+  "version": "7.6.5",
   "release_date": "2026-05-18",
   "codename": "Lumière Ledger",
-  "notes": "v7.6.4: Information Security Policy published — accessible from Documentation tab."
+  "notes": "v7.6.5: Stripe billing infrastructure — Free/Core/Studio tiers, UpgradeGate, admin tier overrides."
 }

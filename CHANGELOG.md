@@ -5,6 +5,25 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.6.5] — 2026-05-18
+
+### Stripe Billing Infrastructure — Free / Core / Studio tiers
+
+#### Added
+- **`api/routes/stripe.js`** — New Stripe integration: `create-checkout`, `portal`, `status`, and webhook handler (6 events: `checkout.session.completed`, `subscription.updated`, `subscription.deleted`, `payment.failed`, `invoice.upcoming`, `payment.succeeded`). Includes Plaid overage billing stub (`buildPlaidInvoiceItems`). Admin tier override logic (`deriveTier`) respects `admin_tier` column over `plan_type`.
+- **`web-react/src/components/UpgradeGate.jsx`** — New component wrapping premium features. Props: `minTier` (`'core'|'studio'`), `feature` (string). Shows children to qualifying users, upgrade card with monthly/annual toggle to others. Checkout handled via `POST /api/stripe/create-checkout`.
+- **`STRIPE_ROADMAP.md`** — Fully rewritten with three-tier model (Free/$0, Core/$9/mo, Studio/$19/mo), complete feature gate matrix, all `plan_type` values, `deriveTier()` logic, `UpgradeGate` usage, Stripe setup checklist (4 products), and post-launch roadmap.
+- **`PLAID_BILLING_SPEC.md`** — Updated: Plaid available on all tiers. Grandfathered Free members pay usage fee only; no platform charge. Two sample invoices added (Studio user with overage, Free member with overage).
+
+#### Modified
+- **`api/server.js`** — Stripe webhook mounted before `authMiddleware` with `express.raw()`. `stripeRouter` mounted after `authMiddleware`. `licensingMiddleware` import updated to named export.
+- **`api/middleware/licensing.js`** — Added `deriveTier()`, `TIER_LIMITS` constants (per-tier caps for transactions, invoices, rules, leads, equipment), `admin_tier` override support. Attaches `req.tier` and `req.tierLimits` for use in routes. Exports named `{ licensingMiddleware, deriveTier, TIER_LIMITS }`.
+- **`web-react/src/components/AuthContext.jsx`** — Added `deriveTier()` function, exposes `tier` (`'free'|'core'|'studio'`) from `useAuth()`. Respects `admin_tier` from subscription record.
+- **`web-react/src/pages/AddOns.jsx`** — Fixed Website Lead Capture CTA path (`/control-center` → `/StudioControlCenter?tab=integration`). Added Photography Website Builder CTA linking to `https://websites.throughthelens.media`.
+- **`ROADMAP.md`** — Stripe billing row updated to reference `PLAID_BILLING_SPEC.md`.
+
+---
+
 ## [v7.6.4] — 2026-05-18
 
 ### Information Security Policy — published in-app

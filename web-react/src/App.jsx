@@ -17,6 +17,7 @@ const Login          = lazy(() => import('./pages/Login'));
 const Mileage        = lazy(() => import('./pages/Mileage'));
 const Privacy        = lazy(() => import('./pages/Privacy'));
 const Terms          = lazy(() => import('./pages/Terms'));
+const SecurityPolicy = lazy(() => import('./pages/SecurityPolicy'));
 const Home           = lazy(() => import('./pages/Home'));
 const PayInvoice     = lazy(() => import('./pages/PayInvoice'));
 const AddOns         = lazy(() => import('./pages/AddOns'));
@@ -202,7 +203,7 @@ function AppContent() {
   // --- Version Check Hook ---
   // DEPLOY SOP: update CURRENT_VERSION here AND web-react/public/version.json on every release.
   useEffect(() => {
-    const CURRENT_VERSION = "7.6.4";
+    const CURRENT_VERSION = "7.6.5";
 
     // What's New: show button if user hasn't dismissed it for this version
     const seen = localStorage.getItem('ll_whats_new_seen');
@@ -245,7 +246,7 @@ function AppContent() {
   };
 
   const handleWhatsNewClick = () => {
-    const CURRENT_VERSION = "7.6.4";
+    const CURRENT_VERSION = "7.6.5";
     localStorage.setItem('ll_whats_new_seen', CURRENT_VERSION);
     setShowWhatsNew(false);
     setShowChangelogModal(true);
@@ -311,6 +312,7 @@ function AppContent() {
           <Route path="/login" element={<Login />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
+          <Route path="/security-policy" element={<SecurityPolicy />} />
           {/* Public: no login required — client payment portal */}
           <Route path="/pay/:token" element={<PayInvoice />} />
           <Route path="*" element={<Navigate to="/" />} />
@@ -553,6 +555,7 @@ function AppContent() {
             <Route path="/addons" element={<AddOns />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
+            <Route path="/security-policy" element={<SecurityPolicy />} />
             {/* Public: client payment portal, also accessible when logged in */}
             <Route path="/pay/:token" element={<PayInvoice />} />
             <Route path="*" element={<Navigate to="/" />} />

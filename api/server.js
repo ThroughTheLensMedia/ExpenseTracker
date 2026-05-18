@@ -28,6 +28,7 @@ const plaidRouter = require("./routes/plaid"); // Plaid Bank Sync
 const payRouter = require("./routes/pay");    // Public Payment Portal (no auth)
 const intakeRouter     = require("./routes/intake");      // Public TTLM website lead intake (no auth)
 const intakeKeysRouter = require("./routes/intake-keys"); // Authenticated key management
+const { router: stripeRouter, stripeWebhook } = require("./routes/stripe"); // Stripe billing
 const metricsRouter = require("./routes/metrics"); // Dashboard metrics layer
 const vendorsRouter = require("./routes/vendors"); // Vendor specific settings
 const feedbackRouter = require("./routes/feedback"); // In-app feedback form
@@ -85,13 +86,16 @@ apiRouter.get("/health", async (req, res) => {
   }
 });
 
-const licensingMiddleware = require("./middleware/licensing");
+const { licensingMiddleware } = require("./middleware/licensing");
 
 // --- PUBLIC ROUTES (no auth required) ---
 // Must be mounted BEFORE authMiddleware
 apiRouter.use("/pay", payRouter);
 apiRouter.use("/intake", intakeRouter); // TTLM website booking form → Lumiere Ledger
 apiRouter.use("/cron", require("./routes/cron")); // CRON_SECRET auth — no JWT needed
+
+// Stripe webhook — raw body required for signature verification, no JWT
+apiRouter.post("/stripe/webhook", express.raw({ type: "application/json" }), stripeWebhook);
 
 // Account Request — public form that emails the admin
 apiRouter.post("/account-request", async (req, res) => {
@@ -157,6 +161,7 @@ apiRouter.use("/subscription", subscriptionRouter);
 apiRouter.use("/activity", activityRouter);
 apiRouter.use("/brain", brainRouter);
 apiRouter.use("/plaid", plaidRouter);
+apiRouter.use("/stripe", stripeRouter);
 apiRouter.use("/metrics", metricsRouter);
 apiRouter.use("/vendors", vendorsRouter);
 
