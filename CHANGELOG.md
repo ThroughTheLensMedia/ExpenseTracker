@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.5.8] — 2026-05-17
+
+### Import staleness badge — calendar-day fix + Import screen
+
+#### Changed
+- **`web-react/src/pages/Transactions.jsx`** — `daysSinceImport` now compares calendar dates in local time instead of raw elapsed milliseconds. "Updated today" fires only when the last import's `created_at` date matches today's date — not "within 24 hours." Also dropped the `expense_date` fallback: if a row has no `created_at`, it is skipped rather than using the transaction date (which is not an import timestamp).
+- **`web-react/src/pages/Import.jsx`** — Added the same staleness badge to the Bank Data Import header. Queries Supabase directly on mount for the single most recent non-manual transaction `created_at`; no full expense load required. Badge shows green / yellow / red on the same 0 / ≤7 / >7 day thresholds as the Ledger.
+
+---
+
 ## [v7.5.7] — 2026-05-17
 
 ### Brain — API key setup CTA for unconfigured users

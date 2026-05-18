@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.5.8', date: 'MAY 17, 2026', color: '#38bdf8', items: [
+        '<strong>Import Staleness Badge — Calendar Fix:</strong> "Updated today" on the Transaction Ledger now means the actual calendar date matches today — not "within the last 24 hours." An import at 10 PM last night correctly shows "1 day since last import" this morning.',
+        '<strong>Import Staleness Badge — Bank Import Portal:</strong> The same green/yellow/red freshness badge now appears on the Bank Data Import screen so you can see how stale your data is before deciding whether to run a new import.',
+    ]},
     { version: '7.5.7', date: 'MAY 17, 2026', color: '#f97316', items: [
         '<strong>Brain — Setup Prompt for New Users:</strong> Users without a Gemini API key now see an activation card instead of a hidden or broken chat. It explains the BYOB model, links to Google AI Studio for a free key, shows example questions, and links directly to the Control Center to enter the key.',
         '<strong>Brain — No Shared Tokens:</strong> Each user\'s Brain runs on their own Gemini API key and quota. The assistant button remains visible to all users as an onboarding prompt.',

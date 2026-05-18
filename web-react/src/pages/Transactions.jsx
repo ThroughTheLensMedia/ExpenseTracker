@@ -27,16 +27,24 @@ export default function Transactions() {
     const [sortCol, setSortCol] = useState('expense_date');
     const [sortDir, setSortDir] = useState('desc');
 
-    // Compute days since the most recent IMPORTED (non-manual) transaction was added
+    // Compute calendar days since the most recent IMPORTED (non-manual) transaction was created.
+    // Uses created_at only — expense_date is the transaction date, not the import date.
+    // Compares calendar dates in local time so "today" means same date, not "within 24h".
     const daysSinceImport = useMemo(() => {
         if (!expenses.length) return null;
-        const latest = expenses.reduce((best, e) => {
-            if (!e.source || e.source === 'manual') return best; // skip manual entries
-            const t = new Date(e.created_at || e.expense_date || 0).getTime();
-            return t > best ? t : best;
-        }, 0);
-        if (!latest) return null;
-        return Math.floor((Date.now() - latest) / (1000 * 60 * 60 * 24));
+        let latestMs = 0;
+        for (const e of expenses) {
+            if (!e.source || e.source === 'manual') continue;
+            if (!e.created_at) continue; // no import timestamp — skip rather than fall back to expense_date
+            const t = new Date(e.created_at).getTime();
+            if (t > latestMs) latestMs = t;
+        }
+        if (!latestMs) return null;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const importDay = new Date(latestMs);
+        importDay.setHours(0, 0, 0, 0);
+        return Math.round((today.getTime() - importDay.getTime()) / (1000 * 60 * 60 * 24));
     }, [expenses]);
 
     // Editor

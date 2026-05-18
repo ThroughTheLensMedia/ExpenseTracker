@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { invalidateExpensesCache, formatMoney, formatDate } from '../api';
 import { useAuth, supabase } from '../components/AuthContext';
@@ -168,6 +168,32 @@ export default function Import() {
     const [pendingPairs, setPendingPairs] = useState([]);
     const [dismissedPairs, setDismissedPairs] = useState(new Set());
 
+    // Last import staleness badge
+    const [lastImportCreatedAt, setLastImportCreatedAt] = useState(null);
+
+    useEffect(() => {
+        supabase
+            .from('expenses')
+            .select('created_at')
+            .neq('source', 'manual')
+            .not('source', 'is', null)
+            .not('created_at', 'is', null)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .then(({ data }) => {
+                if (data && data[0]?.created_at) setLastImportCreatedAt(data[0].created_at);
+            });
+    }, []);
+
+    const daysSinceImport = useMemo(() => {
+        if (lastImportCreatedAt === null) return null;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const importDay = new Date(lastImportCreatedAt);
+        importDay.setHours(0, 0, 0, 0);
+        return Math.round((today.getTime() - importDay.getTime()) / (1000 * 60 * 60 * 24));
+    }, [lastImportCreatedAt]);
+
     const navigate = useNavigate();
 
     const getFreshAuthHeader = async () => {
@@ -301,7 +327,39 @@ export default function Import() {
         <section style={{ maxWidth: '800px', margin: '0 auto', paddingBottom: '100px' }}>
             <div className="card glass glow-blue" style={{ padding: '24px 30px', border: 'none', marginBottom: '20px' }}>
                 <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 950, letterSpacing: '-0.02em' }}>Bank Data Import</h1>
-                <div className="muted" style={{ fontWeight: 600 }}>Import transactions from your bank via CSV · Duplicate merging enabled</div>
+                <div className="muted" style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginTop: '4px' }}>
+                    Import transactions from your bank via CSV · Duplicate merging enabled
+                    {daysSinceImport !== null && (
+                        <span style={{
+                            fontSize: '11px',
+                            fontWeight: 800,
+                            padding: '2px 10px',
+                            borderRadius: '20px',
+                            letterSpacing: '0.04em',
+                            background: daysSinceImport === 0
+                                ? 'rgba(74,222,128,0.12)'
+                                : daysSinceImport <= 7
+                                ? 'rgba(251,191,36,0.12)'
+                                : 'rgba(255,77,77,0.12)',
+                            color: daysSinceImport === 0
+                                ? '#4ade80'
+                                : daysSinceImport <= 7
+                                ? '#fbbf24'
+                                : '#ff4d4d',
+                            border: `1px solid ${daysSinceImport === 0
+                                ? 'rgba(74,222,128,0.25)'
+                                : daysSinceImport <= 7
+                                ? 'rgba(251,191,36,0.25)'
+                                : 'rgba(255,77,77,0.25)'}`,
+                        }}>
+                            {daysSinceImport === 0
+                                ? '🟢 Imported today'
+                                : daysSinceImport === 1
+                                ? '🟢 1 day since last import'
+                                : `${daysSinceImport <= 7 ? '🟡' : '🔴'} ${daysSinceImport}d since last import`}
+                        </span>
+                    )}
+                </div>
             </div>
 
             {/* Plaid Auto-Sync */}
