@@ -126,6 +126,10 @@ export default function AssistantSidebar() {
                     : `Invoice **#${action.payload.invoiceNumber}** is now **${action.payload.status}**.`;
                 setMessages(prev => [...prev, { role: 'assistant', text: `Done — ${label}` }]);
                 dispatchRefresh('invoices');
+            } else if (action.type === 'update_transaction') {
+                await apiPatch(`/expenses/${action.payload.transactionId}`, action.payload.updates);
+                setMessages(prev => [...prev, { role: 'assistant', text: `Done — **${action.payload.displayVendor}** has been updated.` }]);
+                dispatchRefresh('transactions');
             }
         } catch (err) {
             setMessages(prev => [...prev, { role: 'assistant', text: `Action failed: ${err.message}` }]);

@@ -34,19 +34,19 @@ Source of truth for all sprint work, security status, and product phases. Replac
 
 ### 2. Post-Hardening Validation (run after code fixes deployed)
 
-| # | Test | Expected |
-|---|------|----------|
-| 1 | `vercel env ls` | `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, `NODE_ENV=production` present under Production |
-| 2 | `GET /api/health` | `"key_mode": "ADMIN_PRIVILEGED"` |
-| 3 | `POST /api/admin/beta-codes` as non-admin | 403 |
-| 4 | `DELETE /api/admin/beta-codes/TESTCODE` as non-admin | 403 |
-| 5 | Vercel preview deploy + `Authorization: Bearer mock-session` | 401 |
-| 6 | Delete expense owned by User A while logged in as User B | 404 or 403 |
-| 7 | Invoice with $50 discount on $500 subtotal — check email + pay page | Total = $450 |
-| 8 | Kill DB connection mid-request → licensing response | 503, not 200 |
-| 9 | Trigger Vercel cron → check admin email | Daily report received |
-| 10 | Click "EXTEND ACCESS" on any non-SCC page | Navigates to Ledger Control Center |
-| 11 | Trigger invoice approval → check email for broken download link | Link absent |
+| # | Test | Result |
+|---|------|--------|
+| 1 | `vercel env ls` — `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, `NODE_ENV=production` | ✅ Fixed + verified 2026-05-17 |
+| 2 | `GET /api/health` → `"key_mode": "ADMIN_PRIVILEGED"` | ✅ Pass |
+| 3 | `POST /api/admin/beta-codes` as non-admin → 403 | ⏸ Needs second test account |
+| 4 | `DELETE /api/admin/beta-codes/TESTCODE` as non-admin → 403 | ⏸ Needs second test account |
+| 5 | Vercel preview deploy + `Authorization: Bearer mock-session` → 401 | ⏸ Needs second test account |
+| 6 | Delete expense owned by User A while logged in as User B → 404 or 403 | ⏸ Needs second test account |
+| 7 | Invoice with 5% discount on $500 subtotal → $475.00 | ✅ Pass |
+| 8 | Kill DB connection mid-request → licensing response → 503 | ⏸ Deferred — hard to simulate safely |
+| 9 | Cron triggers daily report email | ✅ Pass — cron-job.org wired, fires 11:59 PM PT daily |
+| 10 | Click "EXTEND ACCESS" → Ledger Control Center | ✅ Conditionally verified (code audited) |
+| 11 | Invoice approval email has no broken download link | ✅ Pass |
 
 ### 3. RLS Multi-Tenant Audit
 

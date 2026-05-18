@@ -136,6 +136,23 @@ const BRAIN_TOOLS = [{
                 },
                 required: ['invoice_id', 'status']
             }
+        },
+        {
+            name: 'update_transaction',
+            description: 'Update fields on an existing transaction — vendor name, category, notes, date, or amount. Always call search_transactions first to get the exact transaction UUID. Returns a pending action for user confirmation — never executes directly. Use when user wants to rename a vendor, recategorize, add a note, or correct a date or amount.',
+            parameters: {
+                type: 'OBJECT',
+                properties: {
+                    transaction_id:     { type: 'STRING',  description: 'UUID of the transaction — get this from search_transactions first. Required.' },
+                    transaction_vendor: { type: 'STRING',  description: 'Current vendor name for display in the confirmation card' },
+                    vendor:             { type: 'STRING',  description: 'New vendor name (optional)' },
+                    category:           { type: 'STRING',  description: 'New category (optional)' },
+                    notes:              { type: 'STRING',  description: 'New or updated notes (optional)' },
+                    expense_date:       { type: 'STRING',  description: 'New date YYYY-MM-DD (optional)' },
+                    amount_dollars:     { type: 'NUMBER',  description: 'New amount in dollars (optional)' }
+                },
+                required: ['transaction_id']
+            }
         }
     ]
 }];
@@ -463,6 +480,47 @@ async function executeTool(name, args, sb, userId) {
             };
         }
 
+        case 'update_transaction': {
+            if (!args.transaction_id) return { error: 'Missing transaction_id. Call search_transactions first to get the exact UUID.' };
+
+            const { data: txn } = await sb.from('expenses')
+                .select('id, vendor, category, expense_date, amount_cents, notes')
+                .eq('id', args.transaction_id)
+                .eq('user_id', userId)
+                .maybeSingle();
+            if (!txn) return { error: `Transaction not found: ${args.transaction_id}. Call search_transactions to get a valid ID.` };
+
+            const updates = {};
+            if (args.vendor !== undefined)        updates.vendor = args.vendor;
+            if (args.category !== undefined)      updates.category = args.category;
+            if (args.notes !== undefined)         updates.notes = args.notes;
+            if (args.expense_date !== undefined)  updates.expense_date = args.expense_date;
+            if (args.amount_dollars !== undefined) updates.amount_cents = Math.round(args.amount_dollars * 100);
+
+            if (Object.keys(updates).length === 0)
+                return { error: 'No fields to update. Specify at least one of: vendor, category, notes, expense_date, amount_dollars.' };
+
+            const changes = [];
+            if (updates.vendor !== undefined)      changes.push(`Vendor: **${txn.vendor}** → **${updates.vendor}**`);
+            if (updates.category !== undefined)    changes.push(`Category: **${txn.category || 'none'}** → **${updates.category}**`);
+            if (updates.notes !== undefined)       changes.push(`Notes: **${updates.notes || '(cleared)'}**`);
+            if (updates.expense_date !== undefined) changes.push(`Date: **${txn.expense_date}** → **${updates.expense_date}**`);
+            if (updates.amount_cents !== undefined) changes.push(`Amount: **${fmt(toDollars(txn.amount_cents))}** → **${fmt(toDollars(updates.amount_cents))}**`);
+
+            const displayVendor = args.transaction_vendor || txn.vendor;
+
+            return {
+                __pending: true,
+                pendingAction: {
+                    id: `pending_${Date.now()}`,
+                    type: 'update_transaction',
+                    description: `Update **${displayVendor}** (${txn.expense_date}):\n${changes.join('\n')}`,
+                    payload: { transactionId: txn.id, displayVendor, updates }
+                },
+                message: `Pending confirmation: update transaction ${displayVendor}.`
+            };
+        }
+
         default:
             return { error: `Unknown tool: ${name}` };
     }
@@ -504,6 +562,7 @@ What I can look up:
 
 What I can change (requires your approval before anything saves):
 - Create a new transaction (I'll ask for vendor, amount, and date if missing).
+- Edit an existing transaction — rename a vendor, change category, update notes, fix a date or amount.
 - Update a CRM lead status (Inquiry → Contacted → Booked → Completed → Lost).
 - Mark an invoice paid, sent, draft, or void.
 - Link an existing transaction to a CRM lead.
@@ -532,6 +591,7 @@ TRANSACTION RULES:
 - Before calling create_transaction, confirm you have: vendor name, dollar amount, and date. If any are missing, ask the user first.
 - search_transactions returns transaction IDs — use them with link_transaction_to_lead.
 - When a user says they have purchased something, spent money, or mentions past expenses, ALWAYS call search_transactions first to check if those records already exist. Only offer create_transaction if the search returns no matching results.
+- To edit an existing transaction (rename vendor, change category, fix notes/date/amount): call search_transactions first to get the UUID, then call update_transaction with only the fields that need changing. Never guess a UUID.
 - If a search returns 0 results, broaden the search — try a different vendor keyword, remove the category filter, or search by date range. Never confidently tell the user they have no spending in a category without trying at least 2 search variations.
 
 CATEGORY NAMES (use these exact strings or partial matches — category filter uses partial match so "Travel" finds "Travel & Vacation"):
