@@ -324,7 +324,7 @@ export default function Import() {
     const visiblePairs = pendingPairs.filter((_, i) => !dismissedPairs.has(i));
 
     return (
-        <section style={{ maxWidth: '800px', margin: '0 auto', paddingBottom: '100px' }}>
+        <section style={{ paddingBottom: '100px' }}>
             <div className="card glass glow-blue" style={{ padding: '24px 30px', border: 'none', marginBottom: '20px' }}>
                 <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 950, letterSpacing: '-0.02em' }}>Bank Data Import</h1>
                 <div className="muted" style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginTop: '4px' }}>
