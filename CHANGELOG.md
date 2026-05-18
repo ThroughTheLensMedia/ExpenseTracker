@@ -5,6 +5,19 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.6.2] — 2026-05-17
+
+### Daily report cron — route fix + dead code removal
+
+#### Fixed
+- **`api/routes/admin.js`** — `/admin/daily-report` was unreachable by automated cron: the JWT `authMiddleware` rejected cron requests before the route's own `CRON_SECRET` check ever ran. Stripped the dead cron auth logic. Endpoint is now admin-UI-preview-only — returns activity data, never sends email. Automated firing is handled exclusively by `/api/cron/daily-report` (in `cron.js`, mounted before `authMiddleware`).
+- **`api/routes/admin.js`** — Removed dead `/admin/watchdog` endpoint. Same JWT-block issue; real watchdog lives at `/api/cron/watchdog`.
+
+#### Action Required
+- Update cron-job.org job to call `GET https://www.lumiereledger.com/api/cron/daily-report` with header `Authorization: Bearer <CRON_SECRET>`. The old `/api/admin/daily-report` URL never worked for automated firing.
+
+---
+
 ## [v7.6.1] — 2026-05-17
 
 ### First-run onboarding modal + admin silent-refresh fix

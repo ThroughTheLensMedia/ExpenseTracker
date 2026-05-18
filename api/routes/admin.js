@@ -10,20 +10,12 @@ const { requireRole } = require("../middleware/auth");
 router.get("/", (req, res) => res.json({ ok: true, module: "admin", user: req.user?.email }));
 router.get("/test", (req, res) => res.json({ ok: true, test: "admin-reachable" }));
 
-// GET /admin/daily-report (Automated CRON)
+// GET /admin/daily-report — Admin UI preview only. Returns activity data; never sends email.
+// Automated cron firing lives at /api/cron/daily-report (mounted before authMiddleware).
 router.get("/daily-report", async (req, res) => {
-    // Vercel Cron injects the header 'x-vercel-cron: 1' on every scheduled run.
-    // CRON_SECRET (via Authorization header) is supported as a manual override for testing.
-    const cronSecret = process.env.CRON_SECRET;
-    const isVercelCron = req.headers['x-vercel-cron'] === '1';
-    const isCronSecret = cronSecret && req.headers['authorization'] === `Bearer ${cronSecret}`;
-    const isCron = isVercelCron || isCronSecret;
-
-    if (!isCron) {
-        const userEmail = req.user?.email?.toLowerCase();
-        if (userEmail !== 'joshua.deuermeyer@gmail.com') {
-            return res.status(403).json({ error: "Unauthorized" });
-        }
+    const userEmail = req.user?.email?.toLowerCase();
+    if (userEmail !== 'joshua.deuermeyer@gmail.com' && userEmail !== 'info@throughthelens.media') {
+        return res.status(403).json({ error: "Unauthorized" });
     }
 
     try {
@@ -110,71 +102,14 @@ router.get("/daily-report", async (req, res) => {
 
         const finalData = Object.values(aggregated).sort((a,b) => b.minutes_today - a.minutes_today);
 
-        // Queue Email (non-blocking)
-        if (isCron) {
-            queueDailyReportEmail({ to: 'joshua.deuermeyer@gmail.com', activityRows: finalData }).catch(err => {
-                console.error("[DAILY REPORT EMAIL QUEUE] Failed to enqueue:", err);
-            });
-        }
-
-        res.json({ ok: true, sent: isCron, usersReported: finalData.length, data: finalData });
+        res.json({ ok: true, sent: false, usersReported: finalData.length, data: finalData });
     } catch (e) {
-        console.error("[CRON] Daily Report Fatal Error:", e);
-        res.status(500).json({ error: e.message, status: "500-Internal-Crash" });
+        console.error("[ADMIN] Daily Report Fatal Error:", e);
+        res.status(500).json({ error: e.message });
     }
 });
 
-// GET /admin/watchdog (Automated CRON Health Checker)
-router.get("/watchdog", async (req, res) => {
-    const cronSecret = process.env.CRON_SECRET;
-    const isVercelCron = req.headers['x-vercel-cron'] === '1';
-    const isCronSecret = cronSecret && req.headers['authorization'] === `Bearer ${cronSecret}`;
-    const isCron = isVercelCron || isCronSecret;
-
-    if (!isCron) {
-        return res.status(403).json({ error: "Unauthorized. Watchdog must be invoked via cron." });
-    }
-
-    const issues = [];
-    
-    // 1. Check Supabase Client and Connectivity
-    const hasServiceKey = !!(process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || process.env.SERVICE_ROLE_KEY);
-    if (!hasServiceKey) {
-        issues.push("CRITICAL: Supabase Service Role Key is missing or degraded.");
-    }
-    
-    if (supabase) {
-        try {
-            // Simple ping to ensure read access is functional
-            const { error } = await supabase.from('profiles').select('id').limit(1);
-            if (error) throw error;
-        } catch (err) {
-            issues.push(`DATABASE ERROR: Database queries failing. Details: ${err.message}`);
-        }
-    } else {
-        issues.push("DATABASE ERROR: Supabase client failed to initialize globally.");
-    }
-
-    // 2. Check Resend (SMTP Readiness)
-    if (!process.env.RESEND_API_KEY) {
-        issues.push("SMTP ERROR: RESEND_API_KEY is missing. System cannot send emails.");
-    }
-
-    // 3. Dispatch Alerts if issues found
-    if (issues.length > 0) {
-        console.error("[WATCHDOG] Issues detected:", issues);
-        // Only try to send email if we actually have the Resend Key
-        if (process.env.RESEND_API_KEY) {
-            queueHealthAlertEmail({ to: 'joshua.deuermeyer@gmail.com', issues }).catch(err => {
-                console.error("[WATCHDOG EMAIL QUEUE] Failed to enqueue alert:", err);
-            });
-        }
-        return res.status(500).json({ ok: false, status: "DEGRADED", issues });
-    }
-
-    // Return healthy status (doesn't send email)
-    return res.json({ ok: true, status: "HEALTHY", issues: [] });
-});
+// /admin/watchdog removed — live at /api/cron/watchdog (mounted before authMiddleware)
 
 router.get("/check-status", requireRole('admin'), async (req, res) => {
 

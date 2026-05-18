@@ -221,7 +221,7 @@ Foundation shipped (intake keys + marketplace page).
 ## 🚩 Clean Up / Flagged
 
 - **Validation Tests 3 & 4** — Re-run `POST /api/admin/beta-codes` and `DELETE` with a non-admin token to confirm 403. Requires a second test account. Code audit confirmed `requireRole('admin')` is in place — live smoke test only.
-- **Test 9 / Daily report cron broken** — `GET /api/admin/daily-report` is mounted AFTER `authMiddleware` in `server.js`, so CRON_SECRET auth never fires — JWT check rejects first. Fix: extract cron routes into a dedicated router mounted before `authMiddleware`. Also: no Vercel cron scheduled to call it — daily report email has not been firing in production. Broken — needs a dedicated session to fix both the route ordering and the schedule.
+- **Test 9 / Daily report cron** — ✅ Fixed v7.6.2. `/api/cron/daily-report` (in `cron.js`) is mounted before `authMiddleware` and handles automated firing. `/admin/daily-report` stripped to admin-UI-preview-only. **Action required: update cron-job.org job URL to `GET https://www.lumiereledger.com/api/cron/daily-report` with `Authorization: Bearer <CRON_SECRET>` header.**
 - **Invoice PDF formatting** — PDF export has formatting issues. Flagged 2026-05-17. Not blocking launch — Good to Have fix for later sprint.
 - **Client invoice history** — CRM should consolidate repeat clients (e.g. FotoFetch appears multiple times in invoice dropdown). Need single client record with full invoice + payment history view. Good to Have — Phase 5 or CRM sprint.
 
