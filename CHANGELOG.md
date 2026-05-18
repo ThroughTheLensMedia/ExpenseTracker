@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.6.3] — 2026-05-18
+
+### Launch gate — validation test suite + RLS audit queries
+
+#### Added
+- **`api/tests/launch-gate.js`** — Self-contained test runner for validation tests 3–6. Creates a temporary Supabase user (email pre-confirmed via admin API, no inbox needed), runs all tests, then deletes the test account. Test 6 correctly detects cross-user isolation by verifying the target expense still exists after the delete attempt (204 response is not enough — Supabase doesn't error on no-match deletes). Run: `node api/tests/launch-gate.js` (production) or `node api/tests/launch-gate.js --local`.
+- **`api/tests/rls-audit.sql`** — Seven SQL blocks for the Supabase SQL Editor: RLS enabled/disabled per table, all existing policies, tables with RLS on but no policies (fully locked), tables missing `user_id`, cross-user isolation spot check, and `user_roles` service-role access verification.
+
+---
+
 ## [v7.6.2] — 2026-05-17
 
 ### Daily report cron — route fix + dead code removal

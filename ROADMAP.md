@@ -38,10 +38,10 @@ Source of truth for all sprint work, security status, and product phases. Replac
 |---|------|--------|
 | 1 | `vercel env ls` — `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, `NODE_ENV=production` | ✅ Fixed + verified 2026-05-17 |
 | 2 | `GET /api/health` → `"key_mode": "ADMIN_PRIVILEGED"` | ✅ Pass |
-| 3 | `POST /api/admin/beta-codes` as non-admin → 403 | ⏸ Needs second test account |
-| 4 | `DELETE /api/admin/beta-codes/TESTCODE` as non-admin → 403 | ⏸ Needs second test account |
-| 5 | Vercel preview deploy + `Authorization: Bearer mock-session` → 401 | ⏸ Needs second test account |
-| 6 | Delete expense owned by User A while logged in as User B → 404 or 403 | ⏸ Needs second test account |
+| 3 | `POST /api/admin/beta-codes` as non-admin → 403 | ⏸ Run `node api/tests/launch-gate.js` |
+| 4 | `DELETE /api/admin/beta-codes/TESTCODE` as non-admin → 403 | ⏸ Run `node api/tests/launch-gate.js` |
+| 5 | Vercel preview deploy + `Authorization: Bearer mock-session` → 401 | ⏸ Run `node api/tests/launch-gate.js` |
+| 6 | Delete expense owned by User A while logged in as User B → 404 or 403 | ⏸ Run `node api/tests/launch-gate.js` |
 | 7 | Invoice with 5% discount on $500 subtotal → $475.00 | ✅ Pass |
 | 8 | Kill DB connection mid-request → licensing response → 503 | ⏸ Deferred — hard to simulate safely |
 | 9 | Cron triggers daily report email | ✅ Pass — cron-job.org wired, fires 11:59 PM PT daily |
@@ -50,6 +50,7 @@ Source of truth for all sprint work, security status, and product phases. Replac
 
 ### 3. RLS Multi-Tenant Audit
 
+- [ ] Paste `api/tests/rls-audit.sql` into Supabase SQL Editor — 7 queries cover all checks
 - [ ] Verify all tables have `user_id = auth.uid()` RLS policies active in Supabase dashboard
 - [ ] Test: User A cannot read User B's expenses, leads, invoices, clients
 - [ ] Confirm `user_roles` table is service-role-only (no user-facing RLS bypass)
