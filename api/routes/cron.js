@@ -4,7 +4,7 @@ const { supabase } = require("../db");
 const { queueDailyReportEmail, queueHealthAlertEmail } = require("../utils/emailQueue");
 
 function isCronAuthorized(req) {
-    const cronSecret = process.env.CRON_SECRET;
+    const cronSecret = (process.env.CRON_SECRET || '').trim();
     const isVercelCron = req.headers['x-vercel-cron'] === '1';
     const isCronSecret = cronSecret && req.headers['authorization'] === `Bearer ${cronSecret}`;
     return isVercelCron || isCronSecret;
