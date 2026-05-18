@@ -205,6 +205,8 @@ Foundation shipped (intake keys + marketplace page).
 ## 🚩 Clean Up / Flagged
 
 - **Validation Tests 3 & 4** — Re-run `POST /api/admin/beta-codes` and `DELETE` with a non-admin token to confirm 403. Requires a second test account. Code audit confirmed `requireRole('admin')` is in place — live smoke test only.
+- **Invoice PDF formatting** — PDF export has formatting issues. Flagged 2026-05-17. Not blocking launch — Good to Have fix for later sprint.
+- **Client invoice history** — CRM should consolidate repeat clients (e.g. FotoFetch appears multiple times in invoice dropdown). Need single client record with full invoice + payment history view. Good to Have — Phase 5 or CRM sprint.
 
 ---
 

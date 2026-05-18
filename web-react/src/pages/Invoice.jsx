@@ -225,7 +225,7 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
                             </button>
                         )}
                         <button className="btn secondary" onClick={handleDownloadPDF} style={{ padding: '10px 24px', color: '#fff' }}>Print / Save PDF</button>
-                        <button className="btn secondary" onClick={onClose} style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.2)' }}>Return to Studio</button>
+                        <button className="btn secondary" onClick={onClose} style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.2)' }}>Return to Invoice</button>
                     </div>
                 </div>
 
