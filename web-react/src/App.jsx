@@ -236,6 +236,7 @@ function AppContent() {
         <div style={{ flex: '1', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '12px' }}>
           {showWhatsNew && (
             <button
+              className="desktop-only"
               onClick={handleWhatsNewClick}
               style={{
                 cursor: 'pointer',
@@ -253,7 +254,14 @@ function AppContent() {
               WHAT'S NEW
             </button>
           )}
-          <div className="mobile-toggle" style={{ cursor: 'pointer', padding: '10px' }} onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+          <div className="mobile-toggle" style={{ cursor: 'pointer', padding: '10px', position: 'relative' }} onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            {showWhatsNew && (
+              <span style={{
+                position: 'absolute', top: '6px', right: '6px',
+                width: '8px', height: '8px', borderRadius: '50%',
+                background: '#f97316', display: 'block'
+              }} />
+            )}
             <div style={{ width: '22px', height: '2px', background: 'white', margin: '4px 0' }}></div>
             <div style={{ width: '22px', height: '2px', background: 'white', margin: '4px 0' }}></div>
             <div style={{ width: '16px', height: '2px', background: 'white', margin: '4px 0', marginLeft: 'auto' }}></div>
@@ -268,6 +276,22 @@ function AppContent() {
             right: '15px',
             animation: 'fadeInDown 0.2s ease-out'
           }}>
+            {/* What's New — mobile only, shown at top of dropdown */}
+            {showWhatsNew && (
+              <button
+                onClick={() => { setMobileMenuOpen(false); handleWhatsNewClick(); }}
+                style={{
+                  display: 'block', width: '100%', textAlign: 'left',
+                  cursor: 'pointer', border: 'none', borderBottom: '1px solid rgba(249,115,22,0.2)',
+                  background: 'rgba(249,115,22,0.08)', color: '#f97316',
+                  padding: '12px 16px', fontSize: '11px', fontWeight: 900,
+                  letterSpacing: '0.08em', marginBottom: '4px',
+                }}
+              >
+                ✦ WHAT'S NEW IN v7.5.9
+              </button>
+            )}
+
             {/* Financials */}
             <div style={{ padding: '6px 16px 4px', fontSize: '9px', fontWeight: 900, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>Financials</div>
             <NavLink to="/" end onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>

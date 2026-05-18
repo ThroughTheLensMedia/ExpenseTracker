@@ -156,7 +156,10 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
                 field('receiptFile', file);
                 field('scanMsg', 'No Gemini key set in Control Center — file attached without auto-fill.');
             } else {
-                field('scanMsg', `Scan failed: ${msg}`);
+                // Network failure or extraction error — still attach the file so the
+                // user doesn't lose their selection. They can fill fields manually.
+                field('receiptFile', file);
+                field('scanMsg', 'Auto-fill failed — check signal. File attached. Fill fields manually and save.');
             }
         } finally {
             field('scanning', false);
