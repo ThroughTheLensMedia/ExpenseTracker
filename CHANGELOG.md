@@ -5,6 +5,18 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.6.1] — 2026-05-17
+
+### First-run onboarding modal + admin silent-refresh fix
+
+#### Added
+- **`web-react/src/App.jsx`** — `OnboardingModal` component and wiring in `AppContent`. Fires once for new users who have a subscription but no `business_name` or `gemini_api_key` configured. Dismissed via localStorage flag (`ll_onboarding_done_{userId}`). "GO TO SETUP →" navigates to Control Center Profile tab; "Skip for now" sets the flag and closes. Shows steps: add business name, add Gemini key, import first transactions.
+
+#### Fixed
+- **`web-react/src/pages/Backup.jsx`** — Silent refresh (`loadTabData(tab, true)`) now handles the `saas` tab. Previously, admin edits (e.g., changing a user's plan to Lifetime) would POST/PATCH successfully but the Subscriptions panel would never re-fetch, making changes appear ineffective until a manual refresh.
+
+---
+
 ## [v7.6.0] — 2026-05-17
 
 ### Auth hardening — Beta code gate + confirm password

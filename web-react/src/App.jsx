@@ -58,6 +58,59 @@ function PrivateRoute({ children }) {
   return children;
 }
 
+// ── First-Run Onboarding Modal ───────────────────────────────────────────────
+// Shown once to new users who have a subscription but haven't configured
+// their business profile or Gemini key. Dismissed via localStorage flag.
+function OnboardingModal({ settings, onDismiss, onGoSetup }) {
+  const name = settings?.contact_name?.split(' ')[0] || settings?.business_name || 'there';
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)',
+      backdropFilter: 'blur(12px)', zIndex: 50000,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
+    }}>
+      <div className="card glass glow-blue" style={{ maxWidth: '480px', width: '100%', padding: '40px', textAlign: 'center' }}>
+        <div style={{ fontSize: '48px', marginBottom: '16px' }}>📷</div>
+        <h2 style={{ margin: '0 0 8px', fontWeight: 900, fontSize: '1.6rem', letterSpacing: '-0.01em' }}>
+          Welcome to Lumière Ledger{name !== 'there' ? `, ${name}` : ''}
+        </h2>
+        <p className="muted" style={{ fontSize: '13px', lineHeight: 1.7, marginBottom: '28px' }}>
+          Your ledger is active. Take 2 minutes to finish setup so everything works correctly.
+        </p>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', textAlign: 'left', marginBottom: '28px' }}>
+          {[
+            { icon: '🏢', title: 'Add your business name', desc: 'Shows on invoices and the daily report email.' },
+            { icon: '🤖', title: 'Add your Gemini API key', desc: 'Powers the AI Brain — free from Google AI Studio. Bring your own key.' },
+            { icon: '💳', title: 'Import your first transactions', desc: 'Upload a bank CSV or add a manual transaction to get started.' },
+          ].map(({ icon, title, desc }) => (
+            <div key={title} style={{
+              display: 'flex', gap: '14px', alignItems: 'flex-start',
+              padding: '14px', borderRadius: '10px', background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.08)'
+            }}>
+              <span style={{ fontSize: '22px', flexShrink: 0 }}>{icon}</span>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: '13px' }}>{title}</div>
+                <div className="muted" style={{ fontSize: '11px', marginTop: '2px' }}>{desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button className="btn primary glow-orange" style={{ flex: 2, padding: '14px', fontSize: '13px', fontWeight: 900 }} onClick={onGoSetup}>
+            GO TO SETUP →
+          </button>
+          <button className="btn secondary" style={{ flex: 1, padding: '14px', fontSize: '12px' }} onClick={onDismiss}>
+            Skip for now
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Beta Code Gate Component ─────────────────────────────────────────────────
 // Shown to authenticated users who have no subscription record.
 // Handles both: Google OAuth users who skipped the code step, and any
@@ -143,12 +196,13 @@ function AppContent() {
   const [newVersion, setNewVersion] = useState(false);
   const [showWhatsNew, setShowWhatsNew] = useState(false);
   const [showChangelogModal, setShowChangelogModal] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const menuRef = useRef(null);
 
   // --- Version Check Hook ---
   // DEPLOY SOP: update CURRENT_VERSION here AND web-react/public/version.json on every release.
   useEffect(() => {
-    const CURRENT_VERSION = "7.6.0";
+    const CURRENT_VERSION = "7.6.1";
 
     // What's New: show button if user hasn't dismissed it for this version
     const seen = localStorage.getItem('ll_whats_new_seen');
@@ -168,8 +222,30 @@ function AppContent() {
     return () => clearInterval(timer);
   }, [user]);
 
+  // ── First-Run Onboarding Trigger ───────────────────────────────────────────
+  // Fires once subscription + settings are resolved for a new user who hasn't
+  // configured business name or Gemini key. localStorage flag prevents repeat.
+  useEffect(() => {
+    if (!user || !subscription || settings === null || settings === undefined) return;
+    const flag = localStorage.getItem('ll_onboarding_done_' + user.id);
+    if (flag) return;
+    const needsSetup = !settings.gemini_api_key || !settings.business_name;
+    if (needsSetup) setShowOnboarding(true);
+  }, [user?.id, subscription, settings]);
+
+  const handleOnboardingDismiss = () => {
+    localStorage.setItem('ll_onboarding_done_' + user?.id, '1');
+    setShowOnboarding(false);
+  };
+
+  const handleOnboardingGoSetup = () => {
+    localStorage.setItem('ll_onboarding_done_' + user?.id, '1');
+    setShowOnboarding(false);
+    navigate('/StudioControlCenter?tab=profile');
+  };
+
   const handleWhatsNewClick = () => {
-    const CURRENT_VERSION = "7.6.0";
+    const CURRENT_VERSION = "7.6.1";
     localStorage.setItem('ll_whats_new_seen', CURRENT_VERSION);
     setShowWhatsNew(false);
     setShowChangelogModal(true);
@@ -368,7 +444,7 @@ function AppContent() {
                   letterSpacing: '0.08em', marginBottom: '4px',
                 }}
               >
-                ✦ WHAT'S NEW IN v7.6.0
+                ✦ WHAT'S NEW IN v7.6.1
               </button>
             )}
 
@@ -485,6 +561,13 @@ function AppContent() {
       </main>
 
       {showChangelogModal && <ChangeLogModal onClose={() => setShowChangelogModal(false)} />}
+      {showOnboarding && (
+        <OnboardingModal
+          settings={settings}
+          onDismiss={handleOnboardingDismiss}
+          onGoSetup={handleOnboardingGoSetup}
+        />
+      )}
 
       {/* Focused Mobile Navigation */}
       <nav className="bottom-nav mobile-only">

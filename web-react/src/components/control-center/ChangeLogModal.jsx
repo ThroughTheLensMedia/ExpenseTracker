@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.6.1', date: 'MAY 17, 2026', color: '#a78bfa', items: [
+        '<strong>First-Run Onboarding:</strong> New users now see a setup modal on first login — guides you through adding your business name, Gemini API key, and first transactions. "GO TO SETUP" drops you directly into the Profile tab. Fires once; dismissed via "Skip for now" and never shown again.',
+        '<strong>Admin Panel Fix:</strong> Changing a user\'s subscription plan (e.g., to Lifetime) now immediately reflects in the Subscriptions panel. Previously, the PATCH succeeded on the backend but the panel didn\'t re-fetch — changes appeared to have no effect until a manual page refresh.',
+    ]},
     { version: '7.5.9', date: 'MAY 17, 2026', color: '#4ade80', items: [
         '<strong>Fast Receipt Processing:</strong> The "Scan or Upload Receipt" button now appears at the <strong>top</strong> of the transaction form — before any other fields. Point your camera at a receipt (or pick a file), and Gemini Vision auto-fills vendor, amount, date, category, and notes.',
         '<strong>PDF Storage:</strong> Images are automatically converted to PDF client-side before saving — smaller files, consistent format, no extra steps.',
