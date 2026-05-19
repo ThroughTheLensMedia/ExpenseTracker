@@ -9,7 +9,18 @@ const Stripe = require('stripe');
 const { supabase } = require('../db');
 
 const router = express.Router();
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' });
+
+// Lazy Stripe init — avoids crash-on-startup when STRIPE_SECRET_KEY is not yet set in env
+let _stripe = null;
+function getStripe() {
+  if (!_stripe) {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      throw new Error('[stripe] STRIPE_SECRET_KEY is not configured in environment variables');
+    }
+    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' });
+  }
+  return _stripe;
+}
 
 // Price ID map — set all four in Vercel env vars after creating products in Stripe Dashboard
 const PRICES = {
@@ -69,7 +80,7 @@ router.post('/create-checkout', async (req, res) => {
       sessionParams.customer_email = req.user.email;
     }
 
-    const session = await stripe.checkout.sessions.create(sessionParams);
+    const session = await getStripe().checkout.sessions.create(sessionParams);
     res.json({ url: session.url });
   } catch (err) {
     console.error('[stripe] create-checkout error:', err.message);
@@ -91,7 +102,7 @@ router.post('/portal', async (req, res) => {
       return res.status(400).json({ error: 'No Stripe customer found for this account' });
     }
 
-    const session = await stripe.billingPortal.sessions.create({
+    const session = await getStripe().billingPortal.sessions.create({
       customer:   sub.stripe_customer_id,
       return_url: 'https://www.lumiereledger.com/StudioControlCenter?tab=profile',
     });
@@ -136,7 +147,7 @@ async function stripeWebhook(req, res) {
   let event;
 
   try {
-    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    event = getStripe().webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
     console.error('[stripe] webhook signature failed:', err.message);
     return res.status(400).send(`Webhook error: ${err.message}`);
@@ -263,7 +274,7 @@ async function stripeWebhook(req, res) {
 async function resolvePlanTypeFromSubscription(subscriptionId) {
   if (!subscriptionId) return null;
   try {
-    const sub = await stripe.subscriptions.retrieve(subscriptionId, {
+    const sub = await getStripe().subscriptions.retrieve(subscriptionId, {
       expand: ['items.data.price'],
     });
     return planTypeFromPriceId(sub.items?.data?.[0]?.price?.id);
@@ -286,14 +297,14 @@ async function buildPlaidInvoiceItems(userId, stripeCustomerId) {
   const extrasCents   = extras * 100;
   const stripeFeeCents = Math.round((extrasCents * 0.029) + 30);
 
-  await stripe.invoiceItems.create({
+  await getStripe().invoiceItems.create({
     customer:    stripeCustomerId,
     amount:      extrasCents,
     currency:    'usd',
     description: `Additional Plaid accounts (${extras} × $1.00) — ${count} total connected`,
   });
 
-  await stripe.invoiceItems.create({
+  await getStripe().invoiceItems.create({
     customer:    stripeCustomerId,
     amount:      stripeFeeCents,
     currency:    'usd',

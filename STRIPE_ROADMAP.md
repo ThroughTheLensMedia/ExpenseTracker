@@ -263,8 +263,9 @@ Then build Plaid billing on top (P1–P10 in `PLAID_BILLING_SPEC.md`, ~4 hrs add
 
 ---
 
-## Stripe Setup Checklist — Your Actions First
+## Stripe Setup Checklist
 
+### Stripe Dashboard Actions (Joshua)
 - [ ] Create Stripe account at stripe.com (business email)
 - [ ] Complete business verification (EIN / SSN, bank account for payouts)
 - [x] Create Product: "Lumière Core"
@@ -273,15 +274,51 @@ Then build Plaid billing on top (P1–P10 in `PLAID_BILLING_SPEC.md`, ~4 hrs add
 - [x] Create Product: "Lumière Studio"
   - [x] $19.00 / month → `price_1TYZvpCXjNrpxtAHdNTzia9o` → `STRIPE_PRICE_STUDIO_MONTHLY`
   - [x] $182.00 / year → `price_1TYZw2CXjNrpxtAHwAiJ3hEy` → `STRIPE_PRICE_STUDIO_ANNUAL`
-- [ ] Add all env vars to Vercel (see block below)
-- [ ] Register webhook: `https://www.lumiereledger.com/api/stripe/webhook`
-- [ ] Select events: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`, `invoice.upcoming`, `invoice.payment_succeeded`
-- [ ] Copy webhook signing secret → `STRIPE_WEBHOOK_SECRET`
-- [ ] Copy publishable key → `VITE_STRIPE_PUBLISHABLE_KEY`
-- [ ] Copy secret key → `STRIPE_SECRET_KEY`
-- [ ] Set invoice finalization window to **3 days** (Stripe Dashboard → Billing → Invoice finalization) — required for Plaid line items
-- [ ] Enable automatic invoice emails (Stripe Settings → Billing → Customer emails → Successful payments + Failed payments + Send finalized invoices)
+- [x] Register webhook: `https://www.lumiereledger.com/api/stripe/webhook` — Active 2026-05-18
+- [x] Select all 6 events — confirmed 2026-05-18
+- [x] Publishable key confirmed — 2026-05-18
+- [x] Secret key confirmed — 2026-05-18
 - [x] ✉️ Price IDs confirmed — locked 2026-05-18
+- [ ] **Reveal webhook signing secret** → Stripe Dashboard → Webhooks → click endpoint → eye icon → copy `whsec_...` → add to Vercel as `STRIPE_WEBHOOK_SECRET`
+- [ ] Set invoice finalization window to **3 days** (Stripe Dashboard → Billing → Invoice finalization)
+- [ ] Enable automatic invoice emails (Stripe Settings → Billing → Customer emails → Successful payments + Failed payments + Send finalized invoices)
+
+### Vercel Env Vars (Joshua)
+- [ ] `STRIPE_SECRET_KEY` = `sk_live_51THoMXCX...`
+- [ ] `STRIPE_WEBHOOK_SECRET` = `whsec_...` (reveal from Stripe first)
+- [ ] `STRIPE_PRICE_CORE_MONTHLY` = `price_1TYZtXCXjNrpxtAHB3ZL5DlF`
+- [ ] `STRIPE_PRICE_CORE_ANNUAL` = `price_1TYZvPCXjNrpxtAHaFtBiyno`
+- [ ] `STRIPE_PRICE_STUDIO_MONTHLY` = `price_1TYZvpCXjNrpxtAHdNTzia9o`
+- [ ] `STRIPE_PRICE_STUDIO_ANNUAL` = `price_1TYZw2CXjNrpxtAHwAiJ3hEy`
+- [ ] `VITE_STRIPE_PUBLISHABLE_KEY` = `pk_live_51THoMXCX...`
+- [ ] `VITE_STRIPE_PRICE_CORE_MONTHLY` = `price_1TYZtXCXjNrpxtAHB3ZL5DlF`
+- [ ] `VITE_STRIPE_PRICE_CORE_ANNUAL` = `price_1TYZvPCXjNrpxtAHaFtBiyno`
+- [ ] `VITE_STRIPE_PRICE_STUDIO_MONTHLY` = `price_1TYZvpCXjNrpxtAHdNTzia9o`
+- [ ] `VITE_STRIPE_PRICE_STUDIO_ANNUAL` = `price_1TYZw2CXjNrpxtAHwAiJ3hEy`
+
+### Supabase Migration (Joshua — run in SQL Editor)
+- [ ] Run idempotent migration:
+  ```sql
+  ALTER TABLE user_subscriptions
+    ADD COLUMN IF NOT EXISTS stripe_customer_id     TEXT,
+    ADD COLUMN IF NOT EXISTS stripe_subscription_id  TEXT,
+    ADD COLUMN IF NOT EXISTS stripe_price_id         TEXT,
+    ADD COLUMN IF NOT EXISTS admin_tier              TEXT DEFAULT NULL;
+  ```
+
+### Code — Done
+- [x] `api/routes/stripe.js` — routes + webhook + Plaid overage billing (v7.6.5)
+- [x] `api/server.js` — webhook before authMiddleware, stripeRouter after (v7.6.5)
+- [x] `api/middleware/licensing.js` — `deriveTier()`, `TIER_LIMITS`, admin_tier override (v7.6.5)
+- [x] `web-react/src/components/AuthContext.jsx` — `tier` derived + exported (v7.6.5)
+- [x] `web-react/src/components/UpgradeGate.jsx` — upgrade gate component (v7.6.5)
+- [x] `api/package.json` — `stripe` dependency added (v7.6.5a)
+- [x] Lazy Stripe init — server no longer crashes when `STRIPE_SECRET_KEY` is absent (v7.6.5a)
+
+### Code — Remaining
+- [ ] Route-level limit enforcement — `expenses.js`, `invoices.js`, `rules.js`, `leads.js`, `assets.js`
+- [ ] ProfileTab billing section — plan badge, Manage Billing, upgrade CTA for Free
+- [ ] End-to-end test — checkout → webhook fires → `plan_type` updates → gate drops
 
 ---
 

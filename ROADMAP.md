@@ -1,6 +1,6 @@
 # Lumière Ledger — Master Roadmap
 
-**Version:** v7.5.7 | **Last reviewed:** 2026-05-17  
+**Version:** v7.6.5 | **Last reviewed:** 2026-05-18  
 Source of truth for all sprint work, security status, and product phases. Replaces `FIX_ROADMAP.md` and `LAUNCH_FIXES.md` — those files are archived.
 
 ---
@@ -19,8 +19,14 @@ Source of truth for all sprint work, security status, and product phases. Replac
 | AI Brain — Phase 2 Steps 1–3 | ✅ Complete — read + write + confirmation UI live |
 | AI Brain — conversation memory | ✅ Complete — history sent with each request |
 | AI Brain — BYOB onboarding CTA | ✅ Complete — setup card for unconfigured users |
-| Post-hardening validation tests | 🔲 Never run — blocking Stripe/Plaid |
-| RLS multi-tenant audit | 🔲 Policies written, end-to-end verification pending |
+| Post-hardening validation tests | ✅ Complete — all 11 tests passed 2026-05-18 |
+| RLS multi-tenant audit | ✅ Complete — all 17 tables verified 2026-05-18 |
+| Stripe billing infrastructure | ✅ Built v7.6.5 — routes, webhook, UpgradeGate, tier system |
+| Stripe env vars + price IDs | ✅ Confirmed — all 4 price IDs locked 2026-05-18 |
+| Stripe dependency crash fix | ✅ Fixed v7.6.5a — lazy init prevents crash when key missing |
+| Supabase schema migration | 🔲 Must run: `ALTER TABLE user_subscriptions ADD COLUMN IF NOT EXISTS...` |
+| Stripe Vercel env vars | 🔲 Must add: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, price IDs, `VITE_` vars |
+| Stripe webhook secret | 🔲 Must reveal in Stripe dashboard and add to Vercel |
 
 ---
 
@@ -61,7 +67,12 @@ Source of truth for all sprint work, security status, and product phases. Replac
 
 | Item | Notes |
 |------|-------|
-| **Stripe billing** | Launch gate cleared — ready to build. Full spec in `STRIPE_ROADMAP.md`. Plaid usage billing (per-account line items + Stripe fee pass-through) fully specced in `PLAID_BILLING_SPEC.md` — build AFTER base Stripe is complete. Waiting on Stripe account setup + price IDs from Joshua. |
+| **Stripe — route-level limit enforcement** | Wire per-route caps: `expenses.js` (500/mo Free), `invoices.js` (3/mo Free, 20/mo Core), `rules.js` (5 Free, 25 Core), `leads.js` (10 leads Free), `assets.js` (5 items Free). `req.tier` and `req.tierLimits` already attached by licensing middleware. |
+| **Stripe — ProfileTab billing section** | Plan badge (Free / Core Monthly / Core Annual / Studio Monthly / Studio Annual / Lifetime), "Manage Billing" → Stripe portal, upgrade CTA for Free users. Hide portal button for free/lifetime/free_beta. |
+| **Stripe — Supabase migration** | Run `ALTER TABLE user_subscriptions ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT, stripe_subscription_id TEXT, stripe_price_id TEXT, admin_tier TEXT DEFAULT NULL` in Supabase SQL Editor. |
+| **Stripe — Vercel env vars** | Add all 10 vars: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, 4× price IDs, `VITE_STRIPE_PUBLISHABLE_KEY`, 4× `VITE_STRIPE_PRICE_*`. |
+| **Stripe — Stripe dashboard settings** | Invoice finalization window → 3 days. Customer emails → enable Successful + Failed + Finalized invoices. |
+| **Stripe — end-to-end test** | Checkout → webhook fires → `plan_type` updates in Supabase → `UpgradeGate` drops → verify with Stripe CLI test card. |
 | **Accounts Page** | Per-account spending analytics derived from existing `source` field on expenses. No Plaid required. See spec below. |
 | **Bank Import UI Cleanup** | Remove emojis from source list, demote niche banks, surface Rocket Money as recommended. See Clean Up section. |
 | Maps Autopilot | In progress — Google Maps A→B→A mileage round-trip |
