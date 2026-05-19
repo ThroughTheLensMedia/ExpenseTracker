@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.1', date: 'MAY 19, 2026', color: '#10b981', items: [
+        '<strong>Sub-Account Drill-Down:</strong> Every Plaid sub-account row (Savings, Checking, Credit Cards, etc.) is now clickable. Hover to see the blue "View →" indicator and click to open the Transaction Ledger pre-filtered to your Plaid transactions.',
+        '<strong>Hide Individual Sub-Accounts:</strong> Each sub-account row has a 👁 button — tap it to hide that specific account from view. Hidden sub-accounts collapse under a "Show N hidden" toggle and can be restored at any time. Persists across sessions.',
+    ]},
     { version: '7.8.0', date: 'MAY 19, 2026', color: '#a78bfa', items: [
         '<strong>Full Terms of Service:</strong> Comprehensive 25-section Terms covering eligibility (US only, 18+), subscription billing, Plaid fee policy (no refunds), 30-day money-back guarantee, AI disclaimer, financial disclaimer, third-party services, and data ownership.',
         '<strong>Binding Arbitration:</strong> Dispute resolution via AAA arbitration (Nashville, TN). Class action waiver included. Governing law: Tennessee.',

@@ -117,7 +117,14 @@ function ConnBadge({ type }) {
 
 // ─── Balance rows (Plaid sub-accounts) ────────────────────────────────────────
 function BalanceRows({ source, plaidConnections }) {
-    const [state, setState] = useState({ loading: true, institutions: null, error: false });
+    const navigate = useNavigate();
+    const [state,      setState]      = useState({ loading: true, institutions: null, error: false });
+    const [hiddenIds,  setHiddenIds]  = useState(() => {
+        try { return new Set(JSON.parse(localStorage.getItem('ll_hidden_plaid_accts') || '[]')); }
+        catch { return new Set(); }
+    });
+    const [showHidden, setShowHidden] = useState(false);
+    const [hoverId,    setHoverId]    = useState(null);
 
     useEffect(() => {
         let cancelled = false;
@@ -129,6 +136,59 @@ function BalanceRows({ source, plaidConnections }) {
 
     const institutionName = plaidConnections?.[0]?.institution_name || 'Connected Bank';
     const lastSynced      = plaidConnections?.[0]?.last_synced_at   || null;
+
+    function toggleHide(e, accountId) {
+        e.stopPropagation();
+        setHiddenIds(prev => {
+            const next = new Set(prev);
+            next.has(accountId) ? next.delete(accountId) : next.add(accountId);
+            localStorage.setItem('ll_hidden_plaid_accts', JSON.stringify([...next]));
+            return next;
+        });
+    }
+
+    const allAccts    = state.institutions?.flatMap(i => i.accounts || []) || [];
+    const hiddenCount = allAccts.filter(a => hiddenIds.has(a.account_id)).length;
+
+    function SubRow({ a, faded }) {
+        const isCredit = a.type === 'credit';
+        const balance  = isCredit ? a.current : (a.available ?? a.current);
+        const isHov    = hoverId === a.account_id && !faded;
+        return (
+            <div key={a.account_id}
+                onClick={faded ? undefined : () => navigate('/transactions?source=plaid')}
+                onMouseEnter={faded ? undefined : () => setHoverId(a.account_id)}
+                onMouseLeave={faded ? undefined : () => setHoverId(null)}
+                style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
+                    padding:'9px 12px', borderRadius:10, gap:10,
+                    background: isHov ? 'rgba(56,189,248,0.07)' : 'rgba(255,255,255,0.03)',
+                    border:`1px solid ${isHov ? 'rgba(56,189,248,0.2)' : 'transparent'}`,
+                    cursor: faded ? 'default' : 'pointer',
+                    opacity: faded ? 0.4 : 1,
+                    transition:'background 0.15s, border-color 0.15s' }}>
+                <div style={{ minWidth:0, flex:1 }}>
+                    <div style={{ fontSize:13, fontWeight:800, color: isHov ? '#38bdf8' : 'white', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', transition:'color 0.15s' }}>{a.name}</div>
+                    <div style={{ fontSize:10, color:'rgba(255,255,255,0.35)', fontWeight:600, marginTop:1, textTransform:'capitalize' }}>
+                        {a.subtype?.replace(/_/g,' ')} · {isCredit ? 'Balance owed' : 'Available'}{faded ? ' · Hidden' : ''}
+                    </div>
+                </div>
+                <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
+                    <div style={{ textAlign:'right' }}>
+                        <div style={{ fontSize:16, fontWeight:900, color: isCredit ? '#f97316' : '#10b981' }}>{fmtBalance(balance)}</div>
+                        {!isCredit && a.current !== null && a.available !== null && a.current !== a.available && (
+                            <div style={{ fontSize:10, color:'rgba(255,255,255,0.3)', fontWeight:600 }}>Ledger {fmtBalance(a.current)}</div>
+                        )}
+                    </div>
+                    {isHov && <span style={{ fontSize:11, color:'rgba(56,189,248,0.6)', fontWeight:700, whiteSpace:'nowrap' }}>View →</span>}
+                    <button onClick={e => toggleHide(e, a.account_id)}
+                        title={faded ? 'Show this account' : 'Hide this account'}
+                        style={{ background:'none', border:'none', cursor:'pointer', fontSize:13, padding:'2px 4px', opacity: faded ? 0.5 : 0.35, flexShrink:0, lineHeight:1 }}>
+                        {faded ? '🙈' : '👁'}
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div style={{ marginBottom:14 }}>
@@ -143,32 +203,30 @@ function BalanceRows({ source, plaidConnections }) {
 
             {state.loading && <div style={{ fontSize:12, color:'rgba(255,255,255,0.3)', padding:'6px 0' }}>Loading balances…</div>}
             {state.error   && <div style={{ fontSize:12, color:'#ef4444', padding:'6px 0' }}>Could not reach bank — try refreshing</div>}
-            {!state.loading && !state.error && state.institutions?.map(inst => (
-                <div key={inst.id} style={{ display:'flex', flexDirection:'column', gap:6 }}>
-                    {inst.balance_error ? (
-                        <div style={{ fontSize:12, color:'rgba(255,255,255,0.3)' }}>Balance unavailable for {inst.institution_name}</div>
-                    ) : inst.accounts?.map(a => {
-                        const isCredit = a.type === 'credit';
-                        const balance  = isCredit ? a.current : (a.available ?? a.current);
-                        return (
-                            <div key={a.account_id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'9px 12px', background:'rgba(255,255,255,0.03)', borderRadius:10, gap:10 }}>
-                                <div style={{ minWidth:0 }}>
-                                    <div style={{ fontSize:13, fontWeight:800, color:'white', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{a.name}</div>
-                                    <div style={{ fontSize:10, color:'rgba(255,255,255,0.35)', fontWeight:600, marginTop:1, textTransform:'capitalize' }}>
-                                        {a.subtype?.replace(/_/g,' ')} · {isCredit ? 'Balance owed' : 'Available'}
-                                    </div>
-                                </div>
-                                <div style={{ textAlign:'right', flexShrink:0 }}>
-                                    <div style={{ fontSize:16, fontWeight:900, color: isCredit ? '#f97316' : '#10b981' }}>{fmtBalance(balance)}</div>
-                                    {!isCredit && a.current !== null && a.available !== null && a.current !== a.available && (
-                                        <div style={{ fontSize:10, color:'rgba(255,255,255,0.3)', fontWeight:600 }}>Ledger {fmtBalance(a.current)}</div>
-                                    )}
-                                </div>
-                            </div>
-                        );
-                    })}
+
+            {!state.loading && !state.error && (
+                <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                    {state.institutions?.map(inst => (
+                        inst.balance_error
+                            ? <div key={inst.id} style={{ fontSize:12, color:'rgba(255,255,255,0.3)' }}>Balance unavailable for {inst.institution_name}</div>
+                            : inst.accounts?.filter(a => !hiddenIds.has(a.account_id)).map(a => <SubRow key={a.account_id} a={a} faded={false} />)
+                    ))}
+
+                    {/* Hidden sub-accounts toggle */}
+                    {hiddenCount > 0 && (
+                        <div style={{ marginTop:2 }}>
+                            <button onClick={() => setShowHidden(v => !v)}
+                                style={{ background:'none', border:'none', cursor:'pointer', fontSize:11, color:'rgba(255,255,255,0.28)', fontWeight:700, padding:'3px 0', display:'flex', alignItems:'center', gap:4 }}>
+                                <span>{showHidden ? '▲' : '▼'}</span>
+                                {showHidden ? 'Hide' : `Show ${hiddenCount} hidden sub-account${hiddenCount === 1 ? '' : 's'}`}
+                            </button>
+                            {showHidden && state.institutions?.map(inst =>
+                                inst.accounts?.filter(a => hiddenIds.has(a.account_id)).map(a => <SubRow key={a.account_id} a={a} faded={true} />)
+                            )}
+                        </div>
+                    )}
                 </div>
-            ))}
+            )}
         </div>
     );
 }
@@ -422,7 +480,7 @@ export default function Accounts() {
             <div style={{ marginBottom:16, padding:'0 4px' }}>
                 <h1 style={{ fontSize:26, fontWeight:900, color:'white', margin:0 }}>Accounts</h1>
                 <p style={{ color:'rgba(255,255,255,0.45)', fontSize:13, margin:'4px 0 0', fontWeight:600 }}>
-                    Rename with ✏ · Hide clutter with 👁 · Sync Plaid with 🔄
+                    Rename with ✏ · Hide accounts or sub-accounts with 👁 · Sync Plaid with 🔄 · Click any sub-account to view transactions
                 </p>
             </div>
 

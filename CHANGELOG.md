@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.1] — 2026-05-19
+
+### Plaid sub-account drill-down + per-sub-account hide
+
+#### Added
+- **`web-react/src/pages/Accounts.jsx`** — `BalanceRows` fully reworked. Each Plaid sub-account row (Savings, Checking, Photography, USAA CC, etc.) is now clickable — hover shows blue highlight + "View →" indicator, click navigates to `/transactions?source=plaid`. Per-sub-account hide toggle (👁) persisted in `localStorage` key `ll_hidden_plaid_accts`. Hidden sub-accounts collapse under a "Show N hidden" expander with 🙈 icon; unhide by clicking 🙈. Page subtitle hint updated to mention sub-account interactivity.
+
+---
+
 ## [v7.8.0] — 2026-05-19
 
 ### Full Terms of Service — 25 sections, payment terms, arbitration, Tennessee law

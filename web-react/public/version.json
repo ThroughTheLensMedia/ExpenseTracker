@@ -1,6 +1,6 @@
 {
-  "version": "7.8.0",
+  "version": "7.8.1",
   "release_date": "2026-05-19",
   "codename": "Lumière Ledger",
-  "notes": "v7.8.0: Full Terms of Service — 25 sections covering billing, Plaid fees, arbitration, TN law, AI disclaimer."
+  "notes": "v7.8.1: Plaid sub-account drill-down — click any sub-account to view transactions; hide individual sub-accounts with 👁."
 }
