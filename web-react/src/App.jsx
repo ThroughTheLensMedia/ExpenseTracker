@@ -204,7 +204,7 @@ function AppContent() {
   // --- Version Check Hook ---
   // DEPLOY SOP: update CURRENT_VERSION here AND web-react/public/version.json on every release.
   useEffect(() => {
-    const CURRENT_VERSION = "7.7.5";
+    const CURRENT_VERSION = "7.7.6";
 
     // What's New: show button if user hasn't dismissed it for this version
     const seen = localStorage.getItem('ll_whats_new_seen');
@@ -247,7 +247,7 @@ function AppContent() {
   };
 
   const handleWhatsNewClick = () => {
-    const CURRENT_VERSION = "7.7.5";
+    const CURRENT_VERSION = "7.7.6";
     localStorage.setItem('ll_whats_new_seen', CURRENT_VERSION);
     setShowWhatsNew(false);
     setShowChangelogModal(true);
@@ -433,7 +433,9 @@ function AppContent() {
             position: 'absolute',
             top: '90px',
             right: '15px',
-            animation: 'fadeInDown 0.2s ease-out'
+            animation: 'fadeInDown 0.2s ease-out',
+            maxHeight: 'calc(100vh - 110px)',
+            overflowY: 'auto',
           }}>
             {/* What's New — mobile only, shown at top of dropdown */}
             {showWhatsNew && (

@@ -1,6 +1,6 @@
 {
-  "version": "7.7.5",
+  "version": "7.7.6",
   "release_date": "2026-05-19",
   "codename": "Lumière Ledger",
-  "notes": "v7.7.5: Accounts by type, sort/filter, Plaid Linked badge, always-visible Plaid card, Sync button."
+  "notes": "v7.7.6: Synced accounts on top, Unsync button, clickable transaction counts, nav scroll fix, Import cleanup."
 }

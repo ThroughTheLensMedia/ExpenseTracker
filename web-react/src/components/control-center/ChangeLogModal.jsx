@@ -1,6 +1,13 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.7.6', date: 'MAY 19, 2026', color: '#10b981', items: [
+        '<strong>Synced Accounts Always on Top:</strong> Plaid-connected and Plaid-linked accounts now appear in their own "🔗 Live Sync" section at the very top of the Accounts page — no more hunting through the list.',
+        '<strong>Unsync a Bank:</strong> Each Plaid Live Sync card now has an "Unsync" button. Click it, confirm, and the connection is removed. Your existing imported transactions are kept.',
+        '<strong>Click Transaction Count → Filtered Ledger:</strong> Tap the Transactions tile on any account card and the Transaction Ledger opens pre-filtered to that account so you can review entries instantly.',
+        '<strong>Logout Always Reachable:</strong> The nav dropdown now scrolls on short screens, so the Logout button is never cut off.',
+        '<strong>Bank Import Cleanup:</strong> Removed the "Coming Soon" label from the Plaid section — it\'s live.',
+    ]},
     { version: '7.7.5', date: 'MAY 19, 2026', color: '#38bdf8', items: [
         '<strong>Accounts Grouped by Type:</strong> Cards are now grouped as 💳 Credit Cards and 🏦 Checking & Savings — Plaid-connected accounts float to the top of each group.',
         '<strong>Plaid Linked Badge:</strong> CSV accounts that have been matched to your Plaid connection show a green "Plaid Linked" badge so you can see exactly which imports are covered.',

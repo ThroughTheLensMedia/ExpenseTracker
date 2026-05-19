@@ -368,7 +368,7 @@ export default function Import() {
                     onClick={() => setShowPlaid(!showPlaid)}
                     style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px', background: 'transparent', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '13px', fontWeight: 800, letterSpacing: '0.03em' }}
                 >
-                    <span>🏦 Bank Auto-Sync via Plaid {!showPlaid && <span style={{ opacity: 0.4, fontWeight: 500, marginLeft: '8px' }}>Coming Soon</span>}</span>
+                    <span>🏦 Bank Auto-Sync via Plaid</span>
                     <span style={{ fontSize: '11px', transition: 'transform 0.2s', transform: showPlaid ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
                 </button>
                 {showPlaid && (

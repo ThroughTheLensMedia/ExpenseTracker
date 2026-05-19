@@ -5,6 +5,20 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.7.6] — 2026-05-19
+
+### Accounts — synced accounts on top, disconnect, clickable transaction counts; nav scroll fix; Import cleanup
+
+#### Added
+- **`web-react/src/pages/Accounts.jsx`** — New "🔗 Live Sync" section always appears at the top of the Accounts page containing all Plaid-connected and Plaid-linked accounts. Non-synced accounts remain grouped by type below. "Transactions" stat tile on each card is now clickable and navigates to `/transactions?source=<source>` to filter the ledger instantly. "Unsync" button on Plaid Live Sync cards with two-step confirm → calls `DELETE /plaid/accounts/:id` and reloads page. `onDisconnect` prop wires all card variants.
+- **`web-react/src/pages/Transactions.jsx`** — `?source=` URL param now pre-populates the account filter on mount (same pattern as existing `?search=`).
+
+#### Fixed
+- **`web-react/src/App.jsx`** — Nav dropdown now has `maxHeight: calc(100vh - 110px)` and `overflowY: auto` so the Logout button is always reachable on short screens.
+- **`web-react/src/pages/Import.jsx`** — Removed "Coming Soon" label from Plaid section toggle; Plaid is live.
+
+---
+
 ## [v7.7.5] — 2026-05-19
 
 ### Accounts page — type groups, sort/filter, Plaid-linked badges, always-visible Plaid card

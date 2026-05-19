@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { apiGet, apiPost, apiPut } from '../api';
+import { apiGet, apiPost, apiPut, apiDelete } from '../api';
 
 // ─── Source metadata ───────────────────────────────────────────────────────────
 const SOURCE_META = {
@@ -174,7 +174,8 @@ function BalanceRows({ source, plaidConnections }) {
 }
 
 // ─── Account card ──────────────────────────────────────────────────────────────
-function AccountCard({ acct, totalMonth, plaidConnections, onAliasChange, onSync, syncing }) {
+function AccountCard({ acct, totalMonth, plaidConnections, onAliasChange, onSync, syncing, onDisconnect }) {
+    const navigate  = useNavigate();
     const meta      = getSourceMeta(acct.source);
     const connType  = getConnType(acct);
     const isPlaid   = connType === 'plaid';
@@ -187,9 +188,11 @@ function AccountCard({ acct, totalMonth, plaidConnections, onAliasChange, onSync
     const institutionName = isPlaid && plaidConnections?.[0]?.institution_name;
     const defaultLabel    = institutionName || acct.display_name || meta.label;
 
-    const [editing, setEditing] = useState(false);
-    const [editVal, setEditVal] = useState(defaultLabel);
-    const [saving,  setSaving]  = useState(false);
+    const [editing,      setEditing]      = useState(false);
+    const [editVal,      setEditVal]      = useState(defaultLabel);
+    const [saving,       setSaving]       = useState(false);
+    const [confirmDisc,  setConfirmDisc]  = useState(false);
+    const [disconnecting, setDisconnecting] = useState(false);
 
     useEffect(() => { setEditVal(acct.display_name || defaultLabel); }, [acct.display_name, defaultLabel]);
 
@@ -211,7 +214,17 @@ function AccountCard({ acct, totalMonth, plaidConnections, onAliasChange, onSync
         } catch(e){ console.error(e); }
     }
 
+    async function handleDisconnect() {
+        if (!plaidConnections?.[0]?.id) return;
+        setDisconnecting(true);
+        try {
+            await apiDelete(`/plaid/accounts/${plaidConnections[0].id}`);
+            onDisconnect?.();
+        } catch(e){ console.error(e); } finally { setDisconnecting(false); setConfirmDisc(false); }
+    }
+
     const displayLabel = acct.display_name || defaultLabel;
+    const txSource     = acct.source === 'plaid' ? null : acct.source; // Plaid = synthetic row, no direct filter
 
     return (
         <div style={{
@@ -254,13 +267,31 @@ function AccountCard({ acct, totalMonth, plaidConnections, onAliasChange, onSync
                 <div style={{ display:'flex', gap:6, alignItems:'center', flexWrap:'wrap', flexShrink:0 }}>
                     {trend && <span style={{ fontSize:11, fontWeight:800, color:trend.color }}>{trend.label}</span>}
                     <ConnBadge type={connType} />
-                    {/* Sync button for Plaid or linked accounts */}
                     {(isPlaid || isLinked) && (
                         <button onClick={onSync} disabled={syncing}
                             title="Sync new transactions from bank"
                             style={{ background:'rgba(16,185,129,0.15)', border:'1px solid rgba(16,185,129,0.3)', borderRadius:20, color:'#10b981', fontSize:10, fontWeight:800, padding:'3px 10px', cursor:'pointer', whiteSpace:'nowrap' }}>
                             {syncing ? '…' : '🔄 Sync'}
                         </button>
+                    )}
+                    {/* Disconnect — only on Plaid Live Sync card */}
+                    {isPlaid && plaidConnections?.[0]?.id && !confirmDisc && (
+                        <button onClick={()=>setConfirmDisc(true)}
+                            title="Disconnect Plaid"
+                            style={{ background:'none', border:'1px solid rgba(239,68,68,0.25)', borderRadius:20, color:'rgba(239,68,68,0.6)', fontSize:10, fontWeight:800, padding:'3px 10px', cursor:'pointer', whiteSpace:'nowrap' }}>
+                            Unsync
+                        </button>
+                    )}
+                    {isPlaid && confirmDisc && (
+                        <div style={{ display:'flex', gap:4, alignItems:'center' }}>
+                            <span style={{ fontSize:10, color:'#ef4444', fontWeight:700 }}>Confirm?</span>
+                            <button onClick={handleDisconnect} disabled={disconnecting}
+                                style={{ background:'rgba(239,68,68,0.15)', border:'1px solid rgba(239,68,68,0.4)', borderRadius:20, color:'#ef4444', fontSize:10, fontWeight:900, padding:'3px 10px', cursor:'pointer' }}>
+                                {disconnecting ? '…' : 'Yes, disconnect'}
+                            </button>
+                            <button onClick={()=>setConfirmDisc(false)}
+                                style={{ background:'none', border:'none', color:'rgba(255,255,255,0.3)', fontSize:14, cursor:'pointer', padding:'2px 4px' }}>✕</button>
+                        </div>
                     )}
                     <button onClick={toggleVisible} title={acct.visible?'Hide':'Show'}
                         style={{ background:'none', border:'none', cursor:'pointer', fontSize:15, padding:'2px 4px', opacity:acct.visible?0.6:0.25 }}>
@@ -277,14 +308,17 @@ function AccountCard({ acct, totalMonth, plaidConnections, onAliasChange, onSync
                 {isPlaid && <div style={{ fontSize:10, fontWeight:800, color:'rgba(255,255,255,0.4)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8 }}>Spending (via Plaid)</div>}
                 <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(110px, 1fr))', gap:8, marginBottom:10 }}>
                     {[
-                        { label:'This Month',   value:fmtMoney(acct.this_month_cents), hi:true },
-                        { label:'Last Month',   value:fmtMoney(acct.last_month_cents) },
-                        { label:'YTD',          value:fmtMoney(acct.ytd_cents) },
-                        { label:'Transactions', value:acct.total_count.toLocaleString() },
+                        { label:'This Month',   value:fmtMoney(acct.this_month_cents), hi:true,  link:false },
+                        { label:'Last Month',   value:fmtMoney(acct.last_month_cents), hi:false, link:false },
+                        { label:'YTD',          value:fmtMoney(acct.ytd_cents),        hi:false, link:false },
+                        { label:'Transactions', value:acct.total_count.toLocaleString(), hi:false, link:!!txSource },
                     ].map(s => (
-                        <div key={s.label} style={{ background:'rgba(255,255,255,0.03)', borderRadius:10, padding:'10px 12px' }}>
+                        <div key={s.label}
+                            onClick={s.link ? ()=>navigate(`/transactions?source=${encodeURIComponent(txSource)}`) : undefined}
+                            style={{ background:'rgba(255,255,255,0.03)', borderRadius:10, padding:'10px 12px', cursor: s.link ? 'pointer' : 'default' }}
+                            title={s.link ? `View ${displayLabel} transactions` : undefined}>
                             <div style={{ fontSize:9, fontWeight:800, color:'rgba(255,255,255,0.35)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>{s.label}</div>
-                            <div style={{ fontSize:15, fontWeight:900, color: s.hi ? connColor : 'rgba(255,255,255,0.8)' }}>{s.value}</div>
+                            <div style={{ fontSize:15, fontWeight:900, color: s.hi ? connColor : s.link ? '#38bdf8' : 'rgba(255,255,255,0.8)', textDecoration: s.link ? 'underline' : 'none', textDecorationColor: 'rgba(56,189,248,0.4)' }}>{s.value}</div>
                         </div>
                     ))}
                 </div>
@@ -365,17 +399,15 @@ export default function Accounts() {
         sortKey
     );
 
-    // Group visible accounts by type — Plaid/linked accounts float to top within each group
+    // Synced accounts shown globally at top (Plaid Live Sync + Plaid Linked)
+    const syncedAccounts = visibleAccounts.filter(a => a.source === 'plaid' || a.has_plaid_link);
+    const syncedKeys     = new Set(syncedAccounts.map(a => a.source));
+
+    // Remaining accounts grouped by type (exclude already shown in synced section)
     const grouped = {};
     for (const g of TYPE_GROUPS) {
         grouped[g.key] = visibleAccounts
-            .filter(a => a.account_type === g.key)
-            .sort((a, b) => {
-                // Plaid/linked accounts first within each group
-                const aScore = a.source === 'plaid' ? 2 : a.has_plaid_link ? 1 : 0;
-                const bScore = b.source === 'plaid' ? 2 : b.has_plaid_link ? 1 : 0;
-                return bScore - aScore;
-            });
+            .filter(a => a.account_type === g.key && !syncedKeys.has(a.source));
     }
 
     const totalMonth    = data?.total_month_cents || 0;
@@ -446,7 +478,34 @@ export default function Accounts() {
                 </div>
             )}
 
-            {/* Type-grouped account cards */}
+            {/* Synced accounts — always at the top */}
+            {!loading && !error && syncedAccounts.length > 0 && (
+                <div>
+                    <div style={{ display:'flex', alignItems:'center', gap:10, margin:'0 0 10px', padding:'0 2px' }}>
+                        <div style={{ width:3, height:18, background:'#10b981', borderRadius:2, flexShrink:0 }} />
+                        <div style={{ fontSize:13, fontWeight:900, color:'white' }}>
+                            🔗 Live Sync
+                            <span style={{ marginLeft:8, fontSize:11, fontWeight:700, color:'rgba(255,255,255,0.3)' }}>{syncedAccounts.length}</span>
+                        </div>
+                    </div>
+                    <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:8 }}>
+                        {syncedAccounts.map(acct => (
+                            <AccountCard
+                                key={acct.source}
+                                acct={acct}
+                                totalMonth={totalMonth}
+                                plaidConnections={acct.source === 'plaid' ? plaidConns : null}
+                                onAliasChange={handleAliasChange}
+                                onSync={handleSync}
+                                syncing={syncing}
+                                onDisconnect={load}
+                            />
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Type-grouped account cards (non-synced) */}
             {!loading && !error && TYPE_GROUPS.map(group => {
                 const list = grouped[group.key];
                 if (!list?.length) return null;
@@ -459,10 +518,11 @@ export default function Accounts() {
                                     key={acct.source}
                                     acct={acct}
                                     totalMonth={totalMonth}
-                                    plaidConnections={acct.source === 'plaid' ? plaidConns : null}
+                                    plaidConnections={null}
                                     onAliasChange={handleAliasChange}
                                     onSync={handleSync}
                                     syncing={syncing}
+                                    onDisconnect={load}
                                 />
                             ))}
                         </div>
@@ -481,7 +541,7 @@ export default function Accounts() {
                     {showHidden && (
                         <div style={{ display:'flex', flexDirection:'column', gap:8, marginTop:10 }}>
                             {hiddenAccounts.map(acct => (
-                                <AccountCard key={acct.source} acct={acct} totalMonth={totalMonth} plaidConnections={acct.source==='plaid'?plaidConns:null} onAliasChange={handleAliasChange} onSync={handleSync} syncing={syncing} />
+                                <AccountCard key={acct.source} acct={acct} totalMonth={totalMonth} plaidConnections={acct.source==='plaid'?plaidConns:null} onAliasChange={handleAliasChange} onSync={handleSync} syncing={syncing} onDisconnect={load} />
                             ))}
                         </div>
                     )}

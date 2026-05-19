@@ -100,10 +100,12 @@ export default function Transactions() {
         loadData();
     }, []);
 
-    // Pre-populate vendor search from URL ?search= param (e.g. from dashboard drill-down)
+    // Pre-populate filters from URL params (?search=, ?source=)
     useEffect(() => {
         const urlSearch = searchParams.get('search');
         if (urlSearch) setSearchVendor(urlSearch);
+        const urlSource = searchParams.get('source');
+        if (urlSource) setSearchAccount(urlSource);
     }, []); // intentionally run once on mount only
 
     // Refresh when Brain Assistant approves a transaction action
