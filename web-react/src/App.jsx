@@ -21,6 +21,7 @@ const SecurityPolicy = lazy(() => import('./pages/SecurityPolicy'));
 const Home           = lazy(() => import('./pages/Home'));
 const PayInvoice     = lazy(() => import('./pages/PayInvoice'));
 const AddOns         = lazy(() => import('./pages/AddOns'));
+const Accounts       = lazy(() => import('./pages/Accounts'));
 const AssistantSidebar = lazy(() => import('./components/AssistantSidebar'));
 import ChangeLogModal from './components/control-center/ChangeLogModal.jsx';
 
@@ -203,7 +204,7 @@ function AppContent() {
   // --- Version Check Hook ---
   // DEPLOY SOP: update CURRENT_VERSION here AND web-react/public/version.json on every release.
   useEffect(() => {
-    const CURRENT_VERSION = "7.6.7";
+    const CURRENT_VERSION = "7.6.8";
 
     // What's New: show button if user hasn't dismissed it for this version
     const seen = localStorage.getItem('ll_whats_new_seen');
@@ -246,7 +247,7 @@ function AppContent() {
   };
 
   const handleWhatsNewClick = () => {
-    const CURRENT_VERSION = "7.6.7";
+    const CURRENT_VERSION = "7.6.8";
     localStorage.setItem('ll_whats_new_seen', CURRENT_VERSION);
     setShowWhatsNew(false);
     setShowChangelogModal(true);
@@ -471,6 +472,9 @@ function AppContent() {
             <NavLink to="/import" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
               Bank Import
             </NavLink>
+            <NavLink to="/accounts" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
+              Accounts
+            </NavLink>
             <NavLink to="/equipment" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
               Camera Gear
             </NavLink>
@@ -552,6 +556,7 @@ function AppContent() {
             <Route path="/backup" element={<Navigate to="/StudioControlCenter" replace />} />
             <Route path="/crm/*" element={<CRM />} />
             <Route path="/import" element={<Import />} />
+            <Route path="/accounts" element={<Accounts />} />
             <Route path="/addons" element={<AddOns />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />

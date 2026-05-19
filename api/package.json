@@ -8,6 +8,8 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
+    "libsodium-wrappers": "^0.7.15",
+    "plaid": "^29.0.0",
     "@supabase/supabase-js": "^2.99.1",
     "archiver": "^7.0.1",
     "bull": "^4.16.5",

@@ -90,7 +90,7 @@ router.post("/exchange-token", async (req, res) => {
         // Encrypt access token before storage
         let encrypted_access_token;
         try {
-            encrypted_access_token = encrypt(access_token);
+            encrypted_access_token = await encrypt(access_token);
         } catch (err) {
             console.error("[Plaid] Encryption failed:", err.message);
             return res.status(500).json({ error: "Failed to secure access token." });
@@ -205,7 +205,7 @@ router.delete("/accounts/:id", async (req, res) => {
 
         // Remove from Plaid (decrypt token first)
         try {
-            const access_token = decrypt(conn.access_token);
+            const access_token = await decrypt(conn.access_token);
             await client.itemRemove({ access_token });
         } catch (_) { /* Plaid may already have removed it, or decryption failed */ }
 
@@ -234,7 +234,7 @@ async function syncTransactions(sb, plaidClient, connection, userId) {
         // Decrypt access token for API call
         let access_token;
         try {
-            access_token = decrypt(connection.access_token);
+            access_token = await decrypt(connection.access_token);
         } catch (err) {
             console.error("[Plaid] Decryption failed:", err.message);
             throw new Error("Failed to decrypt access token");

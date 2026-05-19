@@ -5,6 +5,30 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.6.8] — 2026-05-19
+
+### Accounts Page + Plaid Activation + Billing Fix
+
+#### Added
+- **`web-react/src/pages/Accounts.jsx`** — New Accounts page at `/accounts`. Per-source cards: this month, last month, YTD, transaction count, % of monthly spend, trend vs. last month. Summary bar: total / checking / credit card totals.
+- **`api/routes/accounts.js`** — `GET /api/accounts/summary` endpoint. Single date-range query, JS aggregation by source key. Returns per-account + page-level totals.
+- **Accounts nav link** — Added to Operations section in hamburger menu (App.jsx).
+- **"Connect a Bank" CTA** — Accounts page footer links to `/import` to open Plaid Link.
+
+#### Fixed
+- **`api/utils/cryptoUtil.js`** — Replaced stub (throws on call) with real libsodium-wrappers implementation. Async encrypt/decrypt using `crypto_secretbox_easy`. Key must be 32-byte hex set as `ENCRYPTION_KEY` env var.
+- **`api/routes/plaid.js`** — Added `await` to all 3 encrypt/decrypt call sites (exchange-token, disconnect, syncTransactions loop) — required now that cryptoUtil functions are async.
+- **`api/routes/stripe.js`** — Billing function `buildPlaidInvoiceItems` was querying `plaid_accounts` (wrong table) with `.eq('active', true)` (wrong column). Fixed to `plaid_connections` and `.eq('status', 'active')`.
+- **`api/package.json`** — Restored `plaid@^29.0.0` and added `libsodium-wrappers@^0.7.15`. Tested locally: `node -e "require('./server.js')"` → `LOAD_OK`.
+- **`web-react/src/components/control-center/SaasTab.jsx`** — Removed `pro` from `PLAN_OPTIONS`. Admin dropdown now shows: Beta Tester, Monthly, Annual, Lifetime only. Existing Pro users unaffected (backend expiry handler preserved).
+
+#### Notes
+- `ENCRYPTION_KEY` must be set in Vercel env before Plaid token exchange will succeed.
+- Plaid keys (`PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENV=production`) must be set in Vercel.
+- Force deploy recommended after adding new packages: `vercel deploy --prod --force`
+
+---
+
 ## [v7.6.7c] — 2026-05-19
 
 ### Hotfix — Vercel Build Cache Bypass / plaid Module Missing

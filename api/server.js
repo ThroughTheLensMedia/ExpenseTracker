@@ -32,6 +32,7 @@ const { router: stripeRouter, stripeWebhook } = require("./routes/stripe"); // S
 const metricsRouter = require("./routes/metrics"); // Dashboard metrics layer
 const vendorsRouter = require("./routes/vendors"); // Vendor specific settings
 const feedbackRouter = require("./routes/feedback"); // In-app feedback form
+const accountsRouter = require("./routes/accounts"); // Accounts page summary
 
 // Initialize Database — log clearly if it fails
 if (!initDb()) {
@@ -164,6 +165,7 @@ apiRouter.use("/plaid", plaidRouter);
 apiRouter.use("/stripe", stripeRouter);
 apiRouter.use("/metrics", metricsRouter);
 apiRouter.use("/vendors", vendorsRouter);
+apiRouter.use("/accounts", accountsRouter);
 
 // Mount all API routes under /api
 // Mount all API routes under /api AND root (for Vercel flexibility)

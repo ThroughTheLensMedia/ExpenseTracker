@@ -291,10 +291,10 @@ async function buildPlaidInvoiceItems(userId, stripeCustomerId) {
   if (userId === ADMIN_USER_ID) return null;
 
   const { count } = await supabase
-    .from('plaid_accounts')
+    .from('plaid_connections')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', userId)
-    .eq('active', true);
+    .eq('status', 'active');
 
   if (!count || count === 0) return null;
 

@@ -1,6 +1,13 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.6.8', date: 'MAY 19, 2026', color: '#4ade80', items: [
+        '<strong>Accounts Page:</strong> New "Accounts" section in the nav — see every bank account and card side-by-side. Per-account: this month, last month, YTD spend, transaction count, % of total monthly spend, and last import date.',
+        '<strong>Spend Trend Indicator:</strong> Each account card shows whether this month\'s spending is up or down vs. last month, with the exact percentage change.',
+        '<strong>Summary Bar:</strong> At a glance — total monthly spend, bank/checking total, and credit card total across all accounts.',
+        '<strong>Live Bank Sync Ready:</strong> Plaid is now fully wired — real encryption (libsodium), approved API keys, all 5 endpoints active. Connect a bank directly from the Accounts page or Bank Import.',
+        '<strong>Admin Plan Types:</strong> Cleaned up to Beta Tester, Monthly, Annual, and Lifetime. Pro removed from new assignment flows; existing Pro users are unaffected.',
+    ]},
     { version: '7.6.7', date: 'MAY 18, 2026', color: '#38bdf8', items: [
         '<strong>Billing Section in Profile:</strong> Your subscription plan now shows at the top of the Profile tab — plan badge, tier label, and savings callout for grandfathered members.',
         '<strong>Upgrade Card:</strong> Free users see a Core vs Studio comparison with a monthly/annual toggle. One click opens Stripe Checkout — no redirects through unrelated pages.',
