@@ -1,6 +1,11 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.7.3', date: 'MAY 19, 2026', color: '#10b981', items: [
+        '<strong>Live Account Balances:</strong> Connected Banks now show real-time balances pulled directly from your bank via Plaid — current balance and available balance per account (checking, savings, credit cards).',
+        '<strong>Real Bank Names:</strong> Plaid-connected accounts now show your actual institution name (e.g. "USAA") instead of "Plaid (Auto-Sync)". Sub-accounts are listed by name with their type and balance.',
+        '<strong>Last Synced Timestamp:</strong> Each connected bank shows exactly when transactions were last pulled, so you always know how fresh the data is.',
+    ]},
     { version: '7.7.2', date: 'MAY 19, 2026', color: '#10b981', items: [
         '<strong>Accounts Grouped by Type:</strong> The Accounts page now organizes cards into three clear sections — Connected Banks (Plaid), Imported Accounts (CSV), and Manual Entry — so you always know what\'s what.',
         '<strong>Live Sync Badge:</strong> Plaid-connected accounts show a pulsing green dot and "Live Sync" badge. CSV imports show blue "CSV Import". Manual entries show purple "Manual Entry".',

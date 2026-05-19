@@ -16,9 +16,9 @@ router.get('/summary', async (req, res) => {
         const lastMoYr = thisMo === 1 ? thisYear - 1 : thisYear;
         const ytdStart = `${thisYear}-01-01`;
 
-        // Fetch transactions + aliases in parallel
-        // Alias query is best-effort — table may not exist yet (migration pending)
-        const [txRes, aliasRes] = await Promise.all([
+        // Fetch transactions, aliases, and plaid connections in parallel
+        // Alias + plaid queries are best-effort — failures don't break the page
+        const [txRes, aliasRes, plaidRes] = await Promise.all([
             req.sb
                 .from('expenses')
                 .select('source, amount_cents, expense_date')
@@ -31,10 +31,17 @@ router.get('/summary', async (req, res) => {
                 .eq('user_id', req.user.id)
                 .then(r => r)
                 .catch(() => ({ data: [], error: null })),
+            req.sb
+                .from('plaid_connections')
+                .select('id, institution_name, institution_id, last_synced_at, status')
+                .eq('user_id', req.user.id)
+                .eq('status', 'active')
+                .then(r => r)
+                .catch(() => ({ data: [], error: null })),
         ]);
 
         if (txRes.error) throw txRes.error;
-        // aliasRes errors are silently ignored — aliases are non-critical
+        // alias + plaid errors are silently ignored — non-critical
 
         // Build alias lookup: source_key → { display_name, visible }
         const aliasMap = {};
@@ -94,6 +101,7 @@ router.get('/summary', async (req, res) => {
 
         res.json({
             accounts:          rows,          // ALL rows (visible + hidden) — frontend filters
+            plaid_connections: plaidRes.data || [],  // active Plaid connections with institution names
             total_month_cents: totalMonthCents,
             checking_cents:    checkingCents,
             credit_cents:      creditCents,

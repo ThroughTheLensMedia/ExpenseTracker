@@ -1,6 +1,6 @@
 {
-  "version": "7.7.2",
+  "version": "7.7.3",
   "release_date": "2026-05-19",
   "codename": "Lumière Ledger",
-  "notes": "v7.7.2: Accounts grouped by Live Sync / CSV Import / Manual with connection-type badges."
+  "notes": "v7.7.3: Plaid live balances, real institution names, last-synced timestamp on Accounts page."
 }

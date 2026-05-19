@@ -5,6 +5,17 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.7.3] — 2026-05-19
+
+### Plaid live balances + institution names on Accounts page
+
+#### Added
+- **`api/routes/plaid.js`** — `GET /plaid/balances`: real-time `accountsBalanceGet` call per active connection. Returns per-institution array with per-sub-account `{ name, type, subtype, current, available, currency }`. Errors per-institution are isolated — one failing connection doesn't break others.
+- **`api/routes/accounts.js`** — Summary now includes `plaid_connections` array (institution_name, last_synced_at) alongside transaction data.
+- **`web-react/src/pages/Accounts.jsx`** — Plaid accounts get a dedicated `PlaidCard` component: shows real institution name (e.g. "USAA") from `plaid_connections`, "Last synced" timestamp, Live Account Balances section with per-sub-account rows (available balance for checking, balance owed for credit), total across accounts. Balances load async after page paint so page is never blocked by the Plaid API call.
+
+---
+
 ## [v7.7.2] — 2026-05-19
 
 ### Accounts page — grouped sections + connection type badges

@@ -187,7 +187,64 @@ router.get("/accounts", async (req, res) => {
     }
 });
 
-// ─── 5. Disconnect Account ───
+// ─── 5. Live Balances ───
+// Returns current + available balances for every sub-account across all active connections.
+// Real-time Plaid API call — keep out of the main summary endpoint so page load stays fast.
+router.get("/balances", async (req, res) => {
+    try {
+        const client = getPlaidClient();
+
+        const { data: connections, error } = await req.sb
+            .from("plaid_connections")
+            .select("id, institution_name, last_synced_at, access_token")
+            .eq("user_id", req.user.id)
+            .eq("status", "active");
+
+        if (error) throw error;
+        if (!connections?.length) return res.json({ institutions: [] });
+
+        const institutions = [];
+
+        for (const conn of connections) {
+            try {
+                const access_token = await decrypt(conn.access_token);
+                const resp = await client.accountsBalanceGet({ access_token });
+
+                institutions.push({
+                    id:               conn.id,
+                    institution_name: conn.institution_name,
+                    last_synced_at:   conn.last_synced_at,
+                    accounts: resp.data.accounts.map(a => ({
+                        account_id:    a.account_id,
+                        name:          a.name,
+                        official_name: a.official_name || null,
+                        type:          a.type,
+                        subtype:       a.subtype,
+                        current:       a.balances.current,
+                        available:     a.balances.available,
+                        currency:      a.balances.iso_currency_code || 'USD',
+                    })),
+                });
+            } catch (e) {
+                console.error(`[Plaid] Balance fetch failed for ${conn.institution_name}:`, e.message);
+                institutions.push({
+                    id:               conn.id,
+                    institution_name: conn.institution_name,
+                    last_synced_at:   conn.last_synced_at,
+                    accounts:         [],
+                    balance_error:    true,
+                });
+            }
+        }
+
+        res.json({ institutions });
+    } catch (e) {
+        console.error("[Plaid] Balances error:", e.message);
+        res.status(500).json({ error: "Failed to fetch balances." });
+    }
+});
+
+// ─── 6. Disconnect Account ───
 router.delete("/accounts/:id", async (req, res) => {
     try {
         const { id } = req.params;
