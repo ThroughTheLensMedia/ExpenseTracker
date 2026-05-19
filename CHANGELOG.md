@@ -5,6 +5,19 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.2] — 2026-05-19
+
+### Stale-while-revalidate caching for Accounts + Plaid balances; FAQ additions
+
+#### Performance
+- **`web-react/src/pages/Accounts.jsx`** — `/accounts/summary` response cached in `localStorage` key `ll_accounts_cache`. On mount: state initialised from cache (instant render), full loading spinner suppressed when cache exists. Background refresh fires silently; `refreshing` indicator shows in header. Post-sync reload uses `load(true)` (silent) to avoid re-spinner.
+- **`web-react/src/pages/Accounts.jsx` — `BalanceRows`** — `/plaid/balances` response cached in `ll_plaid_balances_cache`. State initialised from cache so balance rows appear immediately. Live fetch updates silently; "Refreshing…" label shown in header while in-flight. On fetch error, stale data is preserved instead of blanking the UI.
+
+#### Added
+- **`web-react/src/components/control-center/HelpTab.jsx`** — Two new FAQ entries: (1) How to disconnect Plaid — step-by-step via Accounts → Live Sync → Unsync, clarifies existing transactions are retained. (2) How to delete your account and all data — email support@throughthelens.media, 5-business-day SLA, export reminder.
+
+---
+
 ## [v7.8.1] — 2026-05-19
 
 ### Plaid sub-account drill-down + per-sub-account hide

@@ -1,6 +1,6 @@
 {
-  "version": "7.8.1",
+  "version": "7.8.2",
   "release_date": "2026-05-19",
   "codename": "Lumière Ledger",
-  "notes": "v7.8.1: Plaid sub-account drill-down — click any sub-account to view transactions; hide individual sub-accounts with 👁."
+  "notes": "v7.8.2: Accounts page loads instantly from cache; Plaid balances cached; FAQ — Plaid disconnect + account deletion."
 }

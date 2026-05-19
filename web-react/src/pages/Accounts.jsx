@@ -116,9 +116,18 @@ function ConnBadge({ type }) {
 }
 
 // ─── Balance rows (Plaid sub-accounts) ────────────────────────────────────────
+const BALANCES_CACHE_KEY = 'll_plaid_balances_cache';
+
 function BalanceRows({ source, plaidConnections }) {
     const navigate = useNavigate();
-    const [state,      setState]      = useState({ loading: true, institutions: null, error: false });
+    const [state,      setState]      = useState(() => {
+        try {
+            const cached = JSON.parse(localStorage.getItem(BALANCES_CACHE_KEY) || 'null');
+            if (cached?.institutions?.length)
+                return { loading:false, institutions: cached.institutions, error:false, stale:true };
+        } catch {}
+        return { loading:true, institutions:null, error:false, stale:false };
+    });
     const [hiddenIds,  setHiddenIds]  = useState(() => {
         try { return new Set(JSON.parse(localStorage.getItem('ll_hidden_plaid_accts') || '[]')); }
         catch { return new Set(); }
@@ -129,8 +138,19 @@ function BalanceRows({ source, plaidConnections }) {
     useEffect(() => {
         let cancelled = false;
         apiGet('/plaid/balances')
-            .then(r => { if (!cancelled) setState({ loading:false, institutions: r.institutions||[], error:false }); })
-            .catch(()=> { if (!cancelled) setState({ loading:false, institutions:[], error:true }); });
+            .then(r => {
+                if (cancelled) return;
+                const institutions = r.institutions || [];
+                setState({ loading:false, institutions, error:false, stale:false });
+                try { localStorage.setItem(BALANCES_CACHE_KEY, JSON.stringify({ institutions, ts: Date.now() })); } catch {}
+            })
+            .catch(() => {
+                if (cancelled) return;
+                // Keep stale data if we have it; only show error on cold start
+                setState(prev => prev.institutions?.length
+                    ? { ...prev, loading:false, stale:false }
+                    : { loading:false, institutions:[], error:true, stale:false });
+            });
         return () => { cancelled = true; };
     }, []);
 
@@ -196,9 +216,12 @@ function BalanceRows({ source, plaidConnections }) {
                 <div style={{ fontSize:10, fontWeight:800, color:'rgba(255,255,255,0.4)', textTransform:'uppercase', letterSpacing:'0.06em' }}>
                     Live Balances · {institutionName}
                 </div>
-                {lastSynced && (
-                    <div style={{ fontSize:10, color:'rgba(255,255,255,0.3)', fontWeight:600 }}>Synced {fmtDateTime(lastSynced)}</div>
-                )}
+                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    {state.stale && <div style={{ fontSize:10, color:'rgba(255,255,255,0.22)', fontStyle:'italic', fontWeight:600 }}>Refreshing…</div>}
+                    {lastSynced && !state.stale && (
+                        <div style={{ fontSize:10, color:'rgba(255,255,255,0.3)', fontWeight:600 }}>Synced {fmtDateTime(lastSynced)}</div>
+                    )}
+                </div>
             </div>
 
             {state.loading && <div style={{ fontSize:12, color:'rgba(255,255,255,0.3)', padding:'6px 0' }}>Loading balances…</div>}
@@ -408,10 +431,20 @@ function GroupHeader({ group, count }) {
 }
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
+const ACCTS_CACHE_KEY = 'll_accounts_cache';
+
 export default function Accounts() {
     const navigate = useNavigate();
-    const [data,       setData]       = useState(null);
-    const [loading,    setLoading]    = useState(true);
+    const [data,       setData]       = useState(() => {
+        try {
+            const cached = JSON.parse(localStorage.getItem(ACCTS_CACHE_KEY) || 'null');
+            return cached?.data || null;
+        } catch { return null; }
+    });
+    const [loading,    setLoading]    = useState(!(() => {
+        try { return !!JSON.parse(localStorage.getItem(ACCTS_CACHE_KEY) || 'null')?.data; } catch { return false; }
+    })());
+    const [refreshing, setRefreshing] = useState(false);
     const [error,      setError]      = useState(null);
     const [showHidden, setShowHidden] = useState(false);
     const [sortKey,    setSortKey]    = useState('spend_month');
@@ -419,14 +452,24 @@ export default function Accounts() {
     const [syncing,    setSyncing]    = useState(false);
     const [syncMsg,    setSyncMsg]    = useState(null);
 
-    const load = useCallback(async () => {
-        setLoading(true); setError(null);
-        try { setData(await apiGet('/accounts/summary')); }
-        catch(e) { setError(e.message); }
-        finally { setLoading(false); }
+    const load = useCallback(async (silent = false) => {
+        if (!silent) { setLoading(true); setError(null); }
+        else setRefreshing(true);
+        try {
+            const fresh = await apiGet('/accounts/summary');
+            setData(fresh);
+            try { localStorage.setItem(ACCTS_CACHE_KEY, JSON.stringify({ data: fresh, ts: Date.now() })); } catch {}
+        }
+        catch(e) { if (!silent) setError(e.message); }
+        finally { setLoading(false); setRefreshing(false); }
     }, []);
 
-    useEffect(() => { load(); }, [load]);
+    useEffect(() => {
+        // Cache already seeded state on mount — always background-refresh
+        const hasCached = !!data;
+        load(hasCached);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     function handleAliasChange(sourceKey, patch) {
         setData(prev => prev ? { ...prev, accounts: prev.accounts.map(a => a.source === sourceKey ? { ...a, ...patch } : a) } : prev);
@@ -438,7 +481,7 @@ export default function Accounts() {
             const r = await apiPost('/plaid/sync');
             const note = r.linked > 0 ? ` ${r.linked} matched to existing.` : '';
             setSyncMsg({ ok:true, text:`✅ ${r.added} new, ${r.modified} updated, ${r.removed} removed.${note}` });
-            await load();
+            await load(true); // silent refresh — don't flash loading state
         } catch(e) {
             setSyncMsg({ ok:false, text:`❌ Sync failed: ${e.message}` });
         } finally { setSyncing(false); }
@@ -478,7 +521,10 @@ export default function Accounts() {
 
             {/* Header */}
             <div style={{ marginBottom:16, padding:'0 4px' }}>
-                <h1 style={{ fontSize:26, fontWeight:900, color:'white', margin:0 }}>Accounts</h1>
+                <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                    <h1 style={{ fontSize:26, fontWeight:900, color:'white', margin:0 }}>Accounts</h1>
+                    {refreshing && <span style={{ fontSize:11, color:'rgba(255,255,255,0.25)', fontStyle:'italic', fontWeight:600 }}>Refreshing…</span>}
+                </div>
                 <p style={{ color:'rgba(255,255,255,0.45)', fontSize:13, margin:'4px 0 0', fontWeight:600 }}>
                     Rename with ✏ · Hide accounts or sub-accounts with 👁 · Sync Plaid with 🔄 · Click any sub-account to view transactions
                 </p>
@@ -556,7 +602,7 @@ export default function Accounts() {
                                 onAliasChange={handleAliasChange}
                                 onSync={handleSync}
                                 syncing={syncing}
-                                onDisconnect={load}
+                                onDisconnect={() => load(false)}
                             />
                         ))}
                     </div>
@@ -580,7 +626,7 @@ export default function Accounts() {
                                     onAliasChange={handleAliasChange}
                                     onSync={handleSync}
                                     syncing={syncing}
-                                    onDisconnect={load}
+                                    onDisconnect={() => load(false)}
                                 />
                             ))}
                         </div>
@@ -599,7 +645,7 @@ export default function Accounts() {
                     {showHidden && (
                         <div style={{ display:'flex', flexDirection:'column', gap:8, marginTop:10 }}>
                             {hiddenAccounts.map(acct => (
-                                <AccountCard key={acct.source} acct={acct} totalMonth={totalMonth} plaidConnections={acct.source==='plaid'?plaidConns:null} onAliasChange={handleAliasChange} onSync={handleSync} syncing={syncing} onDisconnect={load} />
+                                <AccountCard key={acct.source} acct={acct} totalMonth={totalMonth} plaidConnections={acct.source==='plaid'?plaidConns:null} onAliasChange={handleAliasChange} onSync={handleSync} syncing={syncing} onDisconnect={() => load(false)} />
                             ))}
                         </div>
                     )}

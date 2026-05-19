@@ -1,6 +1,12 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.2', date: 'MAY 19, 2026', color: '#38bdf8', items: [
+        '<strong>Instant Accounts Page:</strong> Account summaries now load from local cache immediately on every visit. Fresh data refreshes silently in the background — no more staring at a spinner.',
+        '<strong>Instant Plaid Balances:</strong> Live bank balances (Savings, Checking, Credit Cards) appear from last session\'s cache the moment you open the page. A subtle "Refreshing…" label appears while the live pull completes.',
+        '<strong>FAQ: How to Remove Plaid:</strong> Step-by-step instructions added — go to Accounts → Live Sync → Unsync. Clarifies that existing transactions are kept after disconnection.',
+        '<strong>FAQ: How to Delete Your Account:</strong> Instructions to request full data deletion via email, including what gets deleted and the 5-business-day timeline.',
+    ]},
     { version: '7.8.1', date: 'MAY 19, 2026', color: '#10b981', items: [
         '<strong>Sub-Account Drill-Down:</strong> Every Plaid sub-account row (Savings, Checking, Credit Cards, etc.) is now clickable. Hover to see the blue "View →" indicator and click to open the Transaction Ledger pre-filtered to your Plaid transactions.',
         '<strong>Hide Individual Sub-Accounts:</strong> Each sub-account row has a 👁 button — tap it to hide that specific account from view. Hidden sub-accounts collapse under a "Show N hidden" toggle and can be restored at any time. Persists across sessions.',

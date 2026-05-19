@@ -17,6 +17,8 @@ export default function HelpTab() {
         { q: 'Is my data shared with other users?', a: 'Absolutely not. The platform uses Row Level Security (RLS) within our cloud database, meaning your data is cryptographically isolated to your unique User ID.' },
         { q: 'How does the AI Brain work?', a: 'By using a "Bring Your Own Key" model, every Lumière Ledger user has their own private intelligence instance. This ensures your financial data is never trained on by others, your processing costs are zero for the platform, and your "First-Class" advisor analyzes ONLY your specific data.' },
         { q: 'Can I export my data if I leave?', a: 'Yes. You can download a "Master Business Archive" (.json) at any time from the Infrastructure tab to keep your own backups.' },
+        { q: 'How do I disconnect my bank from Plaid?', a: 'Go to the Accounts page and locate your connected bank in the 🔗 Live Sync section at the top. Click the red "Unsync" button on the right side of the card, then confirm when prompted. This immediately revokes Plaid\'s access to your bank data and stops future sync fees. Your existing imported transactions are kept in your ledger — they are not deleted when you disconnect.' },
+        { q: 'How do I delete my account and all my data?', a: 'To permanently delete your account and all associated data, email support@throughthelens.media with the subject line "Account Deletion Request" and include the email address associated with your account. We will delete your profile, transactions, receipts, invoices, and all stored data within 5 business days and send a confirmation. Note: deletion is permanent and cannot be undone. Export your data first from the Infrastructure tab if you need a copy.' },
     ];
 
     return (
