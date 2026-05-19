@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.6.9] — 2026-05-19
+
+### Accounts page — mobile layout fix
+
+#### Fixed
+- **`web-react/src/pages/Accounts.jsx`** — Stats grid changed from `repeat(4, 1fr)` to `repeat(auto-fit, minmax(110px, 1fr))` — collapses to 2×2 on mobile. Summary bar uses `repeat(auto-fit, minmax(160px, 1fr))`. Card header uses `flexWrap: wrap`. Progress bar row uses `flex: 1 1 80px`. Cards use `width: 100%` + `boxSizing: border-box` to fill `.wrap` container. Added 'checking' source key to SOURCE_META (was falling through to unknown). Negative last-month amounts handled safely in `fmt()` and `trendArrow()`. Removed inner `maxWidth: 900` constraint — pages inherit the 1180px from `.wrap`.
+- **Commit attribution** — removed Co-Authored-By trailers. All commits are Through The Lens Media / Joshua Deuermeyer only.
+
+---
+
 ## [v7.6.8] — 2026-05-19
 
 ### Accounts Page + Plaid Activation + Billing Fix

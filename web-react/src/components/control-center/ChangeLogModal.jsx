@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.6.9', date: 'MAY 19, 2026', color: '#38bdf8', items: [
+        '<strong>Accounts Page — Mobile Layout:</strong> Account cards and stats grid now fully responsive — on phone the 4-column stat grid collapses to 2×2, summary bar stacks cleanly, all text and badges wrap correctly at any screen width.',
+    ]},
     { version: '7.6.8', date: 'MAY 19, 2026', color: '#4ade80', items: [
         '<strong>Accounts Page:</strong> New "Accounts" section in the nav — see every bank account and card side-by-side. Per-account: this month, last month, YTD spend, transaction count, % of total monthly spend, and last import date.',
         '<strong>Spend Trend Indicator:</strong> Each account card shows whether this month\'s spending is up or down vs. last month, with the exact percentage change.',
