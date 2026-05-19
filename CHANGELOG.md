@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.7.2] — 2026-05-19
+
+### Accounts page — grouped sections + connection type badges
+
+#### Changed
+- **`web-react/src/pages/Accounts.jsx`** — Accounts now grouped into three labeled sections: "Connected Banks" (Plaid live sync), "Imported Accounts" (CSV), "Manual Entry". Each card has a prominent connection-type badge: green pulsing dot for Live Sync, blue for CSV Import, purple for Manual. Progress bar color now matches connection type. "Connect a Bank" CTA only shows when no Plaid accounts are connected. Left border accent color per connection type.
+
+---
+
 ## [v7.7.1] — 2026-05-19
 
 ### Account aliases — rename & hide

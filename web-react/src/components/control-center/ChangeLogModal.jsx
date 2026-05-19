@@ -1,6 +1,11 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.7.2', date: 'MAY 19, 2026', color: '#10b981', items: [
+        '<strong>Accounts Grouped by Type:</strong> The Accounts page now organizes cards into three clear sections — Connected Banks (Plaid), Imported Accounts (CSV), and Manual Entry — so you always know what\'s what.',
+        '<strong>Live Sync Badge:</strong> Plaid-connected accounts show a pulsing green dot and "Live Sync" badge. CSV imports show blue "CSV Import". Manual entries show purple "Manual Entry".',
+        '<strong>Color-coded Borders:</strong> Each card has a left accent border matching its connection type at a glance.',
+    ]},
     { version: '7.7.1', date: 'MAY 19, 2026', color: '#4ade80', items: [
         '<strong>Rename Your Accounts:</strong> Each account card now has a ✏ pencil icon — click it, type a new name (e.g. "USAA Checking" or "Wise EUR"), and save. Your custom name persists across sessions.',
         '<strong>Hide Clutter Accounts:</strong> Click the 👁 eye icon on any account to hide it. Hidden accounts are collapsed into a "Show hidden" expander at the bottom — still accessible but out of the way.',

@@ -1,6 +1,6 @@
 {
-  "version": "7.7.1",
+  "version": "7.7.2",
   "release_date": "2026-05-19",
   "codename": "Lumière Ledger",
-  "notes": "v7.7.1: Account aliases — rename accounts, hide clutter, hidden expander."
+  "notes": "v7.7.2: Accounts grouped by Live Sync / CSV Import / Manual with connection-type badges."
 }
