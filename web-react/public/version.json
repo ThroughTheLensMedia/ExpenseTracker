@@ -1,6 +1,6 @@
 {
-  "version": "7.7.4",
+  "version": "7.7.5",
   "release_date": "2026-05-19",
   "codename": "Lumière Ledger",
-  "notes": "v7.7.4: Plaid cross-source dedup — no duplicates when connecting a bank you already imported via CSV."
+  "notes": "v7.7.5: Accounts by type, sort/filter, Plaid Linked badge, always-visible Plaid card, Sync button."
 }

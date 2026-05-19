@@ -1,10 +1,25 @@
-// api/routes/accounts.js — Lumière Ledger Accounts summary + aliases
-// GET /api/accounts/summary  — per-source spend aggregates, merged with aliases
+// api/routes/accounts.js
+// GET /api/accounts/summary  — grouped by account type, Plaid + CSV + manual
 // PUT /api/accounts/alias    — upsert { source_key, display_name?, visible? }
 'use strict';
 
 const express = require('express');
 const router  = express.Router();
+
+// Credit source detection — used to assign account_type
+const CREDIT_SOURCES = new Set([
+    'applecard','capitalone','amex','delta_amex','amex_gold','amex_platinum','amex_blue',
+    'chase','bankofamerica','wellsfargo',
+]);
+const CREDIT_KEYWORDS = ['card','amex','credit','visa','mastercard','discover','venture','sapphire','freedom','platinum','gold','blue','delta','skymiles','southwest','united','ink'];
+
+function detectAccountType(source) {
+    const key = (source || '').toLowerCase();
+    if (key === 'manual') return 'manual';
+    if (CREDIT_SOURCES.has(key)) return 'credit';
+    if (CREDIT_KEYWORDS.some(k => key.includes(k))) return 'credit';
+    return 'checking'; // default: checking/savings/bank
+}
 
 // ─── GET /api/accounts/summary ────────────────────────────────────────────────
 router.get('/summary', async (req, res) => {
@@ -14,14 +29,11 @@ router.get('/summary', async (req, res) => {
         const thisMo   = now.getMonth() + 1;
         const lastMo   = thisMo === 1 ? 12 : thisMo - 1;
         const lastMoYr = thisMo === 1 ? thisYear - 1 : thisYear;
-        const ytdStart = `${thisYear}-01-01`;
 
-        // Fetch transactions, aliases, and plaid connections in parallel
-        // Alias + plaid queries are best-effort — failures don't break the page
         const [txRes, aliasRes, plaidRes] = await Promise.all([
             req.sb
                 .from('expenses')
-                .select('source, amount_cents, expense_date')
+                .select('source, amount_cents, expense_date, plaid_transaction_id')
                 .eq('user_id', req.user.id)
                 .gte('expense_date', `${lastMoYr}-01-01`)
                 .order('expense_date', { ascending: false }),
@@ -29,42 +41,42 @@ router.get('/summary', async (req, res) => {
                 .from('account_aliases')
                 .select('source_key, display_name, visible')
                 .eq('user_id', req.user.id)
-                .then(r => r)
-                .catch(() => ({ data: [], error: null })),
+                .then(r => r).catch(() => ({ data: [] })),
             req.sb
                 .from('plaid_connections')
-                .select('id, institution_name, institution_id, last_synced_at, status')
+                .select('id, institution_name, last_synced_at, status')
                 .eq('user_id', req.user.id)
                 .eq('status', 'active')
-                .then(r => r)
-                .catch(() => ({ data: [], error: null })),
+                .then(r => r).catch(() => ({ data: [] })),
         ]);
 
         if (txRes.error) throw txRes.error;
-        // alias + plaid errors are silently ignored — non-critical
 
-        // Build alias lookup: source_key → { display_name, visible }
+        // Alias lookup
         const aliasMap = {};
         for (const a of (aliasRes.data || [])) {
             aliasMap[a.source_key] = { display_name: a.display_name, visible: a.visible };
         }
 
+        // Build per-source aggregates
         const accounts = {};
 
-        for (const tx of txRes.data || []) {
-            const s  = tx.source || 'manual';
-            const d  = tx.expense_date || '';
+        for (const tx of (txRes.data || [])) {
+            const s    = tx.source || 'manual';
+            const d    = tx.expense_date || '';
             const [yr, mo] = d.split('-').map(Number);
             const cents = tx.amount_cents || 0;
 
             if (!accounts[s]) {
                 accounts[s] = {
                     source:           s,
+                    account_type:     detectAccountType(s),
                     this_month_cents: 0,
                     last_month_cents: 0,
                     ytd_cents:        0,
                     total_count:      0,
                     last_date:        null,
+                    has_plaid_link:   false,
                 };
             }
 
@@ -74,41 +86,55 @@ router.get('/summary', async (req, res) => {
             if (yr === thisYear && mo === thisMo)  a.this_month_cents += cents;
             if (yr === lastMoYr && mo === lastMo)  a.last_month_cents += cents;
             if (yr === thisYear)                   a.ytd_cents        += cents;
+            if (tx.plaid_transaction_id)           a.has_plaid_link   = true;
         }
 
-        // Merge aliases into each account row
+        // Ensure a 'plaid' entry exists for every active Plaid connection,
+        // even if all transactions were linked to CSV rows (no source='plaid' expenses).
+        const plaidConns = plaidRes.data || [];
+        if (plaidConns.length > 0 && !accounts['plaid']) {
+            accounts['plaid'] = {
+                source:           'plaid',
+                account_type:     'checking',
+                this_month_cents: 0,
+                last_month_cents: 0,
+                ytd_cents:        0,
+                total_count:      0,
+                last_date:        plaidConns[0].last_synced_at?.split('T')[0] || null,
+                has_plaid_link:   false,
+            };
+        }
+
+        // Merge aliases + visible flag into rows
         const rows = Object.values(accounts).map(acct => {
             const alias = aliasMap[acct.source] || {};
             return {
                 ...acct,
-                display_name: alias.display_name || null,   // null = use auto-label in frontend
-                visible:      alias.visible !== false,       // default true if no alias row
+                display_name: alias.display_name || null,
+                visible:      alias.visible !== false,
             };
         });
 
-        // Page-level totals — visible accounts only
-        const visibleRows = rows.filter(a => a.visible);
-        const totalMonthCents = visibleRows.reduce((s, a) => s + a.this_month_cents, 0);
-
-        const CREDIT_KEYS = ['applecard','capitalone','amex','delta_amex','amex_gold','amex_platinum','amex_blue','chase','bankofamerica','wellsfargo','usbank','navyfcu'];
-        let checkingCents = 0;
-        let creditCents   = 0;
-        for (const a of visibleRows) {
-            const key = a.source.toLowerCase();
-            if (CREDIT_KEYS.some(k => key.includes(k))) creditCents   += a.this_month_cents;
-            else                                          checkingCents += a.this_month_cents;
+        // Page-level totals — visible accounts, no double-counting:
+        // skip 'plaid' source rows from totals since linked CSV rows already count
+        const visibleForTotals = rows.filter(a => a.visible && a.source !== 'plaid');
+        const totalMonthCents  = visibleForTotals.reduce((s, a) => s + a.this_month_cents, 0);
+        let checkingCents = 0, creditCents = 0;
+        for (const a of visibleForTotals) {
+            if (a.account_type === 'credit') creditCents   += a.this_month_cents;
+            else                              checkingCents += a.this_month_cents;
         }
 
         res.json({
-            accounts:          rows,          // ALL rows (visible + hidden) — frontend filters
-            plaid_connections: plaidRes.data || [],  // active Plaid connections with institution names
+            accounts:          rows,
+            plaid_connections: plaidConns,
             total_month_cents: totalMonthCents,
             checking_cents:    checkingCents,
             credit_cents:      creditCents,
             period: {
                 this_month: `${thisYear}-${String(thisMo).padStart(2,'0')}`,
                 last_month: `${lastMoYr}-${String(lastMo).padStart(2,'0')}`,
-                ytd_start:  ytdStart,
+                ytd_start:  `${thisYear}-01-01`,
             },
         });
     } catch (err) {
@@ -118,17 +144,13 @@ router.get('/summary', async (req, res) => {
 });
 
 // ─── PUT /api/accounts/alias ──────────────────────────────────────────────────
-// Body: { source_key: string, display_name?: string|null, visible?: boolean }
-// Upserts a single alias row — partial update supported (omit fields to leave unchanged)
 router.put('/alias', async (req, res) => {
     try {
         const { source_key, display_name, visible } = req.body || {};
-
         if (!source_key || typeof source_key !== 'string') {
             return res.status(400).json({ error: 'source_key is required' });
         }
 
-        // Fetch existing row first so we can merge (partial update)
         const { data: existing } = await req.sb
             .from('account_aliases')
             .select('display_name, visible')
@@ -149,7 +171,6 @@ router.put('/alias', async (req, res) => {
             .upsert(payload, { onConflict: 'user_id,source_key' });
 
         if (error) throw error;
-
         res.json({ ok: true, alias: payload });
     } catch (err) {
         console.error('[accounts] alias upsert error:', err.message);

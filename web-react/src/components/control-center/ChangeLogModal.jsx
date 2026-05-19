@@ -1,6 +1,12 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.7.5', date: 'MAY 19, 2026', color: '#38bdf8', items: [
+        '<strong>Accounts Grouped by Type:</strong> Cards are now grouped as 💳 Credit Cards and 🏦 Checking & Savings — Plaid-connected accounts float to the top of each group.',
+        '<strong>Plaid Linked Badge:</strong> CSV accounts that have been matched to your Plaid connection show a green "Plaid Linked" badge so you can see exactly which imports are covered.',
+        '<strong>Sort &amp; Filter:</strong> Sort by spend, YTD, transaction count, or name. Filter pills narrow to Credit Cards or Checking only.',
+        '<strong>Sync Button:</strong> 🔄 Sync button on any Plaid-connected account pulls new transactions from your bank on demand without going to Bank Import.',
+    ]},
     { version: '7.7.4', date: 'MAY 19, 2026', color: '#4ade80', items: [
         '<strong>No More Duplicates When Connecting a Bank:</strong> If you already imported transactions from a bank via CSV, connecting that same bank via Plaid will now match existing records instead of creating duplicates. Your categories, notes, receipts, and tax flags are fully preserved.',
         '<strong>Smart Linking:</strong> Matched transactions get their Plaid ID attached — so future syncs know they\'re already in your ledger and skip them automatically.',

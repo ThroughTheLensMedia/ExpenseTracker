@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.7.5] — 2026-05-19
+
+### Accounts page — type groups, sort/filter, Plaid-linked badges, always-visible Plaid card
+
+#### Fixed
+- **`api/routes/accounts.js`** — Added `plaid_transaction_id` to expenses select so `has_plaid_link` flag is detected per source. Plaid card always generated from `plaid_connections` even when all transactions were cross-source linked (no `source='plaid'` rows). Credit card detection expanded: venture, sapphire, freedom, platinum, gold, skymiles, southwest, united, ink keywords added. Page-level totals exclude `source='plaid'` row to prevent double-counting with linked CSV accounts.
+- **`web-react/src/pages/Accounts.jsx`** — Grouped by account type (💳 Credit Cards / 🏦 Checking & Savings / ✏️ Manual). Sort dropdown: spend this month, YTD, transactions, name. Filter pills: All / Credit / Checking. Plaid/linked accounts float to top within each group. "🔗 Plaid Linked" badge on CSV accounts that have been matched to Plaid. 🔄 Sync button on Plaid and linked cards. Sync result banner inline. Single AccountCard component handles all types.
+
+---
+
 ## [v7.7.4] — 2026-05-19
 
 ### Plaid cross-source dedup — no duplicates when connecting an account you already imported via CSV
