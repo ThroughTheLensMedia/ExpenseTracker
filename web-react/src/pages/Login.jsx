@@ -39,7 +39,7 @@ export default function Login() {
         if (!confirmPassword) throw new Error("Please confirm your password.");
         if (password !== confirmPassword) throw new Error("Passwords do not match.");
         await signup(email, password);
-        setSuccess("Account created! A confirmation email is on its way from Supabase Auth (noreply@mail.app.supabase.io) — that's the secure authentication system Lumière Ledger uses to verify your identity. Check your spam folder if you don't see it within a few minutes. Once confirmed, return here and log in.");
+        setSuccess("Account created! A confirmation email is on its way from support@throughthelens.media — check your inbox and spam folder. Click the confirmation link, then return here to log in.");
         setIsLogin(true);
       }
     } catch (err) {

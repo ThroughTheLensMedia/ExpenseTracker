@@ -5,6 +5,18 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.7.9] — 2026-05-19
+
+### Auth emails now route through Resend; signup message updated
+
+#### Fixed
+- **`web-react/src/pages/Login.jsx`** — Signup success message updated to show `support@throughthelens.media` as the sender now that Supabase SMTP is configured to use Resend. Removed hardcoded `noreply@mail.app.supabase.io` reference.
+
+#### Infrastructure
+- **Supabase Auth → SMTP Settings** — Configured custom SMTP via Resend: host `smtp.resend.com`, port 465, username `resend`, sender `Lumière Ledger <support@throughthelens.media>`. Removes Supabase free-tier 4/hour email rate limit. Auth emails (signup confirmation, password reset) now deliver reliably from the verified `throughthelens.media` domain.
+
+---
+
 ## [v7.7.8] — 2026-05-19
 
 ### Plaid billing gate, onboarding checklist, nav reorder, login/profile/email cleanup

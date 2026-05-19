@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.7.9', date: 'MAY 19, 2026', color: '#38bdf8', items: [
+        '<strong>Auth Email via Resend:</strong> Supabase now routes confirmation emails through Resend (support@throughthelens.media) instead of its default sender — no more rate limits, no more spam folder.',
+        '<strong>Signup Success Message:</strong> Now shows the correct sender address so new users know exactly what to expect.',
+    ]},
     { version: '7.7.8', date: 'MAY 19, 2026', color: '#ef4444', items: [
         '<strong>Plaid Billing Gate (Security Fix):</strong> Free accounts can no longer connect to Plaid without a billing method on file. A fee disclosure modal now appears before any bank connection is initiated — $0.50/account/month.',
         '<strong>Onboarding Checklist:</strong> New accounts see a 4-step setup guide — Business Profile, AI Brain, Bank Sync, and Documentation — with a progress bar and per-step checkboxes that persist across sessions.',
