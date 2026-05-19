@@ -1,6 +1,12 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.7.7', date: 'MAY 19, 2026', color: '#f97316', items: [
+        '<strong>Landing Page Rebuilt:</strong> lumiereledger.com now matches the full marketing page — new headline, feature cards, Tax Automation and Client Management detail sections, AI example prompts, and pricing tiers.',
+        '<strong>8 Feature Cards:</strong> AI Assistant, Invoicing, Executive Dashboard, CRM Pipeline, Gear Depreciation, Smart CSV Import, Mileage Tracking, and Receipt Management — each with description and badge.',
+        '<strong>Pricing Section:</strong> Core (free beta), Pro ($19/mo, coming soon), and Studio ($49/mo, Q3 2026) all displayed with full feature lists.',
+        '<strong>Final CTA Banner:</strong> "Stop Running Your Business From Spreadsheets" with the beta invite message.',
+    ]},
     { version: '7.7.6', date: 'MAY 19, 2026', color: '#10b981', items: [
         '<strong>Synced Accounts Always on Top:</strong> Plaid-connected and Plaid-linked accounts now appear in their own "🔗 Live Sync" section at the very top of the Accounts page — no more hunting through the list.',
         '<strong>Unsync a Bank:</strong> Each Plaid Live Sync card now has an "Unsync" button. Click it, confirm, and the connection is removed. Your existing imported transactions are kept.',

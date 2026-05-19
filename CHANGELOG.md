@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.7.7] — 2026-05-19
+
+### Landing page rebuilt to match throughthelens.media/marketing/lumiere-ledger
+
+#### Changed
+- **`web-react/src/pages/Home.jsx`** — Full rewrite. Now matches the reference marketing page: hero with "Your Entire Business. One Command Center." headline, 4 badge pills (bank profiles, IRS threshold, Gemini, PWA), two CTA buttons. "Everything You Need" section with all 8 feature cards (AI Assistant, Invoicing, Dashboard, CRM, Gear, CSV Import, Mileage, Receipts) with badges. Tax Automation section with 5 bullet points. Client Management section with 5 bullet points. AI Intelligence section with 6 example prompts. Pricing section with 3 tiers (Core free, Pro $19, Studio $49). Final CTA "Stop Running Your Business From Spreadsheets" banner. Footer updated to "© 2026 Through The Lens Media · lumiereledger.com".
+
+---
+
 ## [v7.7.6] — 2026-05-19
 
 ### Accounts — synced accounts on top, disconnect, clickable transaction counts; nav scroll fix; Import cleanup
