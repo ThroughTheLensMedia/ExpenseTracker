@@ -67,13 +67,16 @@ Source of truth for all sprint work, security status, and product phases. Replac
 
 | Item | Notes |
 |------|-------|
-| **Stripe — route-level limit enforcement** | Wire per-route caps: `expenses.js` (500/mo Free), `invoices.js` (3/mo Free, 20/mo Core), `rules.js` (5 Free, 25 Core), `leads.js` (10 leads Free), `assets.js` (5 items Free). `req.tier` and `req.tierLimits` already attached by licensing middleware. |
-| **Stripe — ProfileTab billing section** | Plan badge (Free / Core Monthly / Core Annual / Studio Monthly / Studio Annual / Lifetime), "Manage Billing" → Stripe portal, upgrade CTA for Free users. Hide portal button for free/lifetime/free_beta. |
-| **Stripe — Supabase migration** | Run `ALTER TABLE user_subscriptions ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT, stripe_subscription_id TEXT, stripe_price_id TEXT, admin_tier TEXT DEFAULT NULL` in Supabase SQL Editor. |
-| **Stripe — Vercel env vars** | Add all 10 vars: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, 4× price IDs, `VITE_STRIPE_PUBLISHABLE_KEY`, 4× `VITE_STRIPE_PRICE_*`. |
-| **Stripe — Stripe dashboard settings** | Invoice finalization window → 3 days. Customer emails → enable Successful + Failed + Finalized invoices. |
+| **Stripe — ProfileTab billing section** | Plan badge (Free / Core Monthly / Core Annual / Studio Monthly / Studio Annual / Lifetime), "Manage Billing" → Stripe portal, upgrade CTA for Free users. Hide portal button for free/lifetime/free_beta. — **NEXT UP** |
 | **Stripe — end-to-end test** | Checkout → webhook fires → `plan_type` updates in Supabase → `UpgradeGate` drops → verify with Stripe CLI test card. |
-| **Accounts Page** | Per-account spending analytics derived from existing `source` field on expenses. No Plaid required. See spec below. |
+| ✅ **Stripe — route-level limit enforcement** | Done v7.6.6 — expenses, invoices, rules, leads, assets. |
+| ✅ **Stripe — Supabase migration** | Done — stripe columns + admin_tier added. |
+| ✅ **Stripe — Vercel env vars** | Done — all 10 vars set. |
+| ✅ **Stripe — Stripe dashboard settings** | Done — finalization window + invoice emails enabled. |
+| **Accounts Page — Live Balances** | Rocket Money-style view: per-account current balance, available balance, account type badge, institution. Powered by Plaid `plaid_accounts` table (live balances) + existing `source` field (CSV spending history). See spec below. Build after Plaid goes live. |
+| **Plaid — card-on-file gate** | Require payment method before Plaid Link opens. Create Stripe customer for Free users. See PLAID_BILLING_SPEC.md P2. |
+| **Plaid — announcement email** | Draft ready at `PLAID_ANNOUNCEMENT_EMAIL.md`. Send 1–2 weeks before Plaid activation. |
+| **Grandfathered users — admin_tier fix** | Run: `UPDATE user_subscriptions SET admin_tier = 'studio' WHERE plan_type IN ('free_beta','lifetime') AND admin_tier IS NULL;` — grants Studio limits to all beta users with zero billing impact. **Run this now.** |
 | **Bank Import UI Cleanup** | Remove emojis from source list, demote niche banks, surface Rocket Money as recommended. See Clean Up section. |
 | Maps Autopilot | In progress — Google Maps A→B→A mileage round-trip |
 | User-Defined Accounts (Phase 5) | Replace dynamic source dropdown with user-managed named accounts — prerequisite for live balances |

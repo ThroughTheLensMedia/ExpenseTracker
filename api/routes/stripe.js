@@ -283,35 +283,40 @@ async function resolvePlanTypeFromSubscription(subscriptionId) {
   }
 }
 
-// Plaid overage billing — see PLAID_BILLING_SPEC.md
+// Plaid usage billing — $0.50/account/month, all accounts, Stripe fee passed through
+// Admin (Joshua) pays Plaid directly — bypassed here. See PLAID_BILLING_SPEC.md.
+const ADMIN_USER_ID = '49e7efcb-6434-4f0c-9563-3151a6d50df9';
+
 async function buildPlaidInvoiceItems(userId, stripeCustomerId) {
+  if (userId === ADMIN_USER_ID) return null;
+
   const { count } = await supabase
     .from('plaid_accounts')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', userId)
     .eq('active', true);
 
-  const extras = Math.max(0, (count || 0) - 7);
-  if (extras === 0) return;
+  if (!count || count === 0) return null;
 
-  const extrasCents   = extras * 100;
-  const stripeFeeCents = Math.round((extrasCents * 0.029) + 30);
+  const plaidSubtotalCents = count * 50; // $0.50/account
+  const stripeFeeCents = Math.round((plaidSubtotalCents * 0.029) + 30); // 2.9% + $0.30
 
   await getStripe().invoiceItems.create({
     customer:    stripeCustomerId,
-    amount:      extrasCents,
+    amount:      plaidSubtotalCents,
     currency:    'usd',
-    description: `Additional Plaid accounts (${extras} × $1.00) — ${count} total connected`,
+    description: `Plaid live bank sync (${count} account${count === 1 ? '' : 's'} x $0.50/mo)`,
   });
 
   await getStripe().invoiceItems.create({
     customer:    stripeCustomerId,
     amount:      stripeFeeCents,
     currency:    'usd',
-    description: `Stripe processing fee (2.9% + $0.30 on $${(extrasCents / 100).toFixed(2)})`,
+    description: `Stripe processing fee (2.9% + $0.30 on $${(plaidSubtotalCents / 100).toFixed(2)})`,
   });
 
-  console.log(`[stripe] Plaid overage — user ${userId}, ${extras} extra, $${((extrasCents + stripeFeeCents) / 100).toFixed(2)} billed`);
+  console.log(`[stripe/plaid] billed user ${userId} — ${count} accounts, $${((plaidSubtotalCents + stripeFeeCents) / 100).toFixed(2)} total`);
+  return { count, plaidSubtotalCents, stripeFeeCents };
 }
 
 module.exports = { router, stripeWebhook, deriveTier };
