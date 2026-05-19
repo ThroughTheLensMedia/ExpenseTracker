@@ -5,6 +5,17 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.7.1] — 2026-05-19
+
+### Account aliases — rename & hide
+
+#### Added
+- **`api/tests/account-aliases-migration.sql`** — Idempotent migration for `account_aliases` table (`user_id`, `source_key`, `display_name`, `visible`). RLS enabled. Run in Supabase SQL editor.
+- **`api/routes/accounts.js`** — `PUT /api/accounts/alias` endpoint: upsert `{ source_key, display_name, visible }` with partial update support. Summary endpoint now fetches aliases in parallel and merges `display_name` / `visible` into each account row. Page-level totals calculated from visible accounts only.
+- **`web-react/src/pages/Accounts.jsx`** — Inline rename (✏ pencil icon → text input → Save / Escape), visibility toggle (👁 eye icon hides account, 🙈 for hidden). Hidden accounts collapse to a "Show N hidden accounts" expander at the bottom. Alias changes are optimistic (no full reload). Source key shown in subdued monospace below institution name for identification.
+
+---
+
 ## [v7.7.0] — 2026-05-19
 
 ### AI Brain subscriptions fix + Plaid billing exemption list

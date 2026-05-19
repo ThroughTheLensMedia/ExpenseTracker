@@ -1,6 +1,6 @@
 {
-  "version": "7.7.0",
+  "version": "7.7.1",
   "release_date": "2026-05-19",
   "codename": "Lumière Ledger",
-  "notes": "v7.7.0: AI Brain subscription detection across all categories + Plaid billing exemption list."
+  "notes": "v7.7.1: Account aliases — rename accounts, hide clutter, hidden expander."
 }

@@ -1,6 +1,11 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.7.1', date: 'MAY 19, 2026', color: '#4ade80', items: [
+        '<strong>Rename Your Accounts:</strong> Each account card now has a ✏ pencil icon — click it, type a new name (e.g. "USAA Checking" or "Wise EUR"), and save. Your custom name persists across sessions.',
+        '<strong>Hide Clutter Accounts:</strong> Click the 👁 eye icon on any account to hide it. Hidden accounts are collapsed into a "Show hidden" expander at the bottom — still accessible but out of the way.',
+        '<strong>Source Key Reference:</strong> Each card now shows the raw source key (e.g. "checking") in small text below the institution name, so you know exactly which import it maps to.',
+    ]},
     { version: '7.7.0', date: 'MAY 19, 2026', color: '#f97316', items: [
         '<strong>Smarter Subscription Search:</strong> Ask the Brain "how much do I spend on subscriptions?" and it now searches across every category — phone bills, insurance, gym memberships, streaming, cloud tools — not just Software & Subscriptions. Results are grouped by vendor with estimated monthly costs.',
         '<strong>Recurring Charge Detection:</strong> The Brain looks for vendors that appear repeatedly over the past 60–90 days and surfaces them as your actual recurring bills, regardless of which category they landed in.',
