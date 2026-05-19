@@ -149,20 +149,23 @@ router.post("/sync", async (req, res) => {
         let totalAdded = 0;
         let totalModified = 0;
         let totalRemoved = 0;
+        let totalLinked = 0;
 
         for (const conn of connections) {
             const result = await syncTransactions(req.sb, client, conn, req.user.id);
-            totalAdded += result.added;
+            totalAdded    += result.added;
             totalModified += result.modified;
-            totalRemoved += result.removed;
+            totalRemoved  += result.removed;
+            totalLinked   += result.linked;
         }
 
         res.json({
             ok: true,
-            accounts: connections.length,
-            added: totalAdded,
-            modified: totalModified,
-            removed: totalRemoved,
+            accounts:  connections.length,
+            added:     totalAdded,
+            modified:  totalModified,
+            removed:   totalRemoved,
+            linked:    totalLinked,  // existing CSV rows matched and stamped with Plaid ID
         });
     } catch (e) {
         console.error("[Plaid] Sync error:", e.response?.data || e.message);
@@ -279,12 +282,70 @@ router.delete("/accounts/:id", async (req, res) => {
     }
 });
 
+// ─── Cross-source dedup ───────────────────────────────────────────────────────
+// Before inserting Plaid transactions, check whether CSV/manual versions already
+// exist (plaid_transaction_id IS NULL, same date + same amount_cents).
+// If matched: stamp the Plaid transaction ID onto the existing row — preserving
+// the user's category, notes, receipts, and tax flags — and skip insertion.
+// If no match: insert as a new Plaid transaction.
+async function crossSourceDedup(sb, userId, rows) {
+    if (!rows.length) return { toInsert: [], linked: 0 };
+
+    const dates = rows.map(r => r.expense_date);
+    const minDate = dates.reduce((a, b) => (a < b ? a : b));
+    const maxDate = dates.reduce((a, b) => (a > b ? a : b));
+
+    const { data: existing } = await sb
+        .from('expenses')
+        .select('id, expense_date, amount_cents')
+        .eq('user_id', userId)
+        .is('plaid_transaction_id', null)   // CSV / manual only
+        .gte('expense_date', minDate)
+        .lte('expense_date', maxDate);
+
+    if (!existing?.length) return { toInsert: rows, linked: 0 };
+
+    // Build a map: "date|amount_cents" → first unclaimed existing row id
+    const lookup = new Map();
+    for (const e of existing) {
+        const key = `${e.expense_date}|${e.amount_cents}`;
+        if (!lookup.has(key)) lookup.set(key, e.id);
+    }
+
+    const toInsert = [];
+    const toLink   = []; // { existingId, plaid_transaction_id }
+    const claimed  = new Set();
+
+    for (const row of rows) {
+        const key = `${row.expense_date}|${row.amount_cents}`;
+        const existingId = lookup.get(key);
+        if (existingId && !claimed.has(existingId)) {
+            claimed.add(existingId);
+            toLink.push({ existingId, plaid_transaction_id: row.plaid_transaction_id });
+        } else {
+            toInsert.push(row);
+        }
+    }
+
+    // Stamp Plaid IDs onto existing CSV/manual rows (so future syncs skip them too)
+    for (const link of toLink) {
+        await sb
+            .from('expenses')
+            .update({ plaid_transaction_id: link.plaid_transaction_id })
+            .eq('id', link.existingId)
+            .eq('user_id', userId);
+    }
+
+    return { toInsert, linked: toLink.length };
+}
+
 // ─── Sync Engine ───
 async function syncTransactions(sb, plaidClient, connection, userId) {
     let cursor = connection.cursor;
     let added = 0;
     let modified = 0;
     let removed = 0;
+    let linked = 0;
     let hasMore = true;
 
     while (hasMore) {
@@ -310,7 +371,7 @@ async function syncTransactions(sb, plaidClient, connection, userId) {
                 user_id: userId,
                 expense_date: t.date,
                 vendor: t.merchant_name || t.name || "Unknown",
-                amount_cents: Math.round((t.amount || 0) * 100), // Plaid: positive = debit
+                amount_cents: Math.round((t.amount || 0) * 100),
                 category: mapPlaidCategory(t.personal_finance_category),
                 source: "plaid",
                 notes: `Plaid: ${t.name || ''} | ${connection.institution_name}`,
@@ -320,13 +381,17 @@ async function syncTransactions(sb, plaidClient, connection, userId) {
                 business_use_pct: 100,
             }));
 
-            // Upsert to avoid duplicates
-            const { error } = await sb
-                .from("expenses")
-                .upsert(rows, { onConflict: "plaid_transaction_id", ignoreDuplicates: true });
+            // Cross-source dedup: link existing CSV rows, insert only truly new ones
+            const { toInsert, linked: linkCount } = await crossSourceDedup(sb, userId, rows);
+            linked += linkCount;
 
-            if (error) console.error("[Plaid] Insert error:", error);
-            added += newTxns.length;
+            if (toInsert.length > 0) {
+                const { error } = await sb
+                    .from("expenses")
+                    .upsert(toInsert, { onConflict: "plaid_transaction_id", ignoreDuplicates: true });
+                if (error) console.error("[Plaid] Insert error:", error);
+            }
+            added += toInsert.length;
         }
 
         // Process modified transactions
@@ -363,7 +428,7 @@ async function syncTransactions(sb, plaidClient, connection, userId) {
         .update({ cursor, last_synced_at: new Date().toISOString() })
         .eq("id", connection.id);
 
-    return { added, modified, removed };
+    return { added, modified, removed, linked };
 }
 
 // Map Plaid's personal_finance_category to Lumière Ledger categories

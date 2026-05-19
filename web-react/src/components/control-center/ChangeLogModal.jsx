@@ -1,6 +1,11 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.7.4', date: 'MAY 19, 2026', color: '#4ade80', items: [
+        '<strong>No More Duplicates When Connecting a Bank:</strong> If you already imported transactions from a bank via CSV, connecting that same bank via Plaid will now match existing records instead of creating duplicates. Your categories, notes, receipts, and tax flags are fully preserved.',
+        '<strong>Smart Linking:</strong> Matched transactions get their Plaid ID attached — so future syncs know they\'re already in your ledger and skip them automatically.',
+        '<strong>Sync Summary Shows Matches:</strong> After syncing, you\'ll see "X matched to existing imports" so you know exactly what was linked vs. what was new.',
+    ]},
     { version: '7.7.3', date: 'MAY 19, 2026', color: '#10b981', items: [
         '<strong>Live Account Balances:</strong> Connected Banks now show real-time balances pulled directly from your bank via Plaid — current balance and available balance per account (checking, savings, credit cards).',
         '<strong>Real Bank Names:</strong> Plaid-connected accounts now show your actual institution name (e.g. "USAA") instead of "Plaid (Auto-Sync)". Sub-accounts are listed by name with their type and balance.',

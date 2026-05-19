@@ -1,6 +1,6 @@
 {
-  "version": "7.7.3",
+  "version": "7.7.4",
   "release_date": "2026-05-19",
   "codename": "Lumière Ledger",
-  "notes": "v7.7.3: Plaid live balances, real institution names, last-synced timestamp on Accounts page."
+  "notes": "v7.7.4: Plaid cross-source dedup — no duplicates when connecting a bank you already imported via CSV."
 }

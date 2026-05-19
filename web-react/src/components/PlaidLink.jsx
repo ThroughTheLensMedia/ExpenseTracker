@@ -53,7 +53,8 @@ export default function PlaidLink({ onSync }) {
                             institution: metadata.institution,
                         });
                         invalidateExpensesCache();
-                        setMsg({ ok: true, text: `Connected ${result.connection.institution_name}! Synced ${result.synced} transactions.` });
+                        const linkedNote = result.linked > 0 ? ` Matched ${result.linked} existing imported transactions.` : '';
+                        setMsg({ ok: true, text: `Connected ${result.connection.institution_name}! ${result.synced} new transactions imported.${linkedNote}` });
                         loadAccounts();
                         if (onSync) onSync();
                     } catch (err) {
@@ -79,7 +80,8 @@ export default function PlaidLink({ onSync }) {
         try {
             const result = await apiPost('/plaid/sync');
             invalidateExpensesCache();
-            setMsg({ ok: true, text: `Synced ${result.added} new, ${result.modified} updated, ${result.removed} removed transactions.` });
+            const linkedNote = result.linked > 0 ? ` ${result.linked} matched to existing imports.` : '';
+            setMsg({ ok: true, text: `Synced ${result.added} new, ${result.modified} updated, ${result.removed} removed.${linkedNote}` });
             if (onSync) onSync();
         } catch (e) {
             setMsg({ ok: false, text: `Sync failed: ${e.message}` });

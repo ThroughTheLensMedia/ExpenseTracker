@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.7.4] — 2026-05-19
+
+### Plaid cross-source dedup — no duplicates when connecting an account you already imported via CSV
+
+#### Added
+- **`api/routes/plaid.js`** — `crossSourceDedup()` function: before inserting any Plaid transaction, queries existing expenses in the same date range with `plaid_transaction_id IS NULL` (CSV/manual). Matches on `expense_date + amount_cents`. Match → stamps the Plaid transaction ID onto the existing row (preserving your category, notes, receipts, tax flags), skips insert. No match → inserts as new. `linked` count returned alongside `added/modified/removed`.
+- **`web-react/src/components/PlaidLink.jsx`** — Connection success and sync result messages now show "X matched to existing imports" when cross-source links are made.
+
+---
+
 ## [v7.7.3] — 2026-05-19
 
 ### Plaid live balances + institution names on Accounts page
