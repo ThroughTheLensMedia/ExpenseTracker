@@ -8,7 +8,7 @@
 
 | Property | Value |
 |----------|-------|
-| **Version** | v7.6.5 |
+| **Version** | v7.6.7c |
 | **Status** | Active Development — Pre-SaaS Launch |
 | **Deploy target** | `www.lumiereledger.com` (primary) — `app.throughthelens.media` 301 redirects to it |
 | **Deployment** | Vercel (auto-deploy on `git push origin main`) |
@@ -28,6 +28,7 @@
 7. **One file per response, max 500 lines** — if output is truncated, wait for "CONTINUE".
 8. **Preserve existing working logic** — do not refactor what isn't broken.
 9. **Database changes must be idempotent** — never write a migration that fails on re-run or destroys data.
+10. **Always commit `api/package-lock.json`** — Vercel caches `node_modules` between builds. Without a committed lock file, `npm install` hits the stale cache and skips new packages entirely. Any time a new dependency is added to `api/package.json`, run `npm install` locally inside `api/` first, then commit BOTH `package.json` and `package-lock.json` together. Pushing `package.json` alone will not install the new package on Vercel. **This was the root cause of the v7.6.7 production outage.**
 
 ---
 
@@ -54,13 +55,17 @@ Add the item under the appropriate category in the relevant phase or backlog sec
 
 ```
 1. Make changes in /web-react/src or /api/routes
-2. Update CHANGELOG.md AND ChangeLogModal.jsx (both required — see Rule 2)
-3. Update SPEC.md (if architecture/stack changed)
-4. Update version in TWO places (required for user update banner to fire):
+2. ⚠️  If any npm dependency was added/changed in api/package.json:
+       cd api && npm install   ← REQUIRED — generates/updates package-lock.json
+       git add api/package-lock.json   ← REQUIRED — must be committed with package.json
+       Skipping this step = Vercel cache bypass = missing module crash on first request
+3. Update CHANGELOG.md AND ChangeLogModal.jsx (both required — see Rule 2)
+4. Update SPEC.md (if architecture/stack changed)
+5. Update version in TWO places (required for user update banner to fire):
    - web-react/public/version.json  → "version": "X.X.X"
    - web-react/src/App.jsx          → CURRENT_VERSION = "X.X.X"  (comment says DEPLOY SOP)
-5. Commit: "vX.X.X — Short title\n\n- file.jsx — why\n- Update CHANGELOG.md"
-6. git push origin main → Vercel auto-builds and deploys
+6. Commit: "vX.X.X — Short title\n\n- file.jsx — why\n- Update CHANGELOG.md"
+7. git push origin main → Vercel auto-builds and deploys
 ```
 
 No manual build step. Vercel runs `npm run build` automatically.

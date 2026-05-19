@@ -2,7 +2,7 @@
 
 > ✅ **REBRAND COMPLETE**: This product has been transitioned to **Lumière Ledger** (`lumiereledger.com`) as of May 2026.
 
-**Current version:** v7.3.4
+**Current version:** v7.6.7c
 **Last updated:** 2026-05-15
 
 ---
@@ -95,12 +95,17 @@ This is a shared-database, shared-schema SaaS. Every table that contains user da
 | Layer | Technology |
 |-------|-----------|
 | Frontend | React 19.2, Vite 7.3, React Router 7, Chart.js 4.5, jsPDF, html2canvas |
-| Backend | Node.js, Express 4.19, Multer (uploads), Zod (validation), csv-parser |
-| Database | Supabase (PostgreSQL + Auth + Storage) |
-| AI | Google Gemini 2.5 Flash (`@google/generative-ai`) |
-| Email | Resend (transactional invoices, daily reports, invitations) |
-| Banking | Plaid API (pending approval), CSV import (11+ bank profiles) |
-| Auth | Supabase Auth (email/password, Google OAuth), JWT + JWKS validation |
+| Backend | Node.js, Express 4.19, Multer `^2.1.0`, Zod `^3.23.8`, csv-parser `^3.2.0` |
+| Database | Supabase `^2.99.1` (PostgreSQL + Auth + Storage) |
+| AI | Google Gemini 2.5 Flash (`@google/generative-ai ^0.24.1`) |
+| Email | Resend `2.1.0` (transactional invoices, daily reports, invitations) |
+| Banking | Plaid `^29.0.0` (pending production approval), CSV import (11+ bank profiles) |
+| Billing | Stripe `^17.7.0` (Free / Core / Studio subscriptions) |
+| Auth | Supabase Auth (email/password, Google OAuth), JWT (`jsonwebtoken ^9.0.3`) + JWKS (`jwks-rsa ^4.0.1`) |
+| Queue | Bull `^4.16.5` (email queue — Redis-backed, inactive until `REDIS_URL` set) |
+| Utilities | archiver `^7.0.1`, uuid `^9.0.0`, file-type `16.5.4`, dotenv `^16.4.7` |
+
+> **⚠️ Lock File Rule:** `api/package-lock.json` MUST be committed whenever `api/package.json` changes. Vercel caches `node_modules` keyed to the lock file — a stale lock bypasses new package installs silently, causing runtime `Cannot find module` crashes. See CLAUDE.md Rule 10. (Confirmed root cause of v7.6.7 production outage.)
 
 ---
 

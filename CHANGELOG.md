@@ -5,6 +5,39 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.6.7c] — 2026-05-19
+
+### Hotfix — Vercel Build Cache Bypass / plaid Module Missing
+
+#### Root Cause
+`api/package-lock.json` was stale — committed before `plaid` was added to `api/package.json`. Vercel restores `node_modules` from build cache keyed to the lock file. Because the lock file hadn't changed, npm reported "up to date" and never installed plaid. At runtime, the first request path that invoked `getPlaidClient()` → `require('plaid')` threw `Cannot find module 'plaid'`, crashing the Node.js function process. All concurrent requests on the same instance also failed (HTTP 500 / `FUNCTION_INVOCATION_FAILED`).
+
+#### Fixed
+- **`api/package-lock.json`** — Regenerated with `npm install --package-lock-only`. Now includes `plaid@29.0.0` and its full dependency tree. Committed alongside `package.json` so Vercel cache invalidates correctly on next build.
+
+#### Prevention
+Non-Negotiable Rule 10 added to `CLAUDE.md`: always run `npm install` inside `api/` and commit the updated lock file any time `package.json` changes. Deploy Workflow step 2 updated with explicit `npm install` + `git add package-lock.json` gate before push.
+
+---
+
+## [v7.6.7b] — 2026-05-18
+
+### Hotfix — Corrected plaid Package Version
+
+#### Fixed
+- **`api/package.json`** — `plaid` version corrected from `^14.3.0` (nonexistent) to `^29.0.0` (latest stable).
+
+---
+
+## [v7.6.7a] — 2026-05-18
+
+### Hotfix — Add Missing plaid Dependency
+
+#### Fixed
+- **`api/package.json`** — Added `"plaid": "^29.0.0"`. Package was missing entirely, causing `FUNCTION_INVOCATION_FAILED` crashes when Plaid routes were hit after `PLAID_CLIENT_ID`/`PLAID_SECRET` were added to Vercel env vars (activating `requirePlaidConfig` middleware).
+
+---
+
 ## [v7.6.7] — 2026-05-18
 
 ### Stripe — ProfileTab Billing Section

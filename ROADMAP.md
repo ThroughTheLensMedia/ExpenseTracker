@@ -1,6 +1,6 @@
 # Lumière Ledger — Master Roadmap
 
-**Version:** v7.6.5 | **Last reviewed:** 2026-05-18  
+**Version:** v7.6.7c | **Last reviewed:** 2026-05-19  
 Source of truth for all sprint work, security status, and product phases. Replaces `FIX_ROADMAP.md` and `LAUNCH_FIXES.md` — those files are archived.
 
 ---
@@ -24,6 +24,7 @@ Source of truth for all sprint work, security status, and product phases. Replac
 | Stripe billing infrastructure | ✅ Built v7.6.5 — routes, webhook, UpgradeGate, tier system |
 | Stripe env vars + price IDs | ✅ Confirmed — all 4 price IDs locked 2026-05-18 |
 | Stripe dependency crash fix | ✅ Fixed v7.6.5a — lazy init prevents crash when key missing |
+| plaid module missing — production outage | ✅ Fixed v7.6.7c — `package-lock.json` regenerated with plaid@29.0.0; Rule 10 added to CLAUDE.md |
 | Supabase schema migration | 🔲 Must run: `ALTER TABLE user_subscriptions ADD COLUMN IF NOT EXISTS...` |
 | Stripe Vercel env vars | 🔲 Must add: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, price IDs, `VITE_` vars |
 | Stripe webhook secret | 🔲 Must reveal in Stripe dashboard and add to Vercel |
@@ -263,6 +264,8 @@ Foundation shipped (intake keys + marketplace page).
 ---
 
 ## 🚩 Clean Up / Flagged
+
+- **⚠️ Dependency Hygiene Protocol (Non-Negotiable — added v7.6.7c)** — Any change to `api/package.json` MUST be followed by `cd api && npm install` locally to regenerate `api/package-lock.json`, which must be committed in the same commit as `package.json`. Vercel's build cache is keyed to the lock file; a stale or absent lock file causes npm to skip new packages silently, which crashes the function at runtime when the missing module is first required. This was the confirmed root cause of the v7.6.7 production outage (88–91% error rate). Rule 10 in CLAUDE.md enforces this.
 
 - **Bank Import source list** — Remove emoji icons from all labels. Demote Navy Federal and Wise to bottom or fold into Universal (niche, no auto-detect advantage). Surface Rocket Money prominently as "Recommended — covers all accounts in one export." Keep Chase, BofA, Capital One, Wells Fargo, Apple Card, USAA, US Bank as named options. Consider adding auto-detect on CSV drop (headers already parsed in backend `detectBankProfile()`). Good to Have — not blocking launch.
 
