@@ -1,6 +1,12 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.6.7', date: 'MAY 18, 2026', color: '#38bdf8', items: [
+        '<strong>Billing Section in Profile:</strong> Your subscription plan now shows at the top of the Profile tab — plan badge, tier label, and savings callout for grandfathered members.',
+        '<strong>Upgrade Card:</strong> Free users see a Core vs Studio comparison with a monthly/annual toggle. One click opens Stripe Checkout — no redirects through unrelated pages.',
+        '<strong>Manage Billing:</strong> Paid subscribers get a "Manage Billing" button that opens the Stripe Customer Portal — cancel, upgrade, swap payment methods, or download past invoices.',
+        '<strong>Lifetime Members:</strong> If you\'re on a grandfathered free account, the billing section shows your savings vs paid plans and confirms your free access is permanent.',
+    ]},
     { version: '7.6.6', date: 'MAY 18, 2026', color: '#f97316', items: [
         '<strong>Tier Limits Now Enforced:</strong> Free plan caps are active — 500 transactions/mo, 3 invoices/mo, 5 automation rules, 10 CRM leads, and 5 equipment items. Hitting a cap returns a clear upgrade prompt instead of a silent failure.',
         '<strong>Core & Studio Limits:</strong> Core plan bumps transactions to 2,000/mo and invoices to 20/mo, with 25 automation rules. Studio is unlimited across the board.',

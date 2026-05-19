@@ -1,8 +1,29 @@
 import React, { useState } from 'react';
 import { apiPost } from '../../api';
+import { useAuth } from '../AuthContext';
+
+const PLAN_LABELS = {
+    free:           { label: 'Free',              color: '#94a3b8' },
+    free_beta:      { label: 'Lifetime Free',      color: '#a78bfa' },
+    lifetime:       { label: 'Lifetime Free',      color: '#a78bfa' },
+    core_monthly:   { label: 'Core — $9/mo',       color: '#38bdf8' },
+    core_annual:    { label: 'Core — $86/yr',      color: '#38bdf8' },
+    studio_monthly: { label: 'Studio — $19/mo',    color: '#f97316' },
+    studio_annual:  { label: 'Studio — $182/yr',   color: '#f97316' },
+};
+
+const VITE_PRICE = {
+    core_monthly:   import.meta.env.VITE_STRIPE_PRICE_CORE_MONTHLY,
+    core_annual:    import.meta.env.VITE_STRIPE_PRICE_CORE_ANNUAL,
+    studio_monthly: import.meta.env.VITE_STRIPE_PRICE_STUDIO_MONTHLY,
+    studio_annual:  import.meta.env.VITE_STRIPE_PRICE_STUDIO_ANNUAL,
+};
 
 export default function ProfileTab({ settings, setSettings, onReload }) {
     const [msg, setMsg] = useState('');
+    const { tier, subscription } = useAuth();
+    const [billingAnnual, setBillingAnnual] = useState(false);
+    const [billingLoading, setBillingLoading] = useState(null);
 
     const handleLogoUpload = (e) => {
         const file = e.target.files[0];
@@ -27,9 +48,121 @@ export default function ProfileTab({ settings, setSettings, onReload }) {
 
     const field = (key, value) => setSettings(prev => ({ ...prev, [key]: value }));
 
+    const planType    = subscription?.plan_type || 'free';
+    const adminTier   = subscription?.admin_tier || null;
+    const planInfo    = PLAN_LABELS[planType] || PLAN_LABELS.free;
+    const isPaid      = ['core_monthly', 'core_annual', 'studio_monthly', 'studio_annual'].includes(planType);
+    const isLifetime  = ['free_beta', 'lifetime'].includes(planType);
+    const hasPortal   = isPaid && subscription?.stripe_customer_id;
+
+    const handleManageBilling = async () => {
+        setBillingLoading('portal');
+        try {
+            const { url } = await apiPost('/stripe/portal', {});
+            if (url) window.location.href = url;
+        } catch (err) {
+            setMsg(`Billing portal error: ${err.message}`);
+        } finally {
+            setBillingLoading(null);
+        }
+    };
+
+    const handleUpgrade = async (planKey) => {
+        const priceId = VITE_PRICE[planKey];
+        if (!priceId) return;
+        setBillingLoading(planKey);
+        try {
+            const { url } = await apiPost('/stripe/create-checkout', { price_id: priceId });
+            if (url) window.location.href = url;
+        } catch (err) {
+            setMsg(`Checkout error: ${err.message}`);
+        } finally {
+            setBillingLoading(null);
+        }
+    };
+
+    const BillingSection = () => (
+        <div style={{ marginBottom: '36px', padding: '24px 28px', background: 'rgba(255,255,255,0.03)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.07)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+                <div>
+                    <div style={{ fontSize: '11px', fontWeight: 900, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.4)', marginBottom: '8px' }}>SUBSCRIPTION</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff' }}>
+                            {adminTier ? `${adminTier.charAt(0).toUpperCase() + adminTier.slice(1)} (Admin Grant)` : planInfo.label}
+                        </span>
+                        <span style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.06em', padding: '3px 10px', borderRadius: '20px', background: `${planInfo.color}22`, color: planInfo.color, border: `1px solid ${planInfo.color}44` }}>
+                            {tier.toUpperCase()}
+                        </span>
+                    </div>
+                    {isLifetime && (
+                        <div style={{ fontSize: '12px', color: 'rgba(167,139,250,0.7)', marginTop: '6px' }}>
+                            Grandfathered — free platform access forever · Saving ${tier === 'studio' ? '228' : '108'}/yr vs paid plans
+                        </div>
+                    )}
+                    {adminTier && (
+                        <div style={{ fontSize: '12px', color: 'rgba(167,139,250,0.7)', marginTop: '6px' }}>
+                            Access granted by admin · No billing impact
+                        </div>
+                    )}
+                </div>
+                {hasPortal && (
+                    <button
+                        onClick={handleManageBilling}
+                        disabled={billingLoading === 'portal'}
+                        className="btn secondary"
+                        style={{ padding: '10px 22px', fontSize: '13px', opacity: billingLoading === 'portal' ? 0.6 : 1 }}
+                    >
+                        {billingLoading === 'portal' ? 'Loading...' : '⚙ Manage Billing'}
+                    </button>
+                )}
+            </div>
+
+            {/* Upgrade card — Free users only (not lifetime/admin) */}
+            {!isPaid && !isLifetime && !adminTier && (
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '20px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                        <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>Unlock more with a paid plan</div>
+                        <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '3px' }}>
+                            <button onClick={() => setBillingAnnual(false)} style={{ padding: '5px 14px', fontSize: '12px', fontWeight: 700, borderRadius: '6px', border: 'none', cursor: 'pointer', background: !billingAnnual ? 'rgba(255,255,255,0.1)' : 'transparent', color: !billingAnnual ? '#fff' : 'rgba(255,255,255,0.4)' }}>Monthly</button>
+                            <button onClick={() => setBillingAnnual(true)} style={{ padding: '5px 14px', fontSize: '12px', fontWeight: 700, borderRadius: '6px', border: 'none', cursor: 'pointer', background: billingAnnual ? 'rgba(56,189,248,0.15)' : 'transparent', color: billingAnnual ? '#38bdf8' : 'rgba(255,255,255,0.4)' }}>
+                                Annual {billingAnnual && <span style={{ fontSize: '10px' }}>· Save 20%</span>}
+                            </button>
+                        </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <div style={{ padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(56,189,248,0.2)', background: 'rgba(56,189,248,0.04)' }}>
+                            <div style={{ fontWeight: 700, color: '#38bdf8', marginBottom: '4px' }}>Core</div>
+                            <div style={{ fontSize: '22px', fontWeight: 800, color: '#fff', marginBottom: '8px' }}>{billingAnnual ? '$7.17' : '$9'}<span style={{ fontSize: '12px', fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>/mo</span></div>
+                            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginBottom: '14px' }}>AI Brain · Receipt scanner · 2,000 tx/mo · 20 invoices/mo</div>
+                            <button onClick={() => handleUpgrade(billingAnnual ? 'core_annual' : 'core_monthly')} disabled={!!billingLoading} className="btn primary" style={{ width: '100%', padding: '10px', fontSize: '13px', opacity: billingLoading ? 0.6 : 1 }}>
+                                {billingLoading === (billingAnnual ? 'core_annual' : 'core_monthly') ? 'Loading...' : 'Upgrade to Core'}
+                            </button>
+                        </div>
+                        <div style={{ padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(249,115,22,0.25)', background: 'rgba(249,115,22,0.04)' }}>
+                            <div style={{ fontWeight: 700, color: '#f97316', marginBottom: '4px' }}>Studio</div>
+                            <div style={{ fontSize: '22px', fontWeight: 800, color: '#fff', marginBottom: '8px' }}>{billingAnnual ? '$15.17' : '$19'}<span style={{ fontSize: '12px', fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>/mo</span></div>
+                            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginBottom: '14px' }}>Everything in Core · Unlimited · Mileage · Priority support</div>
+                            <button onClick={() => handleUpgrade(billingAnnual ? 'studio_annual' : 'studio_monthly')} disabled={!!billingLoading} className="btn primary glow-blue" style={{ width: '100%', padding: '10px', fontSize: '13px', opacity: billingLoading ? 0.6 : 1 }}>
+                                {billingLoading === (billingAnnual ? 'studio_annual' : 'studio_monthly') ? 'Loading...' : 'Upgrade to Studio'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Paid plan — next billing note */}
+            {isPaid && (
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '16px', fontSize: '12px', color: 'rgba(255,255,255,0.35)' }}>
+                    Subscription managed through Stripe · Invoices emailed automatically · Cancel or upgrade anytime via Manage Billing
+                </div>
+            )}
+        </div>
+    );
+
     return (
         <div className="card glass glow-blue" style={{ border: 'none', padding: '40px', margin: 0 }}>
             <div style={{ maxWidth: '850px' }}>
+                <BillingSection />
                 <h2 style={{ fontSize: '1.8rem', margin: '0 0 10px 0' }}>Business Profile Branding</h2>
                 <p className="muted" style={{ fontSize: '15px', marginBottom: '32px' }}>
                     Update your studio identity. These details personalize your invoices and global reporting headers.

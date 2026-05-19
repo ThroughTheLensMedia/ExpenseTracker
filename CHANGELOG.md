@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.6.7] — 2026-05-18
+
+### Stripe — ProfileTab Billing Section
+
+#### Modified
+- **`web-react/src/components/control-center/ProfileTab.jsx`** — Billing section added at top of Profile tab. Shows current plan badge with tier label and color. Free users see upgrade card with Core/Studio options and monthly/annual toggle — clicking initiates Stripe Checkout. Paid users see "Manage Billing" → Stripe Customer Portal. Lifetime/free_beta users see grandfathered badge with savings callout. Admin-granted tiers show override label with no billing options.
+
+---
+
 ## [v7.6.6] — 2026-05-18
 
 ### Stripe — Route-Level Tier Limit Enforcement

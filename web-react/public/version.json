@@ -1,5 +1,5 @@
 {
-  "version": "7.6.6",
+  "version": "7.6.7",
   "release_date": "2026-05-18",
   "codename": "Lumière Ledger",
   "notes": "v7.6.6: Route-level tier limit enforcement — Free/Core/Studio caps on transactions, invoices, rules, leads, and equipment."
