@@ -284,11 +284,14 @@ async function resolvePlanTypeFromSubscription(subscriptionId) {
 }
 
 // Plaid usage billing — $0.50/account/month, all accounts, Stripe fee passed through
-// Admin (Joshua) pays Plaid directly — bypassed here. See PLAID_BILLING_SPEC.md.
-const ADMIN_USER_ID = '49e7efcb-6434-4f0c-9563-3151a6d50df9';
+// Users in PLAID_BILLING_EXEMPT are never charged — Joshua pays Plaid directly; Michelle is comped.
+const PLAID_BILLING_EXEMPT = new Set([
+  '49e7efcb-6434-4f0c-9563-3151a6d50df9', // Joshua Deuermeyer (admin)
+  // Michelle Gornichec — add her Supabase UUID here once confirmed
+]);
 
 async function buildPlaidInvoiceItems(userId, stripeCustomerId) {
-  if (userId === ADMIN_USER_ID) return null;
+  if (PLAID_BILLING_EXEMPT.has(userId)) return null;
 
   const { count } = await supabase
     .from('plaid_connections')

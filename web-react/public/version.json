@@ -1,6 +1,6 @@
 {
-  "version": "7.6.9",
+  "version": "7.7.0",
   "release_date": "2026-05-19",
   "codename": "Lumière Ledger",
-  "notes": "v7.6.9: Accounts page mobile layout fix — responsive grid, full-width cards, phone-safe."
+  "notes": "v7.7.0: AI Brain subscription detection across all categories + Plaid billing exemption list."
 }

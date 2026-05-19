@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.7.0] — 2026-05-19
+
+### AI Brain subscriptions fix + Plaid billing exemption list
+
+#### Changed
+- **`api/routes/brain.js`** — Added SUBSCRIPTIONS RULE to system prompt. When user asks about "subscriptions", "recurring charges", or "monthly bills", Brain now searches ALL categories (not just "Software & Subscriptions"), uses no category filter over a 60–90 day range, groups repeated vendors by frequency, and calculates estimated monthly cost. Never dead-ends on zero Software & Subscriptions results.
+- **`api/routes/stripe.js`** — Replaced single `ADMIN_USER_ID` constant with `PLAID_BILLING_EXEMPT` Set. Joshua's admin UUID pre-populated; Michelle Gornichec's UUID slot added with comment (pending UUID confirmation).
+
+---
+
 ## [v7.6.9] — 2026-05-19
 
 ### Accounts page — mobile layout fix

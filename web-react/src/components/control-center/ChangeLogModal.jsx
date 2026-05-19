@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.7.0', date: 'MAY 19, 2026', color: '#f97316', items: [
+        '<strong>Smarter Subscription Search:</strong> Ask the Brain "how much do I spend on subscriptions?" and it now searches across every category — phone bills, insurance, gym memberships, streaming, cloud tools — not just Software & Subscriptions. Results are grouped by vendor with estimated monthly costs.',
+        '<strong>Recurring Charge Detection:</strong> The Brain looks for vendors that appear repeatedly over the past 60–90 days and surfaces them as your actual recurring bills, regardless of which category they landed in.',
+    ]},
     { version: '7.6.9', date: 'MAY 19, 2026', color: '#38bdf8', items: [
         '<strong>Accounts Page — Mobile Layout:</strong> Account cards and stats grid now fully responsive — on phone the 4-column stat grid collapses to 2×2, summary bar stacks cleanly, all text and badges wrap correctly at any screen width.',
     ]},
