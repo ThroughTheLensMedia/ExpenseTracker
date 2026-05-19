@@ -82,7 +82,7 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
         return [d > 0 ? `${d}d` : '', h > 0 ? `${h}h` : '', `${m}m`].filter(Boolean).join(' ');
     };
 
-    const PLAN_OPTIONS = ['beta_tester', 'pro', 'lifetime', 'annual', 'monthly'];
+    const PLAN_OPTIONS = ['beta_tester', 'monthly', 'annual', 'lifetime'];
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', maxWidth: '100%', boxSizing: 'border-box' }}>
