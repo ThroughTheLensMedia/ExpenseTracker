@@ -1,6 +1,12 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.0', date: 'MAY 19, 2026', color: '#a78bfa', items: [
+        '<strong>Full Terms of Service:</strong> Comprehensive 25-section Terms covering eligibility (US only, 18+), subscription billing, Plaid fee policy (no refunds), 30-day money-back guarantee, AI disclaimer, financial disclaimer, third-party services, and data ownership.',
+        '<strong>Binding Arbitration:</strong> Dispute resolution via AAA arbitration (Nashville, TN). Class action waiver included. Governing law: Tennessee.',
+        '<strong>Limitation of Liability Cap:</strong> Company liability capped at 12 months of fees paid or $100, whichever is greater.',
+        '<strong>Survival Clauses:</strong> Key protective sections (warranties, liability, indemnification, arbitration) survive account termination.',
+    ]},
     { version: '7.7.9', date: 'MAY 19, 2026', color: '#38bdf8', items: [
         '<strong>Auth Email via Resend:</strong> Supabase now routes confirmation emails through Resend (support@throughthelens.media) instead of its default sender — no more rate limits, no more spam folder.',
         '<strong>Signup Success Message:</strong> Now shows the correct sender address so new users know exactly what to expect.',

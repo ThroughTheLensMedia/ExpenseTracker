@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.0] — 2026-05-19
+
+### Full Terms of Service — 25 sections, payment terms, arbitration, Tennessee law
+
+#### Added
+- **`web-react/src/pages/Terms.jsx`** — Full rewrite. 25 comprehensive sections: Acceptance, Eligibility (US only / 18+), Service Description, Account Registration, Subscription Plans & Billing, Refund Policy (30-day guarantee for LL sub; no refunds for Plaid fees), Cancellation, Plaid Live Bank Sync terms, AI/BYOB disclaimer, Financial & Tax disclaimer, Third-Party Services (Stripe, Plaid, Google, Supabase, Resend), User Data & Ownership, Receipt Storage, Invoicing, Acceptable Use, Intellectual Property, Disclaimer of Warranties (AS IS), Limitation of Liability (capped at 12 months fees or $100), Indemnification, Dispute Resolution & Binding Arbitration (AAA / Nashville TN / class action waiver), Governing Law (Tennessee), Termination, Modifications, Severability, Contact. Entity: Through The Lens Media, Inc, Tennessee.
+
+---
+
 ## [v7.7.9] — 2026-05-19
 
 ### Auth emails now route through Resend; signup message updated

@@ -1,6 +1,6 @@
 {
-  "version": "7.7.9",
+  "version": "7.8.0",
   "release_date": "2026-05-19",
   "codename": "Lumière Ledger",
-  "notes": "v7.7.9: Auth email now routes through Resend (support@throughthelens.media) for reliable delivery."
+  "notes": "v7.8.0: Full Terms of Service — 25 sections covering billing, Plaid fees, arbitration, TN law, AI disclaimer."
 }
