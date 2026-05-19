@@ -31,6 +31,12 @@ export default function PlaidLink({ onSync }) {
     useEffect(() => { loadAccounts(); }, []);
 
     const handleConnect = useCallback(async () => {
+        // Show fee confirmation before starting Plaid flow
+        const confirmed = await modal.confirm(
+            '💳 Live Bank Sync — Billing Notice\n\nConnecting your bank via Plaid adds $0.50/month per connected account to your subscription, billed automatically.\n\nYou can disconnect at any time from the Accounts page.\n\nContinue to connect your bank?'
+        );
+        if (!confirmed) return;
+
         setConnecting(true);
         setMsg(null);
         try {
@@ -69,10 +75,14 @@ export default function PlaidLink({ onSync }) {
             });
             handler.open();
         } catch (e) {
-            setMsg({ ok: false, text: `Failed to start Plaid: ${e.message}` });
+            if (e.message?.includes('plaid_payment_required') || e.status === 402) {
+                setMsg({ ok: false, text: '💳 A billing method is required before connecting a bank. Go to Settings → Ledger Control Center → Billing to set up your subscription first.' });
+            } else {
+                setMsg({ ok: false, text: `Failed to start Plaid: ${e.message}` });
+            }
             setConnecting(false);
         }
-    }, [onSync]);
+    }, [onSync, modal]);
 
     const handleSync = async () => {
         setSyncing(true);

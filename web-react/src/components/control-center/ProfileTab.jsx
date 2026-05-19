@@ -170,10 +170,10 @@ export default function ProfileTab({ settings, setSettings, onReload }) {
                 <form onSubmit={handleSaveSettings} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
                     <div style={{ gridColumn: 'span 2', display: 'flex', gap: '30px', alignItems: 'center', marginBottom: '10px' }}>
                         <div style={{ flex: 1 }}>
-                            <small className="muted" style={{ fontWeight: 900 }}>STUDIO LOGO</small>
+                            <small className="muted" style={{ fontWeight: 900 }}>LOGO</small>
                             <label className="btn secondary" style={{ display: 'block', marginTop: '8px', cursor: 'pointer', textAlign: 'center' }}>
                                 <input type="file" accept="image/*" onChange={handleLogoUpload} style={{ display: 'none' }} />
-                                {settings.logo_url ? 'Change Studio Logo' : 'Upload Studio Logo'}
+                                {settings.logo_url ? 'Change Logo' : 'Upload Logo'}
                             </label>
                         </div>
                         {settings.logo_url && (
@@ -193,15 +193,15 @@ export default function ProfileTab({ settings, setSettings, onReload }) {
                     </div>
                     <div>
                         <small className="muted" style={{ fontWeight: 900 }}>CONTACT NAME</small>
-                        <input value={settings.contact_name || ''} onChange={e => field('contact_name', e.target.value)} placeholder="Joshua Dewey" style={{ marginTop: '8px', padding: '15px' }} />
+                        <input value={settings.contact_name || ''} onChange={e => field('contact_name', e.target.value)} placeholder="Your Full Name" style={{ marginTop: '8px', padding: '15px' }} />
                     </div>
                     <div>
                         <small className="muted" style={{ fontWeight: 900 }}>JOB TITLE</small>
-                        <input value={settings.job_title || ''} onChange={e => field('job_title', e.target.value)} placeholder="Principal Director" style={{ marginTop: '8px', padding: '15px' }} />
+                        <input value={settings.job_title || ''} onChange={e => field('job_title', e.target.value)} placeholder="Your Job Title" style={{ marginTop: '8px', padding: '15px' }} />
                     </div>
                     <div>
                         <small className="muted" style={{ fontWeight: 900 }}>BUSINESS WEBSITE</small>
-                        <input value={settings.website || ''} onChange={e => field('website', e.target.value)} placeholder="throughthelens.media" style={{ marginTop: '8px', padding: '15px' }} />
+                        <input value={settings.website || ''} onChange={e => field('website', e.target.value)} placeholder="yourwebsite.com" style={{ marginTop: '8px', padding: '15px' }} />
                     </div>
                     <div>
                         <small className="muted" style={{ fontWeight: 900 }}>BUSINESS EMAIL</small>
@@ -209,7 +209,7 @@ export default function ProfileTab({ settings, setSettings, onReload }) {
                     </div>
                     <div>
                         <small className="muted" style={{ fontWeight: 900 }}>BUSINESS PHONE</small>
-                        <input value={settings.phone || ''} onChange={e => field('phone', e.target.value)} placeholder="702.236.9023" style={{ marginTop: '8px', padding: '15px' }} />
+                        <input value={settings.phone || ''} onChange={e => field('phone', e.target.value)} placeholder="(000) 000-0000" style={{ marginTop: '8px', padding: '15px' }} />
                     </div>
                     <div style={{ gridColumn: 'span 2' }}>
                         <small className="muted" style={{ fontWeight: 900 }}>OFFICE ADDRESS</small>

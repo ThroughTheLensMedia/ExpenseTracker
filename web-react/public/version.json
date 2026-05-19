@@ -1,6 +1,6 @@
 {
-  "version": "7.7.7",
+  "version": "7.7.8",
   "release_date": "2026-05-19",
   "codename": "Lumière Ledger",
-  "notes": "v7.7.7: Landing page rebuilt — hero, 8 feature cards, Tax/CRM/AI sections, pricing tiers, final CTA."
+  "notes": "v7.7.8: Plaid billing gate, onboarding checklist, nav reorder, login fixes, profile cleanup, invite email update."
 }

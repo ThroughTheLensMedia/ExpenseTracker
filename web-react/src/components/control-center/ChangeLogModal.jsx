@@ -1,6 +1,14 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.7.8', date: 'MAY 19, 2026', color: '#ef4444', items: [
+        '<strong>Plaid Billing Gate (Security Fix):</strong> Free accounts can no longer connect to Plaid without a billing method on file. A fee disclosure modal now appears before any bank connection is initiated — $0.50/account/month.',
+        '<strong>Onboarding Checklist:</strong> New accounts see a 4-step setup guide — Business Profile, AI Brain, Bank Sync, and Documentation — with a progress bar and per-step checkboxes that persist across sessions.',
+        '<strong>Nav Reordered:</strong> Financials now includes Accounts. Operations is Bank Import → Mileage → Camera Gear. Settings now leads with Ledger Control Center, and includes a new "Account Plans" link.',
+        '<strong>Login Page Cleaned Up:</strong> Success message no longer overflows. Explains the Supabase Auth confirmation email so users don\'t mistake it for spam. Brand transition banner removed.',
+        '<strong>Profile Form:</strong> "Studio Logo" renamed to "Logo". Personal placeholder data removed from all fields.',
+        '<strong>Invite Email:</strong> Footer updated from "private beta" message to a support email address.',
+    ]},
     { version: '7.7.7', date: 'MAY 19, 2026', color: '#f97316', items: [
         '<strong>Landing Page Rebuilt:</strong> lumiereledger.com now matches the full marketing page — new headline, feature cards, Tax Automation and Client Management detail sections, AI example prompts, and pricing tiers.',
         '<strong>8 Feature Cards:</strong> AI Assistant, Invoicing, Executive Dashboard, CRM Pipeline, Gear Depreciation, Smart CSV Import, Mileage Tracking, and Receipt Management — each with description and badge.',

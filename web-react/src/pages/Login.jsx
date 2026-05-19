@@ -39,7 +39,7 @@ export default function Login() {
         if (!confirmPassword) throw new Error("Please confirm your password.");
         if (password !== confirmPassword) throw new Error("Passwords do not match.");
         await signup(email, password);
-        setSuccess("Ledger account created! Check your email to confirm, then use your code to activate.");
+        setSuccess("Account created! A confirmation email is on its way from Supabase Auth (noreply@mail.app.supabase.io) — that's the secure authentication system Lumière Ledger uses to verify your identity. Check your spam folder if you don't see it within a few minutes. Once confirmed, return here and log in.");
         setIsLogin(true);
       }
     } catch (err) {
@@ -87,17 +87,6 @@ export default function Login() {
         textAlign: 'center'
       }}>
         <div style={{ marginBottom: '40px' }}>
-          {/* Transition Banner */}
-          <div style={{ background: 'rgba(249, 115, 22, 0.1)', border: '1px solid rgba(249, 115, 22, 0.3)', borderRadius: '12px', padding: '16px', marginBottom: '24px', textAlign: 'left', position: 'relative', zIndex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-              <span style={{ fontSize: '18px' }}>✨</span>
-              <span style={{ fontWeight: 900, color: 'var(--accent)', letterSpacing: '0.05em' }}>BRAND UPDATE</span>
-            </div>
-            <p style={{ margin: 0, fontSize: '13px', lineHeight: 1.5, color: '#f8fafc' }}>
-              <strong>Studio Tracker</strong> is now officially <strong>Lumière Ledger</strong>! 
-              Your account and data remain exactly the same. The old URL will continue to work, but please update your bookmarks to <a href="https://lumiereledger.com" style={{ color: 'var(--accent)' }}>lumiereledger.com</a>.
-            </p>
-          </div>
           <img src="/icon.png" alt="Lumière Ledger Icon" style={{ height: '120px', marginBottom: '20px', borderRadius: '24px', filter: 'drop-shadow(0 0 20px rgba(249, 115, 22, 0.2))' }} />
           <h1 style={{ 
             fontSize: '1.5rem', 
@@ -179,7 +168,7 @@ export default function Login() {
           )}
 
           {success && (
-            <div className="tag ok" style={{ padding: '12px', borderRadius: '8px', fontSize: '13px', background: 'rgba(74, 222, 128, 0.1)', color: '#4ade80' }}>
+            <div className="tag ok" style={{ padding: '14px 16px', borderRadius: '10px', fontSize: '13px', background: 'rgba(74, 222, 128, 0.08)', color: '#4ade80', border: '1px solid rgba(74,222,128,0.2)', lineHeight: 1.55, textAlign: 'left', wordBreak: 'break-word', overflowWrap: 'break-word', whiteSpace: 'normal' }}>
               {success}
             </div>
           )}

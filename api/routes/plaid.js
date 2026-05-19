@@ -51,9 +51,31 @@ function requirePlaidConfig(req, res, next) {
 
 router.use(requirePlaidConfig);
 
+// Users exempt from Plaid billing — Joshua pays Plaid directly; Michelle is comped.
+const PLAID_BILLING_EXEMPT = new Set([
+    '49e7efcb-6434-4f0c-9563-3151a6d50df9', // Joshua Deuermeyer (admin)
+    // Michelle Gornichec — add UUID here once confirmed
+]);
+
 // ─── 1. Create Link Token ───
 router.post("/create-link-token", async (req, res) => {
     try {
+        // Billing gate: non-exempt users must have a Stripe customer record before connecting
+        if (!PLAID_BILLING_EXEMPT.has(req.user.id)) {
+            const { data: sub } = await req.sb
+                .from('user_subscriptions')
+                .select('stripe_customer_id')
+                .eq('user_id', req.user.id)
+                .maybeSingle();
+
+            if (!sub?.stripe_customer_id) {
+                return res.status(402).json({
+                    error: 'plaid_payment_required',
+                    message: 'A billing method is required to use Live Bank Sync. Please set up your subscription first.',
+                });
+            }
+        }
+
         const client = getPlaidClient();
         const response = await client.linkTokenCreate({
             user: { client_user_id: req.user.id },
@@ -64,6 +86,7 @@ router.post("/create-link-token", async (req, res) => {
         });
         res.json({ link_token: response.data.link_token });
     } catch (e) {
+        if (e.status === 402) throw e; // re-throw billing gate errors
         console.error("[Plaid] Link token error:", e.response?.data || e.message);
         res.status(500).json({ error: "Failed to create Plaid link token." });
     }

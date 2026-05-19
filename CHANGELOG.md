@@ -5,6 +5,25 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.7.8] — 2026-05-19
+
+### Plaid billing gate, onboarding checklist, nav reorder, login/profile/email cleanup
+
+#### Security Fix
+- **`api/routes/plaid.js`** — **CRITICAL: Plaid billing gate added.** `POST /plaid/create-link-token` now checks if user is in `PLAID_BILLING_EXEMPT` or has a `stripe_customer_id` in `user_subscriptions`. Users without a billing method receive HTTP 402 and cannot connect to Plaid. Prevents free accounts from bypassing Plaid fees.
+- **`web-react/src/components/PlaidLink.jsx`** — Fee confirmation modal shown before initiating Plaid Link (uses `modal.confirm` with $0.50/account/month disclosure). 402 errors surface a clear billing setup message.
+
+#### Added
+- **`web-react/src/components/OnboardingChecklist.jsx`** — New 4-step onboarding checklist modal for new accounts: Set up Business Profile, Set up AI Brain, Connect Bank via Plaid, Review Documentation. Progress bar, per-step checkboxes (persisted in localStorage), action links to each destination. Replaces old 3-bullet `OnboardingModal`.
+- **`web-react/src/App.jsx`** — Nav reordered per product spec: Financials (Dashboard, Accounts, Transaction Ledger, Tax Data); Operations (Bank Import, Mileage Log, Camera Gear); Settings (Ledger Control Center, Business Profile, Documentation & FAQ, Add-Ons, Account Plans).
+
+#### Fixed
+- **`web-react/src/pages/Login.jsx`** — Success message box no longer overflows (`wordBreak`, `overflowWrap`, `whiteSpace: normal`). Message updated to explain Supabase Auth email (noreply@mail.app.supabase.io) is the legitimate identity verification system — not spam. Removed stale "Studio Tracker → Lumière Ledger" brand update banner.
+- **`web-react/src/components/control-center/ProfileTab.jsx`** — "STUDIO LOGO" → "LOGO", button labels "Upload Logo" / "Change Logo". Removed personal placeholder data (Joshua Dewey, 702.236.9023, throughthelens.media).
+- **`api/utils/mailer.js`** — Invite email footer changed from "private beta / contact your administrator" to "Questions? Reach us at support@throughthelens.media".
+
+---
+
 ## [v7.7.7] — 2026-05-19
 
 ### Landing page rebuilt to match throughthelens.media/marketing/lumiere-ledger

@@ -94,7 +94,7 @@ async function sendInviteEmail({ to, name, code }) {
                 </div>
 
                 <p style="font-size: 12px; color: #475569; text-align: center; margin-top: 40px;">
-                    This project is currently in private beta. If you have questions, please contact your administrator.
+                    Questions? Reach us at <a href="mailto:support@throughthelens.media" style="color: #f97316;">support@throughthelens.media</a>
                 </p>
             </div>
         `;
