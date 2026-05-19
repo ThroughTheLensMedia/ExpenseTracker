@@ -138,7 +138,27 @@ router.post("/", async (req, res) => {
   try {
     const rawData = ExpenseBaseSchema.parse(req.body);
     const data = { ...rawData, user_id: req.user.id };
-    
+
+    // Tier limit: monthly transaction cap
+    const txCap = req.tierLimits?.transactions_per_month;
+    if (Number.isFinite(txCap)) {
+      const now = new Date();
+      const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+      const { count } = await req.sb
+        .from('expenses')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', req.user.id)
+        .gte('created_at', monthStart);
+      if (count >= txCap) {
+        return res.status(403).json({
+          error: 'tier_limit_reached',
+          limit: txCap,
+          tier: req.tier,
+          message: `Your ${req.tier} plan allows ${txCap} transactions per month. Upgrade to add more.`,
+        });
+      }
+    }
+
     if (!data.expense_date) data.expense_date = new Date().toISOString().slice(0, 10);
 
     const { data: inserted, error } = await req.sb

@@ -27,6 +27,23 @@ router.post("/", async (req, res) => {
     try {
         const payload = req.body;
 
+        // Tier limit: total CRM leads cap
+        const leadsCap = req.tierLimits?.crm_leads;
+        if (Number.isFinite(leadsCap)) {
+            const { count } = await req.sb
+                .from('leads')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', req.user.id);
+            if (count >= leadsCap) {
+                return res.status(403).json({
+                    error: 'tier_limit_reached',
+                    limit: leadsCap,
+                    tier: req.tier,
+                    message: `Your ${req.tier} plan allows ${leadsCap} CRM leads. Upgrade to Core for unlimited leads.`,
+                });
+            }
+        }
+
         const { data, error } = await req.sb
             .from("leads")
             .insert({

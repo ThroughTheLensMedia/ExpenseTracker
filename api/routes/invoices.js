@@ -137,6 +137,26 @@ router.post("/", async (req, res) => {
         const body = InvoiceSchema.parse(req.body);
         const { items, ...invoiceData } = body;
 
+        // Tier limit: monthly invoice cap
+        const invCap = req.tierLimits?.invoices_per_month;
+        if (Number.isFinite(invCap)) {
+            const now = new Date();
+            const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+            const { count } = await req.sb
+                .from('invoices')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', req.user.id)
+                .gte('created_at', monthStart);
+            if (count >= invCap) {
+                return res.status(403).json({
+                    error: 'tier_limit_reached',
+                    limit: invCap,
+                    tier: req.tier,
+                    message: `Your ${req.tier} plan allows ${invCap} invoices per month. Upgrade to add more.`,
+                });
+            }
+        }
+
         // Security check: only allow safe protocols in notes
         if (invoiceData.notes && (invoiceData.notes.includes('javascript:') || invoiceData.notes.includes('data:'))) {
             return res.status(400).json({ error: "Malicious URL schemes in notes are not allowed." });

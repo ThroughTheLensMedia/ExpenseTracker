@@ -42,6 +42,24 @@ router.get("/", async (req, res) => {
 router.post("/", async (req, res) => {
     try {
         const body = AssetSchema.parse(req.body);
+
+        // Tier limit: total equipment items cap
+        const assetsCap = req.tierLimits?.equipment_items;
+        if (Number.isFinite(assetsCap)) {
+            const { count } = await req.sb
+                .from('equipment_assets')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', req.user.id);
+            if (count >= assetsCap) {
+                return res.status(403).json({
+                    error: 'tier_limit_reached',
+                    limit: assetsCap,
+                    tier: req.tier,
+                    message: `Your ${req.tier} plan allows ${assetsCap} equipment items. Upgrade to Core for unlimited.`,
+                });
+            }
+        }
+
         const useful_life_years = body.useful_life_years || DEPRECIATION_LIFE[body.category] || 5;
         const { data, error } = await req.sb
             .from("equipment_assets")

@@ -1,6 +1,11 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.6.6', date: 'MAY 18, 2026', color: '#f97316', items: [
+        '<strong>Tier Limits Now Enforced:</strong> Free plan caps are active — 500 transactions/mo, 3 invoices/mo, 5 automation rules, 10 CRM leads, and 5 equipment items. Hitting a cap returns a clear upgrade prompt instead of a silent failure.',
+        '<strong>Core & Studio Limits:</strong> Core plan bumps transactions to 2,000/mo and invoices to 20/mo, with 25 automation rules. Studio is unlimited across the board.',
+        '<strong>Error Shape:</strong> All limit responses include the current tier, the cap value, and a human-readable message — so the frontend can render a targeted upgrade card.',
+    ]},
     { version: '7.6.5', date: 'MAY 18, 2026', color: '#a78bfa', items: [
         '<strong>Subscription Tiers — Free, Core & Studio:</strong> Lumière Ledger now has three tiers. Free is free forever for current members. Core ($9/mo) unlocks AI Brain, receipt scanning, full CRM, and more. Studio ($19/mo) adds unlimited everything, mileage automation, and priority support.',
         '<strong>Upgrade Gate:</strong> Premium features show a clean upgrade card when accessed on a lower tier — with a monthly/annual toggle and one-click checkout via Stripe.',

@@ -33,6 +33,23 @@ router.post("/", async (req, res) => {
             return res.status(400).json({ error: "Missing match criteria" });
         }
 
+        // Tier limit: total automation rules cap
+        const rulesCap = req.tierLimits?.automation_rules;
+        if (Number.isFinite(rulesCap)) {
+            const { count } = await req.sb
+                .from('classification_rules')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', req.user.id);
+            if (count >= rulesCap) {
+                return res.status(403).json({
+                    error: 'tier_limit_reached',
+                    limit: rulesCap,
+                    tier: req.tier,
+                    message: `Your ${req.tier} plan allows ${rulesCap} automation rules. Upgrade to add more.`,
+                });
+            }
+        }
+
         const data = {
             match_column,
             match_type,

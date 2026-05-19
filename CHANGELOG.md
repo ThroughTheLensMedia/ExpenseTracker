@@ -5,6 +5,21 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.6.6] — 2026-05-18
+
+### Stripe — Route-Level Tier Limit Enforcement
+
+#### Modified
+- **`api/routes/expenses.js`** — `POST /expenses` now counts this month's transactions before insert. Returns `403 tier_limit_reached` at Free (500/mo) and Core (2,000/mo) caps.
+- **`api/routes/invoices.js`** — `POST /invoices` counts this month's invoices before insert. Returns `403` at Free (3/mo) and Core (20/mo) caps.
+- **`api/routes/rules.js`** — `POST /rules` counts total automation rules before insert. Returns `403` at Free (5) and Core (25) caps.
+- **`api/routes/leads.js`** — `POST /leads` counts total CRM leads before insert. Returns `403` at Free (10) cap.
+- **`api/routes/assets.js`** — `POST /assets` counts total equipment items before insert. Returns `403` at Free (5) cap.
+
+All limit checks use `req.tierLimits` from licensing middleware. Studio tier is always `Infinity` — bypasses all checks. Error shape: `{ error: 'tier_limit_reached', limit, tier, message }`.
+
+---
+
 ## [v7.6.5] — 2026-05-18
 
 ### Stripe Billing Infrastructure — Free / Core / Studio tiers
