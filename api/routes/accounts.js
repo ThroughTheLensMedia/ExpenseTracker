@@ -17,6 +17,7 @@ router.get('/summary', async (req, res) => {
         const ytdStart = `${thisYear}-01-01`;
 
         // Fetch transactions + aliases in parallel
+        // Alias query is best-effort — table may not exist yet (migration pending)
         const [txRes, aliasRes] = await Promise.all([
             req.sb
                 .from('expenses')
@@ -27,15 +28,17 @@ router.get('/summary', async (req, res) => {
             req.sb
                 .from('account_aliases')
                 .select('source_key, display_name, visible')
-                .eq('user_id', req.user.id),
+                .eq('user_id', req.user.id)
+                .then(r => r)
+                .catch(() => ({ data: [], error: null })),
         ]);
 
-        if (txRes.error)    throw txRes.error;
-        if (aliasRes.error) throw aliasRes.error;
+        if (txRes.error) throw txRes.error;
+        // aliasRes errors are silently ignored — aliases are non-critical
 
         // Build alias lookup: source_key → { display_name, visible }
         const aliasMap = {};
-        for (const a of aliasRes.data || []) {
+        for (const a of (aliasRes.data || [])) {
             aliasMap[a.source_key] = { display_name: a.display_name, visible: a.visible };
         }
 
