@@ -360,7 +360,7 @@ async function crossSourceDedup(sb, userId, rows) {
     }
 
     const toInsert = [];
-    const toLink   = []; // { existingId, plaid_transaction_id }
+    const toLink   = []; // { existingId, plaid_transaction_id, plaid_account_id }
     const claimed  = new Set();
 
     for (const row of rows) {
@@ -368,17 +368,24 @@ async function crossSourceDedup(sb, userId, rows) {
         const existingId = lookup.get(key);
         if (existingId && !claimed.has(existingId)) {
             claimed.add(existingId);
-            toLink.push({ existingId, plaid_transaction_id: row.plaid_transaction_id });
+            toLink.push({
+                existingId,
+                plaid_transaction_id: row.plaid_transaction_id,
+                plaid_account_id: row.plaid_account_id || null,
+            });
         } else {
             toInsert.push(row);
         }
     }
 
-    // Stamp Plaid IDs onto existing CSV/manual rows (so future syncs skip them too)
+    // Stamp Plaid IDs + account ID onto existing CSV/manual rows
     for (const link of toLink) {
         await sb
             .from('expenses')
-            .update({ plaid_transaction_id: link.plaid_transaction_id })
+            .update({
+                plaid_transaction_id: link.plaid_transaction_id,
+                plaid_account_id:     link.plaid_account_id,
+            })
             .eq('id', link.existingId)
             .eq('user_id', userId);
     }
@@ -423,6 +430,7 @@ async function syncTransactions(sb, plaidClient, connection, userId) {
                 source: "plaid",
                 notes: `Plaid: ${t.name || ''} | ${connection.institution_name}`,
                 plaid_transaction_id: t.transaction_id,
+                plaid_account_id: t.account_id || null,
                 tax_deductible: false,
                 tax_bucket: '',
                 business_use_pct: 100,

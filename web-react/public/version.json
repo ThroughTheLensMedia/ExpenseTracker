@@ -1,6 +1,6 @@
 {
-  "version": "7.8.3",
+  "version": "7.8.4",
   "release_date": "2026-05-19",
   "codename": "Lumière Ledger",
-  "notes": "v7.8.3: Fix Live Sync duplicates; Plaid Linked accounts back in type groups; Unlink button per CSV account."
+  "notes": "v7.8.4: plaid_account_id per-sub-account filtering; savings account type; mailer fallback fixes."
 }

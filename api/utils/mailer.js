@@ -119,7 +119,7 @@ async function sendDailyReportEmail({ to, activityRows }) {
     if (!resend) return { success: false, error: "Mailer service not configured" };
 
     try {
-        const fromEmail = process.env.RESEND_FROM || 'Lumière Stats <support@lumiereledger.com>';
+        const fromEmail = process.env.RESEND_FROM || 'Lumière Ledger <support@throughthelens.media>';
         const dateStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
         const rowsHtml = activityRows.map(r => `
@@ -277,7 +277,7 @@ async function sendContactRelayEmail({ senderName, senderEmail, messageContent }
     if (!resend) return { success: false, error: "Mailer service not configured" };
 
     try {
-        const fromEmail = 'Lumière Ledger Inbound <support@lumiereledger.com>';
+        const fromEmail = process.env.RESEND_FROM || 'Lumière Ledger <support@throughthelens.media>';
         const adminEmail = 'joshua.deuermeyer@gmail.com';
 
         const escapeHtml = (unsafe) => {

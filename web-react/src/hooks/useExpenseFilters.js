@@ -12,6 +12,7 @@ import { formatDate } from '../api';
  * @param {string} [filters.vendor] - Vendor search (partial match)
  * @param {string} [filters.category] - Category search (partial match)
  * @param {string} [filters.account] - Source/account (exact match)
+ * @param {string} [filters.plaidAccountId] - Plaid sub-account ID (exact match on plaid_account_id)
  * @param {string} [filters.notes] - Notes search (partial match)
  * @param {boolean} [filters.deductOnly] - Only tax-deductible
  * @param {boolean} [filters.missingReceiptOnly] - Deductible + no receipt
@@ -24,7 +25,7 @@ import { formatDate } from '../api';
 export default function useExpenseFilters(expenses, filters = {}, sortCol = 'expense_date', sortDir = 'desc') {
     const filtered = useMemo(() => {
         let rows = [...expenses];
-        const { start, end, vendor, category, account, notes, deductOnly, missingReceiptOnly, year, taxBucket } = filters;
+        const { start, end, vendor, category, account, plaidAccountId, notes, deductOnly, missingReceiptOnly, year, taxBucket } = filters;
 
         if (year) rows = rows.filter(r => String(r.expense_date || '').startsWith(String(year)));
         if (start) rows = rows.filter(r => formatDate(r.expense_date) >= start);
@@ -32,6 +33,7 @@ export default function useExpenseFilters(expenses, filters = {}, sortCol = 'exp
         if (vendor) rows = rows.filter(r => (r.vendor || '').toLowerCase().includes(vendor.toLowerCase()));
         if (category) rows = rows.filter(r => (r.category || '').toLowerCase().includes(category.toLowerCase()));
         if (account) rows = rows.filter(r => (r.source || '') === account);
+        if (plaidAccountId) rows = rows.filter(r => (r.plaid_account_id || '') === plaidAccountId);
         if (notes) rows = rows.filter(r => (r.notes || '').toLowerCase().includes(notes.toLowerCase()));
         if (taxBucket) rows = rows.filter(r => (r.tax_bucket || '') === taxBucket);
         if (deductOnly) rows = rows.filter(r => r.tax_deductible);

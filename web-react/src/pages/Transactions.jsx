@@ -23,7 +23,9 @@ export default function Transactions() {
     const [searchNotes, setSearchNotes] = useState('');
     const [deductOnly, setDeductOnly] = useState(false);
     const [missingReceiptOnly, setMissingReceiptOnly] = useState(false);
-    const [searchAccount, setSearchAccount] = useState('');
+    const [searchAccount,    setSearchAccount]    = useState('');
+    const [plaidAccountId,   setPlaidAccountId]   = useState('');
+    const [plaidAccountName, setPlaidAccountName] = useState('');
     const [sortCol, setSortCol] = useState('expense_date');
     const [sortDir, setSortDir] = useState('desc');
 
@@ -100,12 +102,15 @@ export default function Transactions() {
         loadData();
     }, []);
 
-    // Pre-populate filters from URL params (?search=, ?source=)
+    // Pre-populate filters from URL params (?search=, ?source=, ?plaid_account_id=)
     useEffect(() => {
         const urlSearch = searchParams.get('search');
         if (urlSearch) setSearchVendor(urlSearch);
         const urlSource = searchParams.get('source');
         if (urlSource) setSearchAccount(urlSource);
+        const urlPlaidId   = searchParams.get('plaid_account_id');
+        const urlPlaidName = searchParams.get('plaid_account_name');
+        if (urlPlaidId) { setPlaidAccountId(urlPlaidId); setPlaidAccountName(urlPlaidName || ''); }
     }, []); // intentionally run once on mount only
 
     // Refresh when Brain Assistant approves a transaction action
@@ -157,8 +162,8 @@ export default function Transactions() {
 
     const filters = useMemo(() => isAuditMode ? {} : {
         start, end, vendor: searchVendor, category: searchCategory,
-        account: searchAccount, notes: searchNotes, deductOnly, missingReceiptOnly,
-    }, [isAuditMode, start, end, searchVendor, searchCategory, searchAccount, searchNotes, deductOnly, missingReceiptOnly]);
+        account: searchAccount, plaidAccountId, notes: searchNotes, deductOnly, missingReceiptOnly,
+    }, [isAuditMode, start, end, searchVendor, searchCategory, searchAccount, plaidAccountId, searchNotes, deductOnly, missingReceiptOnly]);
 
 
     const { filtered: filteredBase } = useExpenseFilters(auditBase, filters, sortCol, sortDir);
@@ -174,8 +179,9 @@ export default function Transactions() {
     };
 
     const clearFilters = () => {
-        setStart(''); setEnd(''); setSearchVendor(''); setSearchCategory(''); setSearchAccount(''); setSearchNotes('');
-        setDeductOnly(false); setMissingReceiptOnly(false);
+        setStart(''); setEnd(''); setSearchVendor(''); setSearchCategory('');
+        setSearchAccount(''); setPlaidAccountId(''); setPlaidAccountName('');
+        setSearchNotes(''); setDeductOnly(false); setMissingReceiptOnly(false);
         setToast({ ok: true, msg: 'All filters cleared. Showing full ledger.' });
         setTimeout(() => setToast(null), 3000);
     };
@@ -305,6 +311,14 @@ export default function Transactions() {
                     </div>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', alignItems: 'center' }}>
+                        {/* Plaid sub-account active filter badge */}
+                        {plaidAccountId && (
+                            <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 14px', background:'rgba(16,185,129,0.08)', border:'1px solid rgba(16,185,129,0.25)', borderRadius:10, fontSize:12, color:'#10b981', fontWeight:700 }}>
+                                🏦 Filtered to: <strong>{plaidAccountName || plaidAccountId}</strong>
+                                <button onClick={() => { setPlaidAccountId(''); setPlaidAccountName(''); }}
+                                    style={{ background:'none', border:'none', color:'rgba(16,185,129,0.6)', cursor:'pointer', fontSize:14, padding:'0 2px', lineHeight:1 }}>✕</button>
+                            </div>
+                        )}
                         {/* Row 1: Filters */}
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', justifyContent: 'center', width: '100%' }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>

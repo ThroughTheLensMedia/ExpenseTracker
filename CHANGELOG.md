@@ -5,6 +5,26 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.4] — 2026-05-19
+
+### plaid_account_id per-sub-account filtering; savings type; mailer fixes
+
+#### Added
+- **`api/migrations/001_plaid_account_id.sql`** — Idempotent migration: `ALTER TABLE expenses ADD COLUMN IF NOT EXISTS plaid_account_id TEXT` + index. **Must be run once in Supabase SQL Editor before sub-account filtering activates.**
+- **`api/routes/plaid.js`** — Sync engine now stores `plaid_account_id: t.account_id` on every new Plaid transaction. `crossSourceDedup` also stamps `plaid_account_id` on matched CSV rows alongside `plaid_transaction_id`.
+- **`web-react/src/hooks/useExpenseFilters.js`** — New `plaidAccountId` filter param. Exact match on `r.plaid_account_id`. Used by Transactions page for sub-account drill-down.
+- **`web-react/src/pages/Transactions.jsx`** — Reads `?plaid_account_id=` + `?plaid_account_name=` URL params on mount. Active sub-account shown as a green badge above filters with ✕ to clear. Included in filter object passed to hook. Cleared on RESET FILTERS.
+- **`web-react/src/pages/Accounts.jsx`** — Sub-account row clicks now navigate to `/transactions?source=plaid&plaid_account_id=<id>&plaid_account_name=<name>`. Added `savings` to `TYPE_GROUPS`. Added `💰 Savings` and `✏️ Manual` filter pills to Accounts page.
+- **`api/routes/accounts.js`** — `SAVINGS_KEYWORDS` array added. `detectAccountType` now returns `'savings'` for source names matching savings/hsa/ira/invest/hysa patterns before defaulting to `'checking'`.
+
+#### Fixed
+- **`api/utils/mailer.js`** — Daily stats email and intake notification email hardcoded `support@lumiereledger.com` (unverified domain) replaced with `process.env.RESEND_FROM` fallback to `support@throughthelens.media`.
+
+#### Notes
+- Sub-account filtering only works on **new transactions** synced after the migration is run. Existing Plaid transactions have `plaid_account_id = NULL` until next sync. Trigger a manual sync from the Accounts page to backfill recent history.
+
+---
+
 ## [v7.8.3] — 2026-05-19
 
 ### Fix Live Sync duplicates; Plaid Linked accounts back in type groups; Unlink button

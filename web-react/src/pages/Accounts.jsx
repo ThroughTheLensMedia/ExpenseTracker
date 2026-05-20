@@ -49,9 +49,10 @@ function getConnType(acct) {
 
 // Account type groups
 const TYPE_GROUPS = [
-    { key: 'credit',   label: 'Credit Cards',      color: '#f97316', icon: '💳' },
-    { key: 'checking', label: 'Checking & Savings', color: '#38bdf8', icon: '🏦' },
-    { key: 'manual',   label: 'Manual Entry',       color: '#a78bfa', icon: '✏️'  },
+    { key: 'credit',   label: 'Credit Cards',    color: '#f97316', icon: '💳' },
+    { key: 'checking', label: 'Checking',         color: '#38bdf8', icon: '🏦' },
+    { key: 'savings',  label: 'Savings Accounts', color: '#4ade80', icon: '💰' },
+    { key: 'manual',   label: 'Manual Entry',     color: '#a78bfa', icon: '✏️'  },
 ];
 
 // Sort options
@@ -176,7 +177,7 @@ function BalanceRows({ source, plaidConnections }) {
         const isHov    = hoverId === a.account_id && !faded;
         return (
             <div key={a.account_id}
-                onClick={faded ? undefined : () => navigate('/transactions?source=plaid')}
+                onClick={faded ? undefined : () => navigate(`/transactions?source=plaid&plaid_account_id=${encodeURIComponent(a.account_id)}&plaid_account_name=${encodeURIComponent(a.name)}`)}
                 onMouseEnter={faded ? undefined : () => setHoverId(a.account_id)}
                 onMouseLeave={faded ? undefined : () => setHoverId(null)}
                 style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
@@ -595,7 +596,7 @@ export default function Accounts() {
                 <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap', marginBottom:16 }}>
                     {/* Filter pills */}
                     <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-                        {[{k:'all',l:'All'},{k:'credit',l:'💳 Credit'},{k:'checking',l:'🏦 Checking'}].map(f => (
+                        {[{k:'all',l:'All'},{k:'credit',l:'💳 Credit'},{k:'checking',l:'🏦 Checking'},{k:'savings',l:'💰 Savings'},{k:'manual',l:'✏️ Manual'}].map(f => (
                             <button key={f.k} onClick={()=>setFilterType(f.k)}
                                 style={{ background: filterType===f.k ? 'rgba(255,255,255,0.12)' : 'none', border:'1px solid rgba(255,255,255,0.12)', borderRadius:20, color: filterType===f.k ? 'white' : 'rgba(255,255,255,0.45)', fontSize:11, fontWeight:800, padding:'5px 14px', cursor:'pointer', whiteSpace:'nowrap' }}>
                                 {f.l}

@@ -1,6 +1,11 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.4', date: 'MAY 19, 2026', color: '#a78bfa', items: [
+        '<strong>Per-Sub-Account Transaction Filtering:</strong> Click any Plaid sub-account (Savings, Photography, Checking, USAA CC, etc.) and the Transaction Ledger opens filtered to <em>only that account\'s transactions</em>. A green "Filtered to: [Account Name]" badge confirms the active filter with a clear ✕ to remove it. Requires one-time DB migration — see notes.',
+        '<strong>Savings Account Type:</strong> Savings accounts are now detected as their own type and appear in a dedicated 💰 Savings group on the Accounts page. New "💰 Savings" filter pill added to quickly isolate savings accounts.',
+        '<strong>Mailer Fallback Fix:</strong> Daily stats emails and intake notification emails no longer fall back to the unverified support@lumiereledger.com address — both now use support@throughthelens.media.',
+    ]},
     { version: '7.8.3', date: 'MAY 19, 2026', color: '#f97316', items: [
         '<strong>Live Sync No Longer Shows Duplicates:</strong> The 🔗 Live Sync section now shows only your actual Plaid bank connection. CSV accounts that were cross-matched to Plaid ("Plaid Linked") now appear in their normal Credit/Checking groups — no more seeing USAA listed multiple times.',
         '<strong>Plaid Linked Badge Clarified:</strong> Hover the "Plaid Linked" badge on any CSV account to see: <em>"No extra billing — only the Live Sync connection has a fee."</em> These accounts do not cost $0.50/month.',

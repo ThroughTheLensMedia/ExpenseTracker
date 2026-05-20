@@ -11,14 +11,16 @@ const CREDIT_SOURCES = new Set([
     'applecard','capitalone','amex','delta_amex','amex_gold','amex_platinum','amex_blue',
     'chase','bankofamerica','wellsfargo',
 ]);
-const CREDIT_KEYWORDS = ['card','amex','credit','visa','mastercard','discover','venture','sapphire','freedom','platinum','gold','blue','delta','skymiles','southwest','united','ink'];
+const CREDIT_KEYWORDS  = ['card','amex','credit','visa','mastercard','discover','venture','sapphire','freedom','platinum','gold','blue','delta','skymiles','southwest','united','ink'];
+const SAVINGS_KEYWORDS = ['savings','saving','photography','money_market','mmkt','hsa','ira','invest','hysa','high_yield'];
 
 function detectAccountType(source) {
     const key = (source || '').toLowerCase();
     if (key === 'manual') return 'manual';
     if (CREDIT_SOURCES.has(key)) return 'credit';
     if (CREDIT_KEYWORDS.some(k => key.includes(k))) return 'credit';
-    return 'checking'; // default: checking/savings/bank
+    if (SAVINGS_KEYWORDS.some(k => key.includes(k))) return 'savings';
+    return 'checking'; // default: checking/bank
 }
 
 // ─── GET /api/accounts/summary ────────────────────────────────────────────────
