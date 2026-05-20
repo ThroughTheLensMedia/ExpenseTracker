@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.6', date: 'MAY 19, 2026', color: '#10b981', items: [
+        '<strong>Filters Now Filter Sub-Accounts:</strong> The Credit / Checking / Savings filter pills now filter the live sub-account rows inside the Live Sync card. Click Credit → only USAA CC shows. Click Savings → only Savings and Photography show. Click Checking → only checking accounts show. The filter is truly useful now even when all your accounts are in Live Sync.',
+        '<strong>Account Plans Nav Fixed:</strong> The "Account Plans" link in the menu now correctly opens your billing and plan details instead of a blank admin panel.',
+    ]},
     { version: '7.8.5', date: 'MAY 19, 2026', color: '#38bdf8', items: [
         '<strong>Accounts Filter Fix:</strong> The Credit / Checking / Savings / Manual filter pills now work correctly. The 🔗 Live Sync section stays visible regardless of which filter is active — it\'s always shown when a Plaid connection exists. Type filters apply only to the grouped account sections below it.',
     ]},

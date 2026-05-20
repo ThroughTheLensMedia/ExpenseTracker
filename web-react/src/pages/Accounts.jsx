@@ -119,7 +119,16 @@ function ConnBadge({ type }) {
 // ─── Balance rows (Plaid sub-accounts) ────────────────────────────────────────
 const BALANCES_CACHE_KEY = 'll_plaid_balances_cache';
 
-function BalanceRows({ source, plaidConnections }) {
+// Map app filterType → Plaid account type/subtype
+function matchesFilter(a, filterType) {
+    if (filterType === 'all') return true;
+    if (filterType === 'credit') return a.type === 'credit';
+    if (filterType === 'checking') return a.type === 'depository' && (a.subtype || '').toLowerCase().includes('checking');
+    if (filterType === 'savings') return a.type === 'depository' && !(a.subtype || '').toLowerCase().includes('checking');
+    return false; // 'manual' — no Plaid sub-accounts are manual
+}
+
+function BalanceRows({ source, plaidConnections, filterType = 'all' }) {
     const navigate = useNavigate();
     const [state,      setState]      = useState(() => {
         try {
@@ -170,6 +179,8 @@ function BalanceRows({ source, plaidConnections }) {
 
     const allAccts    = state.institutions?.flatMap(i => i.accounts || []) || [];
     const hiddenCount = allAccts.filter(a => hiddenIds.has(a.account_id)).length;
+    // When a type filter is active, only show matching sub-accounts (hidden count ignores filter)
+    const filterActive = filterType !== 'all';
 
     function SubRow({ a, faded }) {
         const isCredit = a.type === 'credit';
@@ -230,13 +241,21 @@ function BalanceRows({ source, plaidConnections }) {
 
             {!state.loading && !state.error && (
                 <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-                    {state.institutions?.map(inst => (
-                        inst.balance_error
-                            ? <div key={inst.id} style={{ fontSize:12, color:'rgba(255,255,255,0.3)' }}>Balance unavailable for {inst.institution_name}</div>
-                            : inst.accounts?.filter(a => !hiddenIds.has(a.account_id)).map(a => <SubRow key={a.account_id} a={a} faded={false} />)
-                    ))}
+                    {state.institutions?.map(inst => {
+                        if (inst.balance_error)
+                            return <div key={inst.id} style={{ fontSize:12, color:'rgba(255,255,255,0.3)' }}>Balance unavailable for {inst.institution_name}</div>;
+                        const visible = (inst.accounts || []).filter(a => !hiddenIds.has(a.account_id) && matchesFilter(a, filterType));
+                        return visible.map(a => <SubRow key={a.account_id} a={a} faded={false} />);
+                    })}
 
-                    {/* Hidden sub-accounts toggle */}
+                    {/* Filter active but no matching sub-accounts */}
+                    {filterActive && allAccts.filter(a => !hiddenIds.has(a.account_id) && matchesFilter(a, filterType)).length === 0 && (
+                        <div style={{ fontSize:11, color:'rgba(255,255,255,0.25)', fontStyle:'italic', padding:'4px 2px' }}>
+                            No {filterType} sub-accounts in this connection
+                        </div>
+                    )}
+
+                    {/* Hidden sub-accounts toggle — show unfiltered hidden count */}
                     {hiddenCount > 0 && (
                         <div style={{ marginTop:2 }}>
                             <button onClick={() => setShowHidden(v => !v)}
@@ -256,7 +275,7 @@ function BalanceRows({ source, plaidConnections }) {
 }
 
 // ─── Account card ──────────────────────────────────────────────────────────────
-function AccountCard({ acct, totalMonth, plaidConnections, onAliasChange, onSync, syncing, onDisconnect }) {
+function AccountCard({ acct, totalMonth, plaidConnections, onAliasChange, onSync, syncing, onDisconnect, filterType = 'all' }) {
     const navigate  = useNavigate();
     const meta      = getSourceMeta(acct.source);
     const connType  = getConnType(acct);
@@ -426,7 +445,7 @@ function AccountCard({ acct, totalMonth, plaidConnections, onAliasChange, onSync
             </div>
 
             {/* Plaid live balances */}
-            {isPlaid && <BalanceRows source={acct.source} plaidConnections={plaidConnections} />}
+            {isPlaid && <BalanceRows source={acct.source} plaidConnections={plaidConnections} filterType={filterType} />}
 
             {/* Stats */}
             <div style={{ borderTop: isPlaid ? '1px solid rgba(255,255,255,0.06)' : 'none', paddingTop: isPlaid ? 12 : 0 }}>
@@ -648,6 +667,7 @@ export default function Accounts() {
                                 onSync={handleSync}
                                 syncing={syncing}
                                 onDisconnect={() => load(false)}
+                                filterType={filterType}
                             />
                         ))}
                     </div>

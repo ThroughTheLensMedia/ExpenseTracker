@@ -1,6 +1,6 @@
 {
-  "version": "7.8.5",
+  "version": "7.8.6",
   "release_date": "2026-05-19",
   "codename": "Lumière Ledger",
-  "notes": "v7.8.5: Fix Accounts page type filter — Live Sync section now always visible regardless of active filter."
+  "notes": "v7.8.6: Filter pills now filter Plaid sub-accounts; Account Plans nav points to billing tab."
 }

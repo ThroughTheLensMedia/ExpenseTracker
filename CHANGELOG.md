@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.6] — 2026-05-19
+
+### Filter pills filter Plaid sub-accounts; Account Plans nav fix
+
+#### Fixed
+- **`web-react/src/pages/Accounts.jsx`** — Filter pills (Credit / Checking / Savings) now filter the Plaid sub-account rows inside the Live Sync card in real-time. Credit → shows only USAA CC. Checking → shows Checking + House Sale. Savings → shows Savings + Photography. Manual → shows nothing (no Plaid sub-accounts are manual). Shows "No [type] sub-accounts in this connection" if filter matches nothing.
+- **`web-react/src/App.jsx`** — "Account Plans" nav link now routes to `/StudioControlCenter?tab=profile` (billing/plan section) instead of `?tab=saas` (admin-only SaaS management panel that users couldn't see).
+
+---
+
 ## [v7.8.5] — 2026-05-19
 
 ### Fix Accounts page type filter pills
