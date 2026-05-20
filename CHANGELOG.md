@@ -5,6 +5,17 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.15] — 2026-05-20
+
+### Connect Bank auto-triggers Plaid popup; better billing error
+
+#### Fixed
+- **`web-react/src/pages/Accounts.jsx`** — "Connect a Bank" button now navigates to `/import?connect=true` instead of bare `/import`.
+- **`web-react/src/pages/Import.jsx`** — Reads `?connect=true` param via `useSearchParams`; auto-expands Plaid section (`showPlaid` initializes to `true` when param present); passes `autoConnect` prop to `<PlaidLink>`.
+- **`web-react/src/components/PlaidLink.jsx`** — Accepts `autoConnect` prop; fires `handleConnect()` once after accounts finish loading (guarded by `useRef` to prevent double-fire). Billing error message now specifies the exact path to add a payment method.
+
+---
+
 ## [v7.8.14] — 2026-05-20
 
 ### Stripe setup — onboarding step + in-profile guidance

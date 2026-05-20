@@ -724,7 +724,7 @@ export default function Accounts() {
                         <div style={{ fontSize:14, fontWeight:900, color:'white', marginBottom:3 }}>Live Bank Sync via Plaid</div>
                         <div style={{ fontSize:12, color:'rgba(255,255,255,0.5)', fontWeight:600 }}>Connect your bank to auto-import transactions — no more CSV exports.</div>
                     </div>
-                    <button onClick={()=>navigate('/import')} className="btn sm primary" style={{ whiteSpace:'nowrap', flexShrink:0 }}>Connect a Bank</button>
+                    <button onClick={()=>navigate('/import?connect=true')} className="btn sm primary" style={{ whiteSpace:'nowrap', flexShrink:0 }}>Connect a Bank</button>
                 </div>
             )}
         </div>

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { invalidateExpensesCache, formatMoney, formatDate } from '../api';
 import { useAuth, supabase } from '../components/AuthContext';
 import PlaidLink from '../components/PlaidLink';
@@ -160,7 +160,9 @@ export default function Import() {
     const [detecting, setDetecting] = useState(false);
     const [detectedSource, setDetectedSource] = useState(null);
     const [pendingFile, setPendingFile] = useState(null);
-    const [showPlaid, setShowPlaid] = useState(false);
+    const [searchParams] = useSearchParams();
+    const autoConnect = searchParams.get('connect') === 'true';
+    const [showPlaid, setShowPlaid] = useState(autoConnect);
 
     // Duplicate scanner state
     const [scanning, setScanning] = useState(false);
@@ -373,7 +375,7 @@ export default function Import() {
                 </button>
                 {showPlaid && (
                     <div style={{ padding: '0 24px 24px' }}>
-                        <PlaidLink onSync={() => invalidateExpensesCache()} />
+                        <PlaidLink onSync={() => invalidateExpensesCache()} autoConnect={autoConnect} />
                     </div>
                 )}
             </div>

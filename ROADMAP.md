@@ -98,6 +98,7 @@ Source of truth for all sprint work, security status, and product phases.
 | v7.8.12 | Fix onboarding checklist nav paths — AI Intelligence tab, Invoicing page, rename Help Docs step |
 | v7.8.13 | Business Profile — full-width responsive layout, pair orphaned fields, compact textareas, mobile breakpoint |
 | v7.8.14 | Stripe setup — onboarding checklist step + in-profile 4-step guidance with direct Stripe dashboard link |
+| v7.8.15 | Connect Bank auto-triggers Plaid popup via ?connect=true param; better billing error message |
 
 ---
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { apiPost, apiGet, apiDelete, invalidateExpensesCache } from '../api';
 import { useModal } from './ModalContext.jsx';
 
@@ -9,7 +9,7 @@ import { useModal } from './ModalContext.jsx';
  * Requires the Plaid Link SDK script loaded in index.html:
  *   <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
  */
-export default function PlaidLink({ onSync }) {
+export default function PlaidLink({ onSync, autoConnect = false }) {
     const modal = useModal();
     const [accounts, setAccounts] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -29,6 +29,16 @@ export default function PlaidLink({ onSync }) {
     };
 
     useEffect(() => { loadAccounts(); }, []);
+
+    // Auto-trigger connect when arriving via "Connect a Bank" button on Accounts page
+    const autoConnectFired = useRef(false);
+    useEffect(() => {
+        if (autoConnect && !loading && !autoConnectFired.current) {
+            autoConnectFired.current = true;
+            handleConnect();
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [autoConnect, loading]);
 
     const handleConnect = useCallback(async () => {
         // Show fee confirmation before starting Plaid flow
@@ -76,7 +86,7 @@ export default function PlaidLink({ onSync }) {
             handler.open();
         } catch (e) {
             if (e.message?.includes('plaid_payment_required') || e.status === 402) {
-                setMsg({ ok: false, text: '💳 A billing method is required before connecting a bank. Go to Settings → Ledger Control Center → Billing to set up your subscription first.' });
+                setMsg({ ok: false, text: '💳 A billing method is required before connecting a bank. Plaid charges $0.50/month per connected account — add a card at Settings → Ledger Control Center → Business Profile (Billing section) to continue.' });
             } else {
                 setMsg({ ok: false, text: `Failed to start Plaid: ${e.message}` });
             }

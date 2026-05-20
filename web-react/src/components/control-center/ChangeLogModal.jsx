@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.15', date: 'MAY 20, 2026', color: '#38bdf8', items: [
+        '<strong>Connect Bank — Auto-Triggers Plaid Popup:</strong> Clicking "Connect a Bank" from the Accounts page now automatically opens the Plaid billing confirmation and connect flow. Previously it navigated to the Bank Import page but left the Plaid section collapsed — you had to find and click the button again.',
+        '<strong>Billing Error Message Improved:</strong> If you hit the $0.50/month billing gate, the error now explains exactly where to add a payment method (Settings → Ledger Control Center → Business Profile → Billing section) instead of giving a vague message.',
+    ]},
     { version: '7.8.14', date: 'MAY 20, 2026', color: '#a78bfa', items: [
         '<strong>Stripe Setup — Onboarding Step Added:</strong> "Enable Online Invoice Payments" is now a checklist step in the setup wizard. Clicking it takes you straight to the Business Profile.',
         '<strong>Stripe Setup — In-Profile Guidance:</strong> The Business Profile now includes a dedicated Stripe section with a 4-step walkthrough (create account → API Keys → copy publishable key → paste and save), a direct link to dashboard.stripe.com/apikeys, and a clear warning about never entering your secret key.',
