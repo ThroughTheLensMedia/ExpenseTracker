@@ -134,22 +134,22 @@ export default function Transactions() {
     };
 
     const ACCOUNT_LABELS = {
-        'rocketmoney': '🟣 Rocket Money',
-        'chase': '🔵 Chase Bank',
-        'usbank': '🔵 US Bank',
-        'bankofamerica': '🔴 Bank of America',
-        'wellsfargo': '🟡 Wells Fargo',
-        'applecard': '⬛ Apple Card',
-        'capitalone': '🔴 Capital One',
-        'usaa': '🦅 USAA',
-        'navyfcu': '⚓ Navy Federal',
-        'wise': '🌍 Wise',
-        'plaid': '🏦 Plaid',
-        'manual': '➕ Manual',
-        'delta_amex': '🔵 Delta Amex Card',
-        'amex_gold': '🟡 Amex Gold Card',
-        'amex_platinum': '⬜ Amex Platinum Card',
-        'amex_blue': '🔵 Amex Blue Cash',
+        'rocketmoney': 'Rocket Money',
+        'chase': 'Chase Bank',
+        'usbank': 'US Bank',
+        'bankofamerica': 'Bank of America',
+        'wellsfargo': 'Wells Fargo',
+        'applecard': 'Apple Card',
+        'capitalone': 'Capital One',
+        'usaa': 'USAA',
+        'navyfcu': 'Navy Federal',
+        'wise': 'Wise',
+        'plaid': 'Plaid',
+        'manual': 'Manual',
+        'delta_amex': 'Delta Amex Card',
+        'amex_gold': 'Amex Gold Card',
+        'amex_platinum': 'Amex Platinum Card',
+        'amex_blue': 'Amex Blue Cash',
     };
 
     const { vendors: vendorOptions, accounts: accountOptions } = useFilterOptions(expenses, start, end);

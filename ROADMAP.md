@@ -1,6 +1,6 @@
 # Lumière Ledger — Master Roadmap
 
-**Version:** v7.8.4 | **Last reviewed:** 2026-05-19  
+**Version:** v7.8.25 | **Last reviewed:** 2026-05-20  
 Source of truth for all sprint work, security status, and product phases.
 
 ---
@@ -41,7 +41,7 @@ Source of truth for all sprint work, security status, and product phases.
 | **Stripe — end-to-end test** | Stripe CLI | Checkout → webhook fires → `plan_type` updates in Supabase → `UpgradeGate` drops. Use Stripe test card. Never verified live. |
 | **Supabase schema migration** | Supabase SQL Editor | `ALTER TABLE user_subscriptions ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT, ADD COLUMN IF NOT EXISTS current_period_end TIMESTAMPTZ` — required for Stripe webhook to write correctly. |
 | **Grandfathered users `admin_tier` fix** | Supabase SQL Editor | `UPDATE user_subscriptions SET admin_tier = 'studio' WHERE plan_type IN ('free_beta','lifetime') AND admin_tier IS NULL` — grants Studio limits to all beta users. Run now. |
-| **Sync tier Stripe price IDs** | Stripe + Vercel | Create Sync product in Stripe ($4.99/mo + annual). Add `VITE_STRIPE_PRICE_SYNC_MONTHLY` and `VITE_STRIPE_PRICE_SYNC_ANNUAL` to Vercel env vars. Required for Sync upgrade buttons to work. |
+| ~~**Sync tier Stripe price IDs**~~ | ~~Stripe + Vercel~~ | ✅ Done — Sync product created in Stripe. `VITE_STRIPE_PRICE_SYNC_*` and `STRIPE_PRICE_SYNC_*` set in Vercel. |
 
 ---
 
@@ -103,6 +103,13 @@ Source of truth for all sprint work, security status, and product phases.
 | v7.8.16 | Beta/lifetime users bypass Plaid billing gate (full feature access during beta); fix error banner wrapping |
 | v7.8.17 | Revert beta bypass — all users pay for Plaid; inline billing gate UI with Core/Studio plan cards on 402 |
 | v7.8.18 | Sync tier ($4.99/mo) — Plaid-only flat plan; updated billing gate (Sync featured first), upgrade cards (3-col), marketing pricing (4-tier + MOST POPULAR badge), CTA copy fix |
+| v7.8.19 | Remove redundant hero pill badges from Home.jsx |
+| v7.8.20 | Fix stale billing gate copy (remove "$0.50/account" language); annual Sync shows $49.99/yr total instead of per-month breakdown |
+| v7.8.21 | Fix "Invalid price_id" checkout error — stripe.js PRICES map was missing Sync tier; add Sync to deriveTier() |
+| v7.8.22 | Add keep-alive cron to vercel.json (reverted in v7.8.23 — Hobby plan blocks sub-daily crons) |
+| v7.8.23 | Remove sub-daily cron — Vercel Hobby plan blocks `0 */6 * * *`; UptimeRobot covers keep-alive at 5-min intervals |
+| v7.8.24 | Plaid transactions use real account name (e.g. "USAA Checking") instead of generic "plaid" source; auto-repair on sync |
+| v7.8.25 | Fix Plaid account repair for NULL plaid_account_id rows (pass 2 fallback to institution name); date column nowrap; strip icons from ACCOUNT_LABELS |
 
 ---
 

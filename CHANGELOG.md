@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.26] — 2026-05-20
+
+### Remove icons from account labels; update roadmap
+
+#### Changed
+- **`web-react/src/pages/Transactions.jsx`** — Stripped all emoji icons from `ACCOUNT_LABELS`. Labels are plain text only.
+- **`ROADMAP.md`** — Updated to v7.8.25, added v7.8.19–v7.8.25 to completed sprint log, marked Sync price IDs done.
+
+---
+
 ## [v7.8.25] — 2026-05-20
 
 ### Fix Plaid account repair reliability + date column wrapping

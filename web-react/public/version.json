@@ -1,6 +1,6 @@
 {
-  "version": "7.8.25",
+  "version": "7.8.26",
   "release_date": "2026-05-20",
   "codename": "Lumière Ledger",
-  "notes": "v7.8.25: Fix Plaid account name repair — use accountsGet for reliable account lookup. Fix date column wrapping in transaction ledger."
+  "notes": "v7.8.26: Remove emoji icons from account labels in transaction ledger."
 }
