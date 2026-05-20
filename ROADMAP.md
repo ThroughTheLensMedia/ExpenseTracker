@@ -97,6 +97,7 @@ Source of truth for all sprint work, security status, and product phases.
 | v7.8.11 | Onboarding wizard minimizes to floating button on step nav (instead of blocking overlay); beta users see upgrade plans |
 | v7.8.12 | Fix onboarding checklist nav paths — AI Intelligence tab, Invoicing page, rename Help Docs step |
 | v7.8.13 | Business Profile — full-width responsive layout, pair orphaned fields, compact textareas, mobile breakpoint |
+| v7.8.14 | Stripe setup — onboarding checklist step + in-profile 4-step guidance with direct Stripe dashboard link |
 
 ---
 

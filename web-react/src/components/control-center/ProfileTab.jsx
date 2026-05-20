@@ -294,6 +294,25 @@ export default function ProfileTab({ settings, setSettings, onReload }) {
                     <textarea value={settings.payment_methods || ''} onChange={e => field('payment_methods', e.target.value)} placeholder="e.g. Payment due within 14 days. Checks payable to..." style={{ marginTop: '8px', padding: '13px', minHeight: '65px', resize: 'vertical' }} />
                 </div>
 
+                {/* Stripe setup guidance */}
+                <div className="f2">
+                    <div style={{ padding: '16px 20px', background: 'rgba(99,91,255,0.05)', borderRadius: '14px', border: '1px solid rgba(99,91,255,0.18)' }}>
+                        <div style={{ fontWeight: 950, fontSize: '12px', color: '#a78bfa', marginBottom: '12px', letterSpacing: '0.05em' }}>💳 ENABLE ONLINE INVOICE PAYMENTS (STRIPE)</div>
+                        <p style={{ margin: '0 0 12px', fontSize: '12px', color: 'rgba(255,255,255,0.55)', lineHeight: 1.6 }}>
+                            Stripe lets your clients pay invoices by credit or debit card. It's free to sign up — Stripe charges a small per-transaction fee (2.9% + 30¢) directly to you. No monthly cost.
+                        </p>
+                        <ol style={{ margin: '0 0 12px', padding: '0 0 0 18px', fontSize: '12px', color: 'rgba(255,255,255,0.5)', lineHeight: 2, fontWeight: 600 }}>
+                            <li>Create a free account at <a href="https://stripe.com" target="_blank" rel="noreferrer" style={{ color: '#a78bfa' }}>stripe.com</a> using your business name and email.</li>
+                            <li>Go to <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noreferrer" style={{ color: '#a78bfa' }}>Dashboard → Developers → API Keys</a>.</li>
+                            <li>Copy your <strong style={{ color: 'white' }}>Publishable key</strong> (starts with <code style={{ color: '#a78bfa' }}>pk_live_</code>).</li>
+                            <li>Paste it into the Stripe Publishable Key field below and save.</li>
+                        </ol>
+                        <div style={{ fontSize: '11px', color: 'rgba(249,115,22,0.8)', background: 'rgba(249,115,22,0.06)', border: '1px solid rgba(249,115,22,0.15)', borderRadius: '8px', padding: '8px 12px' }}>
+                            ⚠️ Only paste the <strong>Publishable key</strong> here — never your Secret key. The publishable key is safe to store; the secret key is not.
+                        </div>
+                    </div>
+                </div>
+
                 {/* Instant Payment Handles */}
                 <div className="f2">
                     <div style={{ padding: '18px 20px', background: 'rgba(56,189,248,0.04)', borderRadius: '14px', border: '1px solid rgba(56,189,248,0.12)' }}>
@@ -314,7 +333,10 @@ export default function ProfileTab({ settings, setSettings, onReload }) {
                             <div>
                                 <small className="muted" style={{ fontWeight: 900 }}>STRIPE PUBLISHABLE KEY</small>
                                 <input type="password" value={settings.stripe_publishable_key || ''} onChange={e => field('stripe_publishable_key', e.target.value)} placeholder="pk_live_..." style={{ marginTop: '8px', padding: '11px' }} />
-                                <div className="muted extra-small" style={{ marginTop: '5px' }}>Publishable key only — never your secret key.</div>
+                                <div className="muted extra-small" style={{ marginTop: '5px' }}>
+                                    Publishable key only — never your secret key.{' '}
+                                    <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noreferrer" style={{ color: '#38bdf8', textDecoration: 'none' }}>Get it at dashboard.stripe.com →</a>
+                                </div>
                             </div>
                         </div>
                         <div className="muted extra-small" style={{ marginTop: '14px', padding: '9px 12px', background: 'rgba(249,115,22,0.06)', borderRadius: '8px', border: '1px solid rgba(249,115,22,0.15)', color: '#f97316' }}>

@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.14', date: 'MAY 20, 2026', color: '#a78bfa', items: [
+        '<strong>Stripe Setup — Onboarding Step Added:</strong> "Enable Online Invoice Payments" is now a checklist step in the setup wizard. Clicking it takes you straight to the Business Profile.',
+        '<strong>Stripe Setup — In-Profile Guidance:</strong> The Business Profile now includes a dedicated Stripe section with a 4-step walkthrough (create account → API Keys → copy publishable key → paste and save), a direct link to dashboard.stripe.com/apikeys, and a clear warning about never entering your secret key.',
+    ]},
     { version: '7.8.13', date: 'MAY 19, 2026', color: '#10b981', items: [
         '<strong>Business Profile Layout Redesigned:</strong> The form now fills full width on desktop instead of capping at 850px. Orphaned half-row fields are paired — Business Name + Category, Phone + Address, Tax ID + Entity Type, NAICS + Invoice Notes, Contract Terms + Payment Methods all share rows. Textareas are more compact. On mobile (≤640px), all fields stack to a single column automatically.',
     ]},

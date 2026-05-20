@@ -40,6 +40,14 @@ const STEPS = [
         required: false,
     },
     {
+        id: 'stripe',
+        icon: '💳',
+        title: 'Enable Online Invoice Payments',
+        desc: 'Add your Stripe publishable key so clients can pay invoices by card. Free Stripe account — no monthly fee.',
+        action: { label: 'Set Up Stripe', path: '/StudioControlCenter?tab=profile' },
+        required: false,
+    },
+    {
         id: 'invoice',
         icon: '🧾',
         title: 'Create Your First Invoice',

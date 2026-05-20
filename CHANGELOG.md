@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.14] — 2026-05-20
+
+### Stripe setup — onboarding step + in-profile guidance
+
+#### Added
+- **`web-react/src/components/OnboardingChecklist.jsx`** — New "💳 Enable Online Invoice Payments" step added to the When You're Ready section. Links directly to Business Profile tab.
+- **`web-react/src/components/control-center/ProfileTab.jsx`** — Added dedicated Stripe guidance callout above the payment handles section: 4-step instructions (create Stripe account → Developers → API Keys → copy publishable key → paste and save), direct link to `dashboard.stripe.com/apikeys`, warning callout distinguishing publishable vs secret key. Also added inline link on the key input field itself.
+
+---
+
 ## [v7.8.13] — 2026-05-19
 
 ### Business Profile — full-width responsive layout, eliminate dead space
