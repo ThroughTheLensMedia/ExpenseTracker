@@ -192,7 +192,6 @@ function PageChecklist({ onDone, onBack }) {
     }
 
     function go(path) {
-        onDone();
         navigate(path);
     }
 

@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.10', date: 'MAY 19, 2026', color: '#a78bfa', items: [
+        '<strong>Onboarding Wizard — Nav Links Fixed:</strong> Clicking "Open Profile →" or any checklist step link now navigates to that page while keeping the wizard open. Previously it permanently dismissed the wizard the moment you clicked a link, so you could never get back to it. The wizard now stays visible as an overlay — complete your step, then come back and check it off.',
+        '<strong>Upgrade Plans Now Visible for Beta Users:</strong> Beta Access accounts can now see the Core and Studio upgrade cards in the Billing section. Previously these were hidden for all grandfathered accounts. Lifetime Free accounts remain unaffected — no upgrade cards shown for lifetime.',
+    ]},
     { version: '7.8.9', date: 'MAY 19, 2026', color: '#f43f5e', items: [
         '<strong>Build Fix:</strong> Resolved a syntax error in the onboarding wizard that caused all Vercel deployments since v7.8.7 to fail. An unescaped apostrophe in the checklist button text broke the JavaScript parser. All fixes from v7.8.7 and v7.8.8 (onboarding wizard, flash fix, label corrections) are now live for the first time.',
     ]},

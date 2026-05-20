@@ -133,8 +133,8 @@ export default function ProfileTab({ settings, setSettings, onReload }) {
                 )}
             </div>
 
-            {/* Upgrade cards — only for confirmed free plan (not beta/lifetime/admin/paid) */}
-            {subscriptionReady && !isPaid && !isGrandfathered && !adminTier && (
+            {/* Upgrade cards — hide for lifetime (already grandfathered to Studio) and paid/admin; show for beta + free */}
+            {subscriptionReady && !isPaid && !isLifetime && !adminTier && (
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '20px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
                         <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>Unlock more with a paid plan</div>

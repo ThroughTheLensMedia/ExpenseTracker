@@ -1,6 +1,6 @@
 {
-  "version": "7.8.9",
+  "version": "7.8.10",
   "release_date": "2026-05-19",
   "codename": "Lumière Ledger",
-  "notes": "v7.8.9: Fix build-breaking syntax error in OnboardingChecklist (unescaped apostrophe on line 242)."
+  "notes": "v7.8.10: Fix onboarding wizard closing on nav click; show upgrade plans for beta users."
 }

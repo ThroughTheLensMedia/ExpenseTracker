@@ -93,6 +93,7 @@ Source of truth for all sprint work, security status, and product phases.
 | v7.8.7 | 3-page onboarding wizard (Welcome → Data Import Guide → Setup Checklist); fix trigger bug (subscription null for new users) |
 | v7.8.8 | Fix upgrade plan flash (gate BillingSection on subscriptionReady); fix free_beta label → "Beta Access" vs lifetime → "Lifetime Free" |
 | v7.8.9 | Fix build-breaking syntax error in OnboardingChecklist.jsx (unescaped apostrophe); first successful deploy since v7.8.6 — all v7.8.7–7.8.8 fixes now live |
+| v7.8.10 | Fix onboarding wizard closing on step nav click; show Core/Studio upgrade cards for beta users |
 
 ---
 

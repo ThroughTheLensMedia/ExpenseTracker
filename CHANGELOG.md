@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.10] — 2026-05-19
+
+### Fix onboarding wizard nav dismissal; show upgrade plans for beta users
+
+#### Fixed
+- **`web-react/src/components/OnboardingChecklist.jsx`** — `go()` in `PageChecklist` was calling `onDone()` (the dismiss function) before navigating, which permanently wrote the dismissed key to localStorage. Clicking "Open Profile →" or any step link would close the wizard forever. Fixed: `go()` now only calls `navigate(path)`. The wizard stays open as an overlay while the user completes each step.
+- **`web-react/src/components/control-center/ProfileTab.jsx`** — Upgrade plan cards (Core / Studio) were hidden for all `isGrandfathered` users, which includes `free_beta`. Beta users couldn't see any other plans. Fixed: condition changed from `!isGrandfathered` to `!isLifetime` — beta users now see upgrade cards; lifetime accounts still don't (they're already grandfathered to Studio limits).
+
+---
+
 ## [v7.8.9] — 2026-05-19
 
 ### Fix Vercel build failure — unescaped apostrophe in OnboardingChecklist
