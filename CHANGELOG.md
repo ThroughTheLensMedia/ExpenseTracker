@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.23] — 2026-05-20
+
+### Fix Vercel cron — remove >1x/day schedule incompatible with Hobby plan
+
+#### Changed
+- **`vercel.json`** — Removed `0 */6 * * *` cron (Hobby plan blocks sub-daily intervals). UptimeRobot pings `/api/health` every 5 min — Supabase keep-alive is already covered.
+
+---
+
 ## [v7.8.18] — 2026-05-20
 
 ### Add Sync tier ($4.99/mo); update marketing pricing + in-app upgrade cards + billing gate
