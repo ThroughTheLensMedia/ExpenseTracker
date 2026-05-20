@@ -76,10 +76,12 @@ export default function Transactions() {
             invalidateExpensesCache();
             await loadData(true);
             setToast({ ok: true, msg: `${r.updated ?? selectedIds.size} transactions reassigned to ${ACCOUNT_LABELS[reassignTarget] || reassignTarget}.` });
+            setTimeout(() => setToast(null), 4000);
             setSelectedIds(new Set());
             setReassignTarget('');
         } catch(e) {
             setToast({ ok: false, msg: `Reassign failed: ${e.message}` });
+            setTimeout(() => setToast(null), 4000);
         } finally {
             setReassigning(false);
         }
