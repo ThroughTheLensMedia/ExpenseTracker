@@ -5,6 +5,21 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.13] — 2026-05-19
+
+### Business Profile — full-width responsive layout, eliminate dead space
+
+#### Changed
+- **`web-react/src/components/control-center/ProfileTab.jsx`** — Complete layout rework:
+  - Removed `maxWidth: 850px` wrapper — form now uses full container width
+  - Added responsive CSS via `<style>` block: 2-column grid on desktop, single-column on ≤640px
+  - Paired previously orphaned fields: Business Name + Category, Phone + Address, Tax ID + Entity Type, NAICS + Invoice Notes, Contract Terms + Payment Methods
+  - Reduced `gap` from 30px → 20px, input padding from 15px → 13px, textarea `minHeight` from 80–100px → 65px
+  - Outer card padding uses `clamp(20px, 4vw, 40px)` for better mobile feel
+  - Payment handles section uses same responsive grid
+
+---
+
 ## [v7.8.12] — 2026-05-19
 
 ### Fix onboarding checklist nav paths

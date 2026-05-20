@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.13', date: 'MAY 19, 2026', color: '#10b981', items: [
+        '<strong>Business Profile Layout Redesigned:</strong> The form now fills full width on desktop instead of capping at 850px. Orphaned half-row fields are paired — Business Name + Category, Phone + Address, Tax ID + Entity Type, NAICS + Invoice Notes, Contract Terms + Payment Methods all share rows. Textareas are more compact. On mobile (≤640px), all fields stack to a single column automatically.',
+    ]},
     { version: '7.8.12', date: 'MAY 19, 2026', color: '#38bdf8', items: [
         '<strong>Onboarding Checklist Links Fixed:</strong> "Set Up AI" now correctly opens the AI Intelligence tab (was incorrectly opening Integrations). "Open Invoicing" now correctly opens the Invoicing page (was landing on the Execution Pipeline). "Explore the Help Docs" renamed to "Explore the Help Docs &amp; FAQs".',
     ]},

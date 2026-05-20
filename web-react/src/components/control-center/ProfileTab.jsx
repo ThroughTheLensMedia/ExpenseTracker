@@ -175,141 +175,167 @@ export default function ProfileTab({ settings, setSettings, onReload }) {
     );
 
     return (
-        <div className="card glass glow-blue" style={{ border: 'none', padding: '40px', margin: 0 }}>
-            <div style={{ maxWidth: '850px' }}>
-                {billingEl}
-                <h2 style={{ fontSize: '1.8rem', margin: '0 0 10px 0' }}>Business Profile Branding</h2>
-                <p className="muted" style={{ fontSize: '15px', marginBottom: '32px' }}>
-                    Update your studio identity. These details personalize your invoices and global reporting headers.
-                </p>
-                <form onSubmit={handleSaveSettings} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
-                    <div style={{ gridColumn: 'span 2', display: 'flex', gap: '30px', alignItems: 'center', marginBottom: '10px' }}>
-                        <div style={{ flex: 1 }}>
-                            <small className="muted" style={{ fontWeight: 900 }}>LOGO</small>
-                            <label className="btn secondary" style={{ display: 'block', marginTop: '8px', cursor: 'pointer', textAlign: 'center' }}>
-                                <input type="file" accept="image/*" onChange={handleLogoUpload} style={{ display: 'none' }} />
-                                {settings.logo_url ? 'Change Logo' : 'Upload Logo'}
-                            </label>
-                        </div>
-                        {settings.logo_url && (
-                            <div style={{ width: '120px', height: '80px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                <img src={settings.logo_url} alt="Preview" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-                            </div>
-                        )}
-                    </div>
-                    <div style={{ gridColumn: 'span 2' }}>
-                        <small className="muted" style={{ fontWeight: 900 }}>OFFICIAL BUSINESS NAME</small>
-                        <input value={settings.business_name || ''} onChange={e => field('business_name', e.target.value)} placeholder="Your Business Name" style={{ marginTop: '8px', padding: '15px' }} />
-                    </div>
-                    <div style={{ gridColumn: 'span 2' }}>
-                        <small className="muted" style={{ fontWeight: 900 }}>BUSINESS CATEGORY</small>
-                        <input value={settings.business_category || ''} onChange={e => field('business_category', e.target.value)} placeholder="Photography Studio" style={{ marginTop: '8px', padding: '15px' }} />
-                        <div className="muted small" style={{ marginTop: '8px' }}>Your primary line of work (e.g. Wedding Photography, Media Production).</div>
-                    </div>
-                    <div>
-                        <small className="muted" style={{ fontWeight: 900 }}>CONTACT NAME</small>
-                        <input value={settings.contact_name || ''} onChange={e => field('contact_name', e.target.value)} placeholder="Your Full Name" style={{ marginTop: '8px', padding: '15px' }} />
-                    </div>
-                    <div>
-                        <small className="muted" style={{ fontWeight: 900 }}>JOB TITLE</small>
-                        <input value={settings.job_title || ''} onChange={e => field('job_title', e.target.value)} placeholder="Your Job Title" style={{ marginTop: '8px', padding: '15px' }} />
-                    </div>
-                    <div>
-                        <small className="muted" style={{ fontWeight: 900 }}>BUSINESS WEBSITE</small>
-                        <input value={settings.website || ''} onChange={e => field('website', e.target.value)} placeholder="yourwebsite.com" style={{ marginTop: '8px', padding: '15px' }} />
-                    </div>
-                    <div>
-                        <small className="muted" style={{ fontWeight: 900 }}>BUSINESS EMAIL</small>
-                        <input type="email" value={settings.email || ''} onChange={e => field('email', e.target.value)} placeholder="hello@example.com" style={{ marginTop: '8px', padding: '15px' }} />
-                    </div>
-                    <div>
-                        <small className="muted" style={{ fontWeight: 900 }}>BUSINESS PHONE</small>
-                        <input value={settings.phone || ''} onChange={e => field('phone', e.target.value)} placeholder="(000) 000-0000" style={{ marginTop: '8px', padding: '15px' }} />
-                    </div>
-                    <div style={{ gridColumn: 'span 2' }}>
-                        <small className="muted" style={{ fontWeight: 900 }}>OFFICE ADDRESS</small>
-                        <textarea value={settings.address || ''} onChange={e => field('address', e.target.value)} placeholder="Studio Address..." style={{ marginTop: '8px', padding: '15px', minHeight: '80px' }} />
-                    </div>
-                    <div>
-                        <small className="muted" style={{ fontWeight: 900 }}>STUDIO TAX ID (EIN/VAT)</small>
-                        <input value={settings.tax_id || ''} onChange={e => field('tax_id', e.target.value)} placeholder="XX-XXXXXXX" style={{ marginTop: '8px', padding: '15px' }} />
-                        <div className="muted small" style={{ marginTop: '8px' }}>Shows up on professional tax invoices.</div>
-                    </div>
-                    <div>
-                        <small className="muted" style={{ fontWeight: 900 }}>IRS ENTITY TYPE</small>
-                        <select value={settings.entity_type || 'Sole Proprietorship'} onChange={e => field('entity_type', e.target.value)} style={{ marginTop: '8px', padding: '15px', color: 'white', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', width: '100%' }}>
-                            <option value="Sole Proprietorship">Sole Proprietorship</option>
-                            <option value="LLC (Single Member)">LLC (Single Member)</option>
-                            <option value="LLC (Multi Member)">LLC (Multi Member)</option>
-                            <option value="S-Corp">S-Corp</option>
-                            <option value="C-Corp">C-Corp</option>
-                            <option value="Partnership">Partnership</option>
-                        </select>
-                    </div>
-                    <div>
-                        <small className="muted" style={{ fontWeight: 900 }}>IRS BUSINESS CODE (NAICS)</small>
-                        <input value={settings.naics_code || '711510'} onChange={e => field('naics_code', e.target.value)} placeholder="711510" style={{ marginTop: '8px', padding: '15px' }} />
-                        <div className="muted small" style={{ marginTop: '8px' }}>Standard code for photographers is 711510.</div>
-                    </div>
-                    <div style={{ gridColumn: 'span 2' }}>
-                        <small className="muted" style={{ fontWeight: 900 }}>GLOBAL INVOICE NOTES</small>
-                        <textarea value={settings.invoice_notes || ''} onChange={e => field('invoice_notes', e.target.value)} placeholder="e.g. Thank you for your business!" style={{ marginTop: '8px', padding: '15px', minHeight: '80px' }} />
-                        <div className="muted small" style={{ marginTop: '8px' }}>Standard greeting at the top of the invoice notes section.</div>
-                    </div>
-                    <div style={{ gridColumn: 'span 2' }}>
-                        <small className="muted" style={{ fontWeight: 900 }}>STANDARD CONTRACT TERMS</small>
-                        <textarea value={settings.standard_terms || ''} onChange={e => field('standard_terms', e.target.value)} placeholder="e.g. Net 15, Late fees apply..." style={{ marginTop: '8px', padding: '15px', minHeight: '100px' }} />
-                        <div className="muted small" style={{ marginTop: '8px' }}>General legal or payment terms.</div>
-                    </div>
-                    <div style={{ gridColumn: 'span 2' }}>
-                        <small className="muted" style={{ fontWeight: 900 }}>ACCEPTED METHODS OF PAYMENT</small>
-                        <div className="muted extra-small" style={{ marginTop: '4px', marginBottom: '8px' }}>Custom payment instructions or additional details shown on invoices.</div>
-                        <textarea value={settings.payment_methods || ''} onChange={e => field('payment_methods', e.target.value)} placeholder="e.g. Payment due within 14 days. Checks payable to..." style={{ marginTop: '0px', padding: '15px', minHeight: '80px' }} />
-                    </div>
-                    <div style={{ gridColumn: 'span 2', marginTop: '10px' }}>
-                        <div style={{ padding: '20px 24px', background: 'rgba(56,189,248,0.04)', borderRadius: '14px', border: '1px solid rgba(56,189,248,0.12)' }}>
-                            <div style={{ fontWeight: 950, fontSize: '13px', color: '#38bdf8', marginBottom: '20px', letterSpacing: '0.05em' }}>⚡ INSTANT PAYMENT HANDLES</div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                                <div>
-                                    <small className="muted" style={{ fontWeight: 900 }}>VENMO HANDLE</small>
-                                    <input value={settings.venmo_handle || ''} onChange={e => field('venmo_handle', e.target.value)} placeholder="@YourStudio" style={{ marginTop: '8px', padding: '13px' }} />
-                                </div>
-                                <div>
-                                    <small className="muted" style={{ fontWeight: 900 }}>ZELLE (EMAIL OR PHONE)</small>
-                                    <input value={settings.zelle_handle || ''} onChange={e => field('zelle_handle', e.target.value)} placeholder="studio@email.com" style={{ marginTop: '8px', padding: '13px' }} />
-                                </div>
-                                <div>
-                                    <small className="muted" style={{ fontWeight: 900 }}>CASHAPP TAG</small>
-                                    <input value={settings.cashapp_tag || ''} onChange={e => field('cashapp_tag', e.target.value)} placeholder="$YourCashTag" style={{ marginTop: '8px', padding: '13px' }} />
-                                </div>
-                                <div>
-                                    <small className="muted" style={{ fontWeight: 900 }}>STRIPE PUBLISHABLE KEY</small>
-                                    <input
-                                        type="password"
-                                        value={settings.stripe_publishable_key || ''}
-                                        onChange={e => field('stripe_publishable_key', e.target.value)}
-                                        placeholder="pk_live_..."
-                                        style={{ marginTop: '8px', padding: '13px' }}
-                                    />
-                                    <div className="muted extra-small" style={{ marginTop: '6px' }}>Publishable key only. Never enter your secret key here.</div>
-                                </div>
-                            </div>
-                            <div className="muted extra-small" style={{ marginTop: '16px', padding: '10px 14px', background: 'rgba(249,115,22,0.06)', borderRadius: '8px', border: '1px solid rgba(249,115,22,0.15)', color: '#f97316' }}>
-                                💡 These handles are shown on your client payment portal when you send an invoice.
-                            </div>
-                        </div>
-                    </div>
-                    <div style={{ gridColumn: 'span 2' }}>
-                        <small className="muted" style={{ fontWeight: 900 }}>PERSONALIZED SIGNATURE & SOCIALS</small>
-                        <textarea value={settings.signature_text || ''} onChange={e => field('signature_text', e.target.value)} placeholder="Your Name, Website, Instagram..." style={{ marginTop: '8px', padding: '15px', minHeight: '100px' }} />
-                        <div className="muted small" style={{ marginTop: '8px' }}>Professional sign-off for the bottom of the invoice.</div>
-                    </div>
-                    <div style={{ gridColumn: 'span 2', display: 'flex', gap: '20px', alignItems: 'center', marginTop: '10px' }}>
-                        <button type="submit" className="btn primary glow-blue" style={{ padding: '15px 45px', fontSize: '16px' }}>Save Global Identity</button>
-                        {msg && <span className={`${msg.includes('Error') ? 'tag bad' : 'tag ok'}`} style={{ fontWeight: 900 }}>{msg}</span>}
-                    </div>
-                </form>
+        <div className="card glass glow-blue" style={{ border: 'none', padding: 'clamp(20px, 4vw, 40px)', margin: 0 }}>
+            <style>{`
+                .profile-form { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+                .profile-form .f2 { grid-column: span 2; }
+                .profile-form .payment-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+                @media (max-width: 640px) {
+                    .profile-form { grid-template-columns: 1fr; gap: 14px; }
+                    .profile-form .f2 { grid-column: span 1; }
+                    .profile-form .payment-grid { grid-template-columns: 1fr; gap: 14px; }
+                }
+            `}</style>
+
+            {billingEl}
+
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <h2 style={{ fontSize: '1.5rem', margin: 0 }}>Business Profile Branding</h2>
             </div>
+            <p className="muted" style={{ fontSize: '13px', marginBottom: '24px' }}>
+                Studio identity used on invoices and reports. Fill out what you have — save and update anytime.
+            </p>
+
+            <form onSubmit={handleSaveSettings} className="profile-form">
+                {/* Logo row — upload + preview inline */}
+                <div className="f2" style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                    <div style={{ flex: 1 }}>
+                        <small className="muted" style={{ fontWeight: 900 }}>LOGO</small>
+                        <label className="btn secondary" style={{ display: 'block', marginTop: '8px', cursor: 'pointer', textAlign: 'center' }}>
+                            <input type="file" accept="image/*" onChange={handleLogoUpload} style={{ display: 'none' }} />
+                            {settings.logo_url ? 'Change Logo' : 'Upload Logo'}
+                        </label>
+                    </div>
+                    {settings.logo_url && (
+                        <div style={{ flexShrink: 0, width: '100px', height: '64px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.07)' }}>
+                            <img src={settings.logo_url} alt="Preview" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                        </div>
+                    )}
+                </div>
+
+                {/* Business Name | Business Category */}
+                <div>
+                    <small className="muted" style={{ fontWeight: 900 }}>OFFICIAL BUSINESS NAME</small>
+                    <input value={settings.business_name || ''} onChange={e => field('business_name', e.target.value)} placeholder="Your Business Name" style={{ marginTop: '8px', padding: '13px' }} />
+                </div>
+                <div>
+                    <small className="muted" style={{ fontWeight: 900 }}>BUSINESS CATEGORY</small>
+                    <input value={settings.business_category || ''} onChange={e => field('business_category', e.target.value)} placeholder="e.g. Wedding Photography, Media Production" style={{ marginTop: '8px', padding: '13px' }} />
+                </div>
+
+                {/* Contact Name | Job Title */}
+                <div>
+                    <small className="muted" style={{ fontWeight: 900 }}>CONTACT NAME</small>
+                    <input value={settings.contact_name || ''} onChange={e => field('contact_name', e.target.value)} placeholder="Your Full Name" style={{ marginTop: '8px', padding: '13px' }} />
+                </div>
+                <div>
+                    <small className="muted" style={{ fontWeight: 900 }}>JOB TITLE</small>
+                    <input value={settings.job_title || ''} onChange={e => field('job_title', e.target.value)} placeholder="Your Job Title" style={{ marginTop: '8px', padding: '13px' }} />
+                </div>
+
+                {/* Business Website | Business Email */}
+                <div>
+                    <small className="muted" style={{ fontWeight: 900 }}>BUSINESS WEBSITE</small>
+                    <input value={settings.website || ''} onChange={e => field('website', e.target.value)} placeholder="yourwebsite.com" style={{ marginTop: '8px', padding: '13px' }} />
+                </div>
+                <div>
+                    <small className="muted" style={{ fontWeight: 900 }}>BUSINESS EMAIL</small>
+                    <input type="email" value={settings.email || ''} onChange={e => field('email', e.target.value)} placeholder="hello@example.com" style={{ marginTop: '8px', padding: '13px' }} />
+                </div>
+
+                {/* Business Phone | Office Address */}
+                <div>
+                    <small className="muted" style={{ fontWeight: 900 }}>BUSINESS PHONE</small>
+                    <input value={settings.phone || ''} onChange={e => field('phone', e.target.value)} placeholder="(000) 000-0000" style={{ marginTop: '8px', padding: '13px' }} />
+                </div>
+                <div>
+                    <small className="muted" style={{ fontWeight: 900 }}>OFFICE ADDRESS</small>
+                    <textarea value={settings.address || ''} onChange={e => field('address', e.target.value)} placeholder="Studio Address..." style={{ marginTop: '8px', padding: '13px', minHeight: '48px', resize: 'vertical' }} />
+                </div>
+
+                {/* Tax ID | Entity Type | NAICS — three-way on one logical row */}
+                <div>
+                    <small className="muted" style={{ fontWeight: 900 }}>STUDIO TAX ID (EIN/VAT)</small>
+                    <input value={settings.tax_id || ''} onChange={e => field('tax_id', e.target.value)} placeholder="XX-XXXXXXX" style={{ marginTop: '8px', padding: '13px' }} />
+                    <div className="muted small" style={{ marginTop: '6px' }}>Printed on professional tax invoices.</div>
+                </div>
+                <div>
+                    <small className="muted" style={{ fontWeight: 900 }}>IRS ENTITY TYPE</small>
+                    <select value={settings.entity_type || 'Sole Proprietorship'} onChange={e => field('entity_type', e.target.value)} style={{ marginTop: '8px', padding: '13px', color: 'white', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', width: '100%' }}>
+                        <option value="Sole Proprietorship">Sole Proprietorship</option>
+                        <option value="LLC (Single Member)">LLC (Single Member)</option>
+                        <option value="LLC (Multi Member)">LLC (Multi Member)</option>
+                        <option value="S-Corp">S-Corp</option>
+                        <option value="C-Corp">C-Corp</option>
+                        <option value="Partnership">Partnership</option>
+                    </select>
+                </div>
+
+                {/* NAICS paired with Invoice Notes header — or standalone half */}
+                <div>
+                    <small className="muted" style={{ fontWeight: 900 }}>IRS BUSINESS CODE (NAICS)</small>
+                    <input value={settings.naics_code || '711510'} onChange={e => field('naics_code', e.target.value)} placeholder="711510" style={{ marginTop: '8px', padding: '13px' }} />
+                    <div className="muted small" style={{ marginTop: '6px' }}>Photographers: 711510.</div>
+                </div>
+
+                {/* Global Invoice Notes */}
+                <div>
+                    <small className="muted" style={{ fontWeight: 900 }}>GLOBAL INVOICE NOTES</small>
+                    <textarea value={settings.invoice_notes || ''} onChange={e => field('invoice_notes', e.target.value)} placeholder="e.g. Thank you for your business!" style={{ marginTop: '8px', padding: '13px', minHeight: '65px', resize: 'vertical' }} />
+                </div>
+
+                {/* Contract Terms | Payment Methods */}
+                <div>
+                    <small className="muted" style={{ fontWeight: 900 }}>STANDARD CONTRACT TERMS</small>
+                    <textarea value={settings.standard_terms || ''} onChange={e => field('standard_terms', e.target.value)} placeholder="e.g. Net 15, Late fees apply..." style={{ marginTop: '8px', padding: '13px', minHeight: '65px', resize: 'vertical' }} />
+                </div>
+                <div>
+                    <small className="muted" style={{ fontWeight: 900 }}>ACCEPTED PAYMENT METHODS</small>
+                    <textarea value={settings.payment_methods || ''} onChange={e => field('payment_methods', e.target.value)} placeholder="e.g. Payment due within 14 days. Checks payable to..." style={{ marginTop: '8px', padding: '13px', minHeight: '65px', resize: 'vertical' }} />
+                </div>
+
+                {/* Instant Payment Handles */}
+                <div className="f2">
+                    <div style={{ padding: '18px 20px', background: 'rgba(56,189,248,0.04)', borderRadius: '14px', border: '1px solid rgba(56,189,248,0.12)' }}>
+                        <div style={{ fontWeight: 950, fontSize: '12px', color: '#38bdf8', marginBottom: '16px', letterSpacing: '0.05em' }}>⚡ INSTANT PAYMENT HANDLES</div>
+                        <div className="payment-grid">
+                            <div>
+                                <small className="muted" style={{ fontWeight: 900 }}>VENMO HANDLE</small>
+                                <input value={settings.venmo_handle || ''} onChange={e => field('venmo_handle', e.target.value)} placeholder="@YourStudio" style={{ marginTop: '8px', padding: '11px' }} />
+                            </div>
+                            <div>
+                                <small className="muted" style={{ fontWeight: 900 }}>ZELLE (EMAIL OR PHONE)</small>
+                                <input value={settings.zelle_handle || ''} onChange={e => field('zelle_handle', e.target.value)} placeholder="studio@email.com" style={{ marginTop: '8px', padding: '11px' }} />
+                            </div>
+                            <div>
+                                <small className="muted" style={{ fontWeight: 900 }}>CASHAPP TAG</small>
+                                <input value={settings.cashapp_tag || ''} onChange={e => field('cashapp_tag', e.target.value)} placeholder="$YourCashTag" style={{ marginTop: '8px', padding: '11px' }} />
+                            </div>
+                            <div>
+                                <small className="muted" style={{ fontWeight: 900 }}>STRIPE PUBLISHABLE KEY</small>
+                                <input type="password" value={settings.stripe_publishable_key || ''} onChange={e => field('stripe_publishable_key', e.target.value)} placeholder="pk_live_..." style={{ marginTop: '8px', padding: '11px' }} />
+                                <div className="muted extra-small" style={{ marginTop: '5px' }}>Publishable key only — never your secret key.</div>
+                            </div>
+                        </div>
+                        <div className="muted extra-small" style={{ marginTop: '14px', padding: '9px 12px', background: 'rgba(249,115,22,0.06)', borderRadius: '8px', border: '1px solid rgba(249,115,22,0.15)', color: '#f97316' }}>
+                            💡 Shown on your client payment portal when you send an invoice.
+                        </div>
+                    </div>
+                </div>
+
+                {/* Signature */}
+                <div className="f2">
+                    <small className="muted" style={{ fontWeight: 900 }}>PERSONALIZED SIGNATURE & SOCIALS</small>
+                    <textarea value={settings.signature_text || ''} onChange={e => field('signature_text', e.target.value)} placeholder="Your Name, Website, Instagram..." style={{ marginTop: '8px', padding: '13px', minHeight: '65px', resize: 'vertical' }} />
+                    <div className="muted small" style={{ marginTop: '6px' }}>Sign-off for the bottom of invoices.</div>
+                </div>
+
+                {/* Save */}
+                <div className="f2" style={{ display: 'flex', gap: '16px', alignItems: 'center', marginTop: '4px' }}>
+                    <button type="submit" className="btn primary glow-blue" style={{ padding: '14px 40px', fontSize: '15px' }}>Save Global Identity</button>
+                    {msg && <span className={`${msg.includes('Error') ? 'tag bad' : 'tag ok'}`} style={{ fontWeight: 900 }}>{msg}</span>}
+                </div>
+            </form>
         </div>
     );
 }
