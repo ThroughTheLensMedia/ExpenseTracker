@@ -27,5 +27,10 @@
             "destination": "/web-react/index.html"
         }
     ],
-    "crons": []
+    "crons": [
+        {
+            "path": "/api/ping",
+            "schedule": "0 */6 * * *"
+        }
+    ]
 }
