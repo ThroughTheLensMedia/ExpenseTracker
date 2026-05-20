@@ -33,7 +33,12 @@ export default function useExpenseFilters(expenses, filters = {}, sortCol = 'exp
         if (vendor) rows = rows.filter(r => (r.vendor || '').toLowerCase().includes(vendor.toLowerCase()));
         if (category) rows = rows.filter(r => (r.category || '').toLowerCase().includes(category.toLowerCase()));
         if (account) rows = rows.filter(r => (r.source || '') === account);
-        if (plaidAccountId) rows = rows.filter(r => (r.plaid_account_id || '') === plaidAccountId);
+        // plaidAccountId: match on stored plaid_account_id OR fall back to source match
+        // (transactions imported before plaid_account_id column existed only have source set)
+        if (plaidAccountId) rows = rows.filter(r =>
+            r.plaid_account_id === plaidAccountId ||
+            (!r.plaid_account_id && filters.plaidSourceKey && (r.source || '') === filters.plaidSourceKey)
+        );
         if (notes) rows = rows.filter(r => (r.notes || '').toLowerCase().includes(notes.toLowerCase()));
         if (taxBucket) rows = rows.filter(r => (r.tax_bucket || '') === taxBucket);
         if (deductOnly) rows = rows.filter(r => r.tax_deductible);

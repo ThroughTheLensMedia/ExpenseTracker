@@ -26,6 +26,7 @@ export default function Transactions() {
     const [searchAccount,    setSearchAccount]    = useState('');
     const [plaidAccountId,   setPlaidAccountId]   = useState('');
     const [plaidAccountName, setPlaidAccountName] = useState('');
+    const [plaidSourceKey,   setPlaidSourceKey]   = useState(''); // source fallback for pre-plaid_account_id txns
     const [sortCol, setSortCol] = useState('expense_date');
     const [sortDir, setSortDir] = useState('desc');
 
@@ -136,11 +137,17 @@ export default function Transactions() {
     useEffect(() => {
         const urlSearch = searchParams.get('search');
         if (urlSearch) setSearchVendor(urlSearch);
-        const urlSource = searchParams.get('source');
-        if (urlSource) setSearchAccount(urlSource);
         const urlPlaidId   = searchParams.get('plaid_account_id');
         const urlPlaidName = searchParams.get('plaid_account_name');
-        if (urlPlaidId) { setPlaidAccountId(urlPlaidId); setPlaidAccountName(urlPlaidName || ''); }
+        const urlSource    = searchParams.get('source');
+        if (urlPlaidId) {
+            // Sub-account click: source is the fallback key, NOT the account filter
+            setPlaidAccountId(urlPlaidId);
+            setPlaidAccountName(urlPlaidName || '');
+            if (urlSource) setPlaidSourceKey(urlSource);
+        } else if (urlSource) {
+            setSearchAccount(urlSource);
+        }
     }, []); // intentionally run once on mount only
 
     // Refresh when Brain Assistant approves a transaction action
@@ -192,8 +199,8 @@ export default function Transactions() {
 
     const filters = useMemo(() => isAuditMode ? {} : {
         start, end, vendor: searchVendor, category: searchCategory,
-        account: searchAccount, plaidAccountId, notes: searchNotes, deductOnly, missingReceiptOnly,
-    }, [isAuditMode, start, end, searchVendor, searchCategory, searchAccount, plaidAccountId, searchNotes, deductOnly, missingReceiptOnly]);
+        account: searchAccount, plaidAccountId, plaidSourceKey, notes: searchNotes, deductOnly, missingReceiptOnly,
+    }, [isAuditMode, start, end, searchVendor, searchCategory, searchAccount, plaidAccountId, plaidSourceKey, searchNotes, deductOnly, missingReceiptOnly]);
 
 
     const { filtered: filteredBase } = useExpenseFilters(auditBase, filters, sortCol, sortDir);
@@ -210,7 +217,7 @@ export default function Transactions() {
 
     const clearFilters = () => {
         setStart(''); setEnd(''); setSearchVendor(''); setSearchCategory('');
-        setSearchAccount(''); setPlaidAccountId(''); setPlaidAccountName('');
+        setSearchAccount(''); setPlaidAccountId(''); setPlaidAccountName(''); setPlaidSourceKey('');
         setSearchNotes(''); setDeductOnly(false); setMissingReceiptOnly(false);
         setToast({ ok: true, msg: 'All filters cleared. Showing full ledger.' });
         setTimeout(() => setToast(null), 3000);
@@ -370,9 +377,21 @@ export default function Transactions() {
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                 <small className="muted" style={{ fontWeight: 800 }}>ACCOUNT</small>
-                                <select value={searchAccount} onChange={e => setSearchAccount(e.target.value)} style={{ width: '180px' }}>
+                                <select value={searchAccount} onChange={e => { setSearchAccount(e.target.value); setPlaidAccountId(''); setPlaidSourceKey(''); }} style={{ width: '180px' }}>
                                     <option value="">All Accounts</option>
-                                    {accountOptions.map(a => <option key={a} value={a}>{ACCOUNT_LABELS[a] || a}</option>)}
+                                    {accountsList
+                                        .filter(a => a.source !== 'plaid')
+                                        .map(a => (
+                                            <option key={a.source} value={a.source}>
+                                                {a.display_name || ACCOUNT_LABELS[a.source] || a.source}
+                                            </option>
+                                        ))
+                                    }
+                                    {/* Legacy sources on transactions not in accounts list */}
+                                    {accountOptions
+                                        .filter(s => s && !accountsList.find(a => a.source === s))
+                                        .map(s => <option key={s} value={s}>{ACCOUNT_LABELS[s] || s}</option>)
+                                    }
                                 </select>
                             </div>
                         </div>

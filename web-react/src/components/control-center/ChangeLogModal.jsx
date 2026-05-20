@@ -1,6 +1,11 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.34', date: 'MAY 20, 2026', color: '#38bdf8', items: [
+        '<strong>Plaid Sub-Account Last-4:</strong> Each sub-account on the Live Sync card now shows the last 4 digits of the account number (e.g. ···1234) next to the account name.',
+        '<strong>Savings & Older Plaid Transactions Now Visible:</strong> Clicking a sub-account previously showed 0 results if those transactions were imported before the account-ID column existed. The filter now falls back to source-name matching so all transactions appear.',
+        '<strong>Account Filter Cleaned Up:</strong> The Account dropdown in the ledger now shows your named accounts first (from the Accounts page) rather than raw historical source strings. Legacy sources still appear below for backward compatibility.',
+    ]},
     { version: '7.8.33', date: 'MAY 20, 2026', color: '#10b981', items: [
         '<strong>Plaid Card — Transactions Tile Now Clickable:</strong> The "Transactions" count on the Live Sync account card now links to the transaction ledger filtered to Plaid transactions. Previously the tile was non-interactive.',
     ]},

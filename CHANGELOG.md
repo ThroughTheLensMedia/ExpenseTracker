@@ -5,6 +5,20 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.34] — 2026-05-20
+
+### Plaid last-4, sub-account filter fallback, account dropdown cleanup
+
+#### Added
+- **`api/routes/plaid.js`** — `mask` field added to `/plaid/balances` response (last 4 digits of account number).
+- **`web-react/src/pages/Accounts.jsx`** — SubRow now shows `···{mask}` next to account name. Sub-account click now passes `source` (derived source key) in URL in addition to `plaid_account_id`.
+
+#### Fixed
+- **`web-react/src/hooks/useExpenseFilters.js`** — `plaidAccountId` filter now falls back to `plaidSourceKey` match for transactions without `plaid_account_id` stored (imported before v7.8.4). Fixes 0-result Savings/older-account views.
+- **`web-react/src/pages/Transactions.jsx`** — URL param parsing: when `plaid_account_id` + `source` present together, `source` is used as `plaidSourceKey` fallback (not `searchAccount`). Account filter dropdown now uses `accountsList` (API) as primary source; legacy raw sources appended below. Reset Filters clears `plaidSourceKey`.
+
+---
+
 ## [v7.8.33] — 2026-05-20
 
 ### Fix Plaid card Transactions tile — now navigates to ledger

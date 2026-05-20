@@ -247,6 +247,7 @@ router.get("/balances", async (req, res) => {
                         official_name: a.official_name || null,
                         type:          a.type,
                         subtype:       a.subtype,
+                        mask:          a.mask || null,
                         current:       a.balances.current,
                         available:     a.balances.available,
                         currency:      a.balances.iso_currency_code || 'USD',

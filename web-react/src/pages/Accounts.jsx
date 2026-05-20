@@ -186,9 +186,12 @@ function BalanceRows({ source, plaidConnections, filterType = 'all' }) {
         const isCredit = a.type === 'credit';
         const balance  = isCredit ? a.current : (a.available ?? a.current);
         const isHov    = hoverId === a.account_id && !faded;
+        // Derive the source key the same way the backend does (makePlaidSourceKey)
+        const sub       = (a.subtype || a.type || '').replace(/\b\w/g, c => c.toUpperCase());
+        const sourceKey = sub ? `${institutionName} ${sub}` : institutionName;
         return (
             <div key={a.account_id}
-                onClick={faded ? undefined : () => navigate(`/transactions?source=plaid&plaid_account_id=${encodeURIComponent(a.account_id)}&plaid_account_name=${encodeURIComponent(a.name)}`)}
+                onClick={faded ? undefined : () => navigate(`/transactions?plaid_account_id=${encodeURIComponent(a.account_id)}&plaid_account_name=${encodeURIComponent(a.name)}&source=${encodeURIComponent(sourceKey)}`)}
                 onMouseEnter={faded ? undefined : () => setHoverId(a.account_id)}
                 onMouseLeave={faded ? undefined : () => setHoverId(null)}
                 style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
@@ -199,7 +202,10 @@ function BalanceRows({ source, plaidConnections, filterType = 'all' }) {
                     opacity: faded ? 0.4 : 1,
                     transition:'background 0.15s, border-color 0.15s' }}>
                 <div style={{ minWidth:0, flex:1 }}>
-                    <div style={{ fontSize:13, fontWeight:800, color: isHov ? '#38bdf8' : 'white', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', transition:'color 0.15s' }}>{a.name}</div>
+                    <div style={{ fontSize:13, fontWeight:800, color: isHov ? '#38bdf8' : 'white', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', transition:'color 0.15s' }}>
+                        {a.name}
+                        {a.mask && <span style={{ fontSize:10, fontWeight:600, color:'rgba(255,255,255,0.3)', marginLeft:6 }}>···{a.mask}</span>}
+                    </div>
                     <div style={{ fontSize:10, color:'rgba(255,255,255,0.35)', fontWeight:600, marginTop:1, textTransform:'capitalize' }}>
                         {a.subtype?.replace(/_/g,' ')} · {isCredit ? 'Balance owed' : 'Available'}{faded ? ' · Hidden' : ''}
                     </div>
