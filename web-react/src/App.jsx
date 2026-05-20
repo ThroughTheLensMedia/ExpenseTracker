@@ -183,16 +183,14 @@ function AppContent() {
   // and the old guard caused the modal to never fire for brand-new accounts.
   useEffect(() => {
     if (!user || !subscriptionReady || settings === null || settings === undefined) return;
-    const dismissed = localStorage.getItem('ll_onboarding_dismissed');
+    const dismissed = localStorage.getItem('ll_onboarding_dismissed_v2');
     if (dismissed) return;
-    const flag = localStorage.getItem('ll_onboarding_done_' + user.id);
-    if (flag) return;
-    if (!settings.business_name) setShowOnboarding(true);
+    // Show for all users who haven't dismissed v2 — including existing users with business names
+    setShowOnboarding(true);
   }, [user?.id, subscriptionReady, settings]);
 
   const handleOnboardingDismiss = () => {
-    localStorage.setItem('ll_onboarding_dismissed', '1');
-    localStorage.setItem('ll_onboarding_done_' + user?.id, '1');
+    localStorage.setItem('ll_onboarding_dismissed_v2', '1');
     setShowOnboarding(false);
   };
 

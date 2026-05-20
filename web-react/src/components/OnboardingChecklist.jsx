@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const STORAGE_KEY   = 'll_onboarding_dismissed';
+const STORAGE_KEY   = 'll_onboarding_dismissed_v2'; // bump version to re-show for all users
 const CHECKED_KEY   = 'll_onboarding_checked';
 
 // ─── Content ──────────────────────────────────────────────────────────────────
