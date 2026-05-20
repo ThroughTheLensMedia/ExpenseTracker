@@ -154,21 +154,7 @@ export default function Home() {
           Financial intelligence, CRM pipeline, AI-powered tax automation, professional invoicing, and gear management — purpose-built for photographers and creative professionals.
         </p>
 
-        {/* Badge pills */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginBottom: 36 }}>
-          {[
-            { label: '11+ Bank CSV Profiles Supported', color: '#38bdf8' },
-            { label: '$75 IRS Receipt Threshold — Auto-Flagged', color: '#10b981' },
-            { label: 'AI Gemini-Powered Intelligence', color: '#f97316' },
-            { label: 'PWA Installs on iPhone & Android', color: '#a78bfa' },
-          ].map(b => (
-            <span key={b.label} style={{ fontSize: 11, fontWeight: 800, color: b.color, background: `${b.color}18`, border: `1px solid ${b.color}40`, borderRadius: 20, padding: '5px 13px', whiteSpace: 'nowrap', letterSpacing: '0.02em' }}>
-              {b.label}
-            </span>
-          ))}
-        </div>
-
-        <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 0 }}>
           <NavLink to="/login" className="btn primary glow-orange" style={{ padding: '16px 38px', fontSize: '16px', borderRadius: '14px', textDecoration: 'none', fontWeight: 900 }}>
             Open Lumière Ledger →
           </NavLink>
