@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.9] — 2026-05-19
+
+### Fix Vercel build failure — unescaped apostrophe in OnboardingChecklist
+
+#### Fixed
+- **`web-react/src/components/OnboardingChecklist.jsx`** — Line 242 contained `'I'll finish setup later...'` — the apostrophe in "I'll" terminated the JS string literal early, causing esbuild to fail with `Expected "}" but found "ll"`. All 4 deployments since v7.8.7 failed with this error. Fixed by switching to double-quoted string: `"I'll finish setup later — take me in"`. This unblocks v7.8.7 (onboarding wizard) and v7.8.8 (flash fix + label corrections) which were never live.
+
+---
+
 ## [v7.8.8] — 2026-05-19
 
 ### Fix upgrade plan flash; separate beta vs lifetime labels

@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.9', date: 'MAY 19, 2026', color: '#f43f5e', items: [
+        '<strong>Build Fix:</strong> Resolved a syntax error in the onboarding wizard that caused all Vercel deployments since v7.8.7 to fail. An unescaped apostrophe in the checklist button text broke the JavaScript parser. All fixes from v7.8.7 and v7.8.8 (onboarding wizard, flash fix, label corrections) are now live for the first time.',
+    ]},
     { version: '7.8.8', date: 'MAY 19, 2026', color: '#38bdf8', items: [
         '<strong>Upgrade Plan Flash Fixed:</strong> The Core and Studio upgrade cards no longer flash briefly for beta and lifetime users on every page load. The billing section now waits for subscription data to fully resolve before rendering — you see a clean "Loading…" state instead of a card that appears and disappears.',
         '<strong>Beta vs Lifetime Labels Corrected:</strong> Beta accounts now correctly show "Beta Access" with a days-remaining counter ("Beta access · 30 days remaining") instead of "Lifetime Free." True lifetime accounts continue to show "Lifetime Free" in green with the grandfathered savings note.',

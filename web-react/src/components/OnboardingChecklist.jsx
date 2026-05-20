@@ -239,7 +239,7 @@ function PageChecklist({ onDone, onBack }) {
             <div style={{ display: 'flex', gap: 8 }}>
                 <button onClick={onBack} style={{ flex: '0 0 auto', padding: '12px 20px', borderRadius: 12, background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', fontWeight: 800, fontSize: 13, cursor: 'pointer' }}>← Back</button>
                 <button onClick={onDone} style={{ flex: 1, padding: '12px', borderRadius: 12, background: reqDone ? '#10b981' : '#a78bfa', border: 'none', color: reqDone ? '#0f172a' : 'white', fontWeight: 900, fontSize: 13, cursor: 'pointer' }}>
-                    {reqDone ? '🎉 All set — go to the app' : 'I'll finish setup later — take me in'}
+                    {reqDone ? '🎉 All set — go to the app' : "I'll finish setup later — take me in"}
                 </button>
             </div>
             <p style={{ textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.25)', fontWeight: 600, margin: '10px 0 0' }}>
