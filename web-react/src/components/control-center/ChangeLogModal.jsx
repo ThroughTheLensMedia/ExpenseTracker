@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.33', date: 'MAY 20, 2026', color: '#10b981', items: [
+        '<strong>Plaid Card — Transactions Tile Now Clickable:</strong> The "Transactions" count on the Live Sync account card now links to the transaction ledger filtered to Plaid transactions. Previously the tile was non-interactive.',
+    ]},
     { version: '7.8.32', date: 'MAY 20, 2026', color: '#f97316', items: [
         '<strong>Bulk Reassign Account:</strong> Select 2+ transactions and use the new "Reassign account…" dropdown in the floating action bar to move them all to a different account in one click. Perfect for fixing generic source keys like "Credit Card" or "Bank Account" left over from old imports. Transaction data is preserved — only the account assignment changes.',
     ]},

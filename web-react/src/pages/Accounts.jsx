@@ -355,7 +355,7 @@ function AccountCard({ acct, totalMonth, plaidConnections, onAliasChange, onSync
     }
 
     const displayLabel = acct.display_name || defaultLabel;
-    const txSource     = acct.source === 'plaid' ? null : acct.source; // Plaid = synthetic row, no direct filter
+    const txSource     = acct.source; // always linkable — plaid source navigates to ?source=plaid
 
     return (
         <div style={{

@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.33] — 2026-05-20
+
+### Fix Plaid card Transactions tile — now navigates to ledger
+
+#### Fixed
+- **`web-react/src/pages/Accounts.jsx`** — `txSource` was forced to `null` for `source === 'plaid'`, making `link: !!txSource` always false on the Transactions stat tile. Changed to always use `acct.source` — Transactions tile now navigates to `/transactions?source=plaid`.
+
+---
+
 ## [v7.8.32] — 2026-05-20
 
 ### Bulk reassign account on selected transactions

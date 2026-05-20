@@ -1,6 +1,6 @@
 # Lumière Ledger — Master Roadmap
 
-**Version:** v7.8.25 | **Last reviewed:** 2026-05-20  
+**Version:** v7.8.32 | **Last reviewed:** 2026-05-20  
 Source of truth for all sprint work, security status, and product phases.
 
 ---
@@ -38,7 +38,8 @@ Source of truth for all sprint work, security status, and product phases.
 | Item | File | Notes |
 |------|------|-------|
 | ~~**Run DB migration 001**~~ | ~~Supabase SQL Editor~~ | ✅ Done 2026-05-20 — `plaid_account_id` column + index live. |
-| **Stripe — end-to-end test** | Stripe CLI | Checkout → webhook fires → `plan_type` updates in Supabase → `UpgradeGate` drops. Use Stripe test card. Never verified live. |
+| ~~**Stripe webhook fix**~~ | ~~`api/server.js`~~ | ✅ Done v7.8.27 — webhook mounted before `express.json()` on `app` directly. |
+| **Stripe — end-to-end test** | Stripe CLI | Checkout → webhook fires → `plan_type` updates in Supabase → `UpgradeGate` drops. Webhook is fixed — needs formal test-card verification. |
 | ~~**Supabase schema migration**~~ | ~~Supabase SQL Editor~~ | ✅ Done 2026-05-20 — `stripe_subscription_id` + `current_period_end` added to `user_subscriptions`. |
 | ~~**Grandfathered users `admin_tier` fix**~~ | ~~Supabase SQL Editor~~ | ✅ Done 2026-05-20 — all beta/lifetime users granted Studio admin_tier. |
 | ~~**Sync tier Stripe price IDs**~~ | ~~Stripe + Vercel~~ | ✅ Done — Sync product created in Stripe. `VITE_STRIPE_PRICE_SYNC_*` and `STRIPE_PRICE_SYNC_*` set in Vercel. |
@@ -47,17 +48,18 @@ Source of truth for all sprint work, security status, and product phases.
 
 ## 🟡 Next Sprint — High Value
 
-> **New item:** Account merging by last-4 digits — user wants to enter the last 4-5 digits of their bank account on a CSV source and have it automatically matched/merged with the corresponding Plaid sub-account (same institution, same account). Would unify spending stats across CSV history + live Plaid sync into one combined account tile.
-
-
-
-| Item | Notes |
-|------|-------|
-| **Stripe — ProfileTab billing section** | Plan badge (Free / Core / Pro / Studio), "Manage Billing" → Stripe portal, upgrade CTA for Free users. Currently users can't see their plan in-app. **Highest priority remaining feature.** |
-| **Michelle Gornichec UUID in PLAID_BILLING_EXEMPT** | Add her Supabase UUID to `PLAID_BILLING_EXEMPT` Set in both `api/routes/plaid.js` and `api/routes/stripe.js`. She will be billed on Plaid connect until this is done. |
-| **Account → Transaction count tile click (Plaid card)** | The USAA Plaid card's "Transactions: 31" stat tile doesn't navigate because `txSource = null` for plaid source. Should navigate to `/transactions?source=plaid`. |
-| **Brain — Chart/Analysis Popup (Phase 2 Step 5)** | Chart.js modal when AI requests visual analysis. Structured chart data returned alongside text. |
-| **Maps Autopilot** | Google Maps A→B→A mileage round-trip — in progress |
+| Item | Status | Notes |
+|------|--------|-------|
+| ~~**Stripe — ProfileTab billing section**~~ | ✅ v7.8.28 | Sync users see Core/Studio upgrade cards; emoji removed from Manage Billing. |
+| ~~**Account merging (linked_source)**~~ | ✅ v7.8.30 | CSV accounts can be merged into a target; absorbed accounts hidden; unmerge available. Pending SQL: `ALTER TABLE account_aliases ADD COLUMN IF NOT EXISTS linked_source TEXT;` |
+| ~~**Account display names in ledger/drawer**~~ | ✅ v7.8.31 | TransactionDrawer + filter dropdown driven by /accounts/summary aliases. |
+| ~~**Bulk reassign account**~~ | ✅ v7.8.32 | Multi-select → "Reassign account…" dropdown → Apply. PATCH /expenses/bulk-source. |
+| **Account → Transaction count tile click (Plaid card)** | 🔄 In progress | "Transactions" tile on Live Sync card doesn't navigate — `txSource = null` for source='plaid'. Fix: navigate to `/transactions?source=plaid`. |
+| **Account merging by last-4 digits** | ⬜ Backlog | Auto-match CSV source to Plaid sub-account by institution + last 4 digits. Deferred — manual merge works for now. |
+| **Michelle Gornichec UUID in PLAID_BILLING_EXEMPT** | ⬜ Waiting | UUID unknown. Add to `api/routes/plaid.js` + `api/routes/stripe.js` when received. |
+| **Maps Autopilot** | ⬜ Next after Plaid | Google Maps A→B→A mileage round-trip. Joshua working on this after Plaid updates. |
+| **Brain — Chart/Analysis Popup (Phase 2 Step 5)** | ⬜ Last | Chart.js modal when AI requests visual analysis. Post-launch. |
+| **Brain — Invoice creation tool (Step 6)** | ⬜ Last | `create_invoice_draft` write tool with confirmation card. Post-launch. |
 
 ---
 
@@ -110,6 +112,13 @@ Source of truth for all sprint work, security status, and product phases.
 | v7.8.23 | Remove sub-daily cron — Vercel Hobby plan blocks `0 */6 * * *`; UptimeRobot covers keep-alive at 5-min intervals |
 | v7.8.24 | Plaid transactions use real account name (e.g. "USAA Checking") instead of generic "plaid" source; auto-repair on sync |
 | v7.8.25 | Fix Plaid account repair for NULL plaid_account_id rows (pass 2 fallback to institution name); date column nowrap; strip icons from ACCOUNT_LABELS |
+| v7.8.26 | Plaid billing copy — remove $0.50/account language from 4 locations; Sync plan flat-fee messaging |
+| v7.8.27 | Fix Stripe webhook 400 — mount before express.json(); remove duplicate apiRouter mount; manual SQL fix for deweyspath@gmail.com subscription |
+| v7.8.28 | Billing section: Sync users see Core/Studio upgrade path; 2-col grid for Sync; remove emoji from Manage Billing button |
+| v7.8.29 | Bank Import page emoji cleanup — headers, tips, nav buttons, Pro Tip label |
+| v7.8.30 | Account merging — linked_source in account_aliases; Merge button on CSV cards; absorbed accounts hidden; target shows Includes badge; unmerge available |
+| v7.8.31 | Account dropdown driven by live account aliases — TransactionDrawer + filter dropdown use /accounts/summary display_name; emoji stripped from SOURCE_LABELS |
+| v7.8.32 | Bulk reassign account — PATCH /expenses/bulk-source; multi-select floating bar; fix route ordering (bulk-source before /:id); fix toast auto-dismiss |
 
 ---
 
