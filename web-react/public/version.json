@@ -1,6 +1,6 @@
 {
-  "version": "7.8.17",
+  "version": "7.8.18",
   "release_date": "2026-05-20",
   "codename": "Lumière Ledger",
-  "notes": "v7.8.17: Revert beta Plaid bypass — all users pay. Inline billing gate UI with plan upgrade cards on 402."
+  "notes": "v7.8.18: Add Sync tier ($4.99/mo) — Plaid-only plan. Update marketing pricing + in-app upgrade cards + billing gate."
 }

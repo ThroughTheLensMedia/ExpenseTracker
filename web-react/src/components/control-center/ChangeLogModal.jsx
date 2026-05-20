@@ -1,6 +1,12 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.18', date: 'MAY 20, 2026', color: '#38bdf8', items: [
+        '<strong>New Sync Plan ($4.99/mo):</strong> Just want live bank sync without the full AI/invoicing suite? The new Sync plan gives you unlimited Plaid bank connections for a flat $4.99/month — no per-account fees. All connected accounts are included.',
+        '<strong>Updated Upgrade Flow — Bank Import:</strong> When connecting a bank without an active subscription, you now see the Sync plan as the featured first option ("Just Plaid? Start Here"), with Core and Studio below for the full feature unlock. Choose what fits — checkout opens directly.',
+        '<strong>Updated Upgrade Flow — Billing Section:</strong> The subscription upgrade cards in your Business Profile now show all three paid tiers (Sync · Core · Studio) in a side-by-side grid. Annual/monthly toggle applies to all three.',
+        '<strong>Marketing Pricing Updated:</strong> The homepage now shows all 4 tiers (Free / Sync / Core / Studio) with the "Most Popular" badge on Core and accurate per-tier feature lists.',
+    ]},
     { version: '7.8.17', date: 'MAY 20, 2026', color: '#f97316', items: [
         '<strong>Plaid Billing Gate — Inline Plan Upgrade UI:</strong> When connecting a bank without a payment method on file, you now see an inline card with Core and Studio upgrade options right inside the Bank Import section — no dead-end error message. Choose a plan, complete checkout, and come back to connect your bank. Monthly/Annual toggle included.',
         '<strong>Plaid Billing — All Users Pay:</strong> Every user (including beta) must have an active subscription before connecting Plaid. Only Joshua Deuermeyer and Michelle Gornichec are exempt. The $0.50/month per account fee applies to everyone.',

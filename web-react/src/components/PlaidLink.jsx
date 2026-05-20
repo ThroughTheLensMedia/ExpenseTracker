@@ -3,6 +3,8 @@ import { apiPost, apiGet, apiDelete, invalidateExpensesCache } from '../api';
 import { useModal } from './ModalContext.jsx';
 
 const VITE_PRICE = {
+    sync_monthly:   import.meta.env.VITE_STRIPE_PRICE_SYNC_MONTHLY,
+    sync_annual:    import.meta.env.VITE_STRIPE_PRICE_SYNC_ANNUAL,
     core_monthly:   import.meta.env.VITE_STRIPE_PRICE_CORE_MONTHLY,
     core_annual:    import.meta.env.VITE_STRIPE_PRICE_CORE_ANNUAL,
     studio_monthly: import.meta.env.VITE_STRIPE_PRICE_STUDIO_MONTHLY,
@@ -187,30 +189,53 @@ export default function PlaidLink({ onSync, autoConnect = false }) {
                         </div>
                     </div>
 
-                    {/* Plan cards */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                        <div style={{ padding: '16px 18px', borderRadius: '12px', border: '1px solid rgba(56,189,248,0.2)', background: 'rgba(56,189,248,0.04)' }}>
-                            <div style={{ fontWeight: 700, color: '#38bdf8', marginBottom: '4px' }}>Core</div>
-                            <div style={{ fontSize: '20px', fontWeight: 800, color: '#fff', marginBottom: '6px' }}>
-                                {billingAnnual ? '$7.17' : '$9'}<span style={{ fontSize: '12px', fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>/mo</span>
+                    {/* Plan cards — Sync first (bank-sync only), then Core/Studio for full feature access */}
+                    {/* Sync — featured */}
+                    <div style={{ padding: '18px 20px', borderRadius: '12px', border: '2px solid rgba(56,189,248,0.4)', background: 'rgba(56,189,248,0.07)', marginBottom: '10px', position: 'relative' }}>
+                        <div style={{ position: 'absolute', top: '-10px', left: '16px', fontSize: '10px', fontWeight: 900, letterSpacing: '0.08em', background: '#38bdf8', color: '#0f172a', borderRadius: '20px', padding: '3px 10px' }}>JUST PLAID? START HERE</div>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ fontWeight: 800, color: '#38bdf8', fontSize: '15px', marginBottom: '4px' }}>Sync Plan</div>
+                                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>
+                                    Live bank sync via Plaid · All connected accounts included · No per-account fees · Transactions auto-import daily
+                                </div>
                             </div>
-                            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', marginBottom: '14px', lineHeight: 1.5 }}>
-                                AI Brain · Receipt scanner · 2,000 tx/mo · 20 invoices/mo<br />+ $0.50/mo per Plaid account
+                            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                <div style={{ fontSize: '24px', fontWeight: 950, color: '#38bdf8', lineHeight: 1 }}>
+                                    {billingAnnual ? '$3.99' : '$4.99'}<span style={{ fontSize: '12px', fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>/mo</span>
+                                </div>
+                                {billingAnnual && <div style={{ fontSize: '10px', color: 'rgba(56,189,248,0.6)', marginTop: '2px' }}>Save 20% annually</div>}
                             </div>
-                            <button onClick={() => handleUpgrade(billingAnnual ? 'core_annual' : 'core_monthly')} disabled={!!billingLoading} className="btn primary" style={{ width: '100%', padding: '10px', fontSize: '13px', opacity: billingLoading ? 0.6 : 1 }}>
-                                {billingLoading === (billingAnnual ? 'core_annual' : 'core_monthly') ? 'Loading...' : 'Subscribe to Core'}
+                        </div>
+                        <button onClick={() => handleUpgrade(billingAnnual ? 'sync_annual' : 'sync_monthly')} disabled={!!billingLoading} className="btn primary" style={{ width: '100%', padding: '11px', fontSize: '14px', marginTop: '14px', opacity: billingLoading ? 0.6 : 1, background: '#38bdf8', color: '#0f172a' }}>
+                            {billingLoading === (billingAnnual ? 'sync_annual' : 'sync_monthly') ? 'Loading...' : `Subscribe to Sync — ${billingAnnual ? '$3.99' : '$4.99'}/mo`}
+                        </button>
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', textAlign: 'center', marginBottom: '10px', fontWeight: 700, letterSpacing: '0.05em' }}>— OR UNLOCK MORE —</div>
+                    {/* Core + Studio */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        <div style={{ padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(249,115,22,0.25)', background: 'rgba(249,115,22,0.04)' }}>
+                            <div style={{ fontWeight: 700, color: '#f97316', marginBottom: '3px' }}>Core</div>
+                            <div style={{ fontSize: '18px', fontWeight: 800, color: '#fff', marginBottom: '5px' }}>
+                                {billingAnnual ? '$7.17' : '$9'}<span style={{ fontSize: '11px', fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>/mo</span>
+                            </div>
+                            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', marginBottom: '12px', lineHeight: 1.4 }}>
+                                Sync + AI Brain · Receipt scanner · 2,000 tx/mo
+                            </div>
+                            <button onClick={() => handleUpgrade(billingAnnual ? 'core_annual' : 'core_monthly')} disabled={!!billingLoading} className="btn primary" style={{ width: '100%', padding: '9px', fontSize: '12px', opacity: billingLoading ? 0.6 : 1 }}>
+                                {billingLoading === (billingAnnual ? 'core_annual' : 'core_monthly') ? 'Loading...' : 'Upgrade to Core'}
                             </button>
                         </div>
-                        <div style={{ padding: '16px 18px', borderRadius: '12px', border: '1px solid rgba(249,115,22,0.25)', background: 'rgba(249,115,22,0.04)' }}>
-                            <div style={{ fontWeight: 700, color: '#f97316', marginBottom: '4px' }}>Studio</div>
-                            <div style={{ fontSize: '20px', fontWeight: 800, color: '#fff', marginBottom: '6px' }}>
-                                {billingAnnual ? '$15.17' : '$19'}<span style={{ fontSize: '12px', fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>/mo</span>
+                        <div style={{ padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(167,139,250,0.25)', background: 'rgba(167,139,250,0.04)' }}>
+                            <div style={{ fontWeight: 700, color: '#a78bfa', marginBottom: '3px' }}>Studio</div>
+                            <div style={{ fontSize: '18px', fontWeight: 800, color: '#fff', marginBottom: '5px' }}>
+                                {billingAnnual ? '$15.17' : '$19'}<span style={{ fontSize: '11px', fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>/mo</span>
                             </div>
-                            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', marginBottom: '14px', lineHeight: 1.5 }}>
-                                Everything in Core · Unlimited · Mileage · Priority support<br />+ $0.50/mo per Plaid account
+                            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', marginBottom: '12px', lineHeight: 1.4 }}>
+                                Everything in Core · Unlimited · Mileage autopilot
                             </div>
-                            <button onClick={() => handleUpgrade(billingAnnual ? 'studio_annual' : 'studio_monthly')} disabled={!!billingLoading} className="btn primary glow-blue" style={{ width: '100%', padding: '10px', fontSize: '13px', opacity: billingLoading ? 0.6 : 1 }}>
-                                {billingLoading === (billingAnnual ? 'studio_annual' : 'studio_monthly') ? 'Loading...' : 'Subscribe to Studio'}
+                            <button onClick={() => handleUpgrade(billingAnnual ? 'studio_annual' : 'studio_monthly')} disabled={!!billingLoading} className="btn primary" style={{ width: '100%', padding: '9px', fontSize: '12px', opacity: billingLoading ? 0.6 : 1 }}>
+                                {billingLoading === (billingAnnual ? 'studio_annual' : 'studio_monthly') ? 'Loading...' : 'Upgrade to Studio'}
                             </button>
                         </div>
                     </div>

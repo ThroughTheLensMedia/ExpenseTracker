@@ -7,13 +7,17 @@ const PLAN_LABELS = {
     free_beta:      { label: 'Beta Access',        color: '#a78bfa' },  // expires — not lifetime
     beta_tester:    { label: 'Beta Access',        color: '#a78bfa' },
     lifetime:       { label: 'Lifetime Free',      color: '#10b981' },  // true lifetime — no expiry
-    core_monthly:   { label: 'Core — $9/mo',       color: '#38bdf8' },
-    core_annual:    { label: 'Core — $86/yr',      color: '#38bdf8' },
-    studio_monthly: { label: 'Studio — $19/mo',    color: '#f97316' },
-    studio_annual:  { label: 'Studio — $182/yr',   color: '#f97316' },
+    sync_monthly:   { label: 'Sync — $4.99/mo',   color: '#38bdf8' },
+    sync_annual:    { label: 'Sync — $47.90/yr',  color: '#38bdf8' },
+    core_monthly:   { label: 'Core — $9/mo',       color: '#f97316' },
+    core_annual:    { label: 'Core — $86/yr',      color: '#f97316' },
+    studio_monthly: { label: 'Studio — $19/mo',    color: '#a78bfa' },
+    studio_annual:  { label: 'Studio — $182/yr',   color: '#a78bfa' },
 };
 
 const VITE_PRICE = {
+    sync_monthly:   import.meta.env.VITE_STRIPE_PRICE_SYNC_MONTHLY,
+    sync_annual:    import.meta.env.VITE_STRIPE_PRICE_SYNC_ANNUAL,
     core_monthly:   import.meta.env.VITE_STRIPE_PRICE_CORE_MONTHLY,
     core_annual:    import.meta.env.VITE_STRIPE_PRICE_CORE_ANNUAL,
     studio_monthly: import.meta.env.VITE_STRIPE_PRICE_STUDIO_MONTHLY,
@@ -52,7 +56,7 @@ export default function ProfileTab({ settings, setSettings, onReload }) {
     const planType    = subscription?.plan_type || 'free';
     const adminTier   = subscription?.admin_tier || null;
     const planInfo    = PLAN_LABELS[planType] || PLAN_LABELS.free;
-    const isPaid      = ['core_monthly', 'core_annual', 'studio_monthly', 'studio_annual'].includes(planType);
+    const isPaid      = ['sync_monthly', 'sync_annual', 'core_monthly', 'core_annual', 'studio_monthly', 'studio_annual'].includes(planType);
     const isBeta      = ['free_beta', 'beta_tester'].includes(planType);
     const isLifetime  = planType === 'lifetime'; // true lifetime — no expires_at
     const isGrandfathered = isBeta || isLifetime; // hides upgrade cards
@@ -136,8 +140,8 @@ export default function ProfileTab({ settings, setSettings, onReload }) {
             {/* Upgrade cards — hide for lifetime (already grandfathered to Studio) and paid/admin; show for beta + free */}
             {subscriptionReady && !isPaid && !isLifetime && !adminTier && (
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '20px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                        <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>Unlock more with a paid plan</div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+                        <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>Upgrade your plan</div>
                         <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '3px' }}>
                             <button onClick={() => setBillingAnnual(false)} style={{ padding: '5px 14px', fontSize: '12px', fontWeight: 700, borderRadius: '6px', border: 'none', cursor: 'pointer', background: !billingAnnual ? 'rgba(255,255,255,0.1)' : 'transparent', color: !billingAnnual ? '#fff' : 'rgba(255,255,255,0.4)' }}>Monthly</button>
                             <button onClick={() => setBillingAnnual(true)} style={{ padding: '5px 14px', fontSize: '12px', fontWeight: 700, borderRadius: '6px', border: 'none', cursor: 'pointer', background: billingAnnual ? 'rgba(56,189,248,0.15)' : 'transparent', color: billingAnnual ? '#38bdf8' : 'rgba(255,255,255,0.4)' }}>
@@ -145,20 +149,31 @@ export default function ProfileTab({ settings, setSettings, onReload }) {
                             </button>
                         </div>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                        <div style={{ padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(56,189,248,0.2)', background: 'rgba(56,189,248,0.04)' }}>
-                            <div style={{ fontWeight: 700, color: '#38bdf8', marginBottom: '4px' }}>Core</div>
-                            <div style={{ fontSize: '22px', fontWeight: 800, color: '#fff', marginBottom: '8px' }}>{billingAnnual ? '$7.17' : '$9'}<span style={{ fontSize: '12px', fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>/mo</span></div>
-                            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginBottom: '14px' }}>AI Brain · Receipt scanner · 2,000 tx/mo · 20 invoices/mo</div>
-                            <button onClick={() => handleUpgrade(billingAnnual ? 'core_annual' : 'core_monthly')} disabled={!!billingLoading} className="btn primary" style={{ width: '100%', padding: '10px', fontSize: '13px', opacity: billingLoading ? 0.6 : 1 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                        {/* Sync */}
+                        <div style={{ padding: '16px 18px', borderRadius: '12px', border: '1px solid rgba(56,189,248,0.2)', background: 'rgba(56,189,248,0.04)' }}>
+                            <div style={{ fontWeight: 700, color: '#38bdf8', marginBottom: '4px' }}>Sync</div>
+                            <div style={{ fontSize: '20px', fontWeight: 800, color: '#fff', marginBottom: '6px' }}>{billingAnnual ? '$3.99' : '$4.99'}<span style={{ fontSize: '11px', fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>/mo</span></div>
+                            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', marginBottom: '14px', lineHeight: 1.5 }}>Live bank sync via Plaid · All accounts included · No per-account fees</div>
+                            <button onClick={() => handleUpgrade(billingAnnual ? 'sync_annual' : 'sync_monthly')} disabled={!!billingLoading} className="btn primary" style={{ width: '100%', padding: '9px', fontSize: '12px', opacity: billingLoading ? 0.6 : 1 }}>
+                                {billingLoading === (billingAnnual ? 'sync_annual' : 'sync_monthly') ? 'Loading...' : 'Get Sync'}
+                            </button>
+                        </div>
+                        {/* Core */}
+                        <div style={{ padding: '16px 18px', borderRadius: '12px', border: '1px solid rgba(249,115,22,0.25)', background: 'rgba(249,115,22,0.04)' }}>
+                            <div style={{ fontWeight: 700, color: '#f97316', marginBottom: '4px' }}>Core</div>
+                            <div style={{ fontSize: '20px', fontWeight: 800, color: '#fff', marginBottom: '6px' }}>{billingAnnual ? '$7.17' : '$9'}<span style={{ fontSize: '11px', fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>/mo</span></div>
+                            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', marginBottom: '14px', lineHeight: 1.5 }}>AI Brain + Sync · Receipt scanner · 2,000 tx/mo · 20 invoices/mo</div>
+                            <button onClick={() => handleUpgrade(billingAnnual ? 'core_annual' : 'core_monthly')} disabled={!!billingLoading} className="btn primary" style={{ width: '100%', padding: '9px', fontSize: '12px', opacity: billingLoading ? 0.6 : 1 }}>
                                 {billingLoading === (billingAnnual ? 'core_annual' : 'core_monthly') ? 'Loading...' : 'Upgrade to Core'}
                             </button>
                         </div>
-                        <div style={{ padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(249,115,22,0.25)', background: 'rgba(249,115,22,0.04)' }}>
-                            <div style={{ fontWeight: 700, color: '#f97316', marginBottom: '4px' }}>Studio</div>
-                            <div style={{ fontSize: '22px', fontWeight: 800, color: '#fff', marginBottom: '8px' }}>{billingAnnual ? '$15.17' : '$19'}<span style={{ fontSize: '12px', fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>/mo</span></div>
-                            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginBottom: '14px' }}>Everything in Core · Unlimited · Mileage · Priority support</div>
-                            <button onClick={() => handleUpgrade(billingAnnual ? 'studio_annual' : 'studio_monthly')} disabled={!!billingLoading} className="btn primary glow-blue" style={{ width: '100%', padding: '10px', fontSize: '13px', opacity: billingLoading ? 0.6 : 1 }}>
+                        {/* Studio */}
+                        <div style={{ padding: '16px 18px', borderRadius: '12px', border: '1px solid rgba(167,139,250,0.25)', background: 'rgba(167,139,250,0.04)' }}>
+                            <div style={{ fontWeight: 700, color: '#a78bfa', marginBottom: '4px' }}>Studio</div>
+                            <div style={{ fontSize: '20px', fontWeight: 800, color: '#fff', marginBottom: '6px' }}>{billingAnnual ? '$15.17' : '$19'}<span style={{ fontSize: '11px', fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>/mo</span></div>
+                            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', marginBottom: '14px', lineHeight: 1.5 }}>Everything in Core · Unlimited · Mileage autopilot · Priority</div>
+                            <button onClick={() => handleUpgrade(billingAnnual ? 'studio_annual' : 'studio_monthly')} disabled={!!billingLoading} className="btn primary" style={{ width: '100%', padding: '9px', fontSize: '12px', opacity: billingLoading ? 0.6 : 1 }}>
                                 {billingLoading === (billingAnnual ? 'studio_annual' : 'studio_monthly') ? 'Loading...' : 'Upgrade to Studio'}
                             </button>
                         </div>

@@ -41,6 +41,7 @@ Source of truth for all sprint work, security status, and product phases.
 | **Stripe — end-to-end test** | Stripe CLI | Checkout → webhook fires → `plan_type` updates in Supabase → `UpgradeGate` drops. Use Stripe test card. Never verified live. |
 | **Supabase schema migration** | Supabase SQL Editor | `ALTER TABLE user_subscriptions ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT, ADD COLUMN IF NOT EXISTS current_period_end TIMESTAMPTZ` — required for Stripe webhook to write correctly. |
 | **Grandfathered users `admin_tier` fix** | Supabase SQL Editor | `UPDATE user_subscriptions SET admin_tier = 'studio' WHERE plan_type IN ('free_beta','lifetime') AND admin_tier IS NULL` — grants Studio limits to all beta users. Run now. |
+| **Sync tier Stripe price IDs** | Stripe + Vercel | Create Sync product in Stripe ($4.99/mo + annual). Add `VITE_STRIPE_PRICE_SYNC_MONTHLY` and `VITE_STRIPE_PRICE_SYNC_ANNUAL` to Vercel env vars. Required for Sync upgrade buttons to work. |
 
 ---
 
@@ -101,6 +102,7 @@ Source of truth for all sprint work, security status, and product phases.
 | v7.8.15 | Connect Bank auto-triggers Plaid popup via ?connect=true param; better billing error message |
 | v7.8.16 | Beta/lifetime users bypass Plaid billing gate (full feature access during beta); fix error banner wrapping |
 | v7.8.17 | Revert beta bypass — all users pay for Plaid; inline billing gate UI with Core/Studio plan cards on 402 |
+| v7.8.18 | Sync tier ($4.99/mo) — Plaid-only flat plan; updated billing gate (Sync featured first), upgrade cards (3-col), marketing pricing (4-tier + MOST POPULAR badge), CTA copy fix |
 
 ---
 

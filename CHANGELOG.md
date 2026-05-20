@@ -5,6 +5,20 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.18] — 2026-05-20
+
+### Add Sync tier ($4.99/mo); update marketing pricing + in-app upgrade cards + billing gate
+
+#### Added
+- **`web-react/src/components/control-center/ProfileTab.jsx`** — Added `sync_monthly` and `sync_annual` to `PLAN_LABELS`, `VITE_PRICE`, and `isPaid` array. Upgrade cards section rebuilt as 3-column grid (Sync · Core · Studio) for free/beta users.
+- **`web-react/src/components/PlaidLink.jsx`** — Added `sync_monthly`/`sync_annual` to `VITE_PRICE`. Billing gate UI now shows Sync as a featured primary option ("Just Plaid? Start Here") with Core + Studio below in a 2-col grid.
+- **`web-react/src/pages/Home.jsx`** — Pricing section now renders all 4 tiers (Free / Sync $4.99 / Core $9 / Studio $19). Added `badge` rendering for "MOST POPULAR" label on Core. Final CTA text updated — removed "free during beta" copy.
+
+#### Notes
+- Requires `VITE_STRIPE_PRICE_SYNC_MONTHLY` and `VITE_STRIPE_PRICE_SYNC_ANNUAL` env vars in Vercel. Create the Stripe product first, then add the price IDs.
+
+---
+
 ## [v7.8.17] — 2026-05-20
 
 ### Revert beta Plaid bypass; inline billing gate UI with plan upgrade cards

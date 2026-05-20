@@ -54,56 +54,71 @@ const FEATURES = [
 
 const PRICING = [
   {
-    name: 'Core',
+    name: 'Free',
     price: 'Free',
-    note: 'During beta · No credit card required',
-    color: '#10b981',
-    cta: 'Join Beta — Free Now',
+    note: 'No credit card required',
+    color: '#94a3b8',
+    cta: 'Get Started Free',
     features: [
       'Full transaction ledger',
-      'Schedule C mapping',
-      'Gear depreciation',
-      'Mileage tracking',
+      'Schedule C & tax mapping',
+      'Gear depreciation tracking',
+      'Mileage log',
       'Receipt storage',
       'Executive dashboard',
       'CRM pipeline',
-      'Invoicing',
-      'PWA install',
+      'Invoicing (5/mo)',
+      'PWA — works offline',
     ],
   },
   {
-    name: 'Pro',
-    price: '$19',
+    name: 'Sync',
+    price: '$4.99',
     per: '/mo',
-    note: 'Coming Soon',
-    color: '#f97316',
-    cta: 'Coming Soon',
-    disabled: true,
+    note: 'Live bank sync — unlimited accounts',
+    color: '#38bdf8',
+    cta: 'Start Sync',
     features: [
-      'Everything in Core',
-      'AI Financial Assistant',
-      'Ledger Repair',
-      'Website lead capture',
-      'Real-time notifications',
+      'Everything in Free',
+      '🏦 Live bank sync via Plaid',
+      'Transactions auto-import daily',
+      'All connected accounts included',
+      'No per-account fees',
+    ],
+  },
+  {
+    name: 'Core',
+    price: '$9',
+    per: '/mo',
+    note: 'Most popular',
+    color: '#f97316',
+    badge: 'MOST POPULAR',
+    cta: 'Upgrade to Core',
+    features: [
+      'Everything in Sync',
+      '🤖 AI Financial Assistant',
+      'Ledger repair & batch categorize',
+      'Receipt scanner (OCR)',
+      '2,000 transactions/mo',
+      '20 invoices/mo',
       'Priority support',
-      'Advanced analytics',
     ],
   },
   {
     name: 'Studio',
-    price: '$49',
+    price: '$19',
     per: '/mo',
-    note: 'Coming Q3 2026',
+    note: 'For full-time creators',
     color: '#a78bfa',
-    cta: 'Coming Soon',
-    disabled: true,
+    cta: 'Upgrade to Studio',
     features: [
-      'Everything in Pro',
-      'Live bank sync',
-      'AI Function Calling',
-      'Client Portal',
+      'Everything in Core',
+      'Unlimited transactions',
+      'Unlimited invoices',
+      '🚗 Mileage autopilot (A→B→A)',
+      'Advanced analytics',
+      'Client portal',
       'Contract templates',
-      'Website builder',
     ],
   },
 ];
@@ -279,7 +294,14 @@ export default function Home() {
           {PRICING.map(p => (
             <div key={p.name} className="card glass" style={{ padding: '30px', border: `1px solid ${p.color}30`, borderTop: `3px solid ${p.color}`, display: 'flex', flexDirection: 'column', gap: 0 }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
-                <div style={{ fontSize: 16, fontWeight: 900, color: 'white' }}>{p.name}</div>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 900, color: 'white' }}>{p.name}</div>
+                  {p.badge && (
+                    <span style={{ fontSize: 9, fontWeight: 900, letterSpacing: '0.08em', color: p.color, background: `${p.color}18`, border: `1px solid ${p.color}40`, borderRadius: 20, padding: '2px 8px', display: 'inline-block', marginTop: 4 }}>
+                      {p.badge}
+                    </span>
+                  )}
+                </div>
                 <div style={{ textAlign: 'right' }}>
                   <span style={{ fontSize: 26, fontWeight: 950, color: p.color }}>{p.price}</span>
                   {p.per && <span style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.4)' }}>{p.per}</span>}
@@ -320,7 +342,7 @@ export default function Home() {
             Stop Running Your Business<br />From Spreadsheets
           </h2>
           <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.55)', fontWeight: 600, margin: '0 auto 32px', maxWidth: 560, lineHeight: 1.6 }}>
-            Lumière Ledger is free during beta. Get in now before the doors close and paid tiers go live.
+            Start free — no credit card required. Add live bank sync for $4.99/mo, or go all-in with Core or Studio.
           </p>
           <NavLink to="/login" className="btn primary glow-orange" style={{ padding: '18px 44px', fontSize: '16px', borderRadius: '14px', textDecoration: 'none', fontWeight: 900 }}>
             Open Lumière Ledger →
