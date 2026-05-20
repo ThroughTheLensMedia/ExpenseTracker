@@ -2,12 +2,16 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { apiPost, apiGet, apiDelete, invalidateExpensesCache } from '../api';
 import { useModal } from './ModalContext.jsx';
 
+const VITE_PRICE = {
+    core_monthly:   import.meta.env.VITE_STRIPE_PRICE_CORE_MONTHLY,
+    core_annual:    import.meta.env.VITE_STRIPE_PRICE_CORE_ANNUAL,
+    studio_monthly: import.meta.env.VITE_STRIPE_PRICE_STUDIO_MONTHLY,
+    studio_annual:  import.meta.env.VITE_STRIPE_PRICE_STUDIO_ANNUAL,
+};
+
 /**
  * PlaidLink component - Handles bank connection via Plaid Link.
- *
- * Usage: Drop into the Import page or a dedicated Bank Connections page.
- * Requires the Plaid Link SDK script loaded in index.html:
- *   <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+ * Requires the Plaid Link SDK loaded in index.html.
  */
 export default function PlaidLink({ onSync, autoConnect = false }) {
     const modal = useModal();
@@ -16,6 +20,9 @@ export default function PlaidLink({ onSync, autoConnect = false }) {
     const [syncing, setSyncing] = useState(false);
     const [connecting, setConnecting] = useState(false);
     const [msg, setMsg] = useState(null);
+    const [billingGate, setBillingGate] = useState(false);
+    const [billingLoading, setBillingLoading] = useState(null);
+    const [billingAnnual, setBillingAnnual] = useState(false);
 
     const loadAccounts = async () => {
         try {
@@ -41,7 +48,6 @@ export default function PlaidLink({ onSync, autoConnect = false }) {
     }, [autoConnect, loading]);
 
     const handleConnect = useCallback(async () => {
-        // Show fee confirmation before starting Plaid flow
         const confirmed = await modal.confirm(
             '💳 Live Bank Sync — Billing Notice\n\nConnecting your bank via Plaid adds $0.50/month per connected account to your subscription, billed automatically.\n\nYou can disconnect at any time from the Accounts page.\n\nContinue to connect your bank?'
         );
@@ -49,11 +55,10 @@ export default function PlaidLink({ onSync, autoConnect = false }) {
 
         setConnecting(true);
         setMsg(null);
+        setBillingGate(false);
         try {
-            // 1. Get link token from our API
             const { link_token } = await apiPost('/plaid/create-link-token');
 
-            // 2. Open Plaid Link
             if (!window.Plaid) {
                 setMsg({ ok: false, text: 'Plaid SDK not loaded. Please refresh the page.' });
                 setConnecting(false);
@@ -86,13 +91,27 @@ export default function PlaidLink({ onSync, autoConnect = false }) {
             handler.open();
         } catch (e) {
             if (e.message?.includes('plaid_payment_required') || e.status === 402) {
-                setMsg({ ok: false, text: '💳 A payment method is required to activate Live Bank Sync. Plaid charges $0.50/month per connected account, billed through your Lumière Ledger subscription — this is separate from the Stripe key in your Business Profile. Upgrade to Core or Studio to add a billing method.' });
+                setBillingGate(true); // show inline billing setup UI
             } else {
                 setMsg({ ok: false, text: `Failed to start Plaid: ${e.message}` });
             }
             setConnecting(false);
         }
     }, [onSync, modal]);
+
+    const handleUpgrade = async (planKey) => {
+        const priceId = VITE_PRICE[planKey];
+        if (!priceId) return;
+        setBillingLoading(planKey);
+        try {
+            const { url } = await apiPost('/stripe/create-checkout', { price_id: priceId });
+            if (url) window.location.href = url;
+        } catch (err) {
+            setMsg({ ok: false, text: `Checkout error: ${err.message}` });
+        } finally {
+            setBillingLoading(null);
+        }
+    };
 
     const handleSync = async () => {
         setSyncing(true);
@@ -145,6 +164,61 @@ export default function PlaidLink({ onSync, autoConnect = false }) {
                     )}
                 </div>
             </div>
+
+            {/* Inline billing gate — shown when user has no payment method on file */}
+            {billingGate && (
+                <div style={{ padding: '24px 28px', background: 'rgba(249,115,22,0.05)', borderRadius: '16px', border: '1px solid rgba(249,115,22,0.25)' }}>
+                    <div style={{ fontWeight: 950, fontSize: '13px', color: '#f97316', marginBottom: '10px', letterSpacing: '0.05em' }}>💳 PAYMENT METHOD REQUIRED</div>
+                    <p style={{ margin: '0 0 6px', fontSize: '13px', color: 'rgba(255,255,255,0.7)', lineHeight: 1.6 }}>
+                        Live Bank Sync adds <strong>$0.50/month per connected account</strong> billed through your Lumière Ledger subscription.
+                        A payment method must be on file before connecting.
+                    </p>
+                    <p style={{ margin: '0 0 18px', fontSize: '12px', color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>
+                        This is separate from the Stripe key in your Business Profile — that key is for collecting invoice payments from your clients.
+                        Choose a plan below to add a billing method, then come back to connect your bank.
+                    </p>
+
+                    {/* Monthly / Annual toggle */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                        <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontWeight: 700 }}>Billing:</span>
+                        <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '3px' }}>
+                            <button onClick={() => setBillingAnnual(false)} style={{ padding: '5px 14px', fontSize: '12px', fontWeight: 700, borderRadius: '6px', border: 'none', cursor: 'pointer', background: !billingAnnual ? 'rgba(255,255,255,0.1)' : 'transparent', color: !billingAnnual ? '#fff' : 'rgba(255,255,255,0.4)' }}>Monthly</button>
+                            <button onClick={() => setBillingAnnual(true)} style={{ padding: '5px 14px', fontSize: '12px', fontWeight: 700, borderRadius: '6px', border: 'none', cursor: 'pointer', background: billingAnnual ? 'rgba(56,189,248,0.15)' : 'transparent', color: billingAnnual ? '#38bdf8' : 'rgba(255,255,255,0.4)' }}>Annual · Save 20%</button>
+                        </div>
+                    </div>
+
+                    {/* Plan cards */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <div style={{ padding: '16px 18px', borderRadius: '12px', border: '1px solid rgba(56,189,248,0.2)', background: 'rgba(56,189,248,0.04)' }}>
+                            <div style={{ fontWeight: 700, color: '#38bdf8', marginBottom: '4px' }}>Core</div>
+                            <div style={{ fontSize: '20px', fontWeight: 800, color: '#fff', marginBottom: '6px' }}>
+                                {billingAnnual ? '$7.17' : '$9'}<span style={{ fontSize: '12px', fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>/mo</span>
+                            </div>
+                            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', marginBottom: '14px', lineHeight: 1.5 }}>
+                                AI Brain · Receipt scanner · 2,000 tx/mo · 20 invoices/mo<br />+ $0.50/mo per Plaid account
+                            </div>
+                            <button onClick={() => handleUpgrade(billingAnnual ? 'core_annual' : 'core_monthly')} disabled={!!billingLoading} className="btn primary" style={{ width: '100%', padding: '10px', fontSize: '13px', opacity: billingLoading ? 0.6 : 1 }}>
+                                {billingLoading === (billingAnnual ? 'core_annual' : 'core_monthly') ? 'Loading...' : 'Subscribe to Core'}
+                            </button>
+                        </div>
+                        <div style={{ padding: '16px 18px', borderRadius: '12px', border: '1px solid rgba(249,115,22,0.25)', background: 'rgba(249,115,22,0.04)' }}>
+                            <div style={{ fontWeight: 700, color: '#f97316', marginBottom: '4px' }}>Studio</div>
+                            <div style={{ fontSize: '20px', fontWeight: 800, color: '#fff', marginBottom: '6px' }}>
+                                {billingAnnual ? '$15.17' : '$19'}<span style={{ fontSize: '12px', fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>/mo</span>
+                            </div>
+                            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', marginBottom: '14px', lineHeight: 1.5 }}>
+                                Everything in Core · Unlimited · Mileage · Priority support<br />+ $0.50/mo per Plaid account
+                            </div>
+                            <button onClick={() => handleUpgrade(billingAnnual ? 'studio_annual' : 'studio_monthly')} disabled={!!billingLoading} className="btn primary glow-blue" style={{ width: '100%', padding: '10px', fontSize: '13px', opacity: billingLoading ? 0.6 : 1 }}>
+                                {billingLoading === (billingAnnual ? 'studio_annual' : 'studio_monthly') ? 'Loading...' : 'Subscribe to Studio'}
+                            </button>
+                        </div>
+                    </div>
+                    <div style={{ marginTop: '12px', fontSize: '11px', color: 'rgba(255,255,255,0.25)', textAlign: 'center' }}>
+                        Already subscribed? Refresh the page and try connecting again.
+                    </div>
+                </div>
+            )}
 
             {/* Status message */}
             {msg && (

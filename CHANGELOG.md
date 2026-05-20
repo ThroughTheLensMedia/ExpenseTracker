@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.17] — 2026-05-20
+
+### Revert beta Plaid bypass; inline billing gate UI with plan upgrade cards
+
+#### Changed
+- **`api/routes/plaid.js`** — Reverted PLAID_BETA_PLANS bypass. All users (including free_beta, lifetime) must have stripe_customer_id before connecting Plaid. Only PLAID_BILLING_EXEMPT UUIDs (Joshua, Michelle) are exempt. No plan-type exceptions.
+- **`web-react/src/components/PlaidLink.jsx`** — On 402, sets `billingGate` state instead of showing inline error. Renders a full plan-upgrade UI: explanation of fee separation (Plaid $0.50/mo vs Stripe invoice key), Monthly/Annual toggle, Core and Studio plan cards with direct Stripe checkout buttons. Users subscribe, then return to connect their bank.
+
+---
+
 ## [v7.8.16] — 2026-05-20
 
 ### Beta users bypass Plaid billing gate; fix error banner wrapping

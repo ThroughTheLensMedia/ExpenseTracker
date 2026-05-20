@@ -1,6 +1,6 @@
 {
-  "version": "7.8.16",
+  "version": "7.8.17",
   "release_date": "2026-05-20",
   "codename": "Lumière Ledger",
-  "notes": "v7.8.16: Beta/lifetime users bypass Plaid billing gate; fix error banner wrapping; clarify billing error."
+  "notes": "v7.8.17: Revert beta Plaid bypass — all users pay. Inline billing gate UI with plan upgrade cards on 402."
 }

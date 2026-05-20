@@ -1,9 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
-    { version: '7.8.16', date: 'MAY 20, 2026', color: '#10b981', items: [
-        '<strong>Beta Users Can Now Connect Plaid:</strong> Beta Access and Lifetime Free accounts no longer hit the billing gate when connecting a bank. Beta = full feature access during the beta period. Previously all non-exempt users needed a Stripe subscription on file, which blocked everyone in beta.',
-        '<strong>Billing Error Banner — Readable:</strong> The red error message no longer overflows off-screen. Text now wraps properly and includes a clear explanation that the Stripe key in your Business Profile is for <em>client invoice payments</em> — it\'s unrelated to the Plaid billing requirement.',
+    { version: '7.8.17', date: 'MAY 20, 2026', color: '#f97316', items: [
+        '<strong>Plaid Billing Gate — Inline Plan Upgrade UI:</strong> When connecting a bank without a payment method on file, you now see an inline card with Core and Studio upgrade options right inside the Bank Import section — no dead-end error message. Choose a plan, complete checkout, and come back to connect your bank. Monthly/Annual toggle included.',
+        '<strong>Plaid Billing — All Users Pay:</strong> Every user (including beta) must have an active subscription before connecting Plaid. Only Joshua Deuermeyer and Michelle Gornichec are exempt. The $0.50/month per account fee applies to everyone.',
     ]},
     { version: '7.8.15', date: 'MAY 20, 2026', color: '#38bdf8', items: [
         '<strong>Connect Bank — Auto-Triggers Plaid Popup:</strong> Clicking "Connect a Bank" from the Accounts page now automatically opens the Plaid billing confirmation and connect flow. Previously it navigated to the Bank Import page but left the Plaid section collapsed — you had to find and click the button again.',

@@ -100,6 +100,7 @@ Source of truth for all sprint work, security status, and product phases.
 | v7.8.14 | Stripe setup — onboarding checklist step + in-profile 4-step guidance with direct Stripe dashboard link |
 | v7.8.15 | Connect Bank auto-triggers Plaid popup via ?connect=true param; better billing error message |
 | v7.8.16 | Beta/lifetime users bypass Plaid billing gate (full feature access during beta); fix error banner wrapping |
+| v7.8.17 | Revert beta bypass — all users pay for Plaid; inline billing gate UI with Core/Studio plan cards on 402 |
 
 ---
 
