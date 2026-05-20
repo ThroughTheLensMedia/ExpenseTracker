@@ -499,8 +499,8 @@ async function syncTransactions(sb, plaidClient, connection, userId) {
         hasMore = has_more;
     }
 
-    // Repair existing transactions that were stored with source = 'plaid'
-    // Map each plaid_account_id to the correct institution + account name
+    // Repair existing transactions stored with source = 'plaid'
+    // Pass 1: rows with known plaid_account_id → map to correct sub-account name
     for (const [account_id, sourceKey] of Object.entries(accountSourceMap)) {
         await sb
             .from('expenses')
@@ -509,6 +509,13 @@ async function syncTransactions(sb, plaidClient, connection, userId) {
             .eq('plaid_account_id', account_id)
             .eq('source', 'plaid');
     }
+    // Pass 2: rows with NULL plaid_account_id → fall back to institution name
+    await sb
+        .from('expenses')
+        .update({ source: connection.institution_name })
+        .eq('user_id', userId)
+        .is('plaid_account_id', null)
+        .eq('source', 'plaid');
 
     // Update cursor
     await sb
