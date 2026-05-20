@@ -1,6 +1,6 @@
 {
-  "version": "7.8.28",
+  "version": "7.8.29",
   "release_date": "2026-05-20",
   "codename": "Lumière Ledger",
-  "notes": "v7.8.28: Sync users now see Core/Studio upgrade cards in billing section. Remove emoji from Manage Billing button."
+  "notes": "v7.8.29: Bank Import page emoji cleanup."
 }

@@ -99,8 +99,8 @@ function DuplicateReviewPanel({ pairs, onMerge, onKeepBoth, onDismissAll }) {
                         {/* Side-by-side comparison */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0 }}>
                             {[
-                                { row: manual, label: 'Manual Entry', icon: '✍️', color: '#38bdf8', win: 'category, notes, receipt, tax' },
-                                { row: bank, label: 'Bank Import', icon: '🏦', color: '#4ade80', win: 'vendor, date, amount, source' }
+                                { row: manual, label: 'Manual Entry', icon: '', color: '#38bdf8', win: 'category, notes, receipt, tax' },
+                                { row: bank, label: 'Bank Import', icon: '', color: '#4ade80', win: 'vendor, date, amount, source' }
                             ].map(({ row, label, icon, color, win }, side) => (
                                 <div key={side} style={{
                                     padding: '16px',
@@ -370,7 +370,7 @@ export default function Import() {
                     onClick={() => setShowPlaid(!showPlaid)}
                     style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px', background: 'transparent', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '13px', fontWeight: 800, letterSpacing: '0.03em' }}
                 >
-                    <span>🏦 Bank Auto-Sync via Plaid</span>
+                    <span>Bank Auto-Sync via Plaid</span>
                     <span style={{ fontSize: '11px', transition: 'transform 0.2s', transform: showPlaid ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
                 </button>
                 {showPlaid && (
@@ -428,13 +428,13 @@ export default function Import() {
                         </optgroup>
                     </select>
                     <div className="muted" style={{ marginTop: '10px', fontSize: '12px', lineHeight: 1.6, background: 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '10px' }}>
-                        💡 <strong>Pro Tip:</strong> {BANK_TIPS[importSource] || 'Select your bank above.'}
+                        <strong>Tip:</strong> {BANK_TIPS[importSource] || 'Select your bank above.'}
                     </div>
                 </div>
 
                 {/* Merge behavior note */}
                 <div style={{ marginTop: '14px', padding: '12px 16px', borderRadius: '10px', background: 'rgba(74,222,128,0.05)', border: '1px solid rgba(74,222,128,0.15)', fontSize: '12px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.6 }}>
-                    🔀 <strong style={{ color: '#4ade80' }}>Smart Merge Active:</strong> If this import matches a manual entry within ±2 days (same amount), it will automatically merge — keeping your category, notes & receipt, updating it with the bank's authoritative source and date.
+                    <strong style={{ color: '#4ade80' }}>Smart Merge Active:</strong> If this import matches a manual entry within ±2 days (same amount), it will automatically merge — keeping your category, notes & receipt, updating it with the bank's authoritative source and date.
                 </div>
 
                 {rmMsg && (
@@ -445,14 +445,14 @@ export default function Import() {
 
                 {rmMsg.startsWith('✅') && (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '20px' }}>
-                        <button className="btn secondary" style={{ padding: '16px', fontWeight: 900, borderRadius: '14px' }} onClick={() => navigate('/')}>📊 GO TO DASHBOARD</button>
-                        <button className="btn primary glow-blue" style={{ padding: '16px', fontWeight: 900, borderRadius: '14px' }} onClick={() => navigate('/transactions')}>📑 VIEW LEDGER</button>
+                        <button className="btn secondary" style={{ padding: '16px', fontWeight: 900, borderRadius: '14px' }} onClick={() => navigate('/')}>Go to Dashboard</button>
+                        <button className="btn primary glow-blue" style={{ padding: '16px', fontWeight: 900, borderRadius: '14px' }} onClick={() => navigate('/transactions')}>View Ledger</button>
                     </div>
                 )}
 
                 {pendingFile && !rmMsg.startsWith('✅') && !rmMsg.startsWith('Importing') && (
                     <button className="btn glow-blue" style={{ width: '100%', marginTop: '20px', fontSize: '16px', padding: '16px', fontWeight: 900 }} onClick={() => runImport(pendingFile, importSource)}>
-                        🚀 Start Import from {BANK_PROFILES.find(p => p.key === importSource)?.label || importSource}
+                        Start Import from {BANK_PROFILES.find(p => p.key === importSource)?.label || importSource}
                     </button>
                 )}
 

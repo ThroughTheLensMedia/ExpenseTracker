@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.29] — 2026-05-20
+
+### Bank Import page emoji cleanup
+
+#### Changed
+- **`web-react/src/pages/Import.jsx`** — Removed all emoji from user-facing labels: Plaid section header, Pro Tip, Smart Merge, post-import nav buttons, Start Import button, comparison section icons.
+
+---
+
 ## [v7.8.28] — 2026-05-20
 
 ### Billing section: Sync users see upgrade path; remove emoji from button
