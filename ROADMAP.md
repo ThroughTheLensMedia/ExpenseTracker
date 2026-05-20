@@ -95,6 +95,7 @@ Source of truth for all sprint work, security status, and product phases.
 | v7.8.9 | Fix build-breaking syntax error in OnboardingChecklist.jsx (unescaped apostrophe); first successful deploy since v7.8.6 — all v7.8.7–7.8.8 fixes now live |
 | v7.8.10 | Fix onboarding wizard closing on step nav click; show Core/Studio upgrade cards for beta users |
 | v7.8.11 | Onboarding wizard minimizes to floating button on step nav (instead of blocking overlay); beta users see upgrade plans |
+| v7.8.12 | Fix onboarding checklist nav paths — AI Intelligence tab, Invoicing page, rename Help Docs step |
 
 ---
 

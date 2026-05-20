@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.12] — 2026-05-19
+
+### Fix onboarding checklist nav paths
+
+#### Fixed
+- **`web-react/src/components/OnboardingChecklist.jsx`** — "Set Up AI" path corrected from `?tab=integrations` to `?tab=intelligence` (AI Intelligence tab). "Open Invoicing" path corrected from `/crm` (PipelineView) to `/crm/financials` (Invoice page). "Explore the Help Docs" step title renamed to "Explore the Help Docs & FAQs".
+
+---
+
 ## [v7.8.11] — 2026-05-19
 
 ### Onboarding wizard minimizes on nav; upgrade plans for beta users

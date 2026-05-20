@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.12', date: 'MAY 19, 2026', color: '#38bdf8', items: [
+        '<strong>Onboarding Checklist Links Fixed:</strong> "Set Up AI" now correctly opens the AI Intelligence tab (was incorrectly opening Integrations). "Open Invoicing" now correctly opens the Invoicing page (was landing on the Execution Pipeline). "Explore the Help Docs" renamed to "Explore the Help Docs &amp; FAQs".',
+    ]},
     { version: '7.8.11', date: 'MAY 19, 2026', color: '#a78bfa', items: [
         '<strong>Onboarding Wizard Minimizes on Navigation:</strong> Clicking any setup step link (Open Profile, Set Up AI, etc.) now collapses the wizard to a floating purple "📋 Resume Setup" button in the bottom-right corner. You can fully interact with the page, complete the step, then click the button to bring the checklist back. Previously the full-screen overlay blocked the page behind it.',
         '<strong>Upgrade Plans Now Visible for Beta Users:</strong> Beta Access accounts can now see the Core and Studio upgrade cards in the Billing section. Previously these were hidden for all grandfathered accounts. Lifetime Free accounts remain unaffected — no upgrade cards shown for lifetime.',
