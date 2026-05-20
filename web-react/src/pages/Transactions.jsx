@@ -65,6 +65,26 @@ export default function Transactions() {
         return next;
     });
 
+    // Bulk reassign account
+    const [reassignTarget, setReassignTarget] = useState('');
+    const [reassigning,    setReassigning]    = useState(false);
+    const handleBulkReassign = async () => {
+        if (!reassignTarget || reassigning) return;
+        setReassigning(true);
+        try {
+            const r = await apiPatch('/expenses/bulk-source', { ids: [...selectedIds], source: reassignTarget });
+            invalidateExpensesCache();
+            await loadData(true);
+            setToast({ ok: true, msg: `${r.updated ?? selectedIds.size} transactions reassigned to ${ACCOUNT_LABELS[reassignTarget] || reassignTarget}.` });
+            setSelectedIds(new Set());
+            setReassignTarget('');
+        } catch(e) {
+            setToast({ ok: false, msg: `Reassign failed: ${e.message}` });
+        } finally {
+            setReassigning(false);
+        }
+    };
+
     // Feedback
     const [normalizing, setNormalizing] = useState(false);
     const [toast, setToast] = useState(null); // { msg, ok }
@@ -577,20 +597,48 @@ export default function Transactions() {
 
             {/* ─── Multi-Select Floating Action Bar ─── */}
             {selectedIds.size >= 2 && (
-                <div style={{ position: 'fixed', bottom: '28px', left: '50%', transform: 'translateX(-50%)', zIndex: 9999, display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(10,20,42,0.97)', border: '1px solid rgba(99,102,241,0.5)', borderRadius: '14px', padding: '12px 20px', boxShadow: '0 8px 40px rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)' }}>
+                <div style={{ position: 'fixed', bottom: '28px', left: '50%', transform: 'translateX(-50%)', zIndex: 9999, display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', justifyContent: 'center', background: 'rgba(10,20,42,0.97)', border: '1px solid rgba(99,102,241,0.5)', borderRadius: '14px', padding: '12px 20px', boxShadow: '0 8px 40px rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)', maxWidth: '90vw' }}>
                     <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent)' }}>{selectedIds.size} selected</span>
                     <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.15)' }} />
+
+                    {/* Reassign Account */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <select
+                            value={reassignTarget}
+                            onChange={e => setReassignTarget(e.target.value)}
+                            style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: reassignTarget ? 'white' : 'rgba(255,255,255,0.45)', fontSize: '12px', fontWeight: 700, padding: '7px 10px', cursor: 'pointer', outline: 'none' }}
+                        >
+                            <option value="">Reassign account…</option>
+                            <option value="manual">Manual Entry</option>
+                            {accountsList.filter(a => a.source !== 'plaid' && a.visible !== false).map(a => (
+                                <option key={a.source} value={a.source}>
+                                    {a.display_name || ACCOUNT_LABELS[a.source] || a.source}
+                                </option>
+                            ))}
+                        </select>
+                        {reassignTarget && (
+                            <button
+                                className="btn"
+                                disabled={reassigning}
+                                style={{ fontSize: '12px', padding: '7px 14px', fontWeight: 900, background: 'rgba(56,189,248,0.2)', borderColor: 'rgba(56,189,248,0.6)', color: '#38bdf8', opacity: reassigning ? 0.5 : 1 }}
+                                onClick={handleBulkReassign}
+                            >{reassigning ? 'Saving…' : 'Apply'}</button>
+                        )}
+                    </div>
+
+                    <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.15)' }} />
+
                     {selectedIds.size === 2 && (
                         <button
                             className="btn"
                             style={{ fontSize: '12px', padding: '8px 18px', fontWeight: 900, background: 'rgba(99,102,241,0.2)', borderColor: 'rgba(99,102,241,0.6)' }}
                             onClick={handleManualMerge}
-                        >🔀 Merge Selected</button>
+                        >Merge Duplicate</button>
                     )}
                     <button
                         className="btn secondary"
                         style={{ fontSize: '12px', padding: '8px 14px' }}
-                        onClick={() => setSelectedIds(new Set())}
+                        onClick={() => { setSelectedIds(new Set()); setReassignTarget(''); }}
                     >✕ Clear</button>
                 </div>
             )}

@@ -238,6 +238,28 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+// PATCH /expenses/bulk-source — reassign source/account for a batch of transactions
+router.patch("/bulk-source", async (req, res) => {
+  try {
+    const { ids, source } = req.body || {};
+    if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ error: 'ids must be a non-empty array' });
+    if (!source || typeof source !== 'string') return res.status(400).json({ error: 'source is required' });
+    const numericIds = ids.map(Number).filter(n => !isNaN(n) && n > 0);
+    if (!numericIds.length) return res.status(400).json({ error: 'No valid ids' });
+
+    const { error, count } = await req.sb
+      .from('expenses')
+      .update({ source: source.trim() })
+      .in('id', numericIds)
+      .eq('user_id', req.user.id);
+
+    if (error) throw error;
+    res.json({ ok: true, updated: count ?? numericIds.length });
+  } catch (e) {
+    res.status(500).json({ error: String(e.message || e) });
+  }
+});
+
 // PATCH /expenses/:id/resolve-review
 // Resolves a near-duplicate review flag. action: 'keep_both' | 'delete_this' | 'delete_pair'
 router.patch("/:id/resolve-review", async (req, res) => {

@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.32', date: 'MAY 20, 2026', color: '#f97316', items: [
+        '<strong>Bulk Reassign Account:</strong> Select 2+ transactions and use the new "Reassign account…" dropdown in the floating action bar to move them all to a different account in one click. Perfect for fixing generic source keys like "Credit Card" or "Bank Account" left over from old imports. Transaction data is preserved — only the account assignment changes.',
+    ]},
     { version: '7.8.31', date: 'MAY 20, 2026', color: '#38bdf8', items: [
         '<strong>Account Dropdown — Live Names:</strong> The Account field in the transaction editor and the Account filter in the ledger now show your real account names (from your Accounts page aliases) instead of raw import keys. "USD Account", "Bank Account", "Checking Account" etc. are gone — you see exactly what you named each account. Transaction data is unchanged — only the display labels update.',
     ]},

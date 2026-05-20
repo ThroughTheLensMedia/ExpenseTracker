@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.32] — 2026-05-20
+
+### Bulk reassign account on selected transactions
+
+#### Added
+- **`api/routes/expenses.js`** — `PATCH /expenses/bulk-source` endpoint: accepts `{ ids: number[], source: string }`, updates all matching rows owned by the user in one query.
+- **`web-react/src/pages/Transactions.jsx`** — "Reassign account…" dropdown + Apply button in multi-select floating action bar. Select any number of transactions, pick target account, Apply. Clears selection and refreshes ledger. Removed emoji from "Merge Selected" button label.
+
+---
+
 ## [v7.8.31] — 2026-05-20
 
 ### Account dropdown driven by live account aliases
