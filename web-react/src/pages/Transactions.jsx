@@ -69,6 +69,14 @@ export default function Transactions() {
     const [normalizing, setNormalizing] = useState(false);
     const [toast, setToast] = useState(null); // { msg, ok }
 
+    const [accountsList, setAccountsList] = useState([]); // [{source, display_name, visible}]
+
+    useEffect(() => {
+        apiGet('/accounts/summary')
+            .then(d => setAccountsList(d?.accounts || []))
+            .catch(() => {});
+    }, []);
+
     const loadData = async (force = false) => {
         // Stale-while-revalidate: if we have cached data, show it instantly
         // then silently refresh in the background
@@ -133,24 +141,24 @@ export default function Transactions() {
         return <span>{sortDir === 'asc' ? ' ↑' : ' ↓'}</span>;
     };
 
-    const ACCOUNT_LABELS = {
-        'rocketmoney': 'Rocket Money',
-        'chase': 'Chase Bank',
-        'usbank': 'US Bank',
-        'bankofamerica': 'Bank of America',
-        'wellsfargo': 'Wells Fargo',
-        'applecard': 'Apple Card',
-        'capitalone': 'Capital One',
-        'usaa': 'USAA',
-        'navyfcu': 'Navy Federal',
-        'wise': 'Wise',
-        'plaid': 'Plaid',
-        'manual': 'Manual',
-        'delta_amex': 'Delta Amex Card',
-        'amex_gold': 'Amex Gold Card',
-        'amex_platinum': 'Amex Platinum Card',
-        'amex_blue': 'Amex Blue Cash',
-    };
+    // Build source → label map from live account aliases (API) with static fallbacks
+    const ACCOUNT_LABELS = useMemo(() => {
+        const STATIC = {
+            manual: 'Manual Entry', plaid: 'Live Sync',
+            rocketmoney: 'Rocket Money', chase: 'Chase Bank', usbank: 'US Bank',
+            bankofamerica: 'Bank of America', wellsfargo: 'Wells Fargo',
+            applecard: 'Apple Card', capitalone: 'Capital One', usaa: 'USAA',
+            navyfcu: 'Navy Federal', wise: 'Wise', delta_amex: 'Delta Amex Card',
+            amex_gold: 'Amex Gold Card', amex_platinum: 'Amex Platinum Card',
+            amex_blue: 'Amex Blue Cash',
+        };
+        const map = { ...STATIC };
+        for (const a of accountsList) {
+            if (a.display_name) map[a.source] = a.display_name;
+            else if (!map[a.source]) map[a.source] = a.source.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+        }
+        return map;
+    }, [accountsList]);
 
     const { vendors: vendorOptions, accounts: accountOptions } = useFilterOptions(expenses, start, end);
 
@@ -502,7 +510,7 @@ export default function Transactions() {
                         invalidateExpensesCache();
                         loadData(true);
                     }}
-                    userSources={accountOptions}
+                    accounts={accountsList.filter(a => a.source !== 'plaid' && a.visible !== false)}
                 />
             )}
 

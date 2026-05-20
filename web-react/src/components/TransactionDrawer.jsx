@@ -78,23 +78,15 @@ function reducer(state, action) {
 
 // ─── Source label helpers ─────────────────────────────────────────────────────
 
+// Static fallback labels — used only when accounts API hasn't loaded
 const SOURCE_LABELS = {
-    manual: '➕ Manual Entry',
-    plaid: '🏦 Plaid (Auto-Sync)',
-    rocketmoney: '🟣 Rocket Money',
-    chase: '🔵 Chase Bank',
-    usbank: '🔵 US Bank',
-    bankofamerica: '🔴 Bank of America',
-    wellsfargo: '🟡 Wells Fargo',
-    applecard: '⬛ Apple Card',
-    capitalone: '🔴 Capital One',
-    usaa: '🦅 USAA',
-    navyfcu: '⚓ Navy Federal',
-    wise: '🌍 Wise',
-    delta_amex: '🔵 Delta Amex Card',
-    amex_gold: '🟡 Amex Gold Card',
-    amex_platinum: '⬜ Amex Platinum Card',
-    amex_blue: '🔵 Amex Blue Cash',
+    manual: 'Manual Entry', plaid: 'Live Sync',
+    rocketmoney: 'Rocket Money', chase: 'Chase Bank', usbank: 'US Bank',
+    bankofamerica: 'Bank of America', wellsfargo: 'Wells Fargo',
+    applecard: 'Apple Card', capitalone: 'Capital One', usaa: 'USAA',
+    navyfcu: 'Navy Federal', wise: 'Wise', delta_amex: 'Delta Amex Card',
+    amex_gold: 'Amex Gold Card', amex_platinum: 'Amex Platinum Card',
+    amex_blue: 'Amex Blue Cash',
 };
 
 function formatSourceKey(key) {
@@ -103,7 +95,7 @@ function formatSourceKey(key) {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function TransactionDrawer({ transaction, onClose, onSave, onDelete, userSources = [] }) {
+export default function TransactionDrawer({ transaction, onClose, onSave, onDelete, accounts = [] }) {
     const modal = useModal();
     const [state, dispatch] = useReducer(reducer, initialState);
     const { date, amount, vendor, category, taxBucket, bizPct, deduct, isSub, notes,
@@ -449,24 +441,25 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
                     {/* ── Account / Source ── */}
                     <div className="row" style={{ marginTop: '10px' }}>
                         <div>
-                            <small className="muted">Account / Source</small>
+                            <small className="muted">Account</small>
                             <select value={source} onChange={e => field('source', e.target.value)} style={{ width: '100%', padding: '8px' }}>
-                                <option value="manual">{SOURCE_LABELS.manual}</option>
-                                {userSources
-                                    .filter(s => s && s !== 'manual')
-                                    .map(s => (
-                                        <option key={s} value={s}>
-                                            {SOURCE_LABELS[s] || formatSourceKey(s)}
+                                <option value="manual">Manual Entry</option>
+                                {accounts
+                                    .filter(a => a.source !== 'manual')
+                                    .map(a => (
+                                        <option key={a.source} value={a.source}>
+                                            {a.display_name || SOURCE_LABELS[a.source] || formatSourceKey(a.source)}
                                         </option>
                                     ))
                                 }
-                                {source && source !== 'manual' && !userSources.includes(source) && (
+                                {/* Fallback: if current tx source isn't in the accounts list, still show it */}
+                                {source && source !== 'manual' && !accounts.find(a => a.source === source) && (
                                     <option value={source}>
                                         {SOURCE_LABELS[source] || formatSourceKey(source)}
                                     </option>
                                 )}
                             </select>
-                            {userSources.filter(s => s && s !== 'manual').length === 0 && (
+                            {accounts.length === 0 && (
                                 <div className="muted" style={{ fontSize: '11px', marginTop: '6px' }}>
                                     Import a bank CSV or connect Plaid to see your accounts here.
                                 </div>

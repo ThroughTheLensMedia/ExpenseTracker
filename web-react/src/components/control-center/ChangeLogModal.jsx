@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.31', date: 'MAY 20, 2026', color: '#38bdf8', items: [
+        '<strong>Account Dropdown — Live Names:</strong> The Account field in the transaction editor and the Account filter in the ledger now show your real account names (from your Accounts page aliases) instead of raw import keys. "USD Account", "Bank Account", "Checking Account" etc. are gone — you see exactly what you named each account. Transaction data is unchanged — only the display labels update.',
+    ]},
     { version: '7.8.30', date: 'MAY 20, 2026', color: '#38bdf8', items: [
         '<strong>Account Merging:</strong> Duplicate CSV accounts (e.g. same bank exported twice under different names) can now be merged into a single card. Click "Merge" on any CSV account and pick the target — the source account is absorbed and hidden. The target card shows which accounts are merged into it. Unmerge anytime to restore as standalone.',
     ]},

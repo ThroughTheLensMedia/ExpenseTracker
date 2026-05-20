@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.31] — 2026-05-20
+
+### Account dropdown driven by live account aliases
+
+#### Changed
+- **`web-react/src/pages/Transactions.jsx`** — Fetches `/api/accounts/summary` on mount. `ACCOUNT_LABELS` replaced with a live `useMemo` map that reads `display_name` from account aliases first, static fallbacks second. Account filter dropdown and Account column in table now show clean names. Passes `accounts` array to TransactionDrawer instead of raw `userSources`.
+- **`web-react/src/components/TransactionDrawer.jsx`** — `userSources` prop replaced with `accounts` (array of `{source, display_name}` objects). Dropdown renders `display_name` when set, falls back to static labels then `formatSourceKey`. Removed all emojis from SOURCE_LABELS. Transaction `source` field unchanged — display only.
+
+---
+
 ## [v7.8.30] — 2026-05-20
 
 ### Account merging — absorb duplicate CSV accounts into a single card
