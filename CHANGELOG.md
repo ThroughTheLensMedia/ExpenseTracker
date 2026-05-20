@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.8] — 2026-05-19
+
+### Fix upgrade plan flash; separate beta vs lifetime labels
+
+#### Fixed
+- **`web-react/src/components/control-center/ProfileTab.jsx`** — Upgrade plan cards (Core / Studio) were flashing briefly for beta/lifetime users on every page load. Root cause: `subscription` starts as `null` → `planType='free'` → `isLifetime=false` → upgrade cards render → subscription resolves to `free_beta` → cards disappear. Fixed by gating BillingSection on `subscriptionReady` — shows "Loading subscription…" placeholder until auth data is fully resolved.
+- **`web-react/src/components/control-center/ProfileTab.jsx`** — `free_beta` plan type incorrectly showed "Lifetime Free" label (same as true `lifetime` accounts). Beta accounts have an `expires_at` and are NOT lifetime. Fixed: `free_beta` / `beta_tester` → "Beta Access" (purple); `lifetime` → "Lifetime Free" (green). Beta accounts now show "Beta access · N days remaining" subtitle. Lifetime accounts show the grandfathered savings message.
+
+---
+
 ## [v7.8.7] — 2026-05-19
 
 ### New 3-page onboarding wizard; fix first-login trigger bug

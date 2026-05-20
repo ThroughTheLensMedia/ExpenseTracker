@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.8', date: 'MAY 19, 2026', color: '#38bdf8', items: [
+        '<strong>Upgrade Plan Flash Fixed:</strong> The Core and Studio upgrade cards no longer flash briefly for beta and lifetime users on every page load. The billing section now waits for subscription data to fully resolve before rendering — you see a clean "Loading…" state instead of a card that appears and disappears.',
+        '<strong>Beta vs Lifetime Labels Corrected:</strong> Beta accounts now correctly show "Beta Access" with a days-remaining counter ("Beta access · 30 days remaining") instead of "Lifetime Free." True lifetime accounts continue to show "Lifetime Free" in green with the grandfathered savings note.',
+    ]},
     { version: '7.8.7', date: 'MAY 19, 2026', color: '#f97316', items: [
         '<strong>New User Onboarding Wizard:</strong> First-time login now triggers a 3-page guided setup. Page 1 introduces what Lumière Ledger does with a feature overview. Page 2 explains how to get transactions in (CSV import vs Plaid live sync, with step-by-step instructions for each). Page 3 is a 5-step checklist with direct navigation links — Business Profile, Bank Import, AI Key, Invoicing, and Docs.',
         '<strong>Onboarding Trigger Fixed:</strong> The welcome wizard was never firing for new accounts because of a bug in the trigger condition. New users now see it reliably on first login.',

@@ -1,6 +1,6 @@
 {
-  "version": "7.8.7",
+  "version": "7.8.8",
   "release_date": "2026-05-19",
   "codename": "Lumière Ledger",
-  "notes": "v7.8.7: New 3-page onboarding wizard for first-time users; fix trigger bug that prevented it from firing."
+  "notes": "v7.8.8: Fix upgrade plan flash; correct beta vs lifetime labels; gate BillingSection on subscriptionReady."
 }

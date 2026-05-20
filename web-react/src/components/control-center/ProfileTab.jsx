@@ -4,8 +4,9 @@ import { useAuth } from '../AuthContext';
 
 const PLAN_LABELS = {
     free:           { label: 'Free',              color: '#94a3b8' },
-    free_beta:      { label: 'Lifetime Free',      color: '#a78bfa' },
-    lifetime:       { label: 'Lifetime Free',      color: '#a78bfa' },
+    free_beta:      { label: 'Beta Access',        color: '#a78bfa' },  // expires — not lifetime
+    beta_tester:    { label: 'Beta Access',        color: '#a78bfa' },
+    lifetime:       { label: 'Lifetime Free',      color: '#10b981' },  // true lifetime — no expiry
     core_monthly:   { label: 'Core — $9/mo',       color: '#38bdf8' },
     core_annual:    { label: 'Core — $86/yr',      color: '#38bdf8' },
     studio_monthly: { label: 'Studio — $19/mo',    color: '#f97316' },
@@ -21,7 +22,7 @@ const VITE_PRICE = {
 
 export default function ProfileTab({ settings, setSettings, onReload }) {
     const [msg, setMsg] = useState('');
-    const { tier, subscription } = useAuth();
+    const { tier, subscription, subscriptionReady } = useAuth();
     const [billingAnnual, setBillingAnnual] = useState(false);
     const [billingLoading, setBillingLoading] = useState(null);
 
@@ -52,8 +53,15 @@ export default function ProfileTab({ settings, setSettings, onReload }) {
     const adminTier   = subscription?.admin_tier || null;
     const planInfo    = PLAN_LABELS[planType] || PLAN_LABELS.free;
     const isPaid      = ['core_monthly', 'core_annual', 'studio_monthly', 'studio_annual'].includes(planType);
-    const isLifetime  = ['free_beta', 'lifetime'].includes(planType);
+    const isBeta      = ['free_beta', 'beta_tester'].includes(planType);
+    const isLifetime  = planType === 'lifetime'; // true lifetime — no expires_at
+    const isGrandfathered = isBeta || isLifetime; // hides upgrade cards
     const hasPortal   = isPaid && subscription?.stripe_customer_id;
+
+    // Days left for beta accounts
+    const daysLeft = subscription?.expires_at
+        ? Math.ceil((new Date(subscription.expires_at) - new Date()) / 86400000)
+        : null;
 
     const handleManageBilling = async () => {
         setBillingLoading('portal');
@@ -81,7 +89,17 @@ export default function ProfileTab({ settings, setSettings, onReload }) {
         }
     };
 
-    const BillingSection = () => (
+    const BillingSection = () => {
+        // Wait until subscription data is resolved — prevents upgrade cards from flashing
+        // for beta/lifetime users while subscription loads (starts null → resolves to free_beta)
+        if (!subscriptionReady) {
+            return (
+                <div style={{ marginBottom: '36px', padding: '24px 28px', background: 'rgba(255,255,255,0.03)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.07)', minHeight: 80, display: 'flex', alignItems: 'center' }}>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)', fontWeight: 700 }}>Loading subscription…</div>
+                </div>
+            );
+        }
+        return (
         <div style={{ marginBottom: '36px', padding: '24px 28px', background: 'rgba(255,255,255,0.03)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.07)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
                 <div>
@@ -94,8 +112,13 @@ export default function ProfileTab({ settings, setSettings, onReload }) {
                             {tier.toUpperCase()}
                         </span>
                     </div>
-                    {isLifetime && (
+                    {isBeta && daysLeft !== null && (
                         <div style={{ fontSize: '12px', color: 'rgba(167,139,250,0.7)', marginTop: '6px' }}>
+                            Beta access · {daysLeft > 0 ? `${daysLeft} days remaining` : 'Expired'} · Full feature access during beta
+                        </div>
+                    )}
+                    {isLifetime && (
+                        <div style={{ fontSize: '12px', color: 'rgba(16,185,129,0.7)', marginTop: '6px' }}>
                             Grandfathered — free platform access forever · Saving ${tier === 'studio' ? '228' : '108'}/yr vs paid plans
                         </div>
                     )}
@@ -117,8 +140,8 @@ export default function ProfileTab({ settings, setSettings, onReload }) {
                 )}
             </div>
 
-            {/* Upgrade card — Free users only (not lifetime/admin) */}
-            {!isPaid && !isLifetime && !adminTier && (
+            {/* Upgrade card — Free users only (not beta/lifetime/admin) */}
+            {!isPaid && !isGrandfathered && !adminTier && (
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '20px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
                         <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>Unlock more with a paid plan</div>
@@ -157,7 +180,8 @@ export default function ProfileTab({ settings, setSettings, onReload }) {
                 </div>
             )}
         </div>
-    );
+        );
+    };
 
     return (
         <div className="card glass glow-blue" style={{ border: 'none', padding: '40px', margin: 0 }}>

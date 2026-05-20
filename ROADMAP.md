@@ -46,6 +46,10 @@ Source of truth for all sprint work, security status, and product phases.
 
 ## 🟡 Next Sprint — High Value
 
+> **New item:** Account merging by last-4 digits — user wants to enter the last 4-5 digits of their bank account on a CSV source and have it automatically matched/merged with the corresponding Plaid sub-account (same institution, same account). Would unify spending stats across CSV history + live Plaid sync into one combined account tile.
+
+
+
 | Item | Notes |
 |------|-------|
 | **Stripe — ProfileTab billing section** | Plan badge (Free / Core / Pro / Studio), "Manage Billing" → Stripe portal, upgrade CTA for Free users. Currently users can't see their plan in-app. **Highest priority remaining feature.** |
@@ -87,6 +91,7 @@ Source of truth for all sprint work, security status, and product phases.
 | v7.8.5 | Accounts page filter fix — Live Sync section no longer disappears when type filter (Credit/Checking/Savings/Manual) is active |
 | v7.8.6 | Filter pills now filter Plaid sub-account rows in real-time; Account Plans nav fixed to route to profile/billing tab |
 | v7.8.7 | 3-page onboarding wizard (Welcome → Data Import Guide → Setup Checklist); fix trigger bug (subscription null for new users) |
+| v7.8.8 | Fix upgrade plan flash (gate BillingSection on subscriptionReady); fix free_beta label → "Beta Access" vs lifetime → "Lifetime Free" |
 
 ---
 
