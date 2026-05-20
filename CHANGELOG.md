@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.16] — 2026-05-20
+
+### Beta users bypass Plaid billing gate; fix error banner wrapping
+
+#### Fixed
+- **`api/routes/plaid.js`** — Added `PLAID_BETA_PLANS` set (`free_beta`, `beta_tester`, `lifetime`). Billing gate now checks `plan_type` in addition to `stripe_customer_id` — beta/lifetime users bypass the gate entirely. Beta = full feature access during beta period includes Live Bank Sync.
+- **`web-react/src/components/PlaidLink.jsx`** — Error banner (`tag bad`) now has `whiteSpace: 'normal'` so the message wraps instead of overflowing. Updated error text to clarify that the Stripe publishable key in Business Profile is for *client invoice payments* and is separate from the Lumière Ledger subscription billing that Plaid requires.
+
+---
+
 ## [v7.8.15] — 2026-05-20
 
 ### Connect Bank auto-triggers Plaid popup; better billing error

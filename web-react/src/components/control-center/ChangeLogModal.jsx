@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.16', date: 'MAY 20, 2026', color: '#10b981', items: [
+        '<strong>Beta Users Can Now Connect Plaid:</strong> Beta Access and Lifetime Free accounts no longer hit the billing gate when connecting a bank. Beta = full feature access during the beta period. Previously all non-exempt users needed a Stripe subscription on file, which blocked everyone in beta.',
+        '<strong>Billing Error Banner — Readable:</strong> The red error message no longer overflows off-screen. Text now wraps properly and includes a clear explanation that the Stripe key in your Business Profile is for <em>client invoice payments</em> — it\'s unrelated to the Plaid billing requirement.',
+    ]},
     { version: '7.8.15', date: 'MAY 20, 2026', color: '#38bdf8', items: [
         '<strong>Connect Bank — Auto-Triggers Plaid Popup:</strong> Clicking "Connect a Bank" from the Accounts page now automatically opens the Plaid billing confirmation and connect flow. Previously it navigated to the Bank Import page but left the Plaid section collapsed — you had to find and click the button again.',
         '<strong>Billing Error Message Improved:</strong> If you hit the $0.50/month billing gate, the error now explains exactly where to add a payment method (Settings → Ledger Control Center → Business Profile → Billing section) instead of giving a vague message.',

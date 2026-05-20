@@ -86,7 +86,7 @@ export default function PlaidLink({ onSync, autoConnect = false }) {
             handler.open();
         } catch (e) {
             if (e.message?.includes('plaid_payment_required') || e.status === 402) {
-                setMsg({ ok: false, text: '💳 A billing method is required before connecting a bank. Plaid charges $0.50/month per connected account — add a card at Settings → Ledger Control Center → Business Profile (Billing section) to continue.' });
+                setMsg({ ok: false, text: '💳 A payment method is required to activate Live Bank Sync. Plaid charges $0.50/month per connected account, billed through your Lumière Ledger subscription — this is separate from the Stripe key in your Business Profile. Upgrade to Core or Studio to add a billing method.' });
             } else {
                 setMsg({ ok: false, text: `Failed to start Plaid: ${e.message}` });
             }
@@ -148,7 +148,7 @@ export default function PlaidLink({ onSync, autoConnect = false }) {
 
             {/* Status message */}
             {msg && (
-                <div className={`tag ${msg.ok ? 'ok' : 'bad'}`} style={{ padding: '12px 20px', fontSize: '13px' }}>
+                <div className={`tag ${msg.ok ? 'ok' : 'bad'}`} style={{ padding: '12px 20px', fontSize: '13px', whiteSpace: 'normal', lineHeight: 1.5 }}>
                     {msg.ok ? '✅' : '❌'} {msg.text}
                 </div>
             )}

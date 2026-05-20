@@ -57,18 +57,23 @@ const PLAID_BILLING_EXEMPT = new Set([
     // Michelle Gornichec — add UUID here once confirmed
 ]);
 
+// Plan types that bypass the Plaid billing gate (beta = full feature access during beta period)
+const PLAID_BETA_PLANS = new Set(['free_beta', 'beta_tester', 'lifetime']);
+
 // ─── 1. Create Link Token ───
 router.post("/create-link-token", async (req, res) => {
     try {
-        // Billing gate: non-exempt users must have a Stripe customer record before connecting
+        // Billing gate: exempt UUIDs and beta/lifetime plan holders pass through.
+        // All others must have a Stripe customer record to cover $0.50/account/mo.
         if (!PLAID_BILLING_EXEMPT.has(req.user.id)) {
             const { data: sub } = await req.sb
                 .from('user_subscriptions')
-                .select('stripe_customer_id')
+                .select('stripe_customer_id, plan_type')
                 .eq('user_id', req.user.id)
                 .maybeSingle();
 
-            if (!sub?.stripe_customer_id) {
+            const isBetaPlan = PLAID_BETA_PLANS.has(sub?.plan_type);
+            if (!isBetaPlan && !sub?.stripe_customer_id) {
                 return res.status(402).json({
                     error: 'plaid_payment_required',
                     message: 'A billing method is required to use Live Bank Sync. Please set up your subscription first.',

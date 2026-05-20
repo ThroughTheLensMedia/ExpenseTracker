@@ -99,6 +99,7 @@ Source of truth for all sprint work, security status, and product phases.
 | v7.8.13 | Business Profile — full-width responsive layout, pair orphaned fields, compact textareas, mobile breakpoint |
 | v7.8.14 | Stripe setup — onboarding checklist step + in-profile 4-step guidance with direct Stripe dashboard link |
 | v7.8.15 | Connect Bank auto-triggers Plaid popup via ?connect=true param; better billing error message |
+| v7.8.16 | Beta/lifetime users bypass Plaid billing gate (full feature access during beta); fix error banner wrapping |
 
 ---
 
