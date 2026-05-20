@@ -178,7 +178,7 @@ function PageDataImport({ onNext, onBack, onSkip }) {
 }
 
 // ─── Page 2: Setup checklist ────────────────────────────────────────────────
-function PageChecklist({ onDone, onBack }) {
+function PageChecklist({ onDone, onBack, minimized, onMinimize, onRestore }) {
     const navigate = useNavigate();
     const [checked, setChecked] = useState(() => {
         try { return JSON.parse(localStorage.getItem(CHECKED_KEY) || '{}'); }
@@ -192,7 +192,16 @@ function PageChecklist({ onDone, onBack }) {
     }
 
     function go(path) {
+        onMinimize();
         navigate(path);
+    }
+
+    if (minimized) {
+        return (
+            <button onClick={onRestore} style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 9999, background: 'linear-gradient(135deg, #a78bfa, #7c3aed)', border: 'none', borderRadius: 999, padding: '12px 20px', color: 'white', fontWeight: 900, fontSize: 13, cursor: 'pointer', boxShadow: '0 4px 24px rgba(167,139,250,0.4)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                📋 Resume Setup
+            </button>
+        );
     }
 
     const doneCount   = STEPS.filter(s => checked[s.id]).length;
@@ -270,6 +279,7 @@ function StepRow({ step, checked, onToggle, onGo, accent }) {
 // ─── Main export ───────────────────────────────────────────────────────────
 export default function OnboardingChecklist({ onDismiss }) {
     const [page, setPage] = useState(0);
+    const [minimized, setMinimized] = useState(false);
 
     function dismiss() {
         localStorage.setItem(STORAGE_KEY, '1');
@@ -278,7 +288,15 @@ export default function OnboardingChecklist({ onDismiss }) {
 
     if (page === 0) return <PageWelcome onNext={() => setPage(1)} onSkip={dismiss} />;
     if (page === 1) return <PageDataImport onNext={() => setPage(2)} onBack={() => setPage(0)} onSkip={dismiss} />;
-    return <PageChecklist onDone={dismiss} onBack={() => setPage(1)} />;
+    return (
+        <PageChecklist
+            onDone={dismiss}
+            onBack={() => setPage(1)}
+            minimized={minimized}
+            onMinimize={() => setMinimized(true)}
+            onRestore={() => setMinimized(false)}
+        />
+    );
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────

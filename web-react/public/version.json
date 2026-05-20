@@ -1,6 +1,6 @@
 {
-  "version": "7.8.10",
+  "version": "7.8.11",
   "release_date": "2026-05-19",
   "codename": "Lumière Ledger",
-  "notes": "v7.8.10: Fix onboarding wizard closing on nav click; show upgrade plans for beta users."
+  "notes": "v7.8.11: Onboarding wizard minimizes to floating button when navigating to a setup step."
 }

@@ -5,13 +5,13 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
-## [v7.8.10] — 2026-05-19
+## [v7.8.11] — 2026-05-19
 
-### Fix onboarding wizard nav dismissal; show upgrade plans for beta users
+### Onboarding wizard minimizes on nav; upgrade plans for beta users
 
 #### Fixed
-- **`web-react/src/components/OnboardingChecklist.jsx`** — `go()` in `PageChecklist` was calling `onDone()` (the dismiss function) before navigating, which permanently wrote the dismissed key to localStorage. Clicking "Open Profile →" or any step link would close the wizard forever. Fixed: `go()` now only calls `navigate(path)`. The wizard stays open as an overlay while the user completes each step.
-- **`web-react/src/components/control-center/ProfileTab.jsx`** — Upgrade plan cards (Core / Studio) were hidden for all `isGrandfathered` users, which includes `free_beta`. Beta users couldn't see any other plans. Fixed: condition changed from `!isGrandfathered` to `!isLifetime` — beta users now see upgrade cards; lifetime accounts still don't (they're already grandfathered to Studio limits).
+- **`web-react/src/components/OnboardingChecklist.jsx`** — Clicking a step link (Open Profile, Set Up AI, etc.) now minimizes the wizard to a floating "📋 Resume Setup" button in the bottom-right corner instead of keeping the full-screen modal overlay open. The user can interact with the destination page, complete the step, then click the button to restore the checklist. Added `minimized`/`onMinimize`/`onRestore` props to `PageChecklist`; `go()` calls `onMinimize()` then navigates.
+- **`web-react/src/components/control-center/ProfileTab.jsx`** — Upgrade plan cards (Core / Studio) were hidden for all `isGrandfathered` users, which includes `free_beta`. Beta users couldn't see any other plans. Fixed: condition changed from `!isGrandfathered` to `!isLifetime` — beta users now see upgrade cards; lifetime accounts still don't.
 
 ---
 
