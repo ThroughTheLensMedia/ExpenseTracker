@@ -89,17 +89,15 @@ export default function ProfileTab({ settings, setSettings, onReload }) {
         }
     };
 
-    const BillingSection = () => {
-        // Wait until subscription data is resolved — prevents upgrade cards from flashing
-        // for beta/lifetime users while subscription loads (starts null → resolves to free_beta)
-        if (!subscriptionReady) {
-            return (
-                <div style={{ marginBottom: '36px', padding: '24px 28px', background: 'rgba(255,255,255,0.03)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.07)', minHeight: 80, display: 'flex', alignItems: 'center' }}>
-                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)', fontWeight: 700 }}>Loading subscription…</div>
-                </div>
-            );
-        }
-        return (
+    // ── Billing section — inlined (NOT a nested component) ─────────────────────
+    // Nested components (const X = () => ...) get a new function reference every
+    // render, causing React to unmount+remount → produces the 1-frame flash where
+    // subscription is null and upgrade cards briefly appear. Inline JSX avoids this.
+    const billingEl = !subscriptionReady ? (
+        <div style={{ marginBottom: '36px', padding: '24px 28px', background: 'rgba(255,255,255,0.03)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.07)', minHeight: 80, display: 'flex', alignItems: 'center' }}>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)', fontWeight: 700 }}>Loading subscription…</div>
+        </div>
+    ) : (
         <div style={{ marginBottom: '36px', padding: '24px 28px', background: 'rgba(255,255,255,0.03)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.07)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
                 <div>
@@ -129,19 +127,14 @@ export default function ProfileTab({ settings, setSettings, onReload }) {
                     )}
                 </div>
                 {hasPortal && (
-                    <button
-                        onClick={handleManageBilling}
-                        disabled={billingLoading === 'portal'}
-                        className="btn secondary"
-                        style={{ padding: '10px 22px', fontSize: '13px', opacity: billingLoading === 'portal' ? 0.6 : 1 }}
-                    >
+                    <button onClick={handleManageBilling} disabled={billingLoading === 'portal'} className="btn secondary" style={{ padding: '10px 22px', fontSize: '13px', opacity: billingLoading === 'portal' ? 0.6 : 1 }}>
                         {billingLoading === 'portal' ? 'Loading...' : '⚙ Manage Billing'}
                     </button>
                 )}
             </div>
 
-            {/* Upgrade card — Free users only (not beta/lifetime/admin) */}
-            {!isPaid && !isGrandfathered && !adminTier && (
+            {/* Upgrade cards — only for confirmed free plan (not beta/lifetime/admin/paid) */}
+            {subscriptionReady && !isPaid && !isGrandfathered && !adminTier && (
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '20px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
                         <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>Unlock more with a paid plan</div>
@@ -173,20 +166,18 @@ export default function ProfileTab({ settings, setSettings, onReload }) {
                 </div>
             )}
 
-            {/* Paid plan — next billing note */}
             {isPaid && (
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '16px', fontSize: '12px', color: 'rgba(255,255,255,0.35)' }}>
                     Subscription managed through Stripe · Invoices emailed automatically · Cancel or upgrade anytime via Manage Billing
                 </div>
             )}
         </div>
-        );
-    };
+    );
 
     return (
         <div className="card glass glow-blue" style={{ border: 'none', padding: '40px', margin: 0 }}>
             <div style={{ maxWidth: '850px' }}>
-                <BillingSection />
+                {billingEl}
                 <h2 style={{ fontSize: '1.8rem', margin: '0 0 10px 0' }}>Business Profile Branding</h2>
                 <p className="muted" style={{ fontSize: '15px', marginBottom: '32px' }}>
                     Update your studio identity. These details personalize your invoices and global reporting headers.

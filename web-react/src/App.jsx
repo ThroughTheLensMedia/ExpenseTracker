@@ -182,7 +182,9 @@ function AppContent() {
   // because new users have no subscription record yet — subscription stays null
   // and the old guard caused the modal to never fire for brand-new accounts.
   useEffect(() => {
-    if (!user || !subscriptionReady || settings === null || settings === undefined) return;
+    // settings starts as null (AuthContext init) and stays null if /api/settings returns
+    // PGRST116 (no row found for new user). Guard only against undefined (not yet attempted).
+    if (!user || !subscriptionReady || settings === undefined) return;
     const dismissed = localStorage.getItem('ll_onboarding_dismissed_v2');
     if (dismissed) return;
     // Show for all users who haven't dismissed v2 — including existing users with business names
