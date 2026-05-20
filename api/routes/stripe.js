@@ -22,8 +22,10 @@ function getStripe() {
   return _stripe;
 }
 
-// Price ID map — set all four in Vercel env vars after creating products in Stripe Dashboard
+// Price ID map — set all in Vercel env vars after creating products in Stripe Dashboard
 const PRICES = {
+  sync_monthly:   process.env.STRIPE_PRICE_SYNC_MONTHLY,    // $4.99/mo
+  sync_annual:    process.env.STRIPE_PRICE_SYNC_ANNUAL,     // $49.99/yr
   core_monthly:   process.env.STRIPE_PRICE_CORE_MONTHLY,   // $9/mo
   core_annual:    process.env.STRIPE_PRICE_CORE_ANNUAL,     // $86/yr
   studio_monthly: process.env.STRIPE_PRICE_STUDIO_MONTHLY,  // $19/mo
@@ -44,6 +46,7 @@ function deriveTier(plan_type, admin_tier) {
   if (admin_tier === 'core')   return 'core';
   if (['studio_monthly', 'studio_annual'].includes(plan_type)) return 'studio';
   if (['core_monthly',   'core_annual'  ].includes(plan_type)) return 'core';
+  if (['sync_monthly',   'sync_annual'  ].includes(plan_type)) return 'sync';
   return 'free';
 }
 
