@@ -5,6 +5,18 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.27] — 2026-05-20
+
+### Fix Stripe webhook signature verification; remove stale $0.50 billing copy
+
+#### Fixed
+- **`api/server.js`** — Stripe webhook now mounted directly on `app` BEFORE `express.json()`. Previously `express.json()` parsed the body first, making signature verification impossible (Stripe requires raw Buffer). All webhook events were returning 400.
+- **`web-react/src/components/PlaidLink.jsx`** — Billing confirmation dialog no longer mentions $0.50/account. Now says flat subscription required.
+- **`web-react/src/components/OnboardingChecklist.jsx`** — Plaid pill updated from `$0.50/account/mo` to `from $4.99/mo`.
+- **`web-react/src/pages/Accounts.jsx`** — Unsync button tooltip no longer mentions $0.50/mo fee.
+
+---
+
 ## [v7.8.26] — 2026-05-20
 
 ### Remove icons from account labels; update roadmap

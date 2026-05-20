@@ -51,7 +51,7 @@ export default function PlaidLink({ onSync, autoConnect = false }) {
 
     const handleConnect = useCallback(async () => {
         const confirmed = await modal.confirm(
-            '💳 Live Bank Sync — Billing Notice\n\nConnecting your bank via Plaid adds $0.50/month per connected account to your subscription, billed automatically.\n\nYou can disconnect at any time from the Accounts page.\n\nContinue to connect your bank?'
+            'Live Bank Sync — Billing Notice\n\nLive bank sync requires an active Sync, Core, or Studio subscription. All connected accounts are included — no per-account fees.\n\nYou can disconnect at any time from the Accounts page.\n\nContinue to connect your bank?'
         );
         if (!confirmed) return;
 

@@ -53,6 +53,9 @@ app.use(cors({
   origin: (origin, cb) => cb(null, !origin || ALLOWED_ORIGINS.includes(origin)),
   credentials: true,
 }));
+// Stripe webhook MUST be mounted before express.json() — raw body required for signature verification
+app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), stripeWebhook);
+
 app.use(express.json({ limit: "10mb" }));
 
 // Routing
@@ -94,9 +97,6 @@ const { licensingMiddleware } = require("./middleware/licensing");
 apiRouter.use("/pay", payRouter);
 apiRouter.use("/intake", intakeRouter); // TTLM website booking form → Lumiere Ledger
 apiRouter.use("/cron", require("./routes/cron")); // CRON_SECRET auth — no JWT needed
-
-// Stripe webhook — raw body required for signature verification, no JWT
-apiRouter.post("/stripe/webhook", express.raw({ type: "application/json" }), stripeWebhook);
 
 // Account Request — public form that emails the admin
 apiRouter.post("/account-request", async (req, res) => {

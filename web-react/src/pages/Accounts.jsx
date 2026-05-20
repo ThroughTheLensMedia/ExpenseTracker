@@ -400,7 +400,7 @@ function AccountCard({ acct, totalMonth, plaidConnections, onAliasChange, onSync
                     {/* Unsync — only on Plaid Live Sync card (removes bank connection, stops billing) */}
                     {isPlaid && plaidConnections?.[0]?.id && !confirmDisc && (
                         <button onClick={()=>setConfirmDisc(true)}
-                            title="Disconnect entire Plaid bank connection — stops $0.50/mo fee"
+                            title="Disconnect entire Plaid bank connection"
                             style={{ background:'none', border:'1px solid rgba(239,68,68,0.25)', borderRadius:20, color:'rgba(239,68,68,0.6)', fontSize:10, fontWeight:800, padding:'3px 10px', cursor:'pointer', whiteSpace:'nowrap' }}>
                             Unsync
                         </button>

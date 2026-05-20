@@ -160,7 +160,7 @@ function PageDataImport({ onNext, onBack, onSkip }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                     <span style={{ fontSize: 22 }}>🏦</span>
                     <div>
-                        <div style={{ fontSize: 14, fontWeight: 900, color: 'white' }}>Live Bank Sync via Plaid <Pill color="#10b981">$0.50/account/mo</Pill></div>
+                        <div style={{ fontSize: 14, fontWeight: 900, color: 'white' }}>Live Bank Sync via Plaid <Pill color="#10b981">from $4.99/mo</Pill></div>
                         <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 600, marginTop: 2 }}>Connect your bank once — transactions sync automatically</div>
                     </div>
                 </div>

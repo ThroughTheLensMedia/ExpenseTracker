@@ -1,6 +1,6 @@
 {
-  "version": "7.8.26",
+  "version": "7.8.27",
   "release_date": "2026-05-20",
   "codename": "Lumière Ledger",
-  "notes": "v7.8.26: Remove emoji icons from account labels in transaction ledger."
+  "notes": "v7.8.27: Fix Stripe webhook signature verification — raw body now received correctly. Remove stale $0.50/account billing copy."
 }
