@@ -84,6 +84,7 @@ Source of truth for all sprint work, security status, and product phases.
 | v7.8.2 | Stale-while-revalidate cache for accounts + Plaid balances — instant page loads |
 | v7.8.3 | Live Sync dedup fix, Plaid Linked back in type groups, Unlink button per CSV account |
 | v7.8.4 | `plaid_account_id` sync + per-sub-account filtering, savings account type + filter, mailer fallback fix |
+| v7.8.5 | Accounts page filter fix — Live Sync section no longer disappears when type filter (Credit/Checking/Savings/Manual) is active |
 
 ---
 

@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.5', date: 'MAY 19, 2026', color: '#38bdf8', items: [
+        '<strong>Accounts Filter Fix:</strong> The Credit / Checking / Savings / Manual filter pills now work correctly. The 🔗 Live Sync section stays visible regardless of which filter is active — it\'s always shown when a Plaid connection exists. Type filters apply only to the grouped account sections below it.',
+    ]},
     { version: '7.8.4', date: 'MAY 19, 2026', color: '#a78bfa', items: [
         '<strong>Per-Sub-Account Transaction Filtering:</strong> Click any Plaid sub-account (Savings, Photography, Checking, USAA CC, etc.) and the Transaction Ledger opens filtered to <em>only that account\'s transactions</em>. A green "Filtered to: [Account Name]" badge confirms the active filter with a clear ✕ to remove it. Requires one-time DB migration — see notes.',
         '<strong>Savings Account Type:</strong> Savings accounts are now detected as their own type and appear in a dedicated 💰 Savings group on the Accounts page. New "💰 Savings" filter pill added to quickly isolate savings accounts.',

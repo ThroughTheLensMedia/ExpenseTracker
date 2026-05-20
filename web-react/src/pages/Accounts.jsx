@@ -534,25 +534,25 @@ export default function Accounts() {
     const allAccounts = data?.accounts || [];
     const plaidConns  = data?.plaid_connections || [];
 
-    // Sort + filter
-    const visibleAccounts = sortAccounts(
-        allAccounts.filter(a => a.visible && (filterType === 'all' || a.account_type === filterType)),
-        sortKey
-    );
-    const hiddenAccounts = sortAccounts(
-        allAccounts.filter(a => !a.visible),
-        sortKey
-    );
+    // All visible accounts sorted — Live Sync section ignores filterType
+    const allVisible = sortAccounts(allAccounts.filter(a => a.visible), sortKey);
+
+    const hiddenAccounts = sortAccounts(allAccounts.filter(a => !a.visible), sortKey);
 
     // Live Sync section: ONLY actual Plaid connections (source === 'plaid').
     // has_plaid_link accounts are CSV sources that were cross-matched — they go in their type groups.
-    const syncedAccounts = visibleAccounts.filter(a => a.source === 'plaid');
+    // Always derived from allVisible so filterType never hides the Live Sync card.
+    const syncedAccounts = allVisible.filter(a => a.source === 'plaid');
     const syncedKeys     = new Set(syncedAccounts.map(a => a.source));
 
-    // Remaining accounts grouped by type (exclude already shown in synced section)
+    // Type groups: apply filterType only here, exclude synced sources
+    const filteredVisible = filterType === 'all'
+        ? allVisible
+        : allVisible.filter(a => a.account_type === filterType);
+
     const grouped = {};
     for (const g of TYPE_GROUPS) {
-        grouped[g.key] = visibleAccounts
+        grouped[g.key] = filteredVisible
             .filter(a => a.account_type === g.key && !syncedKeys.has(a.source));
     }
 

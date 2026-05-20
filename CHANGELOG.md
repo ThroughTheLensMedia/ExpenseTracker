@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.5] — 2026-05-19
+
+### Fix Accounts page type filter pills
+
+#### Fixed
+- **`web-react/src/pages/Accounts.jsx`** — Live Sync (Plaid) section was disappearing when Credit / Checking / Savings filter was active. Root cause: `syncedAccounts` was derived from the already-filtered `visibleAccounts`, so the Plaid card (account_type='checking') was excluded when filtering for Credit. Fixed by computing `syncedAccounts` from `allVisible` (all visible accounts, no type filter). `filterType` now applies only to the type-grouped sections. Live Sync section is always rendered when a Plaid connection exists regardless of active filter.
+
+---
+
 ## [v7.8.4] — 2026-05-19
 
 ### plaid_account_id per-sub-account filtering; savings type; mailer fixes
