@@ -8,7 +8,7 @@ const PLAN_LABELS = {
     beta_tester:    { label: 'Beta Access',        color: '#a78bfa' },
     lifetime:       { label: 'Lifetime Free',      color: '#10b981' },  // true lifetime — no expiry
     sync_monthly:   { label: 'Sync — $4.99/mo',   color: '#38bdf8' },
-    sync_annual:    { label: 'Sync — $47.90/yr',  color: '#38bdf8' },
+    sync_annual:    { label: 'Sync — $49.99/yr',  color: '#38bdf8' },
     core_monthly:   { label: 'Core — $9/mo',       color: '#f97316' },
     core_annual:    { label: 'Core — $86/yr',      color: '#f97316' },
     studio_monthly: { label: 'Studio — $19/mo',    color: '#a78bfa' },
@@ -153,7 +153,10 @@ export default function ProfileTab({ settings, setSettings, onReload }) {
                         {/* Sync */}
                         <div style={{ padding: '16px 18px', borderRadius: '12px', border: '1px solid rgba(56,189,248,0.2)', background: 'rgba(56,189,248,0.04)' }}>
                             <div style={{ fontWeight: 700, color: '#38bdf8', marginBottom: '4px' }}>Sync</div>
-                            <div style={{ fontSize: '20px', fontWeight: 800, color: '#fff', marginBottom: '6px' }}>{billingAnnual ? '$3.99' : '$4.99'}<span style={{ fontSize: '11px', fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>/mo</span></div>
+                            <div style={{ fontSize: '20px', fontWeight: 800, color: '#fff', marginBottom: '6px' }}>
+                                {billingAnnual ? '$49.99' : '$4.99'}<span style={{ fontSize: '11px', fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>{billingAnnual ? '/yr' : '/mo'}</span>
+                                {billingAnnual && <span style={{ fontSize: '10px', fontWeight: 700, color: 'rgba(56,189,248,0.6)', marginLeft: '6px' }}>Save 20%</span>}
+                            </div>
                             <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', marginBottom: '14px', lineHeight: 1.5 }}>Live bank sync via Plaid · All accounts included · No per-account fees</div>
                             <button onClick={() => handleUpgrade(billingAnnual ? 'sync_annual' : 'sync_monthly')} disabled={!!billingLoading} className="btn primary" style={{ width: '100%', padding: '9px', fontSize: '12px', opacity: billingLoading ? 0.6 : 1 }}>
                                 {billingLoading === (billingAnnual ? 'sync_annual' : 'sync_monthly') ? 'Loading...' : 'Get Sync'}

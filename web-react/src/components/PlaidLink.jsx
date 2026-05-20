@@ -170,14 +170,13 @@ export default function PlaidLink({ onSync, autoConnect = false }) {
             {/* Inline billing gate — shown when user has no payment method on file */}
             {billingGate && (
                 <div style={{ padding: '24px 28px', background: 'rgba(249,115,22,0.05)', borderRadius: '16px', border: '1px solid rgba(249,115,22,0.25)' }}>
-                    <div style={{ fontWeight: 950, fontSize: '13px', color: '#f97316', marginBottom: '10px', letterSpacing: '0.05em' }}>💳 PAYMENT METHOD REQUIRED</div>
+                    <div style={{ fontWeight: 950, fontSize: '13px', color: '#f97316', marginBottom: '10px', letterSpacing: '0.05em' }}>💳 SUBSCRIPTION REQUIRED FOR LIVE BANK SYNC</div>
                     <p style={{ margin: '0 0 6px', fontSize: '13px', color: 'rgba(255,255,255,0.7)', lineHeight: 1.6 }}>
-                        Live Bank Sync adds <strong>$0.50/month per connected account</strong> billed through your Lumière Ledger subscription.
-                        A payment method must be on file before connecting.
+                        Live Bank Sync requires an active Lumière Ledger subscription. The <strong>Sync plan ($4.99/mo)</strong> is a flat fee — all connected accounts included, no per-account charges.
                     </p>
                     <p style={{ margin: '0 0 18px', fontSize: '12px', color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>
                         This is separate from the Stripe key in your Business Profile — that key is for collecting invoice payments from your clients.
-                        Choose a plan below to add a billing method, then come back to connect your bank.
+                        Subscribe below, then come back to connect your bank.
                     </p>
 
                     {/* Monthly / Annual toggle */}
@@ -202,13 +201,13 @@ export default function PlaidLink({ onSync, autoConnect = false }) {
                             </div>
                             <div style={{ textAlign: 'right', flexShrink: 0 }}>
                                 <div style={{ fontSize: '24px', fontWeight: 950, color: '#38bdf8', lineHeight: 1 }}>
-                                    {billingAnnual ? '$3.99' : '$4.99'}<span style={{ fontSize: '12px', fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>/mo</span>
+                                    {billingAnnual ? '$49.99' : '$4.99'}<span style={{ fontSize: '12px', fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>{billingAnnual ? '/yr' : '/mo'}</span>
                                 </div>
-                                {billingAnnual && <div style={{ fontSize: '10px', color: 'rgba(56,189,248,0.6)', marginTop: '2px' }}>Save 20% annually</div>}
+                                {billingAnnual && <div style={{ fontSize: '10px', color: 'rgba(56,189,248,0.6)', marginTop: '2px' }}>Save 20% vs monthly</div>}
                             </div>
                         </div>
                         <button onClick={() => handleUpgrade(billingAnnual ? 'sync_annual' : 'sync_monthly')} disabled={!!billingLoading} className="btn primary" style={{ width: '100%', padding: '11px', fontSize: '14px', marginTop: '14px', opacity: billingLoading ? 0.6 : 1, background: '#38bdf8', color: '#0f172a' }}>
-                            {billingLoading === (billingAnnual ? 'sync_annual' : 'sync_monthly') ? 'Loading...' : `Subscribe to Sync — ${billingAnnual ? '$3.99' : '$4.99'}/mo`}
+                            {billingLoading === (billingAnnual ? 'sync_annual' : 'sync_monthly') ? 'Loading...' : `Subscribe to Sync — ${billingAnnual ? '$49.99/yr' : '$4.99/mo'}`}
                         </button>
                     </div>
                     <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', textAlign: 'center', marginBottom: '10px', fontWeight: 700, letterSpacing: '0.05em' }}>— OR UNLOCK MORE —</div>
