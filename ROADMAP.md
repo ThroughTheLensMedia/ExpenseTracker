@@ -37,10 +37,10 @@ Source of truth for all sprint work, security status, and product phases.
 
 | Item | File | Notes |
 |------|------|-------|
-| **Run DB migration 001** | Supabase SQL Editor | `api/migrations/001_plaid_account_id.sql` — adds `plaid_account_id` column + index. Run once, then trigger a manual Plaid sync to backfill. |
+| ~~**Run DB migration 001**~~ | ~~Supabase SQL Editor~~ | ✅ Done 2026-05-20 — `plaid_account_id` column + index live. |
 | **Stripe — end-to-end test** | Stripe CLI | Checkout → webhook fires → `plan_type` updates in Supabase → `UpgradeGate` drops. Use Stripe test card. Never verified live. |
-| **Supabase schema migration** | Supabase SQL Editor | `ALTER TABLE user_subscriptions ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT, ADD COLUMN IF NOT EXISTS current_period_end TIMESTAMPTZ` — required for Stripe webhook to write correctly. |
-| **Grandfathered users `admin_tier` fix** | Supabase SQL Editor | `UPDATE user_subscriptions SET admin_tier = 'studio' WHERE plan_type IN ('free_beta','lifetime') AND admin_tier IS NULL` — grants Studio limits to all beta users. Run now. |
+| ~~**Supabase schema migration**~~ | ~~Supabase SQL Editor~~ | ✅ Done 2026-05-20 — `stripe_subscription_id` + `current_period_end` added to `user_subscriptions`. |
+| ~~**Grandfathered users `admin_tier` fix**~~ | ~~Supabase SQL Editor~~ | ✅ Done 2026-05-20 — all beta/lifetime users granted Studio admin_tier. |
 | ~~**Sync tier Stripe price IDs**~~ | ~~Stripe + Vercel~~ | ✅ Done — Sync product created in Stripe. `VITE_STRIPE_PRICE_SYNC_*` and `STRIPE_PRICE_SYNC_*` set in Vercel. |
 
 ---
