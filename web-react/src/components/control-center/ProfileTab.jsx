@@ -132,16 +132,16 @@ export default function ProfileTab({ settings, setSettings, onReload }) {
                 </div>
                 {hasPortal && (
                     <button onClick={handleManageBilling} disabled={billingLoading === 'portal'} className="btn secondary" style={{ padding: '10px 22px', fontSize: '13px', opacity: billingLoading === 'portal' ? 0.6 : 1 }}>
-                        {billingLoading === 'portal' ? 'Loading...' : '⚙ Manage Billing'}
+                        {billingLoading === 'portal' ? 'Loading...' : 'Manage Billing'}
                     </button>
                 )}
             </div>
 
-            {/* Upgrade cards — hide for lifetime (already grandfathered to Studio) and paid/admin; show for beta + free */}
-            {subscriptionReady && !isPaid && !isLifetime && !adminTier && (
+            {/* Upgrade cards — free/beta/sync see upgrade options; lifetime and core+ and admin-granted see nothing */}
+            {subscriptionReady && !isLifetime && !adminTier && tier !== 'core' && tier !== 'studio' && (
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '20px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
-                        <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>Upgrade your plan</div>
+                        <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>{tier === 'sync' ? 'Upgrade your plan' : 'Upgrade your plan'}</div>
                         <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '3px' }}>
                             <button onClick={() => setBillingAnnual(false)} style={{ padding: '5px 14px', fontSize: '12px', fontWeight: 700, borderRadius: '6px', border: 'none', cursor: 'pointer', background: !billingAnnual ? 'rgba(255,255,255,0.1)' : 'transparent', color: !billingAnnual ? '#fff' : 'rgba(255,255,255,0.4)' }}>Monthly</button>
                             <button onClick={() => setBillingAnnual(true)} style={{ padding: '5px 14px', fontSize: '12px', fontWeight: 700, borderRadius: '6px', border: 'none', cursor: 'pointer', background: billingAnnual ? 'rgba(56,189,248,0.15)' : 'transparent', color: billingAnnual ? '#38bdf8' : 'rgba(255,255,255,0.4)' }}>
@@ -149,9 +149,9 @@ export default function ProfileTab({ settings, setSettings, onReload }) {
                             </button>
                         </div>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
-                        {/* Sync */}
-                        <div style={{ padding: '16px 18px', borderRadius: '12px', border: '1px solid rgba(56,189,248,0.2)', background: 'rgba(56,189,248,0.04)' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: tier === 'sync' ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '12px' }}>
+                        {/* Sync — hidden if already on Sync */}
+                        {tier !== 'sync' && <div style={{ padding: '16px 18px', borderRadius: '12px', border: '1px solid rgba(56,189,248,0.2)', background: 'rgba(56,189,248,0.04)' }}>
                             <div style={{ fontWeight: 700, color: '#38bdf8', marginBottom: '4px' }}>Sync</div>
                             <div style={{ fontSize: '20px', fontWeight: 800, color: '#fff', marginBottom: '6px' }}>
                                 {billingAnnual ? '$49.99' : '$4.99'}<span style={{ fontSize: '11px', fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>{billingAnnual ? '/yr' : '/mo'}</span>
@@ -161,7 +161,7 @@ export default function ProfileTab({ settings, setSettings, onReload }) {
                             <button onClick={() => handleUpgrade(billingAnnual ? 'sync_annual' : 'sync_monthly')} disabled={!!billingLoading} className="btn primary" style={{ width: '100%', padding: '9px', fontSize: '12px', opacity: billingLoading ? 0.6 : 1 }}>
                                 {billingLoading === (billingAnnual ? 'sync_annual' : 'sync_monthly') ? 'Loading...' : 'Get Sync'}
                             </button>
-                        </div>
+                        </div>}
                         {/* Core */}
                         <div style={{ padding: '16px 18px', borderRadius: '12px', border: '1px solid rgba(249,115,22,0.25)', background: 'rgba(249,115,22,0.04)' }}>
                             <div style={{ fontWeight: 700, color: '#f97316', marginBottom: '4px' }}>Core</div>

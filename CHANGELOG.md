@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.28] — 2026-05-20
+
+### Billing section: Sync users see upgrade path; remove emoji from button
+
+#### Changed
+- **`web-react/src/components/control-center/ProfileTab.jsx`** — Upgrade cards now show for Sync-tier users (Core + Studio only — Sync card hidden since they have it). Grid switches to 2-col for Sync users. Remove emoji from "Manage Billing" button.
+
+---
+
 ## [v7.8.27] — 2026-05-20
 
 ### Fix Stripe webhook signature verification; remove stale $0.50 billing copy

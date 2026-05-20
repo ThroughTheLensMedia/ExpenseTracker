@@ -1,6 +1,6 @@
 {
-  "version": "7.8.27",
+  "version": "7.8.28",
   "release_date": "2026-05-20",
   "codename": "Lumière Ledger",
-  "notes": "v7.8.27: Fix Stripe webhook signature verification — raw body now received correctly. Remove stale $0.50/account billing copy."
+  "notes": "v7.8.28: Sync users now see Core/Studio upgrade cards in billing section. Remove emoji from Manage Billing button."
 }
