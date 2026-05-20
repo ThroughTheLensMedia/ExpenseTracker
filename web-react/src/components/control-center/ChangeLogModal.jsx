@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.30', date: 'MAY 20, 2026', color: '#38bdf8', items: [
+        '<strong>Account Merging:</strong> Duplicate CSV accounts (e.g. same bank exported twice under different names) can now be merged into a single card. Click "Merge" on any CSV account and pick the target — the source account is absorbed and hidden. The target card shows which accounts are merged into it. Unmerge anytime to restore as standalone.',
+    ]},
     { version: '7.8.25', date: 'MAY 20, 2026', color: '#10b981', items: [
         '<strong>Transaction Date Column Fixed:</strong> The date column no longer wraps to two lines in the transaction ledger.',
         '<strong>Plaid Account Name Repair — Reliability Fix:</strong> Previous version relied on transaction sync response for account names (empty when no new transactions). Now fetches account names directly before syncing — repair is guaranteed on every sync.',

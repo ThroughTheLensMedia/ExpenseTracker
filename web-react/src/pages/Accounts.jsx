@@ -275,7 +275,7 @@ function BalanceRows({ source, plaidConnections, filterType = 'all' }) {
 }
 
 // ─── Account card ──────────────────────────────────────────────────────────────
-function AccountCard({ acct, totalMonth, plaidConnections, onAliasChange, onSync, syncing, onDisconnect, filterType = 'all' }) {
+function AccountCard({ acct, totalMonth, plaidConnections, onAliasChange, onSync, syncing, onDisconnect, filterType = 'all', mergedFrom = [], allMergeTargets = [] }) {
     const navigate  = useNavigate();
     const meta      = getSourceMeta(acct.source);
     const connType  = getConnType(acct);
@@ -296,6 +296,8 @@ function AccountCard({ acct, totalMonth, plaidConnections, onAliasChange, onSync
     const [disconnecting,  setDisconnecting]  = useState(false);
     const [confirmUnlink,  setConfirmUnlink]  = useState(false);
     const [unlinking,      setUnlinking]      = useState(false);
+    const [mergeSaving,    setMergeSaving]    = useState(false);
+    const [showMerge,      setShowMerge]      = useState(false);
 
     useEffect(() => { setEditVal(acct.display_name || defaultLabel); }, [acct.display_name, defaultLabel]);
 
@@ -330,9 +332,26 @@ function AccountCard({ acct, totalMonth, plaidConnections, onAliasChange, onSync
         setUnlinking(true);
         try {
             await apiDelete(`/plaid/link/${acct.source}`);
-            // Optimistically clear the link flag locally
             onAliasChange(acct.source, { has_plaid_link: false });
         } catch(e){ console.error(e); } finally { setUnlinking(false); setConfirmUnlink(false); }
+    }
+
+    async function handleMerge(targetSource) {
+        if (!targetSource) return;
+        setMergeSaving(true);
+        try {
+            await apiPut('/accounts/alias', { source_key: acct.source, linked_source: targetSource, visible: false });
+            onAliasChange(acct.source, { linked_source: targetSource, visible: false });
+            setShowMerge(false);
+        } catch(e){ console.error(e); } finally { setMergeSaving(false); }
+    }
+
+    async function handleUnmerge() {
+        setMergeSaving(true);
+        try {
+            await apiPut('/accounts/alias', { source_key: acct.source, linked_source: null, visible: true });
+            onAliasChange(acct.source, { linked_source: null, visible: true });
+        } catch(e){ console.error(e); } finally { setMergeSaving(false); }
     }
 
     const displayLabel = acct.display_name || defaultLabel;
@@ -437,12 +456,63 @@ function AccountCard({ acct, totalMonth, plaidConnections, onAliasChange, onSync
                         </div>
                     )}
 
+                    {/* Merge — CSV accounts only, not Plaid, not already merged */}
+                    {!isPlaid && !isLinked && acct.account_type !== 'manual' && !acct.linked_source && allMergeTargets.length > 0 && (
+                        showMerge ? (
+                            <div style={{ display:'flex', gap:4, alignItems:'center' }}>
+                                <select autoFocus defaultValue=""
+                                    onChange={e => handleMerge(e.target.value)}
+                                    disabled={mergeSaving}
+                                    style={{ background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.2)', borderRadius:8, color:'white', fontSize:11, fontWeight:700, padding:'4px 8px', cursor:'pointer', outline:'none' }}>
+                                    <option value="" disabled>Merge into…</option>
+                                    {allMergeTargets.filter(t => t.source !== acct.source).map(t => (
+                                        <option key={t.source} value={t.source}>{t.display_name || getSourceMeta(t.source).label}</option>
+                                    ))}
+                                </select>
+                                <button onClick={()=>setShowMerge(false)}
+                                    style={{ background:'none', border:'none', color:'rgba(255,255,255,0.3)', fontSize:14, cursor:'pointer', padding:'2px 4px' }}>✕</button>
+                            </div>
+                        ) : (
+                            <button onClick={()=>setShowMerge(true)}
+                                title="Merge this account into another (hides it, keeps transactions)"
+                                style={{ background:'none', border:'1px solid rgba(255,255,255,0.12)', borderRadius:20, color:'rgba(255,255,255,0.35)', fontSize:10, fontWeight:800, padding:'3px 10px', cursor:'pointer', whiteSpace:'nowrap' }}>
+                                Merge
+                            </button>
+                        )
+                    )}
+
+                    {/* Merged-into badge — show when this account is absorbed into another */}
+                    {acct.linked_source && (
+                        <div style={{ display:'flex', gap:4, alignItems:'center' }}>
+                            <span style={{ fontSize:10, fontWeight:800, color:'rgba(255,255,255,0.4)', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:20, padding:'3px 10px', whiteSpace:'nowrap' }}>
+                                Merged → {allMergeTargets.find(t=>t.source===acct.linked_source)?.display_name || getSourceMeta(acct.linked_source).label}
+                            </span>
+                            <button onClick={handleUnmerge} disabled={mergeSaving}
+                                title="Remove merge — restore as standalone account"
+                                style={{ background:'none', border:'1px solid rgba(255,255,255,0.12)', borderRadius:20, color:'rgba(255,255,255,0.35)', fontSize:10, fontWeight:800, padding:'3px 10px', cursor:'pointer', whiteSpace:'nowrap' }}>
+                                {mergeSaving ? '…' : 'Unmerge'}
+                            </button>
+                        </div>
+                    )}
+
                     <button onClick={toggleVisible} title={acct.visible?'Hide':'Show'}
                         style={{ background:'none', border:'none', cursor:'pointer', fontSize:15, padding:'2px 4px', opacity:acct.visible?0.6:0.25 }}>
                         {acct.visible?'👁':'🙈'}
                     </button>
                 </div>
             </div>
+
+            {/* Merged-from badge — accounts that have been absorbed into this one */}
+            {mergedFrom.length > 0 && (
+                <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap', marginBottom:10 }}>
+                    <span style={{ fontSize:10, fontWeight:700, color:'rgba(255,255,255,0.3)' }}>Includes:</span>
+                    {mergedFrom.map(m => (
+                        <span key={m.source} style={{ fontSize:10, fontWeight:800, color:'rgba(255,255,255,0.45)', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:20, padding:'2px 9px' }}>
+                            {m.display_name || getSourceMeta(m.source).label}
+                        </span>
+                    ))}
+                </div>
+            )}
 
             {/* Plaid live balances */}
             {isPlaid && <BalanceRows source={acct.source} plaidConnections={plaidConnections} filterType={filterType} />}
@@ -510,6 +580,7 @@ export default function Accounts() {
     const [refreshing, setRefreshing] = useState(false);
     const [error,      setError]      = useState(null);
     const [showHidden, setShowHidden] = useState(false);
+    const [showMerged, setShowMerged] = useState(false);
     const [sortKey,    setSortKey]    = useState('spend_month');
     const [filterType, setFilterType] = useState('all'); // all | credit | checking | manual
     const [syncing,    setSyncing]    = useState(false);
@@ -553,14 +624,29 @@ export default function Accounts() {
     const allAccounts = data?.accounts || [];
     const plaidConns  = data?.plaid_connections || [];
 
-    // All visible accounts sorted — Live Sync section ignores filterType
-    const allVisible = sortAccounts(allAccounts.filter(a => a.visible), sortKey);
+    // Build merge maps
+    // mergedInto[targetSource] = [accounts that have been merged into target]
+    const mergedInto = {};
+    for (const a of allAccounts) {
+        if (a.linked_source) {
+            if (!mergedInto[a.linked_source]) mergedInto[a.linked_source] = [];
+            mergedInto[a.linked_source].push(a);
+        }
+    }
+    // All mergeable targets = non-plaid, non-manual accounts that are not themselves merged
+    const allMergeTargets = allAccounts.filter(a => a.source !== 'plaid' && a.account_type !== 'manual' && !a.linked_source);
 
-    const hiddenAccounts = sortAccounts(allAccounts.filter(a => !a.visible), sortKey);
+    // All visible accounts sorted — Live Sync section ignores filterType
+    // Merged accounts (linked_source set) are excluded from the main sorted list
+    const allVisible = sortAccounts(allAccounts.filter(a => a.visible && !a.linked_source), sortKey);
+
+    // Hidden: accounts explicitly hidden (not counting merged-away accounts)
+    const hiddenAccounts = sortAccounts(allAccounts.filter(a => !a.visible && !a.linked_source), sortKey);
+
+    // Merged accounts (for a collapsed section)
+    const mergedAccounts = sortAccounts(allAccounts.filter(a => !!a.linked_source), sortKey);
 
     // Live Sync section: ONLY actual Plaid connections (source === 'plaid').
-    // has_plaid_link accounts are CSV sources that were cross-matched — they go in their type groups.
-    // Always derived from allVisible so filterType never hides the Live Sync card.
     const syncedAccounts = allVisible.filter(a => a.source === 'plaid');
     const syncedKeys     = new Set(syncedAccounts.map(a => a.source));
 
@@ -668,6 +754,8 @@ export default function Accounts() {
                                 syncing={syncing}
                                 onDisconnect={() => load(false)}
                                 filterType={filterType}
+                                mergedFrom={mergedInto[acct.source] || []}
+                                allMergeTargets={allMergeTargets}
                             />
                         ))}
                     </div>
@@ -692,6 +780,8 @@ export default function Accounts() {
                                     onSync={handleSync}
                                     syncing={syncing}
                                     onDisconnect={() => load(false)}
+                                    mergedFrom={mergedInto[acct.source] || []}
+                                    allMergeTargets={allMergeTargets}
                                 />
                             ))}
                         </div>
@@ -699,9 +789,27 @@ export default function Accounts() {
                 );
             })}
 
+            {/* Merged accounts — collapsed, shows accounts absorbed into other cards */}
+            {mergedAccounts.length > 0 && (
+                <div style={{ marginTop:16 }}>
+                    <button onClick={()=>setShowMerged(v=>!v)}
+                        style={{ background:'none', border:'1px solid rgba(255,255,255,0.08)', borderRadius:10, padding:'7px 14px', color:'rgba(255,255,255,0.3)', fontSize:11, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
+                        <span>{showMerged?'▲':'▼'}</span>
+                        {showMerged ? 'Hide merged' : `${mergedAccounts.length} merged account${mergedAccounts.length===1?'':'s'} (absorbed into another)`}
+                    </button>
+                    {showMerged && (
+                        <div style={{ display:'flex', flexDirection:'column', gap:8, marginTop:10 }}>
+                            {mergedAccounts.map(acct => (
+                                <AccountCard key={acct.source} acct={acct} totalMonth={totalMonth} plaidConnections={null} onAliasChange={handleAliasChange} onSync={handleSync} syncing={syncing} onDisconnect={() => load(false)} mergedFrom={[]} allMergeTargets={allMergeTargets} />
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
             {/* Hidden accounts */}
             {hiddenAccounts.length > 0 && (
-                <div style={{ marginTop:24 }}>
+                <div style={{ marginTop:hiddenAccounts.length>0&&mergedAccounts.length>0?8:24 }}>
                     <button onClick={()=>setShowHidden(v=>!v)}
                         style={{ background:'none', border:'1px solid rgba(255,255,255,0.1)', borderRadius:10, padding:'8px 16px', color:'rgba(255,255,255,0.4)', fontSize:12, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
                         <span>{showHidden?'▲':'▼'}</span>
@@ -710,7 +818,7 @@ export default function Accounts() {
                     {showHidden && (
                         <div style={{ display:'flex', flexDirection:'column', gap:8, marginTop:10 }}>
                             {hiddenAccounts.map(acct => (
-                                <AccountCard key={acct.source} acct={acct} totalMonth={totalMonth} plaidConnections={acct.source==='plaid'?plaidConns:null} onAliasChange={handleAliasChange} onSync={handleSync} syncing={syncing} onDisconnect={() => load(false)} />
+                                <AccountCard key={acct.source} acct={acct} totalMonth={totalMonth} plaidConnections={acct.source==='plaid'?plaidConns:null} onAliasChange={handleAliasChange} onSync={handleSync} syncing={syncing} onDisconnect={() => load(false)} mergedFrom={mergedInto[acct.source]||[]} allMergeTargets={allMergeTargets} />
                             ))}
                         </div>
                     )}

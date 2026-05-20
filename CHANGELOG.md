@@ -5,6 +5,21 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.30] — 2026-05-20
+
+### Account merging — absorb duplicate CSV accounts into a single card
+
+#### Added
+- **`web-react/src/pages/Accounts.jsx`** — "Merge" button on CSV account cards (non-Plaid, non-manual). Dropdown lists all other CSV sources as merge targets. Merged accounts are absorbed (hidden) into the target card. Target card shows "Includes: X, Y" badge. Unmerge button restores standalone. Merged accounts collapsed in "X merged accounts (absorbed into another)" section.
+- **`api/routes/accounts.js`** — `linked_source` field added to alias select, aliasMap, and row output. PUT /alias route now accepts `linked_source`. Merged accounts excluded from page-level spending totals to prevent double-counting.
+
+#### Migration required
+```sql
+ALTER TABLE account_aliases ADD COLUMN IF NOT EXISTS linked_source TEXT;
+```
+
+---
+
 ## [v7.8.29] — 2026-05-20
 
 ### Bank Import page emoji cleanup

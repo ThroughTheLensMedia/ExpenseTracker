@@ -41,7 +41,7 @@ router.get('/summary', async (req, res) => {
                 .order('expense_date', { ascending: false }),
             req.sb
                 .from('account_aliases')
-                .select('source_key, display_name, visible')
+                .select('source_key, display_name, visible, linked_source')
                 .eq('user_id', req.user.id)
                 .then(r => r).catch(() => ({ data: [] })),
             req.sb
@@ -57,7 +57,7 @@ router.get('/summary', async (req, res) => {
         // Alias lookup
         const aliasMap = {};
         for (const a of (aliasRes.data || [])) {
-            aliasMap[a.source_key] = { display_name: a.display_name, visible: a.visible };
+            aliasMap[a.source_key] = { display_name: a.display_name, visible: a.visible, linked_source: a.linked_source || null };
         }
 
         // Build per-source aggregates
@@ -112,14 +112,16 @@ router.get('/summary', async (req, res) => {
             const alias = aliasMap[acct.source] || {};
             return {
                 ...acct,
-                display_name: alias.display_name || null,
-                visible:      alias.visible !== false,
+                display_name:  alias.display_name  || null,
+                visible:       alias.visible !== false,
+                linked_source: alias.linked_source  || null,
             };
         });
 
         // Page-level totals — visible accounts, no double-counting:
-        // skip 'plaid' source rows from totals since linked CSV rows already count
-        const visibleForTotals = rows.filter(a => a.visible && a.source !== 'plaid');
+        // skip 'plaid' source rows (linked CSV rows already count)
+        // skip merged accounts (linked_source set = absorbed into another card)
+        const visibleForTotals = rows.filter(a => a.visible && a.source !== 'plaid' && !a.linked_source);
         const totalMonthCents  = visibleForTotals.reduce((s, a) => s + a.this_month_cents, 0);
         let checkingCents = 0, creditCents = 0;
         for (const a of visibleForTotals) {
@@ -148,24 +150,25 @@ router.get('/summary', async (req, res) => {
 // ─── PUT /api/accounts/alias ──────────────────────────────────────────────────
 router.put('/alias', async (req, res) => {
     try {
-        const { source_key, display_name, visible } = req.body || {};
+        const { source_key, display_name, visible, linked_source } = req.body || {};
         if (!source_key || typeof source_key !== 'string') {
             return res.status(400).json({ error: 'source_key is required' });
         }
 
         const { data: existing } = await req.sb
             .from('account_aliases')
-            .select('display_name, visible')
+            .select('display_name, visible, linked_source')
             .eq('user_id', req.user.id)
             .eq('source_key', source_key)
             .maybeSingle();
 
         const payload = {
-            user_id:      req.user.id,
+            user_id:       req.user.id,
             source_key,
-            display_name: display_name !== undefined ? (display_name || null) : (existing?.display_name ?? null),
-            visible:      visible      !== undefined ? visible                : (existing?.visible      ?? true),
-            updated_at:   new Date().toISOString(),
+            display_name:  display_name  !== undefined ? (display_name  || null) : (existing?.display_name  ?? null),
+            visible:       visible        !== undefined ? visible                 : (existing?.visible        ?? true),
+            linked_source: linked_source  !== undefined ? (linked_source || null) : (existing?.linked_source  ?? null),
+            updated_at:    new Date().toISOString(),
         };
 
         const { error } = await req.sb
