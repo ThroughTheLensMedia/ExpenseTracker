@@ -422,7 +422,7 @@ export default function Transactions() {
                                     />
                                 </th>
                                 <th style={{ width: '45px' }}></th>
-                                <th onClick={() => handleSort('expense_date')} style={{ cursor: 'pointer', width: '9%' }}>Date<SortIcon col="expense_date" /></th>
+                                <th onClick={() => handleSort('expense_date')} style={{ cursor: 'pointer', width: '11%', whiteSpace: 'nowrap' }}>Date<SortIcon col="expense_date" /></th>
                                 <th onClick={() => handleSort('source')} style={{ cursor: 'pointer', width: '13%' }}>Account<SortIcon col="source" /></th>
                                 <th onClick={() => handleSort('vendor')} style={{ cursor: 'pointer', width: '27%' }}>Vendor<SortIcon col="vendor" /></th>
                                 <th onClick={() => handleSort('category')} style={{ cursor: 'pointer', width: '20%' }}>Category<SortIcon col="category" /></th>
@@ -440,7 +440,7 @@ export default function Transactions() {
                                             <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(r.id)} style={{ width: 'auto', cursor: 'pointer' }} onClick={e => e.stopPropagation()} />
                                         </td>
                                         <td><button className="btn secondary" style={{ fontSize: '11px', padding: '4px 8px' }} onClick={() => setEditingId(r.id)}>Edit</button></td>
-                                        <td style={{ opacity: 0.8 }}>{formatDate(r.expense_date)}</td>
+                                        <td style={{ opacity: 0.8, whiteSpace: 'nowrap' }}>{formatDate(r.expense_date)}</td>
                                         <td style={{ fontSize: '11px', fontWeight: 700 }}>{ACCOUNT_LABELS[r.source] || r.source || 'manual'}</td>
                                         <td style={{ fontWeight: 600 }} className="text-truncate" title={r.vendor}>{r.vendor}</td>
                                         <td className="text-truncate" style={{ opacity: 0.9 }} title={r.category}>{r.category || <span className="muted">—</span>}</td>

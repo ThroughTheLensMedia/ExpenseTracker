@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.25] — 2026-05-20
+
+### Fix Plaid account repair reliability + date column wrapping
+
+#### Changed
+- **`api/routes/plaid.js`** — Call `accountsGet` explicitly before the sync loop instead of relying on `transactionsSync` response accounts (which may be empty when no new transactions). Guarantees account name map is always populated for repair.
+- **`web-react/src/pages/Transactions.jsx`** — Date column `whiteSpace: nowrap` + widened to 11% to prevent date wrapping.
+
+---
+
 ## [v7.8.24] — 2026-05-20
 
 ### Fix Plaid transactions showing "Plaid" as account — use real account name

@@ -412,6 +412,18 @@ async function syncTransactions(sb, plaidClient, connection, userId) {
     let hasMore = true;
     const accountSourceMap = {}; // plaid account_id → readable source key
 
+    // Fetch account names upfront — accountsGet always returns accounts regardless of cursor state
+    try {
+        const acctAccess = await decrypt(connection.access_token);
+        const acctResp = await plaidClient.accountsGet({ access_token: acctAccess });
+        for (const acct of (acctResp.data.accounts || [])) {
+            accountSourceMap[acct.account_id] = makePlaidSourceKey(connection.institution_name, acct);
+        }
+        console.log(`[Plaid] Account map for ${connection.institution_name}:`, accountSourceMap);
+    } catch (err) {
+        console.warn('[Plaid] Could not fetch account names — will fall back to institution name:', err.message);
+    }
+
     while (hasMore) {
         // Decrypt access token for API call
         let access_token;
@@ -428,13 +440,6 @@ async function syncTransactions(sb, plaidClient, connection, userId) {
         });
 
         const { added: newTxns, modified: modTxns, removed: remTxns, next_cursor, has_more } = syncResp.data;
-
-        // Build account_id → source name map from response accounts
-        if (syncResp.data.accounts?.length) {
-            for (const acct of syncResp.data.accounts) {
-                accountSourceMap[acct.account_id] = makePlaidSourceKey(connection.institution_name, acct);
-            }
-        }
 
         // Process added transactions
         if (newTxns.length > 0) {

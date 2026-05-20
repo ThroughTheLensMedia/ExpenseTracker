@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.25', date: 'MAY 20, 2026', color: '#10b981', items: [
+        '<strong>Transaction Date Column Fixed:</strong> The date column no longer wraps to two lines in the transaction ledger.',
+        '<strong>Plaid Account Name Repair — Reliability Fix:</strong> Previous version relied on transaction sync response for account names (empty when no new transactions). Now fetches account names directly before syncing — repair is guaranteed on every sync.',
+    ]},
     { version: '7.8.24', date: 'MAY 20, 2026', color: '#10b981', items: [
         '<strong>Plaid Transactions — Real Account Names:</strong> Transactions imported via Plaid now show your actual account name (e.g. "USAA Checking", "USAA Credit Card") in the Account column instead of the generic "Plaid" label. Existing transactions are automatically corrected the next time you trigger a sync.',
     ]},

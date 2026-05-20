@@ -1,6 +1,6 @@
 {
-  "version": "7.8.24",
+  "version": "7.8.25",
   "release_date": "2026-05-20",
   "codename": "Lumière Ledger",
-  "notes": "v7.8.24: Plaid transactions now show real account name (e.g. USAA Checking) instead of generic Plaid label. Existing transactions auto-repaired on next sync."
+  "notes": "v7.8.25: Fix Plaid account name repair — use accountsGet for reliable account lookup. Fix date column wrapping in transaction ledger."
 }
