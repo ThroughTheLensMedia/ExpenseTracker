@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.7', date: 'MAY 19, 2026', color: '#f97316', items: [
+        '<strong>New User Onboarding Wizard:</strong> First-time login now triggers a 3-page guided setup. Page 1 introduces what Lumière Ledger does with a feature overview. Page 2 explains how to get transactions in (CSV import vs Plaid live sync, with step-by-step instructions for each). Page 3 is a 5-step checklist with direct navigation links — Business Profile, Bank Import, AI Key, Invoicing, and Docs.',
+        '<strong>Onboarding Trigger Fixed:</strong> The welcome wizard was never firing for new accounts because of a bug in the trigger condition. New users now see it reliably on first login.',
+    ]},
     { version: '7.8.6', date: 'MAY 19, 2026', color: '#10b981', items: [
         '<strong>Filters Now Filter Sub-Accounts:</strong> The Credit / Checking / Savings filter pills now filter the live sub-account rows inside the Live Sync card. Click Credit → only USAA CC shows. Click Savings → only Savings and Photography show. Click Checking → only checking accounts show. The filter is truly useful now even when all your accounts are in Live Sync.',
         '<strong>Account Plans Nav Fixed:</strong> The "Account Plans" link in the menu now correctly opens your billing and plan details instead of a blank admin panel.',

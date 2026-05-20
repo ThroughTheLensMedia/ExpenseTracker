@@ -157,7 +157,7 @@ function AppContent() {
   // --- Version Check Hook ---
   // DEPLOY SOP: update CURRENT_VERSION here AND web-react/public/version.json on every release.
   useEffect(() => {
-    const CURRENT_VERSION = "7.8.6";
+    const CURRENT_VERSION = "7.8.7";
 
     // What's New: show button if user hasn't dismissed it for this version
     const seen = localStorage.getItem('ll_whats_new_seen');
@@ -178,17 +178,20 @@ function AppContent() {
   }, [user]);
 
   // ── First-Run Onboarding Trigger ───────────────────────────────────────────
-  // Fires once subscription + settings are resolved for a new user who hasn't
-  // configured business name or Gemini key. localStorage flag prevents repeat.
+  // Fires once auth data is resolved. Uses subscriptionReady (not subscription)
+  // because new users have no subscription record yet — subscription stays null
+  // and the old guard caused the modal to never fire for brand-new accounts.
   useEffect(() => {
-    if (!user || !subscription || settings === null || settings === undefined) return;
+    if (!user || !subscriptionReady || settings === null || settings === undefined) return;
+    const dismissed = localStorage.getItem('ll_onboarding_dismissed');
+    if (dismissed) return;
     const flag = localStorage.getItem('ll_onboarding_done_' + user.id);
     if (flag) return;
-    const needsSetup = !settings.gemini_api_key || !settings.business_name;
-    if (needsSetup) setShowOnboarding(true);
-  }, [user?.id, subscription, settings]);
+    if (!settings.business_name) setShowOnboarding(true);
+  }, [user?.id, subscriptionReady, settings]);
 
   const handleOnboardingDismiss = () => {
+    localStorage.setItem('ll_onboarding_dismissed', '1');
     localStorage.setItem('ll_onboarding_done_' + user?.id, '1');
     setShowOnboarding(false);
   };
@@ -200,7 +203,7 @@ function AppContent() {
   };
 
   const handleWhatsNewClick = () => {
-    const CURRENT_VERSION = "7.8.6";
+    const CURRENT_VERSION = "7.8.7";
     localStorage.setItem('ll_whats_new_seen', CURRENT_VERSION);
     setShowWhatsNew(false);
     setShowChangelogModal(true);

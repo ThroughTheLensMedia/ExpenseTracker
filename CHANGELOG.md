@@ -5,6 +5,21 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.7] — 2026-05-19
+
+### New 3-page onboarding wizard; fix first-login trigger bug
+
+#### Fixed
+- **`web-react/src/App.jsx`** — Onboarding trigger now uses `subscriptionReady` instead of `subscription`. New users have no subscription record yet, so `subscription` was always null and the trigger returned early — onboarding never fired. `subscriptionReady` is set after the fetch attempt completes regardless of result. Also checks `ll_onboarding_dismissed` localStorage key for consistency with the component's dismiss handler.
+
+#### Added / Rewritten
+- **`web-react/src/components/OnboardingChecklist.jsx`** — Complete rewrite as a 3-page wizard:
+  - **Page 1 (Welcome):** Brand intro, 6 feature cards (Ledger, AI Brain, Invoicing, Plaid, Gear, Mileage). "Get Started" or "Skip" CTAs.
+  - **Page 2 (Data Import Guide):** Explains CSV Import (free) vs Plaid Live Sync ($0.50/account/mo) with step-by-step instructions for each. Prevents users from landing on an empty dashboard with no idea how to populate it.
+  - **Page 3 (Setup Checklist):** 5-step checklist split into "Start Here" (Profile + Import) and "When You're Ready" (AI Key, Invoicing, Docs). Per-step checkboxes + direct navigation links. Progress bar. Dismiss button label changes to "🎉 All set" when required steps are checked.
+
+---
+
 ## [v7.8.6] — 2026-05-19
 
 ### Filter pills filter Plaid sub-accounts; Account Plans nav fix

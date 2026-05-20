@@ -1,6 +1,6 @@
 {
-  "version": "7.8.6",
+  "version": "7.8.7",
   "release_date": "2026-05-19",
   "codename": "Lumière Ledger",
-  "notes": "v7.8.6: Filter pills now filter Plaid sub-accounts; Account Plans nav points to billing tab."
+  "notes": "v7.8.7: New 3-page onboarding wizard for first-time users; fix trigger bug that prevented it from firing."
 }
