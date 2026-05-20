@@ -269,11 +269,13 @@ function AccountCard({ acct, totalMonth, plaidConnections, onAliasChange, onSync
     const institutionName = isPlaid && plaidConnections?.[0]?.institution_name;
     const defaultLabel    = institutionName || acct.display_name || meta.label;
 
-    const [editing,      setEditing]      = useState(false);
-    const [editVal,      setEditVal]      = useState(defaultLabel);
-    const [saving,       setSaving]       = useState(false);
-    const [confirmDisc,  setConfirmDisc]  = useState(false);
-    const [disconnecting, setDisconnecting] = useState(false);
+    const [editing,        setEditing]        = useState(false);
+    const [editVal,        setEditVal]        = useState(defaultLabel);
+    const [saving,         setSaving]         = useState(false);
+    const [confirmDisc,    setConfirmDisc]    = useState(false);
+    const [disconnecting,  setDisconnecting]  = useState(false);
+    const [confirmUnlink,  setConfirmUnlink]  = useState(false);
+    const [unlinking,      setUnlinking]      = useState(false);
 
     useEffect(() => { setEditVal(acct.display_name || defaultLabel); }, [acct.display_name, defaultLabel]);
 
@@ -302,6 +304,15 @@ function AccountCard({ acct, totalMonth, plaidConnections, onAliasChange, onSync
             await apiDelete(`/plaid/accounts/${plaidConnections[0].id}`);
             onDisconnect?.();
         } catch(e){ console.error(e); } finally { setDisconnecting(false); setConfirmDisc(false); }
+    }
+
+    async function handleUnlink() {
+        setUnlinking(true);
+        try {
+            await apiDelete(`/plaid/link/${acct.source}`);
+            // Optimistically clear the link flag locally
+            onAliasChange(acct.source, { has_plaid_link: false });
+        } catch(e){ console.error(e); } finally { setUnlinking(false); setConfirmUnlink(false); }
     }
 
     const displayLabel = acct.display_name || defaultLabel;
@@ -347,7 +358,17 @@ function AccountCard({ acct, totalMonth, plaidConnections, onAliasChange, onSync
                 {/* Badges + controls */}
                 <div style={{ display:'flex', gap:6, alignItems:'center', flexWrap:'wrap', flexShrink:0 }}>
                     {trend && <span style={{ fontSize:11, fontWeight:800, color:trend.color }}>{trend.label}</span>}
-                    <ConnBadge type={connType} />
+
+                    {/* Plaid Linked badge — with no-cost tooltip */}
+                    {isLinked ? (
+                        <span title="CSV transactions matched to Plaid data. No extra billing — only the Live Sync bank connection has a fee."
+                            style={{ display:'flex', alignItems:'center', gap:4, fontSize:10, fontWeight:800, color:'#10b981', background:'rgba(16,185,129,0.08)', border:'1px solid rgba(16,185,129,0.2)', borderRadius:20, padding:'3px 10px', whiteSpace:'nowrap', cursor:'help' }}>
+                            Plaid Linked
+                        </span>
+                    ) : (
+                        <ConnBadge type={connType} />
+                    )}
+
                     {(isPlaid || isLinked) && (
                         <button onClick={onSync} disabled={syncing}
                             title="Sync new transactions from bank"
@@ -355,10 +376,11 @@ function AccountCard({ acct, totalMonth, plaidConnections, onAliasChange, onSync
                             {syncing ? '…' : '🔄 Sync'}
                         </button>
                     )}
-                    {/* Disconnect — only on Plaid Live Sync card */}
+
+                    {/* Unsync — only on Plaid Live Sync card (removes bank connection, stops billing) */}
                     {isPlaid && plaidConnections?.[0]?.id && !confirmDisc && (
                         <button onClick={()=>setConfirmDisc(true)}
-                            title="Disconnect Plaid"
+                            title="Disconnect entire Plaid bank connection — stops $0.50/mo fee"
                             style={{ background:'none', border:'1px solid rgba(239,68,68,0.25)', borderRadius:20, color:'rgba(239,68,68,0.6)', fontSize:10, fontWeight:800, padding:'3px 10px', cursor:'pointer', whiteSpace:'nowrap' }}>
                             Unsync
                         </button>
@@ -374,6 +396,27 @@ function AccountCard({ acct, totalMonth, plaidConnections, onAliasChange, onSync
                                 style={{ background:'none', border:'none', color:'rgba(255,255,255,0.3)', fontSize:14, cursor:'pointer', padding:'2px 4px' }}>✕</button>
                         </div>
                     )}
+
+                    {/* Unlink — only on Plaid Linked CSV cards (removes cross-match, no billing impact) */}
+                    {isLinked && !confirmUnlink && (
+                        <button onClick={()=>setConfirmUnlink(true)}
+                            title="Break Plaid match on this CSV account — no billing impact"
+                            style={{ background:'none', border:'1px solid rgba(255,255,255,0.12)', borderRadius:20, color:'rgba(255,255,255,0.35)', fontSize:10, fontWeight:800, padding:'3px 10px', cursor:'pointer', whiteSpace:'nowrap' }}>
+                            Unlink
+                        </button>
+                    )}
+                    {isLinked && confirmUnlink && (
+                        <div style={{ display:'flex', gap:4, alignItems:'center' }}>
+                            <span style={{ fontSize:10, color:'rgba(255,255,255,0.6)', fontWeight:700 }}>Remove Plaid match?</span>
+                            <button onClick={handleUnlink} disabled={unlinking}
+                                style={{ background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.2)', borderRadius:20, color:'white', fontSize:10, fontWeight:900, padding:'3px 10px', cursor:'pointer' }}>
+                                {unlinking ? '…' : 'Yes, unlink'}
+                            </button>
+                            <button onClick={()=>setConfirmUnlink(false)}
+                                style={{ background:'none', border:'none', color:'rgba(255,255,255,0.3)', fontSize:14, cursor:'pointer', padding:'2px 4px' }}>✕</button>
+                        </div>
+                    )}
+
                     <button onClick={toggleVisible} title={acct.visible?'Hide':'Show'}
                         style={{ background:'none', border:'none', cursor:'pointer', fontSize:15, padding:'2px 4px', opacity:acct.visible?0.6:0.25 }}>
                         {acct.visible?'👁':'🙈'}
@@ -500,8 +543,9 @@ export default function Accounts() {
         sortKey
     );
 
-    // Synced accounts shown globally at top (Plaid Live Sync + Plaid Linked)
-    const syncedAccounts = visibleAccounts.filter(a => a.source === 'plaid' || a.has_plaid_link);
+    // Live Sync section: ONLY actual Plaid connections (source === 'plaid').
+    // has_plaid_link accounts are CSV sources that were cross-matched — they go in their type groups.
+    const syncedAccounts = visibleAccounts.filter(a => a.source === 'plaid');
     const syncedKeys     = new Set(syncedAccounts.map(a => a.source));
 
     // Remaining accounts grouped by type (exclude already shown in synced section)

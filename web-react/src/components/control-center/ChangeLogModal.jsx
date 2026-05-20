@@ -1,6 +1,11 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.3', date: 'MAY 19, 2026', color: '#f97316', items: [
+        '<strong>Live Sync No Longer Shows Duplicates:</strong> The 🔗 Live Sync section now shows only your actual Plaid bank connection. CSV accounts that were cross-matched to Plaid ("Plaid Linked") now appear in their normal Credit/Checking groups — no more seeing USAA listed multiple times.',
+        '<strong>Plaid Linked Badge Clarified:</strong> Hover the "Plaid Linked" badge on any CSV account to see: <em>"No extra billing — only the Live Sync connection has a fee."</em> These accounts do not cost $0.50/month.',
+        '<strong>Unlink Button on CSV Accounts:</strong> Each "Plaid Linked" CSV account now has an "Unlink" button. Clicking it breaks the cross-match (clears the Plaid transaction IDs from that source) without touching your bank connection or billing. Use this to clean up accounts you don\'t want cross-matched.',
+    ]},
     { version: '7.8.2', date: 'MAY 19, 2026', color: '#38bdf8', items: [
         '<strong>Instant Accounts Page:</strong> Account summaries now load from local cache immediately on every visit. Fresh data refreshes silently in the background — no more staring at a spinner.',
         '<strong>Instant Plaid Balances:</strong> Live bank balances (Savings, Checking, Credit Cards) appear from last session\'s cache the moment you open the page. A subtle "Refreshing…" label appears while the live pull completes.',

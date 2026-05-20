@@ -305,6 +305,30 @@ router.delete("/accounts/:id", async (req, res) => {
     }
 });
 
+// ─── DELETE /plaid/link/:source_key ──────────────────────────────────────────
+// Break the Plaid cross-match on a specific CSV source.
+// Clears plaid_transaction_id on all expenses for that source (user-scoped).
+// Does NOT remove the Plaid bank connection — no billing impact.
+router.delete('/link/:source_key', async (req, res) => {
+    try {
+        const { source_key } = req.params;
+        if (!source_key) return res.status(400).json({ error: 'source_key required' });
+
+        const { error } = await req.sb
+            .from('expenses')
+            .update({ plaid_transaction_id: null })
+            .eq('user_id', req.user.id)
+            .eq('source', source_key)
+            .not('plaid_transaction_id', 'is', null);
+
+        if (error) throw error;
+        res.json({ ok: true });
+    } catch (err) {
+        console.error('[plaid] unlink error:', err.message);
+        res.status(500).json({ error: 'Failed to unlink account' });
+    }
+});
+
 // ─── Cross-source dedup ───────────────────────────────────────────────────────
 // Before inserting Plaid transactions, check whether CSV/manual versions already
 // exist (plaid_transaction_id IS NULL, same date + same amount_cents).

@@ -5,6 +5,20 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.3] — 2026-05-19
+
+### Fix Live Sync duplicates; Plaid Linked accounts back in type groups; Unlink button
+
+#### Fixed
+- **`web-react/src/pages/Accounts.jsx`** — `syncedAccounts` filter changed from `source==='plaid' || has_plaid_link` to `source==='plaid'` only. Plaid Linked CSV accounts now appear in their Credit/Checking type groups instead of polluting Live Sync. Eliminates USAA appearing 4-5 times.
+- **`web-react/src/pages/Accounts.jsx`** — "Plaid Linked" badge replaced with a custom `<span title="...">` that explains no extra billing on hover. Differentiates visually from the "Live Sync" badge.
+
+#### Added
+- **`api/routes/plaid.js`** — New `DELETE /plaid/link/:source_key` endpoint. Clears `plaid_transaction_id` from all expenses for that source (user-scoped). Does not touch `plaid_connections` or billing.
+- **`web-react/src/pages/Accounts.jsx`** — "Unlink" button on `isLinked` CSV accounts. 2-step confirm → calls `DELETE /plaid/link/:source_key` → optimistically clears `has_plaid_link` on that card. Allows removing Plaid cross-match per account without disconnecting the bank.
+
+---
+
 ## [v7.8.2] — 2026-05-19
 
 ### Stale-while-revalidate caching for Accounts + Plaid balances; FAQ additions
