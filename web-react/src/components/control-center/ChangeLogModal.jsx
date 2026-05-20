@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.24', date: 'MAY 20, 2026', color: '#10b981', items: [
+        '<strong>Plaid Transactions — Real Account Names:</strong> Transactions imported via Plaid now show your actual account name (e.g. "USAA Checking", "USAA Credit Card") in the Account column instead of the generic "Plaid" label. Existing transactions are automatically corrected the next time you trigger a sync.',
+    ]},
     { version: '7.8.18', date: 'MAY 20, 2026', color: '#38bdf8', items: [
         '<strong>New Sync Plan ($4.99/mo):</strong> Just want live bank sync without the full AI/invoicing suite? The new Sync plan gives you unlimited Plaid bank connections for a flat $4.99/month — no per-account fees. All connected accounts are included.',
         '<strong>Updated Upgrade Flow — Bank Import:</strong> When connecting a bank without an active subscription, you now see the Sync plan as the featured first option ("Just Plaid? Start Here"), with Core and Studio below for the full feature unlock. Choose what fits — checkout opens directly.',

@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.24] — 2026-05-20
+
+### Fix Plaid transactions showing "Plaid" as account — use real account name
+
+#### Changed
+- **`api/routes/plaid.js`** — `syncTransactions` now builds an account map from the Plaid response and uses the actual account name (e.g. "USAA Checking", "USAA Credit Card") as the `source` field. Added `makePlaidSourceKey()` helper. After each sync, existing transactions with `source = 'plaid'` are repaired to the correct account name automatically.
+
+---
+
 ## [v7.8.23] — 2026-05-20
 
 ### Fix Vercel cron — remove >1x/day schedule incompatible with Hobby plan

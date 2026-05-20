@@ -395,6 +395,14 @@ async function crossSourceDedup(sb, userId, rows) {
 }
 
 // ─── Sync Engine ───
+// Build a readable source key from institution name + account subtype
+// e.g. "USAA" + "checking" → "USAA Checking", "USAA" + "credit card" → "USAA Credit Card"
+function makePlaidSourceKey(institutionName, account) {
+    const sub = (account?.subtype || account?.type || '')
+        .replace(/\b\w/g, c => c.toUpperCase()); // title-case
+    return sub ? `${institutionName} ${sub}` : institutionName;
+}
+
 async function syncTransactions(sb, plaidClient, connection, userId) {
     let cursor = connection.cursor;
     let added = 0;
@@ -402,6 +410,7 @@ async function syncTransactions(sb, plaidClient, connection, userId) {
     let removed = 0;
     let linked = 0;
     let hasMore = true;
+    const accountSourceMap = {}; // plaid account_id → readable source key
 
     while (hasMore) {
         // Decrypt access token for API call
@@ -420,6 +429,13 @@ async function syncTransactions(sb, plaidClient, connection, userId) {
 
         const { added: newTxns, modified: modTxns, removed: remTxns, next_cursor, has_more } = syncResp.data;
 
+        // Build account_id → source name map from response accounts
+        if (syncResp.data.accounts?.length) {
+            for (const acct of syncResp.data.accounts) {
+                accountSourceMap[acct.account_id] = makePlaidSourceKey(connection.institution_name, acct);
+            }
+        }
+
         // Process added transactions
         if (newTxns.length > 0) {
             const rows = newTxns.map(t => ({
@@ -428,7 +444,7 @@ async function syncTransactions(sb, plaidClient, connection, userId) {
                 vendor: t.merchant_name || t.name || "Unknown",
                 amount_cents: Math.round((t.amount || 0) * 100),
                 category: mapPlaidCategory(t.personal_finance_category),
-                source: "plaid",
+                source: accountSourceMap[t.account_id] || connection.institution_name,
                 notes: `Plaid: ${t.name || ''} | ${connection.institution_name}`,
                 plaid_transaction_id: t.transaction_id,
                 plaid_account_id: t.account_id || null,
@@ -476,6 +492,17 @@ async function syncTransactions(sb, plaidClient, connection, userId) {
 
         cursor = next_cursor;
         hasMore = has_more;
+    }
+
+    // Repair existing transactions that were stored with source = 'plaid'
+    // Map each plaid_account_id to the correct institution + account name
+    for (const [account_id, sourceKey] of Object.entries(accountSourceMap)) {
+        await sb
+            .from('expenses')
+            .update({ source: sourceKey })
+            .eq('user_id', userId)
+            .eq('plaid_account_id', account_id)
+            .eq('source', 'plaid');
     }
 
     // Update cursor

@@ -1,6 +1,6 @@
 {
-  "version": "7.8.18",
+  "version": "7.8.24",
   "release_date": "2026-05-20",
   "codename": "Lumière Ledger",
-  "notes": "v7.8.18: Add Sync tier ($4.99/mo) — Plaid-only plan. Update marketing pricing + in-app upgrade cards + billing gate."
+  "notes": "v7.8.24: Plaid transactions now show real account name (e.g. USAA Checking) instead of generic Plaid label. Existing transactions auto-repaired on next sync."
 }
