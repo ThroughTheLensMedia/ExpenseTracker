@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.42', date: 'MAY 21, 2026', color: '#a78bfa', items: [
+        '<strong>One Card Per Bank:</strong> Connected a bank via Plaid? You now see one card — not two. Previously your Plaid Live Sync card and your imported CSV card (e.g. "American Express Credit Card ···1001") both appeared showing the same data. The Live Sync card is now the single view: live balance, per-sub-account detail, This Month / Last Month / YTD, Transactions, Sync, and Disconnect — all in one place.',
+    ]},
     { version: '7.8.41', date: 'MAY 21, 2026', color: '#38bdf8', items: [
         '<strong>Live Sync Card — Centered Stats:</strong> The spending tiles (This Month, Last Month, YTD, Transactions) are now center-aligned for a cleaner, more balanced look.',
         '<strong>Transactions Tile Now Works:</strong> Clicking "Transactions" on a Live Sync card now opens the ledger filtered to all accounts at that bank — USAA Checking, USAA Savings, etc. all appear together. A green badge shows the active filter with an ✕ to clear it.',

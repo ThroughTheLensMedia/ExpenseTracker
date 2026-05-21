@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.42] — 2026-05-21
+
+### Unified Plaid card — no duplicate CSV card
+
+#### Changed
+- **`web-react/src/pages/Accounts.jsx`** — CSV source accounts that are "owned" by a Plaid connection (source key starts with the institution name, e.g. `"American Express Credit Card ···1001"` under the `"American Express"` connection) are now added to `syncedKeys` and suppressed from the type-grouped sections (Credit Cards, Checking, etc.). The Live Sync card is the single authoritative view — it already shows the Plaid live balance (BalanceRows), per-sub-account detail, combined spending stats (This Month / Last Month / YTD / Transactions), Sync button, and Disconnect button. This eliminates the duplicate card showing the same data twice.
+
+---
+
 ## [v7.8.41] — 2026-05-21
 
 ### Live Sync card polish — centered stats, working Transactions link, % of month bar

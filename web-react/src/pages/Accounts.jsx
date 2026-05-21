@@ -748,17 +748,20 @@ export default function Accounts() {
     // Merged accounts (for a collapsed section)
     const mergedAccounts = sortAccounts(allAccounts.filter(a => !!a.linked_source), sortKey);
 
+    // Always exclude source='plaid' rows from type groups; owned CSV sources are added below.
+    const syncedKeys = new Set(['plaid']);
+
     // One card per plaid connection — built directly from plaidConns, not from allAccounts.
-    // Stats are aggregated from the named source rows that belong to each connection
-    // (e.g. "USAA Checking" + "USAA Savings" + "USAA Credit Card ···7603" all roll up into the USAA card).
-    // Match: source key starts with institution name — this captures directly-synced Plaid transactions
-    // while excluding cross-matched CSV accounts (which keep their original source like "delta_amex").
+    // Owned CSV source rows (e.g. "American Express Credit Card ···1001", "USAA Checking") are
+    // suppressed from the type-grouped sections so they only appear once, inside the Live Sync card.
     const syncedAccounts = plaidConns.map(conn => {
         const instLower = conn.institution_name.toLowerCase();
         const ownedRows = allAccounts.filter(a =>
             a.source !== 'plaid' &&
             (a.source || '').toLowerCase().startsWith(instLower)
         );
+        // Hide owned sources from Credit Cards / Checking sections — Live Sync card is the single view
+        ownedRows.forEach(a => syncedKeys.add(a.source));
         return {
             source:                  'plaid',
             _conn_id:                conn.id,
@@ -775,8 +778,6 @@ export default function Accounts() {
             linked_plaid_account_id: null,
         };
     });
-    // Always exclude source='plaid' rows from type groups regardless of count
-    const syncedKeys = new Set(['plaid']);
 
     // Type groups: apply filterType only here, exclude synced sources
     const filteredVisible = filterType === 'all'
