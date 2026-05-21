@@ -140,7 +140,7 @@ function matchesFilter(a, filterType) {
     return false; // 'manual' — no Plaid sub-accounts are manual
 }
 
-function BalanceRows({ source, plaidConnections, filterType = 'all' }) {
+function BalanceRows({ source, plaidConnections, filterType = 'all', connectionId = null }) {
     const navigate = useNavigate();
     const [state,      setState]      = useState(() => {
         try {
@@ -221,7 +221,11 @@ function BalanceRows({ source, plaidConnections, filterType = 'all' }) {
         });
     }
 
-    const allAccts    = state.institutions?.flatMap(i => i.accounts || []) || [];
+    // Scope to this specific connection so each Plaid card only shows its own bank's accounts
+    const myInstitutions = connectionId
+        ? (state.institutions?.filter(i => i.id === connectionId) || [])
+        : (state.institutions || []);
+    const allAccts    = myInstitutions.flatMap(i => i.accounts || []);
     const hiddenCount = allAccts.filter(a => hiddenIds.has(a.account_id)).length;
     // When a type filter is active, only show matching sub-accounts (hidden count ignores filter)
     const filterActive = filterType !== 'all';
@@ -291,7 +295,7 @@ function BalanceRows({ source, plaidConnections, filterType = 'all' }) {
 
             {!state.loading && !state.error && (
                 <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-                    {state.institutions?.map(inst => {
+                    {myInstitutions.map(inst => {
                         if (inst.balance_error && !inst.balance_stale) {
                             // No cached fallback — show why
                             const msg = inst.needs_reauth
@@ -320,7 +324,7 @@ function BalanceRows({ source, plaidConnections, filterType = 'all' }) {
                     })}
 
                     {/* Filter active but no matching sub-accounts */}
-                    {filterActive && allAccts.filter(a => !hiddenIds.has(a.account_id) && matchesFilter(a, filterType)).length === 0 && (
+                    {filterActive && myInstitutions.length > 0 && allAccts.filter(a => !hiddenIds.has(a.account_id) && matchesFilter(a, filterType)).length === 0 && (
                         <div style={{ fontSize:11, color:'rgba(255,255,255,0.25)', fontStyle:'italic', padding:'4px 2px' }}>
                             No {filterType} sub-accounts in this connection
                         </div>
@@ -334,7 +338,7 @@ function BalanceRows({ source, plaidConnections, filterType = 'all' }) {
                                 <span>{showHidden ? '▲' : '▼'}</span>
                                 {showHidden ? 'Hide' : `Show ${hiddenCount} hidden sub-account${hiddenCount === 1 ? '' : 's'}`}
                             </button>
-                            {showHidden && state.institutions?.map(inst =>
+                            {showHidden && myInstitutions.map(inst =>
                                 inst.accounts?.filter(a => hiddenIds.has(a.account_id)).map(a => <SubRow key={a.account_id} a={a} faded={true} />)
                             )}
                         </div>
@@ -346,7 +350,7 @@ function BalanceRows({ source, plaidConnections, filterType = 'all' }) {
 }
 
 // ─── Account card ──────────────────────────────────────────────────────────────
-function AccountCard({ acct, totalMonth, plaidConnections, onAliasChange, onSync, syncing, onDisconnect, filterType = 'all', mergedFrom = [], allMergeTargets = [], plaidSubAccountMap = {} }) {
+function AccountCard({ acct, totalMonth, plaidConnections, connectionId = null, onAliasChange, onSync, syncing, onDisconnect, filterType = 'all', mergedFrom = [], allMergeTargets = [], plaidSubAccountMap = {} }) {
     const navigate  = useNavigate();
     const meta      = getSourceMeta(acct.source);
     const connType  = getConnType(acct);
@@ -594,7 +598,7 @@ function AccountCard({ acct, totalMonth, plaidConnections, onAliasChange, onSync
             )}
 
             {/* Plaid live balances */}
-            {isPlaid && <BalanceRows source={acct.source} plaidConnections={plaidConnections} filterType={filterType} />}
+            {isPlaid && <BalanceRows source={acct.source} plaidConnections={plaidConnections} filterType={filterType} connectionId={connectionId} />}
 
             {/* Stats */}
             <div style={{ borderTop: isPlaid ? '1px solid rgba(255,255,255,0.06)' : 'none', paddingTop: isPlaid ? 12 : 0 }}>
@@ -738,9 +742,26 @@ export default function Accounts() {
     // Merged accounts (for a collapsed section)
     const mergedAccounts = sortAccounts(allAccounts.filter(a => !!a.linked_source), sortKey);
 
-    // Live Sync section: ONLY actual Plaid connections (source === 'plaid').
-    const syncedAccounts = allVisible.filter(a => a.source === 'plaid');
-    const syncedKeys     = new Set(syncedAccounts.map(a => a.source));
+    // One card per plaid connection — built directly from plaidConns, not from allAccounts.
+    // allAccounts may have a synthetic source='plaid' fallback row but we ignore it here;
+    // using plaidConns directly ensures a new bank added via Plaid always gets its own card.
+    const syncedAccounts = plaidConns.map(conn => ({
+        source:                  'plaid',
+        _conn_id:                conn.id,
+        account_type:            'checking',
+        this_month_cents:        0,
+        last_month_cents:        0,
+        ytd_cents:               0,
+        total_count:             0,
+        last_date:               conn.last_synced_at?.split('T')[0] || null,
+        has_plaid_link:          false,
+        visible:                 true,
+        display_name:            null,
+        linked_source:           null,
+        linked_plaid_account_id: null,
+    }));
+    // Always exclude source='plaid' rows from type groups regardless of count
+    const syncedKeys = new Set(['plaid']);
 
     // Type groups: apply filterType only here, exclude synced sources
     const filteredVisible = filterType === 'all'
@@ -837,10 +858,11 @@ export default function Accounts() {
                     <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:8 }}>
                         {syncedAccounts.map(acct => (
                             <AccountCard
-                                key={acct.source}
+                                key={acct._conn_id}
                                 acct={acct}
                                 totalMonth={totalMonth}
-                                plaidConnections={acct.source === 'plaid' ? plaidConns : null}
+                                plaidConnections={plaidConns.filter(c => c.id === acct._conn_id)}
+                                connectionId={acct._conn_id}
                                 onAliasChange={handleAliasChange}
                                 onSync={handleSync}
                                 syncing={syncing}

@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.37', date: 'MAY 21, 2026', color: '#38bdf8', items: [
+        '<strong>Multiple Plaid Banks — Each Gets Its Own Card:</strong> Adding a second bank via Plaid (e.g. Amex Delta in addition to USAA) now correctly shows a separate card for each institution in the Live Sync section. Each card has its own live balances, Sync button, and Disconnect button. Previously only one card ever appeared regardless of how many banks were connected.',
+    ]},
     { version: '7.8.36', date: 'MAY 20, 2026', color: '#f97316', items: [
         '<strong>Plaid Balance Resilience:</strong> Sub-accounts no longer disappear when the bank is temporarily unreachable. Your last known balances stay visible with an orange "Live balance unavailable — showing last known" note. If USAA or another bank needs re-authentication, you\'ll see a clear message explaining what to do instead of a blank card.',
     ]},

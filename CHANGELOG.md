@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.37] — 2026-05-21
+
+### Multiple Plaid banks — each connection gets its own card
+
+#### Fixed
+- **`web-react/src/pages/Accounts.jsx`** — `syncedAccounts` was built by filtering `allAccounts` for `source === 'plaid'`, which produces at most one card regardless of how many banks are connected. Changed to map directly over `plaid_connections` rows — each active Plaid connection now gets its own Live Sync card with its own live balances, Sync button, and Disconnect button. Passed `connectionId` down through `AccountCard` → `BalanceRows` so each card only shows sub-accounts for its own bank.
+
+---
+
 ## [v7.8.36] — 2026-05-20
 
 ### Plaid balance resilience — sub-accounts stay visible when live fetch fails
