@@ -430,7 +430,9 @@ function AccountCard({ acct, totalMonth, plaidConnections, connectionId = null, 
     }
 
     const displayLabel = acct.display_name || defaultLabel;
-    const txSource     = acct.source; // always linkable — plaid source navigates to ?source=plaid
+    // Plaid Live Sync cards use source='plaid' but transactions live under named sources (e.g. "USAA Checking")
+    // — ?source=plaid returns 0 results, so disable the link for Plaid cards
+    const txSource     = isPlaid ? null : acct.source;
 
     return (
         <div style={{
@@ -743,23 +745,32 @@ export default function Accounts() {
     const mergedAccounts = sortAccounts(allAccounts.filter(a => !!a.linked_source), sortKey);
 
     // One card per plaid connection — built directly from plaidConns, not from allAccounts.
-    // allAccounts may have a synthetic source='plaid' fallback row but we ignore it here;
-    // using plaidConns directly ensures a new bank added via Plaid always gets its own card.
-    const syncedAccounts = plaidConns.map(conn => ({
-        source:                  'plaid',
-        _conn_id:                conn.id,
-        account_type:            'checking',
-        this_month_cents:        0,
-        last_month_cents:        0,
-        ytd_cents:               0,
-        total_count:             0,
-        last_date:               conn.last_synced_at?.split('T')[0] || null,
-        has_plaid_link:          false,
-        visible:                 true,
-        display_name:            null,
-        linked_source:           null,
-        linked_plaid_account_id: null,
-    }));
+    // Stats are aggregated from the named source rows that belong to each connection
+    // (e.g. "USAA Checking" + "USAA Savings" + "USAA Credit Card ···7603" all roll up into the USAA card).
+    // Match: source key starts with institution name — this captures directly-synced Plaid transactions
+    // while excluding cross-matched CSV accounts (which keep their original source like "delta_amex").
+    const syncedAccounts = plaidConns.map(conn => {
+        const instLower = conn.institution_name.toLowerCase();
+        const ownedRows = allAccounts.filter(a =>
+            a.source !== 'plaid' &&
+            (a.source || '').toLowerCase().startsWith(instLower)
+        );
+        return {
+            source:                  'plaid',
+            _conn_id:                conn.id,
+            account_type:            'checking',
+            this_month_cents:        ownedRows.reduce((s, a) => s + a.this_month_cents, 0),
+            last_month_cents:        ownedRows.reduce((s, a) => s + a.last_month_cents, 0),
+            ytd_cents:               ownedRows.reduce((s, a) => s + a.ytd_cents, 0),
+            total_count:             ownedRows.reduce((s, a) => s + a.total_count, 0),
+            last_date:               conn.last_synced_at?.split('T')[0] || null,
+            has_plaid_link:          false,
+            visible:                 true,
+            display_name:            null,
+            linked_source:           null,
+            linked_plaid_account_id: null,
+        };
+    });
     // Always exclude source='plaid' rows from type groups regardless of count
     const syncedKeys = new Set(['plaid']);
 

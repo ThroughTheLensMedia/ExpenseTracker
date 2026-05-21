@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.40] — 2026-05-21
+
+### Live Sync card stats fix + Transactions tile disabled for Plaid cards
+
+#### Fixed
+- **`web-react/src/pages/Accounts.jsx` — `syncedAccounts` stat aggregation**: Live Sync cards (one per Plaid connection) were hardcoded to `this_month_cents: 0, last_month_cents: 0, ytd_cents: 0, total_count: 0`. Real transaction data lives in named source rows (e.g. "USAA Checking", "American Express Credit Card ···1001") — not in the synthetic 'plaid' card object. Fix: `syncedAccounts` now aggregates all stats from `ownedRows` — accounts whose source key starts with the institution name — so "Spending (via Plaid)" shows real numbers.
+- **`web-react/src/pages/Accounts.jsx` — Transactions tile on Live Sync cards**: The tile was clickable and navigated to `/transactions?source=plaid`, which always returned 0 results (Plaid transactions are stored under named sources). Fixed by setting `txSource = null` for Plaid cards, making the Transactions tile non-interactive (count still displays).
+
+---
+
 ## [v7.8.39] — 2026-05-21
 
 ### Vendor category memory — learn once, apply forever

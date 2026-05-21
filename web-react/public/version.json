@@ -1,6 +1,6 @@
 {
-  "version": "7.8.39",
-  "release_date": "2026-05-20",
+  "version": "7.8.40",
+  "release_date": "2026-05-21",
   "codename": "Lumière Ledger",
-  "notes": "v7.8.39: Vendor memory — edit a transaction once, auto-apply that category to all future matching imports."
+  "notes": "v7.8.40: Live Sync spending stats now aggregate correctly across all linked bank accounts."
 }

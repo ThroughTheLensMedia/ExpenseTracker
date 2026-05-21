@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.40', date: 'MAY 21, 2026', color: '#10b981', items: [
+        '<strong>Live Sync Spending Stats Fixed:</strong> The "This Month," "Last Month," "YTD," and "Transactions" tiles on Live Sync bank cards now show real numbers. Previously they always showed $0 even after a successful sync. Stats are now correctly totaled across all accounts at that bank.',
+        '<strong>Transactions Tile — No More Dead Link:</strong> Clicking "Transactions" on a Live Sync card no longer navigates to a blank result. The tile still shows your transaction count — just without the broken link.',
+    ]},
     { version: '7.8.39', date: 'MAY 21, 2026', color: '#a78bfa', items: [
         '<strong>Vendor Memory — Auto-Categorization:</strong> Edit a transaction\'s category, tax flag, or business % once, and every future import of that vendor will automatically get the same values. Starbucks always becomes "Client Entertainment." Delta always gets marked tax-deductible. No repeated corrections needed. Requires running migration 003 in Supabase SQL Editor.',
     ]},
