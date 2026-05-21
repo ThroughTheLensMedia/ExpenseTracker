@@ -5,6 +5,19 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.38] — 2026-05-21
+
+### Plaid data integrity: source key collision, soft-delete, self-healing repair
+
+#### Fixed
+- **`api/routes/plaid.js` — `makePlaidSourceKey`**: Credit accounts now include the last-4 mask in their source key (e.g. `"American Express Credit Card ···1234"`). Prevents source key collision when multiple cards from the same institution (Amex Delta + Amex Gold, two Chase cards, etc.) are connected — they were previously indistinguishable.
+- **`api/routes/plaid.js` — removed transactions**: Changed from unconditional hard-delete to a preserve-or-delete check. If a removed transaction has user-attached data (notes, receipt, tax flag), it is unlinkd from Plaid and kept as a manual record instead of being destroyed. Transactions with no user data are still deleted normally (expected for pending→posted transitions).
+- **`api/routes/plaid.js` — source repair pass**: Repair now updates ALL transactions with the wrong source key (not just `source='plaid'` rows). Uses `.neq(source, correctKey)` to skip already-correct rows. Self-heals across version changes — on next sync, any stale source keys (e.g. `"American Express Credit Card"` without mask) are corrected automatically.
+- **`api/routes/plaid.js` — modified transactions**: Source key is now included in the modified-transaction update so renamed accounts stay consistent.
+- **`api/migrations/002_account_aliases_rls.sql`**: RLS policies for `account_aliases` table — SELECT/INSERT/UPDATE/DELETE all restricted to `user_id = auth.uid()`. Idempotent. **Must be run manually in Supabase SQL Editor.**
+
+---
+
 ## [v7.8.37] — 2026-05-21
 
 ### Multiple Plaid banks — each connection gets its own card

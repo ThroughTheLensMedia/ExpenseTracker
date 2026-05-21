@@ -1,6 +1,11 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.38', date: 'MAY 21, 2026', color: '#10b981', items: [
+        '<strong>Credit Card Source Keys Fixed:</strong> If you have multiple cards from the same bank (e.g. two Amex cards), transactions from each card now stay separate. Previously they shared the same account label and mixed together.',
+        '<strong>Receipt &amp; Note Protection:</strong> When Plaid removes a transaction (common on pending→posted transitions), your attached receipts, notes, and tax flags are now preserved. The transaction stays in your ledger as a manual record instead of being deleted.',
+        '<strong>Self-Healing Source Names:</strong> On every sync, transaction source names are verified and corrected if they\'re out of date. Your existing Amex Delta transactions will be renamed to include the last-4 on next sync.',
+    ]},
     { version: '7.8.37', date: 'MAY 21, 2026', color: '#38bdf8', items: [
         '<strong>Multiple Plaid Banks — Each Gets Its Own Card:</strong> Adding a second bank via Plaid (e.g. Amex Delta in addition to USAA) now correctly shows a separate card for each institution in the Live Sync section. Each card has its own live balances, Sync button, and Disconnect button. Previously only one card ever appeared regardless of how many banks were connected.',
     ]},

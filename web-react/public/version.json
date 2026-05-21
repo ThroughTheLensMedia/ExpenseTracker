@@ -1,6 +1,6 @@
 {
-  "version": "7.8.37",
+  "version": "7.8.38",
   "release_date": "2026-05-20",
   "codename": "Lumière Ledger",
-  "notes": "v7.8.37: Multiple Plaid banks — each connected bank now gets its own card on the Accounts page."
+  "notes": "v7.8.38: Plaid data integrity fixes — credit card source keys, soft-delete, self-healing source repair."
 }

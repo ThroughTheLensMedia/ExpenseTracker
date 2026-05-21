@@ -400,12 +400,19 @@ async function crossSourceDedup(sb, userId, rows) {
 }
 
 // ─── Sync Engine ───
-// Build a readable source key from institution name + account subtype
-// e.g. "USAA" + "checking" → "USAA Checking", "USAA" + "credit card" → "USAA Credit Card"
+// Build a readable source key from institution name + account subtype.
+// Credit accounts append the last-4 mask to prevent collision when a user has
+// multiple cards at the same institution (e.g. Amex Delta + Amex Gold would both
+// map to "American Express Credit Card" without the mask suffix).
 function makePlaidSourceKey(institutionName, account) {
     const sub = (account?.subtype || account?.type || '')
         .replace(/\b\w/g, c => c.toUpperCase()); // title-case
-    return sub ? `${institutionName} ${sub}` : institutionName;
+    const base = sub ? `${institutionName} ${sub}` : institutionName;
+    // Append mask for credit accounts — avoids source key collision across multiple cards
+    if (account?.type === 'credit' && account?.mask) {
+        return `${base} ···${account.mask}`;
+    }
+    return base;
 }
 
 async function syncTransactions(sb, plaidClient, connection, userId) {
@@ -476,14 +483,16 @@ async function syncTransactions(sb, plaidClient, connection, userId) {
             added += toInsert.length;
         }
 
-        // Process modified transactions
+        // Process modified transactions — also keep source key current
         for (const t of modTxns) {
+            const sourceKey = accountSourceMap[t.account_id] || connection.institution_name;
             await sb
                 .from("expenses")
                 .update({
-                    expense_date: t.date,
-                    vendor: t.merchant_name || t.name || "Unknown",
-                    amount_cents: Math.round((t.amount || 0) * 100),
+                    expense_date:  t.date,
+                    vendor:        t.merchant_name || t.name || "Unknown",
+                    amount_cents:  Math.round((t.amount || 0) * 100),
+                    source:        sourceKey,
                 })
                 .eq("plaid_transaction_id", t.transaction_id)
                 .eq("user_id", userId);
@@ -491,12 +500,37 @@ async function syncTransactions(sb, plaidClient, connection, userId) {
         }
 
         // Process removed transactions
+        // Plaid removes transactions on pending→posted transitions, corrections, and reversals.
+        // Before deleting, check if the user has attached data worth preserving.
+        // If so, unlink the Plaid IDs instead of deleting — the row becomes a manual record.
         for (const t of remTxns) {
-            await sb
-                .from("expenses")
-                .delete()
-                .eq("plaid_transaction_id", t.transaction_id)
-                .eq("user_id", userId);
+            const { data: existing } = await sb
+                .from('expenses')
+                .select('id, notes, receipt_link, tax_deductible')
+                .eq('plaid_transaction_id', t.transaction_id)
+                .eq('user_id', userId)
+                .maybeSingle();
+
+            const hasUserData = existing && (
+                (existing.notes && existing.notes.trim().length > 0) ||
+                existing.receipt_link ||
+                existing.tax_deductible === true
+            );
+
+            if (hasUserData) {
+                // Preserve user-attached data — detach from Plaid, keep as manual record
+                await sb
+                    .from('expenses')
+                    .update({ plaid_transaction_id: null, plaid_account_id: null })
+                    .eq('plaid_transaction_id', t.transaction_id)
+                    .eq('user_id', userId);
+            } else {
+                await sb
+                    .from('expenses')
+                    .delete()
+                    .eq('plaid_transaction_id', t.transaction_id)
+                    .eq('user_id', userId);
+            }
             removed++;
         }
 
@@ -504,17 +538,19 @@ async function syncTransactions(sb, plaidClient, connection, userId) {
         hasMore = has_more;
     }
 
-    // Repair existing transactions stored with source = 'plaid'
-    // Pass 1: rows with known plaid_account_id → map to correct sub-account name
+    // Source key repair — runs on every sync to keep all transactions consistent.
+    // Pass 1: rows with known plaid_account_id → ensure they use the current source key.
+    // Uses .neq() so rows already correct are skipped (no-op update = no write cost).
+    // This also self-heals when source key logic changes (e.g. mask suffix added for credit cards).
     for (const [account_id, sourceKey] of Object.entries(accountSourceMap)) {
         await sb
             .from('expenses')
             .update({ source: sourceKey })
             .eq('user_id', userId)
             .eq('plaid_account_id', account_id)
-            .eq('source', 'plaid');
+            .neq('source', sourceKey); // only touch rows that are actually wrong
     }
-    // Pass 2: rows with NULL plaid_account_id → fall back to institution name
+    // Pass 2: rows with NULL plaid_account_id still stuck on 'plaid' → fall back to institution name
     await sb
         .from('expenses')
         .update({ source: connection.institution_name })
