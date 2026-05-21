@@ -430,9 +430,10 @@ function AccountCard({ acct, totalMonth, plaidConnections, connectionId = null, 
     }
 
     const displayLabel = acct.display_name || defaultLabel;
-    // Plaid Live Sync cards use source='plaid' but transactions live under named sources (e.g. "USAA Checking")
-    // — ?source=plaid returns 0 results, so disable the link for Plaid cards
-    const txSource     = isPlaid ? null : acct.source;
+    // Plaid Live Sync cards: navigate to ?institution=USAA (prefix filter) — covers all sub-accounts
+    // CSV accounts: navigate to ?source=USAA+Checking (exact match)
+    const txSource      = isPlaid ? null : acct.source;
+    const txInstitution = isPlaid ? institutionName : null;
 
     return (
         <div style={{
@@ -610,11 +611,14 @@ function AccountCard({ acct, totalMonth, plaidConnections, connectionId = null, 
                         { label:'This Month',   value:fmtMoney(acct.this_month_cents), hi:true,  link:false },
                         { label:'Last Month',   value:fmtMoney(acct.last_month_cents), hi:false, link:false },
                         { label:'YTD',          value:fmtMoney(acct.ytd_cents),        hi:false, link:false },
-                        { label:'Transactions', value:acct.total_count.toLocaleString(), hi:false, link:!!txSource },
+                        { label:'Transactions', value:acct.total_count.toLocaleString(), hi:false, link:!!(txSource || txInstitution) },
                     ].map(s => (
                         <div key={s.label}
-                            onClick={s.link ? ()=>navigate(`/transactions?source=${encodeURIComponent(txSource)}`) : undefined}
-                            style={{ background:'rgba(255,255,255,0.03)', borderRadius:10, padding:'10px 12px', cursor: s.link ? 'pointer' : 'default' }}
+                            onClick={s.link ? () => {
+                                if (txInstitution) navigate(`/transactions?institution=${encodeURIComponent(txInstitution)}`);
+                                else navigate(`/transactions?source=${encodeURIComponent(txSource)}`);
+                            } : undefined}
+                            style={{ background:'rgba(255,255,255,0.03)', borderRadius:10, padding:'10px 12px', textAlign:'center', cursor: s.link ? 'pointer' : 'default' }}
                             title={s.link ? `View ${displayLabel} transactions` : undefined}>
                             <div style={{ fontSize:9, fontWeight:800, color:'rgba(255,255,255,0.35)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>{s.label}</div>
                             <div style={{ fontSize:15, fontWeight:900, color: s.hi ? connColor : s.link ? '#38bdf8' : 'rgba(255,255,255,0.8)', textDecoration: s.link ? 'underline' : 'none', textDecorationColor: 'rgba(56,189,248,0.4)' }}>{s.value}</div>

@@ -12,6 +12,7 @@ import { formatDate } from '../api';
  * @param {string} [filters.vendor] - Vendor search (partial match)
  * @param {string} [filters.category] - Category search (partial match)
  * @param {string} [filters.account] - Source/account (exact match)
+ * @param {string} [filters.institutionPrefix] - Institution name prefix — matches all sources starting with this string (e.g. "USAA" matches "USAA Checking", "USAA Savings")
  * @param {string} [filters.plaidAccountId] - Plaid sub-account ID (exact match on plaid_account_id)
  * @param {string} [filters.notes] - Notes search (partial match)
  * @param {boolean} [filters.deductOnly] - Only tax-deductible
@@ -33,6 +34,8 @@ export default function useExpenseFilters(expenses, filters = {}, sortCol = 'exp
         if (vendor) rows = rows.filter(r => (r.vendor || '').toLowerCase().includes(vendor.toLowerCase()));
         if (category) rows = rows.filter(r => (r.category || '').toLowerCase().includes(category.toLowerCase()));
         if (account) rows = rows.filter(r => (r.source || '') === account);
+        // institutionPrefix: match all sources that start with the institution name (e.g. "USAA" → USAA Checking + USAA Savings)
+        if (filters.institutionPrefix) rows = rows.filter(r => (r.source || '').toLowerCase().startsWith(filters.institutionPrefix.toLowerCase()));
         // plaidAccountId: match on stored plaid_account_id OR fall back to source match
         // (transactions imported before plaid_account_id column existed only have source set)
         if (plaidAccountId) rows = rows.filter(r =>

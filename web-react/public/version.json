@@ -1,6 +1,6 @@
 {
-  "version": "7.8.40",
+  "version": "7.8.41",
   "release_date": "2026-05-21",
   "codename": "Lumière Ledger",
-  "notes": "v7.8.40: Live Sync spending stats now aggregate correctly across all linked bank accounts."
+  "notes": "v7.8.41: Live Sync card polish — centered stats, Transactions tile navigates to ledger, % of month bar functional."
 }

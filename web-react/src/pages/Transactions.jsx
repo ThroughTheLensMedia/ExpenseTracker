@@ -27,6 +27,7 @@ export default function Transactions() {
     const [plaidAccountId,   setPlaidAccountId]   = useState('');
     const [plaidAccountName, setPlaidAccountName] = useState('');
     const [plaidSourceKey,   setPlaidSourceKey]   = useState(''); // source fallback for pre-plaid_account_id txns
+    const [institutionFilter, setInstitutionFilter] = useState(''); // prefix filter from Plaid Live Sync card click
     const [sortCol, setSortCol] = useState('expense_date');
     const [sortDir, setSortDir] = useState('desc');
 
@@ -140,11 +141,14 @@ export default function Transactions() {
         const urlPlaidId   = searchParams.get('plaid_account_id');
         const urlPlaidName = searchParams.get('plaid_account_name');
         const urlSource    = searchParams.get('source');
+        const urlInstitution = searchParams.get('institution');
         if (urlPlaidId) {
             // Sub-account click: source is the fallback key, NOT the account filter
             setPlaidAccountId(urlPlaidId);
             setPlaidAccountName(urlPlaidName || '');
             if (urlSource) setPlaidSourceKey(urlSource);
+        } else if (urlInstitution) {
+            setInstitutionFilter(urlInstitution);
         } else if (urlSource) {
             setSearchAccount(urlSource);
         }
@@ -199,8 +203,8 @@ export default function Transactions() {
 
     const filters = useMemo(() => isAuditMode ? {} : {
         start, end, vendor: searchVendor, category: searchCategory,
-        account: searchAccount, plaidAccountId, plaidSourceKey, notes: searchNotes, deductOnly, missingReceiptOnly,
-    }, [isAuditMode, start, end, searchVendor, searchCategory, searchAccount, plaidAccountId, plaidSourceKey, searchNotes, deductOnly, missingReceiptOnly]);
+        account: searchAccount, institutionPrefix: institutionFilter, plaidAccountId, plaidSourceKey, notes: searchNotes, deductOnly, missingReceiptOnly,
+    }, [isAuditMode, start, end, searchVendor, searchCategory, searchAccount, institutionFilter, plaidAccountId, plaidSourceKey, searchNotes, deductOnly, missingReceiptOnly]);
 
 
     const { filtered: filteredBase } = useExpenseFilters(auditBase, filters, sortCol, sortDir);
@@ -217,7 +221,7 @@ export default function Transactions() {
 
     const clearFilters = () => {
         setStart(''); setEnd(''); setSearchVendor(''); setSearchCategory('');
-        setSearchAccount(''); setPlaidAccountId(''); setPlaidAccountName(''); setPlaidSourceKey('');
+        setSearchAccount(''); setInstitutionFilter(''); setPlaidAccountId(''); setPlaidAccountName(''); setPlaidSourceKey('');
         setSearchNotes(''); setDeductOnly(false); setMissingReceiptOnly(false);
         setToast({ ok: true, msg: 'All filters cleared. Showing full ledger.' });
         setTimeout(() => setToast(null), 3000);
@@ -353,6 +357,14 @@ export default function Transactions() {
                             <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 14px', background:'rgba(16,185,129,0.08)', border:'1px solid rgba(16,185,129,0.25)', borderRadius:10, fontSize:12, color:'#10b981', fontWeight:700 }}>
                                 🏦 Filtered to: <strong>{plaidAccountName || plaidAccountId}</strong>
                                 <button onClick={() => { setPlaidAccountId(''); setPlaidAccountName(''); }}
+                                    style={{ background:'none', border:'none', color:'rgba(16,185,129,0.6)', cursor:'pointer', fontSize:14, padding:'0 2px', lineHeight:1 }}>✕</button>
+                            </div>
+                        )}
+                        {/* Institution prefix filter badge — set when clicking Transactions on a Live Sync card */}
+                        {institutionFilter && (
+                            <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 14px', background:'rgba(16,185,129,0.08)', border:'1px solid rgba(16,185,129,0.25)', borderRadius:10, fontSize:12, color:'#10b981', fontWeight:700 }}>
+                                Filtered to: <strong>{institutionFilter}</strong> accounts
+                                <button onClick={() => setInstitutionFilter('')}
                                     style={{ background:'none', border:'none', color:'rgba(16,185,129,0.6)', cursor:'pointer', fontSize:14, padding:'0 2px', lineHeight:1 }}>✕</button>
                             </div>
                         )}

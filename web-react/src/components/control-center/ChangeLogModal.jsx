@@ -1,6 +1,11 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.41', date: 'MAY 21, 2026', color: '#38bdf8', items: [
+        '<strong>Live Sync Card — Centered Stats:</strong> The spending tiles (This Month, Last Month, YTD, Transactions) are now center-aligned for a cleaner, more balanced look.',
+        '<strong>Transactions Tile Now Works:</strong> Clicking "Transactions" on a Live Sync card now opens the ledger filtered to all accounts at that bank — USAA Checking, USAA Savings, etc. all appear together. A green badge shows the active filter with an ✕ to clear it.',
+        '<strong>% of Month Bar Now Shows Real Data:</strong> The progress bar at the bottom of each account card now fills to show what portion of your total monthly spending that bank represents. Was stuck at 0% on Live Sync cards.',
+    ]},
     { version: '7.8.40', date: 'MAY 21, 2026', color: '#10b981', items: [
         '<strong>Live Sync Spending Stats Fixed:</strong> The "This Month," "Last Month," "YTD," and "Transactions" tiles on Live Sync bank cards now show real numbers. Previously they always showed $0 even after a successful sync. Stats are now correctly totaled across all accounts at that bank.',
         '<strong>Transactions Tile — No More Dead Link:</strong> Clicking "Transactions" on a Live Sync card no longer navigates to a blank result. The tile still shows your transaction count — just without the broken link.',

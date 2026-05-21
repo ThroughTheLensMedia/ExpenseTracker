@@ -5,6 +5,19 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.41] — 2026-05-21
+
+### Live Sync card polish — centered stats, working Transactions link, % of month bar
+
+#### Fixed
+- **`web-react/src/pages/Accounts.jsx`** — Stat tiles (This Month / Last Month / YTD / Transactions) are now center-aligned. Previously labels and values were left-aligned, looking inconsistent in the auto-fit grid.
+- **`web-react/src/pages/Accounts.jsx`** — Transactions tile on Live Sync cards is now clickable. Navigates to `/transactions?institution=USAA` (prefix filter) which shows all accounts belonging to that bank (USAA Checking + USAA Savings, etc.). Previously the tile navigated to `?source=plaid` which returned 0 results.
+- **`web-react/src/pages/Accounts.jsx` / `web-react/src/hooks/useExpenseFilters.js`** — "% of month" progress bar now shows a real value on Live Sync cards. Was stuck at 0% because `this_month_cents` was 0 (fixed in v7.8.40). Bar shows this bank's spending as a proportion of total monthly spending across all accounts.
+- **`web-react/src/hooks/useExpenseFilters.js`** — Added `institutionPrefix` filter: prefix-matches `source` column so all accounts at an institution are returned (e.g. `"USAA"` matches `"USAA Checking"` and `"USAA Savings"`).
+- **`web-react/src/pages/Transactions.jsx`** — Added `?institution=` URL param support: reads into `institutionFilter` state, passes as `institutionPrefix` to filter hook. Shows green filter badge ("Filtered to: USAA accounts ✕") when active. Included in Clear Filters action.
+
+---
+
 ## [v7.8.40] — 2026-05-21
 
 ### Live Sync card stats fix + Transactions tile disabled for Plaid cards
