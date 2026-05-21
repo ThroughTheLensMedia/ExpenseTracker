@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.35] — 2026-05-20
+
+### Plaid cross-reference: show which sub-account each CSV source maps to
+
+#### Added
+- **`api/routes/accounts.js`** — 4th parallel query on `/accounts/summary`: scans cross-matched transactions to find the most-frequent `plaid_account_id` per CSV source. Returns `linked_plaid_account_id` on every account row.
+- **`web-react/src/pages/Accounts.jsx`** — `buildPlaidMap()` helper builds an `account_id → {name, mask}` lookup. Parent `Accounts` fetches `/plaid/balances` once on mount (seeded from localStorage cache). `AccountCard` receives `plaidSubAccountMap` prop; "Plaid Linked" badge now shows `→ ···{mask}` (or account name if no mask) so user can see exactly which Plaid sub-account a CSV import maps to.
+
+---
+
 ## [v7.8.34] — 2026-05-20
 
 ### Plaid last-4, sub-account filter fallback, account dropdown cleanup

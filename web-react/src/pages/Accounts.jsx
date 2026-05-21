@@ -103,6 +103,17 @@ function trendArrow(a, b) {
     return { color: diff > 0 ? '#ef4444' : '#10b981', label: `${diff > 0 ? '↑' : '↓'} ${pct}% vs last month` };
 }
 
+// Build account_id → { name, mask } lookup from Plaid balance response
+function buildPlaidMap(institutions) {
+    const map = {};
+    for (const inst of (institutions || [])) {
+        for (const a of (inst.accounts || [])) {
+            map[a.account_id] = { name: a.name, mask: a.mask };
+        }
+    }
+    return map;
+}
+
 const PULSE = `@keyframes ll-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.75)}}`;
 
 // ─── Connection badge ──────────────────────────────────────────────────────────
@@ -281,7 +292,7 @@ function BalanceRows({ source, plaidConnections, filterType = 'all' }) {
 }
 
 // ─── Account card ──────────────────────────────────────────────────────────────
-function AccountCard({ acct, totalMonth, plaidConnections, onAliasChange, onSync, syncing, onDisconnect, filterType = 'all', mergedFrom = [], allMergeTargets = [] }) {
+function AccountCard({ acct, totalMonth, plaidConnections, onAliasChange, onSync, syncing, onDisconnect, filterType = 'all', mergedFrom = [], allMergeTargets = [], plaidSubAccountMap = {} }) {
     const navigate  = useNavigate();
     const meta      = getSourceMeta(acct.source);
     const connType  = getConnType(acct);
@@ -404,13 +415,21 @@ function AccountCard({ acct, totalMonth, plaidConnections, onAliasChange, onSync
                 <div style={{ display:'flex', gap:6, alignItems:'center', flexWrap:'wrap', flexShrink:0 }}>
                     {trend && <span style={{ fontSize:11, fontWeight:800, color:trend.color }}>{trend.label}</span>}
 
-                    {/* Plaid Linked badge — with no-cost tooltip */}
-                    {isLinked ? (
-                        <span title="CSV transactions matched to Plaid data. No extra billing — only the Live Sync bank connection has a fee."
-                            style={{ display:'flex', alignItems:'center', gap:4, fontSize:10, fontWeight:800, color:'#10b981', background:'rgba(16,185,129,0.08)', border:'1px solid rgba(16,185,129,0.2)', borderRadius:20, padding:'3px 10px', whiteSpace:'nowrap', cursor:'help' }}>
-                            Plaid Linked
-                        </span>
-                    ) : (
+                    {/* Plaid Linked badge — with no-cost tooltip + linked sub-account mask */}
+                    {isLinked ? (() => {
+                        const sub = acct.linked_plaid_account_id ? plaidSubAccountMap[acct.linked_plaid_account_id] : null;
+                        return (
+                            <span title="CSV transactions matched to Plaid data. No extra billing — only the Live Sync bank connection has a fee."
+                                style={{ display:'flex', alignItems:'center', gap:4, fontSize:10, fontWeight:800, color:'#10b981', background:'rgba(16,185,129,0.08)', border:'1px solid rgba(16,185,129,0.2)', borderRadius:20, padding:'3px 10px', whiteSpace:'nowrap', cursor:'help' }}>
+                                Plaid Linked
+                                {sub && (
+                                    <span style={{ opacity:0.65, fontFamily:'monospace', marginLeft:1 }}>
+                                        → {sub.mask ? `···${sub.mask}` : sub.name}
+                                    </span>
+                                )}
+                            </span>
+                        );
+                    })() : (
                         <ConnBadge type={connType} />
                     )}
 
@@ -591,6 +610,19 @@ export default function Accounts() {
     const [filterType, setFilterType] = useState('all'); // all | credit | checking | manual
     const [syncing,    setSyncing]    = useState(false);
     const [syncMsg,    setSyncMsg]    = useState(null);
+    const [plaidSubAccountMap, setPlaidSubAccountMap] = useState(() => {
+        try {
+            const cached = JSON.parse(localStorage.getItem(BALANCES_CACHE_KEY) || 'null');
+            return buildPlaidMap(cached?.institutions || []);
+        } catch { return {}; }
+    });
+
+    // Fetch fresh balance data to populate sub-account map for "Plaid Linked" badges
+    useEffect(() => {
+        apiGet('/plaid/balances')
+            .then(r => setPlaidSubAccountMap(buildPlaidMap(r.institutions || [])))
+            .catch(() => {});
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const load = useCallback(async (silent = false) => {
         if (!silent) { setLoading(true); setError(null); }
@@ -762,6 +794,7 @@ export default function Accounts() {
                                 filterType={filterType}
                                 mergedFrom={mergedInto[acct.source] || []}
                                 allMergeTargets={allMergeTargets}
+                                plaidSubAccountMap={plaidSubAccountMap}
                             />
                         ))}
                     </div>
@@ -788,6 +821,7 @@ export default function Accounts() {
                                     onDisconnect={() => load(false)}
                                     mergedFrom={mergedInto[acct.source] || []}
                                     allMergeTargets={allMergeTargets}
+                                    plaidSubAccountMap={plaidSubAccountMap}
                                 />
                             ))}
                         </div>
@@ -806,7 +840,7 @@ export default function Accounts() {
                     {showMerged && (
                         <div style={{ display:'flex', flexDirection:'column', gap:8, marginTop:10 }}>
                             {mergedAccounts.map(acct => (
-                                <AccountCard key={acct.source} acct={acct} totalMonth={totalMonth} plaidConnections={null} onAliasChange={handleAliasChange} onSync={handleSync} syncing={syncing} onDisconnect={() => load(false)} mergedFrom={[]} allMergeTargets={allMergeTargets} />
+                                <AccountCard key={acct.source} acct={acct} totalMonth={totalMonth} plaidConnections={null} onAliasChange={handleAliasChange} onSync={handleSync} syncing={syncing} onDisconnect={() => load(false)} mergedFrom={[]} allMergeTargets={allMergeTargets} plaidSubAccountMap={plaidSubAccountMap} />
                             ))}
                         </div>
                     )}
@@ -824,7 +858,7 @@ export default function Accounts() {
                     {showHidden && (
                         <div style={{ display:'flex', flexDirection:'column', gap:8, marginTop:10 }}>
                             {hiddenAccounts.map(acct => (
-                                <AccountCard key={acct.source} acct={acct} totalMonth={totalMonth} plaidConnections={acct.source==='plaid'?plaidConns:null} onAliasChange={handleAliasChange} onSync={handleSync} syncing={syncing} onDisconnect={() => load(false)} mergedFrom={mergedInto[acct.source]||[]} allMergeTargets={allMergeTargets} />
+                                <AccountCard key={acct.source} acct={acct} totalMonth={totalMonth} plaidConnections={acct.source==='plaid'?plaidConns:null} onAliasChange={handleAliasChange} onSync={handleSync} syncing={syncing} onDisconnect={() => load(false)} mergedFrom={mergedInto[acct.source]||[]} allMergeTargets={allMergeTargets} plaidSubAccountMap={plaidSubAccountMap} />
                             ))}
                         </div>
                     )}

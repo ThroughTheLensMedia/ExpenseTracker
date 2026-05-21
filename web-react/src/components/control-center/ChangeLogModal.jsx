@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.35', date: 'MAY 20, 2026', color: '#10b981', items: [
+        '<strong>Plaid Cross-Reference:</strong> The "Plaid Linked" badge on CSV accounts now shows which Plaid sub-account they map to (e.g. "Plaid Linked → ···7121"). If you have two Checking accounts and aren\'t sure which one links to USAA Checking ···7121, the badge tells you at a glance. No action needed — the link is detected automatically from your transaction history.',
+    ]},
     { version: '7.8.34', date: 'MAY 20, 2026', color: '#38bdf8', items: [
         '<strong>Plaid Sub-Account Last-4:</strong> Each sub-account on the Live Sync card now shows the last 4 digits of the account number (e.g. ···1234) next to the account name.',
         '<strong>Savings & Older Plaid Transactions Now Visible:</strong> Clicking a sub-account previously showed 0 results if those transactions were imported before the account-ID column existed. The filter now falls back to source-name matching so all transactions appear.',

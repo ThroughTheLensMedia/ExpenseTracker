@@ -1,6 +1,6 @@
 {
-  "version": "7.8.34",
+  "version": "7.8.35",
   "release_date": "2026-05-20",
   "codename": "Lumière Ledger",
-  "notes": "v7.8.30: Account merging — absorb duplicate CSV accounts into a single card."
+  "notes": "v7.8.35: Plaid cross-reference — Plaid Linked badge now shows which sub-account (e.g. ···7121) each CSV account maps to."
 }

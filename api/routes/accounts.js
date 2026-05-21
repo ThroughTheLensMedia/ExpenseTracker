@@ -32,7 +32,7 @@ router.get('/summary', async (req, res) => {
         const lastMo   = thisMo === 1 ? 12 : thisMo - 1;
         const lastMoYr = thisMo === 1 ? thisYear - 1 : thisYear;
 
-        const [txRes, aliasRes, plaidRes] = await Promise.all([
+        const [txRes, aliasRes, plaidRes, linkRes] = await Promise.all([
             req.sb
                 .from('expenses')
                 .select('source, amount_cents, expense_date, plaid_transaction_id')
@@ -50,9 +50,30 @@ router.get('/summary', async (req, res) => {
                 .eq('user_id', req.user.id)
                 .eq('status', 'active')
                 .then(r => r).catch(() => ({ data: [] })),
+            // For each CSV source with Plaid cross-matches, find which plaid_account_id it links to
+            req.sb
+                .from('expenses')
+                .select('source, plaid_account_id')
+                .eq('user_id', req.user.id)
+                .not('plaid_transaction_id', 'is', null)
+                .not('plaid_account_id', 'is', null)
+                .then(r => r).catch(() => ({ data: [] })),
         ]);
 
         if (txRes.error) throw txRes.error;
+
+        // Build source → plaid_account_id map (most frequent plaid_account_id wins)
+        const plaidLinkMap = {}; // source → { account_id: count }
+        for (const row of (linkRes.data || [])) {
+            if (!row.source || !row.plaid_account_id) continue;
+            if (!plaidLinkMap[row.source]) plaidLinkMap[row.source] = {};
+            plaidLinkMap[row.source][row.plaid_account_id] = (plaidLinkMap[row.source][row.plaid_account_id] || 0) + 1;
+        }
+        // Reduce to single best plaid_account_id per source
+        const sourcePlaidAccount = {};
+        for (const [source, counts] of Object.entries(plaidLinkMap)) {
+            sourcePlaidAccount[source] = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+        }
 
         // Alias lookup
         const aliasMap = {};
@@ -112,9 +133,10 @@ router.get('/summary', async (req, res) => {
             const alias = aliasMap[acct.source] || {};
             return {
                 ...acct,
-                display_name:  alias.display_name  || null,
-                visible:       alias.visible !== false,
-                linked_source: alias.linked_source  || null,
+                display_name:          alias.display_name          || null,
+                visible:               alias.visible !== false,
+                linked_source:         alias.linked_source          || null,
+                linked_plaid_account_id: sourcePlaidAccount[acct.source] || null,
             };
         });
 
