@@ -254,13 +254,17 @@ router.get("/balances", async (req, res) => {
                     })),
                 });
             } catch (e) {
-                console.error(`[Plaid] Balance fetch failed for ${conn.institution_name}:`, e.message);
+                const errCode = e.response?.data?.error_code || e.response?.data?.error_type || e.message || 'UNKNOWN';
+                const needsReauth = ['ITEM_LOGIN_REQUIRED', 'INVALID_ACCESS_TOKEN', 'ITEM_NOT_FOUND', 'INVALID_CREDENTIALS'].includes(errCode);
+                console.error(`[Plaid] Balance fetch failed for ${conn.institution_name}: ${errCode}`);
                 institutions.push({
                     id:               conn.id,
                     institution_name: conn.institution_name,
                     last_synced_at:   conn.last_synced_at,
                     accounts:         [],
                     balance_error:    true,
+                    error_code:       errCode,
+                    needs_reauth:     needsReauth,
                 });
             }
         }

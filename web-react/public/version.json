@@ -1,6 +1,6 @@
 {
-  "version": "7.8.35",
+  "version": "7.8.36",
   "release_date": "2026-05-20",
   "codename": "Lumière Ledger",
-  "notes": "v7.8.35: Plaid cross-reference — Plaid Linked badge now shows which sub-account (e.g. ···7121) each CSV account maps to."
+  "notes": "v7.8.36: Plaid balance resilience — sub-accounts stay visible when live balance fetch fails; shows last known data with a warning instead of going blank."
 }

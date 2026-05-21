@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.36', date: 'MAY 20, 2026', color: '#f97316', items: [
+        '<strong>Plaid Balance Resilience:</strong> Sub-accounts no longer disappear when the bank is temporarily unreachable. Your last known balances stay visible with an orange "Live balance unavailable — showing last known" note. If USAA or another bank needs re-authentication, you\'ll see a clear message explaining what to do instead of a blank card.',
+    ]},
     { version: '7.8.35', date: 'MAY 20, 2026', color: '#10b981', items: [
         '<strong>Plaid Cross-Reference:</strong> The "Plaid Linked" badge on CSV accounts now shows which Plaid sub-account they map to (e.g. "Plaid Linked → ···7121"). If you have two Checking accounts and aren\'t sure which one links to USAA Checking ···7121, the badge tells you at a glance. No action needed — the link is detected automatically from your transaction history.',
     ]},

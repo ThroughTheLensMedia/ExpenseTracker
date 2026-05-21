@@ -128,7 +128,8 @@ function ConnBadge({ type }) {
 }
 
 // ─── Balance rows (Plaid sub-accounts) ────────────────────────────────────────
-const BALANCES_CACHE_KEY = 'll_plaid_balances_cache';
+const BALANCES_CACHE_KEY     = 'll_plaid_balances_cache';
+const BALANCES_LAST_GOOD_KEY = 'll_plaid_balances_last_good';
 
 // Map app filterType → Plaid account type/subtype
 function matchesFilter(a, filterType) {
@@ -144,8 +145,17 @@ function BalanceRows({ source, plaidConnections, filterType = 'all' }) {
     const [state,      setState]      = useState(() => {
         try {
             const cached = JSON.parse(localStorage.getItem(BALANCES_CACHE_KEY) || 'null');
-            if (cached?.institutions?.length)
+            if (cached?.institutions?.length) {
+                // Seed last-good cache from main cache if last-good is missing (first run after upgrade)
+                try {
+                    const hasLastGood = localStorage.getItem(BALANCES_LAST_GOOD_KEY);
+                    if (!hasLastGood) {
+                        const good = cached.institutions.filter(i => i.accounts?.length);
+                        if (good.length) localStorage.setItem(BALANCES_LAST_GOOD_KEY, JSON.stringify(good));
+                    }
+                } catch {}
                 return { loading:false, institutions: cached.institutions, error:false, stale:true };
+            }
         } catch {}
         return { loading:true, institutions:null, error:false, stale:false };
     });
@@ -161,13 +171,36 @@ function BalanceRows({ source, plaidConnections, filterType = 'all' }) {
         apiGet('/plaid/balances')
             .then(r => {
                 if (cancelled) return;
-                const institutions = r.institutions || [];
-                setState({ loading:false, institutions, error:false, stale:false });
-                try { localStorage.setItem(BALANCES_CACHE_KEY, JSON.stringify({ institutions, ts: Date.now() })); } catch {}
+                const fresh = r.institutions || [];
+
+                // Merge: for institutions that returned balance_error, inject last-good accounts
+                // so cached sub-account rows stay visible with a warning instead of going blank.
+                let lastGood = [];
+                try { lastGood = JSON.parse(localStorage.getItem(BALANCES_LAST_GOOD_KEY) || '[]'); } catch {}
+                const lastGoodById = {};
+                for (const lg of lastGood) lastGoodById[lg.id] = lg;
+
+                const merged = fresh.map(inst => {
+                    if (inst.balance_error && lastGoodById[inst.id]?.accounts?.length) {
+                        return { ...inst, accounts: lastGoodById[inst.id].accounts, balance_stale: true };
+                    }
+                    return inst;
+                });
+
+                // Only update the last-good cache with institutions that actually returned accounts
+                const freshGood = fresh.filter(i => !i.balance_error && i.accounts?.length);
+                if (freshGood.length) {
+                    try { localStorage.setItem(BALANCES_LAST_GOOD_KEY, JSON.stringify(freshGood)); } catch {}
+                }
+
+                setState({ loading:false, institutions: merged, error:false, stale:false });
+                // Update main cache only if at least one institution has real accounts
+                if (merged.some(i => i.accounts?.length)) {
+                    try { localStorage.setItem(BALANCES_CACHE_KEY, JSON.stringify({ institutions: merged, ts: Date.now() })); } catch {}
+                }
             })
             .catch(() => {
                 if (cancelled) return;
-                // Keep stale data if we have it; only show error on cold start
                 setState(prev => prev.institutions?.length
                     ? { ...prev, loading:false, stale:false }
                     : { loading:false, institutions:[], error:true, stale:false });
@@ -259,10 +292,31 @@ function BalanceRows({ source, plaidConnections, filterType = 'all' }) {
             {!state.loading && !state.error && (
                 <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
                     {state.institutions?.map(inst => {
-                        if (inst.balance_error)
-                            return <div key={inst.id} style={{ fontSize:12, color:'rgba(255,255,255,0.3)' }}>Balance unavailable for {inst.institution_name}</div>;
+                        if (inst.balance_error && !inst.balance_stale) {
+                            // No cached fallback — show why
+                            const msg = inst.needs_reauth
+                                ? 'Bank connection needs re-authentication — click Unsync, reconnect your bank.'
+                                : `Balance unavailable for ${inst.institution_name}. Sync again to retry.`;
+                            return (
+                                <div key={inst.id} style={{ fontSize:11, color:'#f97316', background:'rgba(249,115,22,0.07)', border:'1px solid rgba(249,115,22,0.2)', borderRadius:8, padding:'7px 11px', fontWeight:700 }}>
+                                    {msg}
+                                    {inst.error_code && <span style={{ marginLeft:6, opacity:0.6, fontFamily:'monospace', fontSize:10 }}>({inst.error_code})</span>}
+                                </div>
+                            );
+                        }
                         const visible = (inst.accounts || []).filter(a => !hiddenIds.has(a.account_id) && matchesFilter(a, filterType));
-                        return visible.map(a => <SubRow key={a.account_id} a={a} faded={false} />);
+                        return (
+                            <React.Fragment key={inst.id}>
+                                {inst.balance_stale && (
+                                    <div style={{ fontSize:10, color:'#f97316', background:'rgba(249,115,22,0.07)', border:'1px solid rgba(249,115,22,0.15)', borderRadius:7, padding:'5px 10px', fontWeight:700, marginBottom:2 }}>
+                                        Live balance unavailable — showing last known
+                                        {inst.needs_reauth && <span style={{ marginLeft:6 }}>· Bank re-authentication required</span>}
+                                        {inst.error_code && <span style={{ marginLeft:6, opacity:0.55, fontFamily:'monospace' }}>({inst.error_code})</span>}
+                                    </div>
+                                )}
+                                {visible.map(a => <SubRow key={a.account_id} a={a} faded={false} />)}
+                            </React.Fragment>
+                        );
                     })}
 
                     {/* Filter active but no matching sub-accounts */}

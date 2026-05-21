@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.36] — 2026-05-20
+
+### Plaid balance resilience — sub-accounts stay visible when live fetch fails
+
+#### Fixed
+- **`api/routes/plaid.js`** — `/plaid/balances` now returns `error_code` and `needs_reauth` flag alongside `balance_error`, so the frontend knows whether it's a transient error or a bank re-authentication requirement.
+- **`web-react/src/pages/Accounts.jsx`** — `BalanceRows`: The localStorage cache is no longer overwritten when a balance fetch returns an error (was poisoning the cache with empty accounts). A second cache key `ll_plaid_balances_last_good` stores the last response that had real accounts. When live fetch fails, last-good accounts are shown with an orange "Live balance unavailable — showing last known" banner. If the error is `ITEM_LOGIN_REQUIRED`, users see "Bank re-authentication required" with the error code.
+
+---
+
 ## [v7.8.35] — 2026-05-20
 
 ### Plaid cross-reference: show which sub-account each CSV source maps to
