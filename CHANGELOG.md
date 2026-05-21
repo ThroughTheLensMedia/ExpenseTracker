@@ -5,6 +5,18 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.39] — 2026-05-21
+
+### Vendor category memory — learn once, apply forever
+
+#### Added
+- **`api/utils/vendorRules.js`** — Shared utility: `normalizeVendor` (strips store numbers/IDs for stable matching), `loadVendorRules` (fetch all rules → lookup map), `learnVendorRule` (upsert rule, increment match count). Fails open — never blocks a sync if the table is missing.
+- **`api/routes/expenses.js`** — `PATCH /:id` now calls `learnVendorRule` (fire-and-forget) whenever `category`, `tax_deductible`, `business_use_pct`, or `tax_bucket` is changed. The normalized vendor name + new values are stored as a rule.
+- **`api/routes/plaid.js`** — `syncTransactions` loads all vendor rules once per sync via `loadVendorRules`. When mapping new transactions, if a vendor matches a saved rule, the user's stored values (category, tax flag, business %, tax bucket) are applied instead of Plaid's auto-category.
+- **`api/migrations/003_vendor_category_rules.sql`** — Proper table definition with PRIMARY KEY `(user_id, vendor_pattern)`, FK to `auth.users`, lookup index, and full RLS policies. Idempotent — handles case where bare `CREATE TABLE` was already run.
+
+---
+
 ## [v7.8.38] — 2026-05-21
 
 ### Plaid data integrity: source key collision, soft-delete, self-healing repair

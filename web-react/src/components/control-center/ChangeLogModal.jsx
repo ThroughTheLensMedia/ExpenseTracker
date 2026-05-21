@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.39', date: 'MAY 21, 2026', color: '#a78bfa', items: [
+        '<strong>Vendor Memory — Auto-Categorization:</strong> Edit a transaction\'s category, tax flag, or business % once, and every future import of that vendor will automatically get the same values. Starbucks always becomes "Client Entertainment." Delta always gets marked tax-deductible. No repeated corrections needed. Requires running migration 003 in Supabase SQL Editor.',
+    ]},
     { version: '7.8.38', date: 'MAY 21, 2026', color: '#10b981', items: [
         '<strong>Credit Card Source Keys Fixed:</strong> If you have multiple cards from the same bank (e.g. two Amex cards), transactions from each card now stay separate. Previously they shared the same account label and mixed together.',
         '<strong>Receipt &amp; Note Protection:</strong> When Plaid removes a transaction (common on pending→posted transitions), your attached receipts, notes, and tax flags are now preserved. The transaction stays in your ledger as a manual record instead of being deleted.',

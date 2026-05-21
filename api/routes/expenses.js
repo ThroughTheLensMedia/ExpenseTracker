@@ -1,5 +1,6 @@
 const express = require("express");
 const z = require("zod");
+const { learnVendorRule } = require('../utils/vendorRules');
 
 const router = express.Router();
 
@@ -221,6 +222,9 @@ router.patch("/bulk-source", async (req, res) => {
 });
 
 // PATCH /expenses/:id
+// Fields that trigger vendor rule learning when changed
+const LEARNABLE_FIELDS = new Set(['category', 'tax_deductible', 'business_use_pct', 'tax_bucket']);
+
 router.patch("/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
@@ -235,6 +239,18 @@ router.patch("/:id", async (req, res) => {
 
     if (error) throw error;
     if (!updated) return res.status(404).json({ error: "Expense not found" });
+
+    // Learn vendor rule if any categorization field changed — fire-and-forget (non-blocking)
+    const hasLearnableChange = Object.keys(data).some(k => LEARNABLE_FIELDS.has(k));
+    if (hasLearnableChange && updated.vendor) {
+        learnVendorRule(req.sb, req.user.id, updated.vendor, {
+            category:         updated.category,
+            tax_deductible:   updated.tax_deductible,
+            business_use_pct: updated.business_use_pct,
+            tax_bucket:       updated.tax_bucket,
+        });
+    }
+
     res.json(updated);
   } catch (e) {
     if (e instanceof z.ZodError) return res.status(400).json({ error: e.errors });

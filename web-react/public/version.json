@@ -1,6 +1,6 @@
 {
-  "version": "7.8.38",
+  "version": "7.8.39",
   "release_date": "2026-05-20",
   "codename": "Lumière Ledger",
-  "notes": "v7.8.38: Plaid data integrity fixes — credit card source keys, soft-delete, self-healing source repair."
+  "notes": "v7.8.39: Vendor memory — edit a transaction once, auto-apply that category to all future matching imports."
 }

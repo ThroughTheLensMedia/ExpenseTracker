@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { z } = require("zod");
 const { encrypt, decrypt } = require("../utils/cryptoUtil");
+const { loadVendorRules, normalizeVendor } = require("../utils/vendorRules");
 
 /**
  * Plaid Integration Routes
@@ -424,6 +425,9 @@ async function syncTransactions(sb, plaidClient, connection, userId) {
     let hasMore = true;
     const accountSourceMap = {}; // plaid account_id → readable source key
 
+    // Load user's vendor category rules once — applied to every new transaction
+    const vendorRules = await loadVendorRules(sb, userId);
+
     // Fetch account names upfront — accountsGet always returns accounts regardless of cursor state
     try {
         const acctAccess = await decrypt(connection.access_token);
@@ -455,20 +459,26 @@ async function syncTransactions(sb, plaidClient, connection, userId) {
 
         // Process added transactions
         if (newTxns.length > 0) {
-            const rows = newTxns.map(t => ({
-                user_id: userId,
-                expense_date: t.date,
-                vendor: t.merchant_name || t.name || "Unknown",
-                amount_cents: Math.round((t.amount || 0) * 100),
-                category: mapPlaidCategory(t.personal_finance_category),
-                source: accountSourceMap[t.account_id] || connection.institution_name,
-                notes: `Plaid: ${t.name || ''} | ${connection.institution_name}`,
-                plaid_transaction_id: t.transaction_id,
-                plaid_account_id: t.account_id || null,
-                tax_deductible: false,
-                tax_bucket: '',
-                business_use_pct: 100,
-            }));
+            const rows = newTxns.map(t => {
+                const vendorName = t.merchant_name || t.name || "Unknown";
+                // Check if user has a saved rule for this vendor
+                const rule = vendorRules[normalizeVendor(vendorName)];
+                return {
+                    user_id:             userId,
+                    expense_date:        t.date,
+                    vendor:              vendorName,
+                    amount_cents:        Math.round((t.amount || 0) * 100),
+                    // Rule takes priority over Plaid's auto-category
+                    category:         rule?.category         ?? mapPlaidCategory(t.personal_finance_category),
+                    tax_deductible:   rule?.tax_deductible   ?? false,
+                    business_use_pct: rule?.business_use_pct ?? 100,
+                    tax_bucket:       rule?.tax_bucket       ?? '',
+                    source:              accountSourceMap[t.account_id] || connection.institution_name,
+                    notes:               `Plaid: ${t.name || ''} | ${connection.institution_name}`,
+                    plaid_transaction_id: t.transaction_id,
+                    plaid_account_id:    t.account_id || null,
+                };
+            });
 
             // Cross-source dedup: link existing CSV rows, insert only truly new ones
             const { toInsert, linked: linkCount } = await crossSourceDedup(sb, userId, rows);
