@@ -46,6 +46,15 @@ export default function Mileage() {
     const [calculating, setCalculating] = useState(false);
     const [mapError, setMapError] = useState('');
 
+    // Manual entry mode
+    const [manualMode, setManualMode] = useState(false);
+    const [manualDate, setManualDate] = useState(new Date().toISOString().slice(0, 10));
+    const [manualName, setManualName] = useState('');
+    const [manualMiles, setManualMiles] = useState('');
+    const [manualNotes, setManualNotes] = useState('');
+    const [linkedInvoice, setLinkedInvoice] = useState('');
+    const [invoicesList, setInvoicesList] = useState([]);
+
     // Edit state
     const [editingId, setEditingId] = useState(null);
     const [editDate, setEditDate] = useState('');
@@ -81,6 +90,37 @@ export default function Mileage() {
     };
 
     useEffect(() => { loadData(); }, [selectedYear]);
+
+    // Load invoices once for the manual-entry invoice link dropdown
+    useEffect(() => {
+        apiGet('/invoices?limit=200').then(res => {
+            setInvoicesList(res?.data || []);
+        }).catch(() => {});
+    }, []);
+
+    const handleAddManualTrip = async () => {
+        if (!manualName) return modal.alert('Please enter a trip name or client.');
+        if (!manualMiles || isNaN(Number(manualMiles)) || Number(manualMiles) <= 0)
+            return modal.alert('Please enter a valid mileage amount.');
+        try {
+            const inv = linkedInvoice ? invoicesList.find(i => String(i.id) === linkedInvoice) : null;
+            const invRef = inv ? `Invoice #${inv.invoice_number}${inv.clients?.name ? ' — ' + inv.clients.name : ''}` : '';
+            const noteParts = [manualNotes, invRef].filter(Boolean).join(' · ');
+            const purpose = noteParts
+                ? `${manualName} | Manual Entry | ${noteParts}`
+                : `${manualName} | Manual Entry`;
+            await apiPost('/mileage', {
+                log_date: manualDate,
+                miles: Math.round(Number(manualMiles) * 10) / 10,
+                purpose,
+            });
+            setManualName(''); setManualMiles(''); setManualNotes(''); setLinkedInvoice('');
+            setManualDate(new Date().toISOString().slice(0, 10));
+            loadData(true);
+        } catch (err) {
+            modal.alert('Failed to log trip: ' + err.message);
+        }
+    };
 
     const calculateRoute = useCallback(() => {
         const addrA = originRef.current?.value || origin;
@@ -302,25 +342,128 @@ export default function Mileage() {
 
             {/* Maps Trip Logger */}
             <div className="card" style={{ marginBottom: '20px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
                     <div>
                         <h2 style={{ margin: 0 }}>Log New Trip</h2>
-                        <div className="muted small" style={{ marginTop: '4px' }}>Enter your start and end address — miles auto-calculated</div>
+                        <div className="muted small" style={{ marginTop: '4px' }}>
+                            {manualMode ? 'Enter miles directly — no address needed' : 'Enter your start and end address — miles auto-calculated'}
+                        </div>
                     </div>
-                    <div className="tag ok" style={{ fontSize: '10px' }}>MAPS AUTOPILOT</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {/* Mode toggle */}
+                        <div style={{ display: 'flex', background: 'rgba(255,255,255,0.06)', borderRadius: '10px', padding: '3px', gap: '2px' }}>
+                            <button
+                                onClick={() => setManualMode(false)}
+                                style={{
+                                    padding: '6px 14px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                                    fontSize: '11px', fontWeight: 800, letterSpacing: '0.04em',
+                                    background: !manualMode ? 'rgba(16,185,129,0.2)' : 'transparent',
+                                    color: !manualMode ? '#10b981' : 'rgba(255,255,255,0.4)',
+                                    transition: 'all 0.15s',
+                                }}
+                            >
+                                Maps Autopilot
+                            </button>
+                            <button
+                                onClick={() => setManualMode(true)}
+                                style={{
+                                    padding: '6px 14px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                                    fontSize: '11px', fontWeight: 800, letterSpacing: '0.04em',
+                                    background: manualMode ? 'rgba(99,102,241,0.25)' : 'transparent',
+                                    color: manualMode ? '#818cf8' : 'rgba(255,255,255,0.4)',
+                                    transition: 'all 0.15s',
+                                }}
+                            >
+                                Manual Entry
+                            </button>
+                        </div>
+                        {/* Maps badge */}
+                        {!manualMode && (
+                            <div
+                                className="tag ok"
+                                style={{ fontSize: '10px', cursor: 'help' }}
+                                title="After calculating your route, tap 'Open in Google Maps' to send it to your phone's navigation app"
+                            >
+                                🗺 Open Route in Maps
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                {loadError && (
+                {/* ── Manual Entry Form ─────────────────────────────── */}
+                {manualMode && (
+                    <div>
+                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '14px' }}>
+                            <div style={{ flex: '0 0 155px' }}>
+                                <label className="muted small" style={{ display: 'block', marginBottom: '6px' }}>Trip Date</label>
+                                <input type="date" value={manualDate} onChange={e => setManualDate(e.target.value)} style={{ width: '100%' }} />
+                            </div>
+                            <div style={{ flex: 2, minWidth: '200px' }}>
+                                <label className="muted small" style={{ display: 'block', marginBottom: '6px' }}>Trip Name / Client</label>
+                                <input type="text" placeholder="e.g. Miller Wedding Shoot" value={manualName} onChange={e => setManualName(e.target.value)} style={{ width: '100%' }} />
+                            </div>
+                            <div style={{ flex: '0 0 130px' }}>
+                                <label className="muted small" style={{ display: 'block', marginBottom: '6px' }}>Miles</label>
+                                <input type="number" step="0.1" min="0" placeholder="e.g. 24.5" value={manualMiles} onChange={e => setManualMiles(e.target.value)} style={{ width: '100%' }} />
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '14px' }}>
+                            <div style={{ flex: 2, minWidth: '200px' }}>
+                                <label className="muted small" style={{ display: 'block', marginBottom: '6px' }}>Notes (optional)</label>
+                                <input type="text" placeholder="e.g. Drove to client location for boudoir session" value={manualNotes} onChange={e => setManualNotes(e.target.value)} style={{ width: '100%' }} />
+                            </div>
+                            <div style={{ flex: 1, minWidth: '200px' }}>
+                                <label className="muted small" style={{ display: 'block', marginBottom: '6px' }}>Link to Invoice (optional)</label>
+                                <select value={linkedInvoice} onChange={e => setLinkedInvoice(e.target.value)} style={{ width: '100%' }}>
+                                    <option value="">— No invoice —</option>
+                                    {invoicesList.map(inv => (
+                                        <option key={inv.id} value={String(inv.id)}>
+                                            #{inv.invoice_number}{inv.clients?.name ? ' — ' + inv.clients.name : ''}{inv.total_cents ? ' ($' + (inv.total_cents / 100).toFixed(2) + ')' : ''}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                        {manualMiles && manualName && (
+                            <div style={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)',
+                                borderRadius: '10px', padding: '12px 18px', marginBottom: '14px', flexWrap: 'wrap', gap: '8px'
+                            }}>
+                                <div>
+                                    <div style={{ fontSize: '10px', fontWeight: 700, opacity: 0.5, letterSpacing: '0.08em' }}>DISTANCE</div>
+                                    <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#818cf8' }}>{Number(manualMiles).toLocaleString()} <span style={{ fontSize: '0.9rem', opacity: 0.6 }}>mi</span></div>
+                                </div>
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontSize: '10px', fontWeight: 700, opacity: 0.5, letterSpacing: '0.08em' }}>IRS DEDUCTION</div>
+                                    <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#4ade80' }}>{formatMoney(Number(manualMiles) * currentRate * 100)}</div>
+                                    <div style={{ fontSize: '10px', opacity: 0.4, marginTop: '2px' }}>at ${currentRate.toFixed(2)}/mi</div>
+                                </div>
+                            </div>
+                        )}
+                        <button
+                            className="btn primary glow-blue"
+                            onClick={handleAddManualTrip}
+                            disabled={!manualName || !manualMiles}
+                            style={{ width: '100%', padding: '14px', fontSize: '15px', fontWeight: 800, opacity: (!manualName || !manualMiles) ? 0.4 : 1 }}
+                        >
+                            ✅ Log This Trip
+                        </button>
+                    </div>
+                )}
+
+                {/* ── Maps Autopilot Form ────────────────────────────── */}
+                {!manualMode && loadError && (
                     <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '10px', padding: '12px 16px', color: '#ef4444', marginBottom: '16px', fontSize: '13px' }}>
                         ⚠️ Google Maps failed to load. Check your <code>VITE_GOOGLE_MAPS_API_KEY</code>.
                     </div>
                 )}
 
-                {!isLoaded && !loadError && (
+                {!manualMode && !isLoaded && !loadError && (
                     <div style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.3)' }}>Loading Maps…</div>
                 )}
 
-                {isLoaded && (
+                {!manualMode && isLoaded && (
                     <>
                         {/* Date + Trip Name row */}
                         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '14px' }}>

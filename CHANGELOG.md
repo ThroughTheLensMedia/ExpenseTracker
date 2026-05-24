@@ -5,6 +5,19 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.44] — 2026-05-21
+
+### Mileage — Manual Entry mode + invoice link + Maps badge
+
+#### Added
+- **`web-react/src/pages/Mileage.jsx`** — "Manual Entry" tab added alongside "Maps Autopilot" in the Log New Trip card. Manual form: Trip Date, Trip Name / Client, Miles (numeric), Notes (free text), and an optional "Link to Invoice" dropdown that pulls from `/invoices`. When an invoice is linked, the reference (e.g. `Invoice #42 — Miller Wedding`) is appended to the purpose string. Manual entries appear in Trip History with the same format as Maps entries (Name / Manual Entry / Notes row breakdown).
+- **`web-react/src/pages/Mileage.jsx`** — Live deduction preview shown when Name + Miles are filled in Manual Entry mode — same style as Maps Autopilot result.
+
+#### Changed
+- **`web-react/src/pages/Mileage.jsx`** — "MAPS AUTOPILOT" badge renamed to "🗺 Open Route in Maps" with a tooltip: "After calculating your route, tap 'Open in Google Maps' to send it to your phone's navigation app."
+
+---
+
 ## [v7.8.43] — 2026-05-21
 
 ### Invoice approval page — payment terms block

@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.44', date: 'MAY 21, 2026', color: '#818cf8', items: [
+        '<strong>Mileage — Manual Entry:</strong> You can now log trips without an address. Switch to "Manual Entry" in the Log New Trip card and fill in date, name, miles, and optional notes. A "Link to Invoice" dropdown lets you attach the trip to a specific invoice (e.g. Invoice #42 — Miller Wedding) — the reference is saved with the trip record. All manual entries appear in Trip History alongside Maps entries.',
+        '<strong>Maps Autopilot Badge:</strong> The badge now reads "Open Route in Maps" and includes a tooltip explaining that after calculating a route, you can tap the link to open it directly in Google Maps or your phone\'s navigation app.',
+    ]},
     { version: '7.8.43', date: 'MAY 21, 2026', color: '#f97316', items: [
         '<strong>Invoice Approval — Payment Terms:</strong> Clients now see a clear Payment Information box before they sign. It outlines the 50% deposit requirement, when the remaining balance is due, accepted payment methods (Cash, Stripe, Venmo, Zelle), and a note that a confirmation email follows once the deposit is received.',
     ]},
