@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.43', date: 'MAY 21, 2026', color: '#f97316', items: [
+        '<strong>Invoice Approval — Payment Terms:</strong> Clients now see a clear Payment Information box before they sign. It outlines the 50% deposit requirement, when the remaining balance is due, accepted payment methods (Cash, Stripe, Venmo, Zelle), and a note that a confirmation email follows once the deposit is received.',
+    ]},
     { version: '7.8.42', date: 'MAY 21, 2026', color: '#a78bfa', items: [
         '<strong>One Card Per Bank:</strong> Connected a bank via Plaid? You now see one card — not two. Previously your Plaid Live Sync card and your imported CSV card (e.g. "American Express Credit Card ···1001") both appeared showing the same data. The Live Sync card is now the single view: live balance, per-sub-account detail, This Month / Last Month / YTD, Transactions, Sync, and Disconnect — all in one place.',
     ]},

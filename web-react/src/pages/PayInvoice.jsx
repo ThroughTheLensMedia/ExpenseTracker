@@ -310,10 +310,23 @@ export default function PayInvoice() {
             {/* E-Signature section */}
             <div style={{ ...styles.card, marginTop: 0 }}>
                 <div style={styles.sectionLabel}>Approve This Invoice</div>
-                <p style={{ fontSize: '14px', color: '#475569', margin: '0 0 20px', lineHeight: 1.6 }}>
+                <p style={{ fontSize: '14px', color: '#475569', margin: '0 0 16px', lineHeight: 1.6 }}>
                     By typing your full name below and clicking <strong>I Agree & Submit</strong>, you confirm that you have reviewed
                     this invoice and authorize payment of <strong style={{ color: '#f97316' }}>{formatMoney(totals.totalCents)}</strong> to {studio.business_name}.
                 </p>
+
+                {/* Payment terms */}
+                <div style={{ background: '#fef9f5', border: '1px solid #fed7aa', borderRadius: '10px', padding: '16px 18px', marginBottom: '20px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 800, color: '#ea580c', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '10px' }}>Payment Information</div>
+                    <ul style={{ margin: '0 0 12px', padding: '0 0 0 18px', fontSize: '14px', color: '#475569', lineHeight: 1.7 }}>
+                        <li>A <strong>50% deposit</strong> is required to secure your date.</li>
+                        <li>The remaining balance is due <strong>before the session</strong> (or on the day of the session).</li>
+                        <li>Payment via <strong>Cash, Stripe, Venmo, or Zelle</strong> are acceptable.</li>
+                    </ul>
+                    <p style={{ margin: 0, fontSize: '14px', color: '#475569', lineHeight: 1.6 }}>
+                        Once I receive your deposit, I will send a confirmation email with your booked date and time. Thank you! Looking forward to working with you.
+                    </p>
+                </div>
 
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Your Full Name (E-Signature)

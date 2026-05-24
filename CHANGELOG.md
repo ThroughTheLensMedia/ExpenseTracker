@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.43] — 2026-05-21
+
+### Invoice approval page — payment terms block
+
+#### Added
+- **`web-react/src/pages/PayInvoice.jsx`** — Payment Information box now appears between the intro paragraph and the e-signature field on the client-facing invoice approval page. Styled with a warm orange border to match the invoice palette. Content: 50% deposit required to secure date; remaining balance due before/day-of session; accepted payment methods (Cash, Stripe, Venmo, Zelle); confirmation email note.
+
+---
+
 ## [v7.8.42] — 2026-05-21
 
 ### Unified Plaid card — no duplicate CSV card

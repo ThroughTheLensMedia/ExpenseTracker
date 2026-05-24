@@ -1,6 +1,6 @@
 {
-  "version": "7.8.42",
+  "version": "7.8.43",
   "release_date": "2026-05-21",
   "codename": "Lumière Ledger",
-  "notes": "v7.8.42: Plaid accounts now show as one unified card — no duplicate CSV card alongside Live Sync."
+  "notes": "v7.8.43: Invoice approval page now shows payment terms (deposit, balance due, accepted payment methods) before the e-signature."
 }
