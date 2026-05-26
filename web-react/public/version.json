@@ -1,6 +1,6 @@
 {
-  "version": "7.8.44",
+  "version": "7.8.45",
   "release_date": "2026-05-21",
   "codename": "Lumière Ledger",
-  "notes": "v7.8.44: Mileage — Manual Entry mode with invoice link; Maps Autopilot badge clarified."
+  "notes": "v7.8.45: Link to Invoice dropdown now available in both Maps Autopilot and Manual Entry modes."
 }

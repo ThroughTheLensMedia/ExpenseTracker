@@ -210,10 +210,13 @@ export default function Mileage() {
             
             if (isRoundTrip) routeStr += ` (Round Trip)`;
             
-            const purpose = tripNotes
-                ? `${tripName} | ${routeStr} | ${tripNotes}`
+            const inv = linkedInvoice ? invoicesList.find(i => String(i.id) === linkedInvoice) : null;
+            const invRef = inv ? `Invoice #${inv.invoice_number}${inv.clients?.name ? ' — ' + inv.clients.name : ''}` : '';
+            const noteParts = [tripNotes, invRef].filter(Boolean).join(' · ');
+            const purpose = noteParts
+                ? `${tripName} | ${routeStr} | ${noteParts}`
                 : `${tripName} | ${routeStr}`;
-                
+
             await apiPost('/mileage', {
                 log_date: tripDate,
                 miles: calculatedMiles,
@@ -225,6 +228,7 @@ export default function Mileage() {
             setWaypoint('');
             setTripName('');
             setTripNotes('');
+            setLinkedInvoice('');
             setIsRoundTrip(false);
             setCalculatedMiles(null);
             setDirections(null);
@@ -586,16 +590,29 @@ export default function Mileage() {
                             </div>
                         </div>
 
-                        {/* Notes */}
-                        <div style={{ marginBottom: '14px' }}>
-                            <label className="muted small" style={{ display: 'block', marginBottom: '6px' }}>Notes (optional)</label>
-                            <input
-                                type="text"
-                                placeholder="e.g. Picked up rental lens on the way"
-                                value={tripNotes}
-                                onChange={e => setTripNotes(e.target.value)}
-                                style={{ width: '100%' }}
-                            />
+                        {/* Notes + Invoice link */}
+                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '14px' }}>
+                            <div style={{ flex: 2, minWidth: '200px' }}>
+                                <label className="muted small" style={{ display: 'block', marginBottom: '6px' }}>Notes (optional)</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. Picked up rental lens on the way"
+                                    value={tripNotes}
+                                    onChange={e => setTripNotes(e.target.value)}
+                                    style={{ width: '100%' }}
+                                />
+                            </div>
+                            <div style={{ flex: 1, minWidth: '200px' }}>
+                                <label className="muted small" style={{ display: 'block', marginBottom: '6px' }}>Link to Invoice (optional)</label>
+                                <select value={linkedInvoice} onChange={e => setLinkedInvoice(e.target.value)} style={{ width: '100%' }}>
+                                    <option value="">— No invoice —</option>
+                                    {invoicesList.map(inv => (
+                                        <option key={inv.id} value={String(inv.id)}>
+                                            #{inv.invoice_number}{inv.clients?.name ? ' — ' + inv.clients.name : ''}{inv.total_cents ? ' ($' + (inv.total_cents / 100).toFixed(2) + ')' : ''}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
 
                         {mapError && (

@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.45] — 2026-05-21
+
+### Mileage — Invoice link in Maps Autopilot mode
+
+#### Changed
+- **`web-react/src/pages/Mileage.jsx`** — "Link to Invoice" dropdown is now present in Maps Autopilot mode alongside the Notes field (same row). Invoice ref is appended to the purpose string after trip notes: `Trip Name | Route | Notes · Invoice #X — Client`. Previously only available in Manual Entry mode.
+
+---
+
 ## [v7.8.44] — 2026-05-21
 
 ### Mileage — Manual Entry mode + invoice link + Maps badge

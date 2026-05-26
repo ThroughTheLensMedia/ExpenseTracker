@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.45', date: 'MAY 21, 2026', color: '#818cf8', items: [
+        '<strong>Mileage — Invoice Link in Maps Mode:</strong> The "Link to Invoice" dropdown is now available in Maps Autopilot mode too, sitting next to the Notes field. Perfect for tax time — your mileage log will show exactly which client session each drive was for.',
+    ]},
     { version: '7.8.44', date: 'MAY 21, 2026', color: '#818cf8', items: [
         '<strong>Mileage — Manual Entry:</strong> You can now log trips without an address. Switch to "Manual Entry" in the Log New Trip card and fill in date, name, miles, and optional notes. A "Link to Invoice" dropdown lets you attach the trip to a specific invoice (e.g. Invoice #42 — Miller Wedding) — the reference is saved with the trip record. All manual entries appear in Trip History alongside Maps entries.',
         '<strong>Maps Autopilot Badge:</strong> The badge now reads "Open Route in Maps" and includes a tooltip explaining that after calculating a route, you can tap the link to open it directly in Google Maps or your phone\'s navigation app.',
