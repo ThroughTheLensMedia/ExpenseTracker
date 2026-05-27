@@ -396,7 +396,11 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
                                 onChange={e => {
                                     const newBucket = e.target.value;
                                     field('taxBucket', newBucket);
-                                    if (newBucket === 'Personal Expense') field('deduct', false);
+                                    if (newBucket === 'Personal Expense') {
+                                        field('deduct', false);
+                                    } else if (newBucket) {
+                                        field('deduct', true); // any business category → auto-deductible
+                                    }
                                 }}
                                 style={{ width: '100%', padding: '8px' }}
                             >

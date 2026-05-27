@@ -162,6 +162,11 @@ router.post("/", async (req, res) => {
 
     if (!data.expense_date) data.expense_date = new Date().toISOString().slice(0, 10);
 
+    // Auto tax_deductible: any business tax bucket implies deductible
+    if (data.tax_bucket && data.tax_bucket !== 'Personal Expense') {
+      data.tax_deductible = true;
+    }
+
     const { data: inserted, error } = await req.sb
       .from("expenses")
       .insert(data)
@@ -229,6 +234,15 @@ router.patch("/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     const data = ExpenseUpdateSchema.parse(req.body);
+
+    // Auto tax_deductible: setting any business tax bucket implies deductible
+    // (only override if the request didn't already explicitly set tax_deductible to false)
+    if ('tax_bucket' in data && data.tax_bucket && data.tax_bucket !== 'Personal Expense') {
+      if (!('tax_deductible' in data) || data.tax_deductible !== false) {
+        data.tax_deductible = true;
+      }
+    }
+
     const { data: updated, error } = await req.sb
       .from("expenses")
       .update(data)

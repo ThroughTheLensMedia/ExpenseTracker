@@ -470,9 +470,10 @@ async function syncTransactions(sb, plaidClient, connection, userId) {
                     amount_cents:        Math.round((t.amount || 0) * 100),
                     // Rule takes priority over Plaid's auto-category
                     category:         rule?.category         ?? mapPlaidCategory(t.personal_finance_category),
-                    tax_deductible:   rule?.tax_deductible   ?? false,
-                    business_use_pct: rule?.business_use_pct ?? 100,
                     tax_bucket:       rule?.tax_bucket       ?? '',
+                    // Auto-deductible: if a business tax bucket is set via rule, mark deductible
+                    tax_deductible:   rule?.tax_deductible   ?? (rule?.tax_bucket && rule.tax_bucket !== 'Personal Expense' ? true : false),
+                    business_use_pct: rule?.business_use_pct ?? 100,
                     source:              accountSourceMap[t.account_id] || connection.institution_name,
                     notes:               `Plaid: ${t.name || ''} | ${connection.institution_name}`,
                     plaid_transaction_id: t.transaction_id,

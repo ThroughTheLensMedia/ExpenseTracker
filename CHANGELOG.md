@@ -5,6 +5,21 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.46] — 2026-05-26
+
+### Monthly Insights Modal + Auto tax-deductible from tax bucket
+
+#### Added
+- **`web-react/src/components/MonthlyInsightsModal.jsx`** — New component. Shows once per calendar month (localStorage key `ll_monthly_insights_YYYY-MM`), 3 seconds after login. Up to 3 steps rendered based on data: (1) Most Frequent — top 3 vendors by count with average spend; (2) Largest Transactions — top 3 by amount; (3) Uncategorized — count + top 3 items + "Go to Transactions" CTA in orange. Progress dot indicator. Slide-up animation. Skips month if fewer than 3 transactions exist.
+- **`web-react/src/App.jsx`** — Monthly Insights trigger effect; `showMonthlyInsights` state; modal render alongside other global modals.
+
+#### Changed
+- **`api/routes/expenses.js`** — POST: if `tax_bucket` is set and not "Personal Expense", `tax_deductible` is forced to `true`. PATCH: same rule applied when `tax_bucket` is included in the update (respects explicit `false` override).
+- **`web-react/src/components/TransactionDrawer.jsx`** — Tax bucket `onChange`: selecting any business bucket (non-empty, non-"Personal Expense") now automatically checks the Tax Deductible checkbox. Previously only "Personal Expense" toggled deductible off.
+- **`api/routes/plaid.js`** — Plaid transaction mapping: if a vendor rule has a business `tax_bucket`, the imported transaction is auto-marked `tax_deductible: true`.
+
+---
+
 ## [v7.8.45] — 2026-05-21
 
 ### Mileage — Invoice link in Maps Autopilot mode

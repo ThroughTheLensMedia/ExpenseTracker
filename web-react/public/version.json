@@ -1,6 +1,6 @@
 {
-  "version": "7.8.45",
-  "release_date": "2026-05-21",
+  "version": "7.8.46",
+  "release_date": "2026-05-26",
   "codename": "Lumière Ledger",
-  "notes": "v7.8.45: Link to Invoice dropdown now available in both Maps Autopilot and Manual Entry modes."
+  "notes": "v7.8.46: Monthly spending insights popup; tax bucket auto-marks transactions deductible."
 }

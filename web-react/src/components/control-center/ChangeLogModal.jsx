@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.46', date: 'MAY 26, 2026', color: '#f97316', items: [
+        '<strong>Monthly Spending Insights:</strong> Once per month, a summary slides up after you log in — showing your most frequent vendors, your largest transactions, and any uncategorized items that need attention. Tap "Go to Transactions" on the uncategorized step to fix them immediately. Dismisses until next month.',
+        '<strong>Tax Bucket → Auto-Deductible:</strong> Selecting any business tax bucket (Travel, Meals, Office expense, etc.) on a transaction now automatically marks it as Tax Deductible. No more checking the box manually. "Personal Expense" still turns it off. Applies to the transaction drawer, manual entry, and Plaid imports.',
+    ]},
     { version: '7.8.45', date: 'MAY 21, 2026', color: '#818cf8', items: [
         '<strong>Mileage — Invoice Link in Maps Mode:</strong> The "Link to Invoice" dropdown is now available in Maps Autopilot mode too, sitting next to the Notes field. Perfect for tax time — your mileage log will show exactly which client session each drive was for.',
     ]},
