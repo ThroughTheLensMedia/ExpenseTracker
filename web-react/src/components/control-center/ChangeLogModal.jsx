@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.49', date: 'MAY 27, 2026', color: '#4ade80', items: [
+        '<strong>Top Expense Drivers — Click to Drill Down:</strong> Every category row on the Dashboard is now a clickable link. Tap any category — Dining &amp; Drinks, Auto &amp; Transport, Shopping, etc. — and the Transaction Ledger opens filtered to exactly those transactions. Hover shows a subtle highlight and an → indicator. The UNCATEGORIZED row opens the ledger pre-filtered to transactions that still need a category.',
+        '<strong>Category Filter — Uncategorized Option:</strong> The Category dropdown on the Transaction Ledger now includes "Uncategorized" at the top of the list. Select it to instantly see every transaction that hasn\'t been assigned a category yet — same as the monthly insights shortcut, but always available.',
+    ]},
     { version: '7.8.48', date: 'MAY 27, 2026', color: '#818cf8', items: [
         '<strong>Monthly Insights — Top 5:</strong> Each card in the monthly summary popup now shows up to 5 items instead of 3 — more context before you decide what needs attention.',
         '<strong>Go to Transactions — Filtered:</strong> Tapping "Go to Transactions" from the uncategorized step now opens the ledger pre-filtered to show only uncategorized transactions. An orange badge at the top lets you dismiss the filter when you\'re done.',

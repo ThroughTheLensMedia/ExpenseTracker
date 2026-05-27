@@ -338,14 +338,32 @@ export default function DashboardV2({ apiStatus }) {
                             const maxSpend = list[0]?.cents || 1;
                             return list.map((cat, idx) => {
                                 const percent = Math.min(100, Math.max(0, (cat.cents / maxSpend) * 100));
+                                const isUncategorized = !cat.category || !String(cat.category).trim();
+                                const handleCatClick = () => {
+                                    if (isUncategorized) {
+                                        navigate('/transactions?needs_category=1');
+                                    } else {
+                                        navigate('/transactions?category=' + encodeURIComponent(cat.category));
+                                    }
+                                };
                                 return (
-                                    <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 800 }}>
-                                             <span style={{ textTransform: 'uppercase', color: 'rgba(255,255,255,0.8)' }}>{cat.category || 'UNCATEGORIZED'}</span>
-                                             <span>{formatMoney(cat.cents)}</span>
+                                    <div
+                                        key={idx}
+                                        onClick={handleCatClick}
+                                        title={`View ${isUncategorized ? 'uncategorized' : cat.category} transactions`}
+                                        style={{ display: 'flex', flexDirection: 'column', gap: '6px', cursor: 'pointer', padding: '6px 8px', borderRadius: '8px', margin: '0 -8px', transition: 'background 0.15s' }}
+                                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
+                                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                    >
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', fontWeight: 800 }}>
+                                             <span style={{ textTransform: 'uppercase', color: isUncategorized ? '#f97316' : 'rgba(255,255,255,0.8)' }}>{cat.category || 'UNCATEGORIZED'}</span>
+                                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                 <span>{formatMoney(cat.cents)}</span>
+                                                 <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', fontWeight: 700 }}>→</span>
+                                             </div>
                                         </div>
                                         <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
-                                             <div style={{ height: '100%', width: `${percent}%`, background: idx === 0 ? '#f97316' : 'rgba(255,255,255,0.2)', borderRadius: '4px' }}></div>
+                                             <div style={{ height: '100%', width: `${percent}%`, background: isUncategorized ? '#f97316' : (idx === 0 ? '#f97316' : 'rgba(255,255,255,0.2)'), borderRadius: '4px' }}></div>
                                         </div>
                                     </div>
                                 );

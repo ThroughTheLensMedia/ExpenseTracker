@@ -4,7 +4,7 @@ import { fetchAllExpenses, formatMoney, formatDate, invalidateExpensesCache, api
 import TransactionDrawer from '../components/TransactionDrawer';
 import { useModal } from '../components/ModalContext.jsx';
 import CategorySelect from '../components/CategorySelect.jsx';
-import { ALL_CATEGORIES } from '../constants/categories.js';
+import { ALL_CATEGORIES, CATEGORY_GROUPS } from '../constants/categories.js';
 import useExpenseFilters, { useFilterOptions } from '../hooks/useExpenseFilters';
 
 export default function Transactions() {
@@ -139,6 +139,8 @@ export default function Transactions() {
     useEffect(() => {
         const urlSearch = searchParams.get('search');
         if (urlSearch) setSearchVendor(urlSearch);
+        const urlCategory = searchParams.get('category');
+        if (urlCategory) setSearchCategory(urlCategory);
         const urlPlaidId   = searchParams.get('plaid_account_id');
         const urlPlaidName = searchParams.get('plaid_account_name');
         const urlSource    = searchParams.get('source');
@@ -396,7 +398,30 @@ export default function Transactions() {
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                 <small className="muted" style={{ fontWeight: 800 }}>CATEGORY</small>
-                                <CategorySelect value={ALL_CATEGORIES.includes(searchCategory) ? searchCategory : ''} onChange={val => setSearchCategory(val)} emptyLabel="All Categories" style={{ width: '180px' }} />
+                                <select
+                                    value={needsCategoryFilter ? '__uncategorized__' : (ALL_CATEGORIES.includes(searchCategory) ? searchCategory : '')}
+                                    onChange={e => {
+                                        const v = e.target.value;
+                                        if (v === '__uncategorized__') {
+                                            setNeedsCategoryFilter(true);
+                                            setSearchCategory('');
+                                        } else {
+                                            setNeedsCategoryFilter(false);
+                                            setSearchCategory(v);
+                                        }
+                                    }}
+                                    style={{ width: '180px', padding: '8px' }}
+                                >
+                                    <option value="">All Categories</option>
+                                    <option value="__uncategorized__">Uncategorized</option>
+                                    {CATEGORY_GROUPS.map(({ group, label, items }) => (
+                                        <optgroup key={group} label={label}>
+                                            {items.map(item => (
+                                                <option key={item} value={item}>{item}</option>
+                                            ))}
+                                        </optgroup>
+                                    ))}
+                                </select>
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                 <small className="muted" style={{ fontWeight: 800 }}>ACCOUNT</small>

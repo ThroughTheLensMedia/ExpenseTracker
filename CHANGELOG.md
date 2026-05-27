@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.49] — 2026-05-27
+
+### Top Expense Drivers — clickable + Uncategorized filter
+
+#### Changed
+- **`web-react/src/pages/DashboardV2.jsx`** — Every row in the Top Expense Drivers section is now a clickable link. Clicking any category row navigates to the Transaction Ledger pre-filtered to that category. Clicking "UNCATEGORIZED" navigates to `/transactions?needs_category=1` (same as the monthly insights popup). Rows have a hover highlight and a `→` indicator. Uncategorized bar is always orange to signal it needs attention.
+- **`web-react/src/pages/Transactions.jsx`** — Category filter dropdown replaced with an inline `<select>` that includes an **"Uncategorized"** option at the top (above all category groups). Selecting it activates the `needsCategory` filter (same as the orange badge filter). Reads `?category=X` URL param on mount so dashboard clicks land with the correct category pre-selected.
+
+---
+
 ## [v7.8.48] — 2026-05-27
 
 ### Monthly Insights polish + tax bucket fix + dashboard speed
