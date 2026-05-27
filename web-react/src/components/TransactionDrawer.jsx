@@ -377,6 +377,10 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
                                         if (mapping.pct !== undefined) {
                                             field('bizPct', mapping.pct);
                                         }
+                                    } else {
+                                        // No mapping for this category — clear tax bucket and deductible
+                                        field('taxBucket', '');
+                                        field('deduct', false);
                                     }
                                     // Income categories are negative-amount deductible
                                     const INCOME_CATS = ['Photo Income', 'Freelance Income', 'Contract Income', 'Side Income', 'Interest Income', 'Dividend Income'];
@@ -434,8 +438,8 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
 
                     {/* ── Checkboxes ── */}
                     <div className="row" style={{ marginTop: '10px', display: 'flex', gap: '10px', flexWrap: 'nowrap', alignItems: 'center' }}>
-                        <label className="tag" style={{ display: 'flex', gap: '8px', alignItems: 'center', flex: 1, minWidth: 0 }}>
-                            <input type="checkbox" checked={deduct} onChange={e => field('deduct', e.target.checked)} style={{ width: 'auto', margin: 0, flexShrink: 0 }} />
+                        <label className="tag" style={{ display: 'flex', gap: '8px', alignItems: 'center', flex: 1, minWidth: 0, opacity: taxBucket ? 1 : 0.4 }}>
+                            <input type="checkbox" checked={deduct} onChange={e => field('deduct', e.target.checked)} disabled={!taxBucket} style={{ width: 'auto', margin: 0, flexShrink: 0 }} />
                             <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                 {Number(amount || 0) < 0 ? 'Biz Income' : 'Tax Deductible'}
                             </span>

@@ -1,6 +1,6 @@
 {
-  "version": "7.8.47",
-  "release_date": "2026-05-26",
+  "version": "7.8.48",
+  "release_date": "2026-05-27",
   "codename": "Lumière Ledger",
-  "notes": "v7.8.47: Category → tax bucket auto-mapping. Pick Dining & Drinks, get Meals (50%) at 50% automatically."
+  "notes": "v7.8.48: Monthly popup shows top 5. Uncategorized link filters the ledger. Tax bucket resets on unmapped categories. Dashboard loads faster."
 }

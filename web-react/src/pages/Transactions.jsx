@@ -28,6 +28,7 @@ export default function Transactions() {
     const [plaidAccountName, setPlaidAccountName] = useState('');
     const [plaidSourceKey,   setPlaidSourceKey]   = useState(''); // source fallback for pre-plaid_account_id txns
     const [institutionFilter, setInstitutionFilter] = useState(''); // prefix filter from Plaid Live Sync card click
+    const [needsCategoryFilter, setNeedsCategoryFilter] = useState(false); // set from monthly insights popup
     const [sortCol, setSortCol] = useState('expense_date');
     const [sortDir, setSortDir] = useState('desc');
 
@@ -152,6 +153,7 @@ export default function Transactions() {
         } else if (urlSource) {
             setSearchAccount(urlSource);
         }
+        if (searchParams.get('needs_category') === '1') setNeedsCategoryFilter(true);
     }, []); // intentionally run once on mount only
 
     // Refresh when Brain Assistant approves a transaction action
@@ -204,7 +206,8 @@ export default function Transactions() {
     const filters = useMemo(() => isAuditMode ? {} : {
         start, end, vendor: searchVendor, category: searchCategory,
         account: searchAccount, institutionPrefix: institutionFilter, plaidAccountId, plaidSourceKey, notes: searchNotes, deductOnly, missingReceiptOnly,
-    }, [isAuditMode, start, end, searchVendor, searchCategory, searchAccount, institutionFilter, plaidAccountId, plaidSourceKey, searchNotes, deductOnly, missingReceiptOnly]);
+        needsCategory: needsCategoryFilter,
+    }, [isAuditMode, start, end, searchVendor, searchCategory, searchAccount, institutionFilter, plaidAccountId, plaidSourceKey, searchNotes, deductOnly, missingReceiptOnly, needsCategoryFilter]);
 
 
     const { filtered: filteredBase } = useExpenseFilters(auditBase, filters, sortCol, sortDir);
@@ -222,7 +225,7 @@ export default function Transactions() {
     const clearFilters = () => {
         setStart(''); setEnd(''); setSearchVendor(''); setSearchCategory('');
         setSearchAccount(''); setInstitutionFilter(''); setPlaidAccountId(''); setPlaidAccountName(''); setPlaidSourceKey('');
-        setSearchNotes(''); setDeductOnly(false); setMissingReceiptOnly(false);
+        setSearchNotes(''); setDeductOnly(false); setMissingReceiptOnly(false); setNeedsCategoryFilter(false);
         setToast({ ok: true, msg: 'All filters cleared. Showing full ledger.' });
         setTimeout(() => setToast(null), 3000);
     };
@@ -366,6 +369,14 @@ export default function Transactions() {
                                 Filtered to: <strong>{institutionFilter}</strong> accounts
                                 <button onClick={() => setInstitutionFilter('')}
                                     style={{ background:'none', border:'none', color:'rgba(16,185,129,0.6)', cursor:'pointer', fontSize:14, padding:'0 2px', lineHeight:1 }}>✕</button>
+                            </div>
+                        )}
+                        {/* Uncategorized filter badge — set from monthly insights popup */}
+                        {needsCategoryFilter && (
+                            <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 14px', background:'rgba(249,115,22,0.08)', border:'1px solid rgba(249,115,22,0.3)', borderRadius:10, fontSize:12, color:'#f97316', fontWeight:700 }}>
+                                Showing uncategorized transactions only
+                                <button onClick={() => setNeedsCategoryFilter(false)}
+                                    style={{ background:'none', border:'none', color:'rgba(249,115,22,0.6)', cursor:'pointer', fontSize:14, padding:'0 2px', lineHeight:1 }}>✕</button>
                             </div>
                         )}
                         {/* Row 1: Filters */}

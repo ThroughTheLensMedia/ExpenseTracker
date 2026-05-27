@@ -1,6 +1,13 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.48', date: 'MAY 27, 2026', color: '#818cf8', items: [
+        '<strong>Monthly Insights — Top 5:</strong> Each card in the monthly summary popup now shows up to 5 items instead of 3 — more context before you decide what needs attention.',
+        '<strong>Go to Transactions — Filtered:</strong> Tapping "Go to Transactions" from the uncategorized step now opens the ledger pre-filtered to show only uncategorized transactions. An orange badge at the top lets you dismiss the filter when you\'re done.',
+        '<strong>Tax Bucket Resets on Unmapped Categories:</strong> Selecting a category with no IRS mapping (Clothing, Entertainment, Groceries, etc.) now clears the tax bucket and unchecks Tax Deductible. Previously, the last-selected bucket would stay — silently marking unrelated transactions as deductible.',
+        '<strong>Tax Deductible Requires a Tax Bucket:</strong> The Tax Deductible checkbox is now disabled until a tax bucket is selected. Select a category with a mapping, or pick a bucket manually, to enable it.',
+        '<strong>Dashboard Loads Faster:</strong> The backend now fetches invoices and vendor settings at the same time as your transactions instead of waiting for each one in sequence. Fewer round trips = faster first paint on cold loads.',
+    ]},
     { version: '7.8.47', date: 'MAY 26, 2026', color: '#4ade80', items: [
         '<strong>Category → Tax Bucket Auto-Map:</strong> Picking a category now instantly fills in the correct IRS Schedule C tax bucket — no more hunting through the dropdown. Dining &amp; Drinks → Meals (50%) at 50%. Software &amp; Tech → Office expense. Travel &amp; Vacation → Travel. Camera &amp; Equipment → Supplies. And 19 more mappings built in. Personal categories (Insurance (Personal), Pets, Personal Care) auto-mark as not deductible.',
         '<strong>Meals auto-set to 50%:</strong> Selecting Dining &amp; Drinks also sets Business Use % to 50 automatically — the IRS cap for meal deductions — so your Schedule C math is correct from the start.',

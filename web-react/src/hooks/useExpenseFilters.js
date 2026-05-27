@@ -26,7 +26,7 @@ import { formatDate } from '../api';
 export default function useExpenseFilters(expenses, filters = {}, sortCol = 'expense_date', sortDir = 'desc') {
     const filtered = useMemo(() => {
         let rows = [...expenses];
-        const { start, end, vendor, category, account, plaidAccountId, notes, deductOnly, missingReceiptOnly, year, taxBucket } = filters;
+        const { start, end, vendor, category, account, plaidAccountId, notes, deductOnly, missingReceiptOnly, year, taxBucket, needsCategory } = filters;
 
         if (year) rows = rows.filter(r => String(r.expense_date || '').startsWith(String(year)));
         if (start) rows = rows.filter(r => formatDate(r.expense_date) >= start);
@@ -44,6 +44,7 @@ export default function useExpenseFilters(expenses, filters = {}, sortCol = 'exp
         );
         if (notes) rows = rows.filter(r => (r.notes || '').toLowerCase().includes(notes.toLowerCase()));
         if (taxBucket) rows = rows.filter(r => (r.tax_bucket || '') === taxBucket);
+        if (needsCategory) rows = rows.filter(r => !r.category || !String(r.category).trim());
         if (deductOnly) rows = rows.filter(r => r.tax_deductible);
         if (missingReceiptOnly) rows = rows.filter(r => !r.receipt_link && r.tax_deductible);
 

@@ -5,6 +5,19 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.48] — 2026-05-27
+
+### Monthly Insights polish + tax bucket fix + dashboard speed
+
+#### Changed
+- **`web-react/src/components/MonthlyInsightsModal.jsx`** — All three steps now show top **5** items (was 3). "More" overflow text threshold updated to match. "Go to Transactions →" now navigates to `/transactions?needs_category=1` so the ledger opens pre-filtered to uncategorized transactions only.
+- **`web-react/src/hooks/useExpenseFilters.js`** — Added `needsCategory` filter: when true, returns only rows with empty or missing category.
+- **`web-react/src/pages/Transactions.jsx`** — Reads `?needs_category=1` URL param on mount → sets filter state. Displays an orange "Showing uncategorized transactions only" badge with dismiss button. `clearFilters()` also clears this filter.
+- **`web-react/src/components/TransactionDrawer.jsx`** — Category onChange: if selected category has **no** mapping in `CATEGORY_TAX_BUCKET_MAP`, now resets `taxBucket` to `''` and `deduct` to `false` (fixes Clothing / unmapped categories retaining stale values). Tax Deductible checkbox is now `disabled` (and visually dimmed) when no tax bucket is selected.
+- **`api/routes/metrics.js`** — Invoices and vendor_settings fetches now fire in **parallel** while the expenses pagination loop runs (was serial). Cuts cold-load dashboard latency on first visit.
+
+---
+
 ## [v7.8.47] — 2026-05-26
 
 ### Category → IRS tax bucket auto-mapping

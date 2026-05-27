@@ -8,11 +8,22 @@ router.get("/summary", async (req, res) => {
     const startDate = `${targetYear - 1}-01-01`;
     const endDate = `${targetYear}-12-31`;
 
+    // Fire invoices and vendor_settings in parallel while paginating expenses
+    const invoicesPromise = req.sb
+        .from("invoices")
+        .select("status, due_date, tax_percent, discount_cents, invoice_items(quantity, unit_price_cents)")
+        .eq("user_id", req.user.id);
+    const vendorSettingsPromise = req.sb
+        .from("vendor_settings")
+        .select("vendor, is_ignored")
+        .eq("user_id", req.user.id)
+        .then(r => r).catch(() => ({ data: null }));
+
     let allExpenses = [];
     let offset = 0;
     let keepFetching = true;
     let expError = null;
-    
+
     // Auto-paginate safely through 1000+ row barriers
     while (keepFetching) {
         const { data, error } = await req.sb
@@ -22,7 +33,7 @@ router.get("/summary", async (req, res) => {
             .lte("expense_date", endDate)
             .eq("user_id", req.user.id)
             .range(offset, offset + 999);
-            
+
         if (error) {
             expError = error;
             break;
@@ -36,20 +47,19 @@ router.get("/summary", async (req, res) => {
         }
     }
 
-    const { data: invoices, error: invError } = await req.sb
-          .from("invoices")
-          .select("status, due_date, tax_percent, discount_cents, invoice_items(quantity, unit_price_cents)")
-          .eq("user_id", req.user.id);
-      
+    // Await the parallel fetches now that pagination is done
+    const [{ data: invoices, error: invError }, { data: vSettings }] = await Promise.all([
+        invoicesPromise,
+        vendorSettingsPromise,
+    ]);
+
     if (expError) throw expError;
     if (invError) throw invError;
-    
-    // Safely attempt to pull vendor settings. If the table doesn't exist yet, it won't crash the dash.
-    let ignoredVendorsList = [];
-    try {
-        const { data: vSettings } = await req.sb.from("vendor_settings").select("vendor, is_ignored").eq("user_id", req.user.id);
-        if (vSettings) ignoredVendorsList = vSettings.filter(v => v.is_ignored).map(v => String(v.vendor).toLowerCase());
-    } catch(e) { }
+
+    // Build ignored vendors list (safe — vendor_settings table may not exist yet)
+    const ignoredVendorsList = vSettings
+        ? vSettings.filter(v => v.is_ignored).map(v => String(v.vendor).toLowerCase())
+        : [];
 
     let ytdIncome = 0;
     let ytdSpend = 0;

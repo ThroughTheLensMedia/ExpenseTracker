@@ -41,7 +41,7 @@ export default function MonthlyInsightsModal({ onClose }) {
                 }
                 const frequent = Object.entries(vendorCount)
                     .sort((a, b) => b[1] - a[1])
-                    .slice(0, 3)
+                    .slice(0, 5)
                     .map(([vendor, count]) => ({
                         vendor,
                         count,
@@ -51,7 +51,7 @@ export default function MonthlyInsightsModal({ onClose }) {
                 // Step 2 — Largest transactions
                 const largest = [...rows]
                     .sort((a, b) => Number(b.amount_cents) - Number(a.amount_cents))
-                    .slice(0, 3);
+                    .slice(0, 5);
 
                 // Step 3 — Uncategorized
                 const uncategorized = rows.filter(e => !e.category || !e.category.trim());
@@ -59,7 +59,7 @@ export default function MonthlyInsightsModal({ onClose }) {
                 const built = [];
                 if (frequent.length)      built.push({ type: 'frequent',      monthName, frequent });
                 if (largest.length)       built.push({ type: 'largest',       monthName, largest });
-                if (uncategorized.length) built.push({ type: 'uncategorized', monthName, uncategorized: uncategorized.slice(0, 3), total: uncategorized.length });
+                if (uncategorized.length) built.push({ type: 'uncategorized', monthName, uncategorized: uncategorized.slice(0, 5), total: uncategorized.length });
 
                 if (!built.length) { markMonthlyInsightsSeen(); onClose(); return; }
                 setSteps(built);
@@ -75,7 +75,7 @@ export default function MonthlyInsightsModal({ onClose }) {
     };
     const handleCategorize = () => {
         markMonthlyInsightsSeen();
-        navigate('/transactions');
+        navigate('/transactions?needs_category=1');
         onClose();
     };
 
@@ -185,9 +185,9 @@ export default function MonthlyInsightsModal({ onClose }) {
                                     <div style={{ fontWeight: 900, color: '#f97316', fontSize: 15, flexShrink: 0 }}>{formatMoney(Number(item.amount_cents))}</div>
                                 </div>
                             ))}
-                            {current.total > 3 && (
+                            {current.total > 5 && (
                                 <div style={{ padding: '10px 16px', fontSize: 12, color: 'rgba(255,255,255,0.3)', fontWeight: 700, textAlign: 'center' }}>
-                                    + {current.total - 3} more uncategorized
+                                    + {current.total - 5} more uncategorized
                                 </div>
                             )}
                         </div>
