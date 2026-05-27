@@ -3,7 +3,7 @@ import { jsPDF } from 'jspdf';
 import { apiPatch, apiPost, apiUpload, apiDelete } from '../api';
 import { useModal } from './ModalContext.jsx';
 import CategorySelect from './CategorySelect.jsx';
-import { ALL_CATEGORIES } from '../constants/categories.js';
+import { ALL_CATEGORIES, CATEGORY_TAX_BUCKET_MAP } from '../constants/categories.js';
 
 // ─── Image → PDF conversion (runs client-side, no server round-trip) ─────────
 // Scales the image to fit A4 width (595pt), preserves aspect ratio.
@@ -363,13 +363,25 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
                             <CategorySelect
                                 value={ALL_CATEGORIES.includes(category) ? category : (category ? '__custom__' : '')}
                                 onChange={val => {
-                                    if (val === '__custom__') field('category', '');
-                                    else {
-                                        field('category', val);
-                                        const INCOME_CATS = ['Photo Income', 'Freelance Income', 'Contract Income', 'Side Income', 'Interest Income', 'Dividend Income'];
-                                        if (INCOME_CATS.includes(val) && Number(amount || 0) < 0) {
+                                    if (val === '__custom__') { field('category', ''); return; }
+                                    field('category', val);
+                                    // Auto-map category → tax bucket + deductible + business_use_pct
+                                    const mapping = CATEGORY_TAX_BUCKET_MAP[val];
+                                    if (mapping) {
+                                        field('taxBucket', mapping.bucket);
+                                        if (mapping.bucket === 'Personal Expense') {
+                                            field('deduct', false);
+                                        } else {
                                             field('deduct', true);
                                         }
+                                        if (mapping.pct !== undefined) {
+                                            field('bizPct', mapping.pct);
+                                        }
+                                    }
+                                    // Income categories are negative-amount deductible
+                                    const INCOME_CATS = ['Photo Income', 'Freelance Income', 'Contract Income', 'Side Income', 'Interest Income', 'Dividend Income'];
+                                    if (INCOME_CATS.includes(val) && Number(amount || 0) < 0) {
+                                        field('deduct', true);
                                     }
                                 }}
                                 emptyLabel="Select category…"

@@ -5,6 +5,25 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.47] — 2026-05-26
+
+### Category → IRS tax bucket auto-mapping
+
+#### Added
+- **`web-react/src/constants/categories.js`** — `CATEGORY_TAX_BUCKET_MAP` export: maps 23 of 29 categories to their correct IRS Schedule C bucket. Each entry has `bucket` (tax bucket string) and optional `pct` (auto-sets `business_use_pct`). Includes inline comments for the 6 categories intentionally left unmapped (Entertainment post-TCJA, Groceries, Shopping, Clothing, Health & Medical, Home & Garden — all too ambiguous or belong outside Sch C).
+- **`web-react/src/components/TransactionDrawer.jsx`** — Category `onChange` now applies the mapping: auto-fills `taxBucket`, toggles `deduct` (true for business buckets, false for Personal Expense), and sets `bizPct = 50` for Meals (50%). Chains with the existing auto-deductible logic from v7.8.46.
+
+#### Mapping highlights
+- `Dining & Drinks` → `Meals (50%)` + `business_use_pct = 50`
+- `Auto & Transport` / `Gas & Fuel` / `Parking & Tolls` → `Car and truck`
+- `Software & Tech` / `Subscriptions` / `Office Supplies` → `Office expense`
+- `Camera & Equipment` / `Photography` → `Supplies` (Section 179 / de minimis)
+- `Travel & Vacation` → `Travel`
+- `Professional Services` → `Legal and professional`
+- `Insurance (Personal)` / `Personal Care` / `Pets` → `Personal Expense` (deductible = false)
+
+---
+
 ## [v7.8.46] — 2026-05-26
 
 ### Monthly Insights Modal + Auto tax-deductible from tax bucket

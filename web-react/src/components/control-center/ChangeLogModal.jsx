@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.47', date: 'MAY 26, 2026', color: '#4ade80', items: [
+        '<strong>Category → Tax Bucket Auto-Map:</strong> Picking a category now instantly fills in the correct IRS Schedule C tax bucket — no more hunting through the dropdown. Dining &amp; Drinks → Meals (50%) at 50%. Software &amp; Tech → Office expense. Travel &amp; Vacation → Travel. Camera &amp; Equipment → Supplies. And 19 more mappings built in. Personal categories (Insurance (Personal), Pets, Personal Care) auto-mark as not deductible.',
+        '<strong>Meals auto-set to 50%:</strong> Selecting Dining &amp; Drinks also sets Business Use % to 50 automatically — the IRS cap for meal deductions — so your Schedule C math is correct from the start.',
+    ]},
     { version: '7.8.46', date: 'MAY 26, 2026', color: '#f97316', items: [
         '<strong>Monthly Spending Insights:</strong> Once per month, a summary slides up after you log in — showing your most frequent vendors, your largest transactions, and any uncategorized items that need attention. Tap "Go to Transactions" on the uncategorized step to fix them immediately. Dismisses until next month.',
         '<strong>Tax Bucket → Auto-Deductible:</strong> Selecting any business tax bucket (Travel, Meals, Office expense, etc.) on a transaction now automatically marks it as Tax Deductible. No more checking the box manually. "Personal Expense" still turns it off. Applies to the transaction drawer, manual entry, and Plaid imports.',

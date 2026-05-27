@@ -1,6 +1,6 @@
 {
-  "version": "7.8.46",
+  "version": "7.8.47",
   "release_date": "2026-05-26",
   "codename": "Lumière Ledger",
-  "notes": "v7.8.46: Monthly spending insights popup; tax bucket auto-marks transactions deductible."
+  "notes": "v7.8.47: Category → tax bucket auto-mapping. Pick Dining & Drinks, get Meals (50%) at 50% automatically."
 }
