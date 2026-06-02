@@ -10,6 +10,12 @@ import { formatMoney } from '../api';
  *   onConfirm  — called with { keepId, deleteId, overrides }
  *   onCancel   — called when user dismisses
  */
+// Derive a human-readable source label for a transaction
+function sourceLabel(tx) {
+    if (!tx.source || tx.source === 'manual') return 'Manual';
+    return 'Imported';
+}
+
 export default function MergeModal({ txA, txB, onConfirm, onCancel }) {
     // Which record is the "base" (date + vendor + amount)
     const [baseId, setBaseId] = useState(txA.id);
@@ -131,8 +137,8 @@ export default function MergeModal({ txA, txB, onConfirm, onCancel }) {
                     {/* Step 1 — Base record */}
                     <Section title="Step 1 — Which record is the base?">
                         <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '10px' }}>The base record's date, vendor, and amount are kept.</div>
-                        <RecordRadio tx={txA} label="Option A" />
-                        <RecordRadio tx={txB} label="Option B" />
+                        <RecordRadio tx={txA} label={sourceLabel(txA)} />
+                        <RecordRadio tx={txB} label={sourceLabel(txB)} />
                     </Section>
 
                     {/* Divider */}
@@ -144,26 +150,22 @@ export default function MergeModal({ txA, txB, onConfirm, onCancel }) {
                         {/* Receipt */}
                         {eitherHas('receipt_link') && (
                             <FieldRow icon="📎" label="Receipt">
-                                {has(b, 'receipt_link') && <Chip active={useReceipt === b.id} onClick={() => setUseReceipt(b.id)}>Base</Chip>}
-                                {has(o, 'receipt_link') && <Chip active={useReceipt === o.id} onClick={() => setUseReceipt(o.id)}>Other</Chip>}
+                                {has(b, 'receipt_link') && <Chip active={useReceipt === b.id} onClick={() => setUseReceipt(b.id)}>{sourceLabel(b)}</Chip>}
+                                {has(o, 'receipt_link') && <Chip active={useReceipt === o.id} onClick={() => setUseReceipt(o.id)}>{sourceLabel(o)}</Chip>}
                                 <Chip active={useReceipt === null} onClick={() => setUseReceipt(null)}>None</Chip>
                             </FieldRow>
                         )}
 
                         {/* Category */}
                         {eitherHas('category') && (
-                            <FieldRow icon="🏷" label={
-                                b.category === o.category
-                                    ? `Category: ${b.category || o.category}`
-                                    : `Category`
-                            }>
+                            <FieldRow icon="🏷" label="Category">
                                 {b.category !== o.category ? (
                                     <>
-                                        <Chip active={useCategory === 'base'} onClick={() => setUseCategory('base')}>{b.category || '—'}</Chip>
-                                        <Chip active={useCategory === 'other'} onClick={() => setUseCategory('other')}>{o.category || '—'}</Chip>
+                                        <Chip active={useCategory === 'base'} onClick={() => setUseCategory('base')}>{b.category || '—'} ({sourceLabel(b)})</Chip>
+                                        <Chip active={useCategory === 'other'} onClick={() => setUseCategory('other')}>{o.category || '—'} ({sourceLabel(o)})</Chip>
                                     </>
                                 ) : (
-                                    <span style={{ fontSize: '12px', color: '#4ade80' }}>✓ Same</span>
+                                    <span style={{ fontSize: '12px', color: '#4ade80' }}>✓ Same on both</span>
                                 )}
                             </FieldRow>
                         )}
@@ -171,8 +173,8 @@ export default function MergeModal({ txA, txB, onConfirm, onCancel }) {
                         {/* Notes */}
                         {eitherHas('notes') && (
                             <FieldRow icon="📝" label="Notes">
-                                {has(b, 'notes') && <Chip active={useNotes === 'base'} onClick={() => setUseNotes('base')}>Base</Chip>}
-                                {has(o, 'notes') && <Chip active={useNotes === 'other'} onClick={() => setUseNotes('other')}>Other</Chip>}
+                                {has(b, 'notes') && <Chip active={useNotes === 'base'} onClick={() => setUseNotes('base')}>{sourceLabel(b)}</Chip>}
+                                {has(o, 'notes') && <Chip active={useNotes === 'other'} onClick={() => setUseNotes('other')}>{sourceLabel(o)}</Chip>}
                                 {has(b, 'notes') && has(o, 'notes') && <Chip active={useNotes === 'both'} onClick={() => setUseNotes('both')}>Both</Chip>}
                                 <Chip active={useNotes === 'none'} onClick={() => setUseNotes('none')}>None</Chip>
                             </FieldRow>
@@ -189,16 +191,16 @@ export default function MergeModal({ txA, txB, onConfirm, onCancel }) {
                         {/* Tax bucket */}
                         {eitherHas('tax_bucket') && b.tax_bucket !== o.tax_bucket && (
                             <FieldRow icon="📋" label="Tax bucket">
-                                {has(b, 'tax_bucket') && <Chip active={useTaxBucket === 'base'} onClick={() => setUseTaxBucket('base')}>{b.tax_bucket}</Chip>}
-                                {has(o, 'tax_bucket') && <Chip active={useTaxBucket === 'other'} onClick={() => setUseTaxBucket('other')}>{o.tax_bucket}</Chip>}
+                                {has(b, 'tax_bucket') && <Chip active={useTaxBucket === 'base'} onClick={() => setUseTaxBucket('base')}>{b.tax_bucket} ({sourceLabel(b)})</Chip>}
+                                {has(o, 'tax_bucket') && <Chip active={useTaxBucket === 'other'} onClick={() => setUseTaxBucket('other')}>{o.tax_bucket} ({sourceLabel(o)})</Chip>}
                             </FieldRow>
                         )}
 
                         {/* Business use % */}
                         {eitherHas('business_use_pct') && b.business_use_pct !== o.business_use_pct && (
                             <FieldRow icon="💼" label="Business use %">
-                                {b.business_use_pct != null && <Chip active={useBizPct === 'base'} onClick={() => setUseBizPct('base')}>{b.business_use_pct}% (Base)</Chip>}
-                                {o.business_use_pct != null && <Chip active={useBizPct === 'other'} onClick={() => setUseBizPct('other')}>{o.business_use_pct}% (Other)</Chip>}
+                                {b.business_use_pct != null && <Chip active={useBizPct === 'base'} onClick={() => setUseBizPct('base')}>{b.business_use_pct}% ({sourceLabel(b)})</Chip>}
+                                {o.business_use_pct != null && <Chip active={useBizPct === 'other'} onClick={() => setUseBizPct('other')}>{o.business_use_pct}% ({sourceLabel(o)})</Chip>}
                             </FieldRow>
                         )}
 
