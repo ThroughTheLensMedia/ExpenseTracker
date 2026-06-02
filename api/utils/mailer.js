@@ -436,7 +436,7 @@ async function sendMonthlyReportEmail({
     topCategories, biggestChanges,
     subscriptionsList, subsCents,
     largestTransactions,
-    uncategorizedCount,
+    uncategorizedCount, uncategorizedCents,
     taxDeductibleCents,
     topVendors,
     newVendors
@@ -587,11 +587,37 @@ ${isPreview ? `<div style="background:#f59e0b;color:#000;padding:10px;text-align
     </table>
   </div>
 
+  <!-- ── Uncategorized CTA (shown early so users don't miss it) ── -->
+  ${uncategorizedCount > 0 ? `
+  <div style="background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.3);border-radius:16px;padding:18px 24px;margin-bottom:16px;">
+    <table style="width:100%;border-collapse:collapse;">
+      <tr>
+        <td>
+          <div style="font-size:14px;font-weight:700;color:#f97316;margin-bottom:4px;">⚠️ ${uncategorizedCount} transaction${uncategorizedCount > 1 ? 's' : ''} need${uncategorizedCount === 1 ? 's' : ''} a category</div>
+          <div style="font-size:13px;color:#94a3b8;">${fmt(uncategorizedCents)} in spending isn't categorized yet — affects your reports and tax deductions.</div>
+        </td>
+        <td style="text-align:right;white-space:nowrap;padding-left:16px;">
+          <a href="${appUrl}/transactions?needs_category=1" style="display:inline-block;background:#f97316;color:#fff;padding:9px 16px;border-radius:8px;font-weight:800;font-size:13px;text-decoration:none;">Fix now →</a>
+        </td>
+      </tr>
+    </table>
+  </div>` : ''}
+
   <!-- ── Top 5 Categories ── -->
   ${topCategories.length > 0 ? `
   <div style="background:#1e293b;border-radius:16px;padding:22px 24px;margin-bottom:16px;">
     ${sectionLabel('Top spending by category')}
-    <table style="width:100%;border-collapse:collapse;">${topCatRows}</table>
+    <table style="width:100%;border-collapse:collapse;">
+      ${topCatRows}
+      ${uncategorizedCount > 0 ? `
+      <tr>
+        <td style="padding:11px 0 0;border-top:1px solid rgba(255,255,255,0.06);">
+          <div style="font-size:14px;font-weight:700;color:#f97316;">Uncategorized</div>
+          <div style="font-size:12px;color:#64748b;">${uncategorizedCount} transaction${uncategorizedCount > 1 ? 's' : ''} &nbsp;·&nbsp; <a href="${appUrl}/transactions?needs_category=1" style="color:#f97316;text-decoration:none;font-weight:700;">categorize →</a></div>
+        </td>
+        <td style="text-align:right;padding:11px 0 0;border-top:1px solid rgba(255,255,255,0.06);font-size:17px;font-weight:900;color:#f97316;">${fmt(uncategorizedCents)}</td>
+      </tr>` : ''}
+    </table>
   </div>` : ''}
 
   <!-- ── Biggest Changes ── -->
@@ -637,13 +663,6 @@ ${isPreview ? `<div style="background:#f59e0b;color:#000;padding:10px;text-align
     </table>
   </div>` : ''}
 
-  <!-- ── Uncategorized CTA ── -->
-  ${uncategorizedCount > 0 ? `
-  <div style="background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.25);border-radius:16px;padding:20px 24px;margin-bottom:16px;">
-    <div style="font-size:14px;font-weight:700;color:#f97316;margin-bottom:6px;">⚠️ ${uncategorizedCount} uncategorized transaction${uncategorizedCount > 1 ? 's' : ''}</div>
-    <div style="font-size:13px;color:#94a3b8;margin-bottom:14px;">Categorizing them keeps your reports accurate and your tax deductions clean.</div>
-    <a href="${appUrl}/transactions?needs_category=1" style="display:inline-block;background:#f97316;color:#fff;padding:10px 20px;border-radius:8px;font-weight:800;font-size:13px;text-decoration:none;">Fix them now →</a>
-  </div>` : ''}
 
   <!-- ── CTA ── -->
   <div style="text-align:center;margin:24px 0 28px;">

@@ -167,6 +167,20 @@ router.get("/monthly-report", async (req, res) => {
     }
 });
 
+// Categories that are not true spending — exclude from all spend analysis sections
+const NON_SPEND_CATS = new Set([
+    // Income
+    'Photo Income', 'Freelance Income', 'Contract Income', 'Military Retirement',
+    'VA Benefits', 'Rental Income', 'Side Income',
+    // Misc Income / non-taxable / transfers
+    'IRS Tax Refund', 'State Tax Refund', 'Refund', 'Reimbursement',
+    'Cashback / Rewards', 'Interest Income', 'Dividend Income',
+    'Internal Transfer', 'Credit Card Payment', 'Deposit',
+]);
+
+// Vendor name patterns that indicate a credit card payment or fund transfer
+const CC_PAYMENT_PATTERN = /\b(autopay|payment|online pmt|e-payment|bill pay|epay|xfer|transfer)\b/i;
+
 async function buildMonthlyReport(supabase, userId, startStr, endStr, avgStartStr, avgEndStr) {
     const [{ data: lastMonth }, { data: avgMonths }] = await Promise.all([
         supabase.from('expenses').select('amount_cents, category, vendor, tax_deductible, expense_date')
@@ -175,39 +189,51 @@ async function buildMonthlyReport(supabase, userId, startStr, endStr, avgStartSt
             .eq('user_id', userId).gte('expense_date', avgStartStr).lte('expense_date', avgEndStr)
     ]);
 
-    const expenses = (lastMonth || []).filter(r => (r.amount_cents || 0) > 0);
-    const income   = (lastMonth || []).filter(r => (r.amount_cents || 0) < 0);
+    const allLastMonth = (lastMonth || []).filter(r => (r.amount_cents || 0) > 0);
+    const income       = (lastMonth || []).filter(r => (r.amount_cents || 0) < 0);
+
+    // True spending rows — exclude non-spend categories for analysis sections
+    const expenses     = allLastMonth.filter(r => !NON_SPEND_CATS.has(r.category));
 
     const totalSpendCents  = expenses.reduce((s, r) => s + r.amount_cents, 0);
     const totalIncomeCents = income.reduce((s, r) => s + Math.abs(r.amount_cents), 0);
     const netCents = totalIncomeCents - totalSpendCents;
 
-    // Per-category spend last month
+    // Per-category spend — split out Uncategorized so it shows separately
     const catSpend = {};
+    let uncategorizedCents = 0;
+    let uncategorizedCount = 0;
     expenses.forEach(r => {
-        const cat = r.category || 'Uncategorized';
-        catSpend[cat] = (catSpend[cat] || 0) + r.amount_cents;
+        if (!r.category || r.category === 'Uncategorized') {
+            uncategorizedCents += r.amount_cents;
+            uncategorizedCount++;
+        } else {
+            catSpend[r.category] = (catSpend[r.category] || 0) + r.amount_cents;
+        }
     });
 
+    const realSpendForPct = totalSpendCents; // includes uncategorized
     const topCategories = Object.entries(catSpend)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 5)
         .map(([cat, cents]) => ({
             cat, cents,
-            pct: totalSpendCents > 0 ? Math.round((cents / totalSpendCents) * 100) : 0
+            pct: realSpendForPct > 0 ? Math.round((cents / realSpendForPct) * 100) : 0
         }));
 
-    // Per-category 3-month monthly average
+    // Per-category 3-month average — same exclusions
     const avgCatSpend = {};
-    (avgMonths || []).filter(r => (r.amount_cents || 0) > 0).forEach(r => {
+    (avgMonths || []).filter(r => (r.amount_cents || 0) > 0 && !NON_SPEND_CATS.has(r.category)).forEach(r => {
         const cat = r.category || 'Uncategorized';
-        avgCatSpend[cat] = (avgCatSpend[cat] || 0) + r.amount_cents;
+        if (cat !== 'Uncategorized') {
+            avgCatSpend[cat] = (avgCatSpend[cat] || 0) + r.amount_cents;
+        }
     });
     Object.keys(avgCatSpend).forEach(k => { avgCatSpend[k] = Math.round(avgCatSpend[k] / 3); });
 
     const avgTotalSpendCents = Object.values(avgCatSpend).reduce((s, v) => s + v, 0);
 
-    // Biggest changes vs average (>$5 swing)
+    // Biggest changes vs average — no non-spend, no uncategorized
     const allCats = new Set([...Object.keys(catSpend), ...Object.keys(avgCatSpend)]);
     const biggestChanges = Array.from(allCats)
         .map(cat => ({ cat, current: catSpend[cat] || 0, avg: avgCatSpend[cat] || 0, delta: (catSpend[cat] || 0) - (avgCatSpend[cat] || 0) }))
@@ -222,21 +248,20 @@ async function buildMonthlyReport(supabase, userId, startStr, endStr, avgStartSt
         .map(r => ({ vendor: r.vendor || 'Unknown', cents: r.amount_cents }));
     const subsCents = subscriptionsList.reduce((s, r) => s + r.cents, 0);
 
-    // Largest single transactions
+    // Largest single transactions — exclude non-spend + CC payment vendor patterns
     const largestTransactions = [...expenses]
+        .filter(r => r.category !== 'Subscriptions' || true) // keep all real expenses
+        .filter(r => !CC_PAYMENT_PATTERN.test(r.vendor || ''))
         .sort((a, b) => b.amount_cents - a.amount_cents)
         .slice(0, 5)
         .map(r => ({ vendor: r.vendor || 'Unknown', category: r.category || 'Uncategorized', cents: r.amount_cents, date: r.expense_date }));
 
-    // Uncategorized count
-    const uncategorizedCount = expenses.filter(r => !r.category || r.category === 'Uncategorized').length;
-
     // Tax-deductible total
     const taxDeductibleCents = expenses.filter(r => r.tax_deductible).reduce((s, r) => s + r.amount_cents, 0);
 
-    // Top vendors by spend
+    // Top vendors — exclude non-spend and CC payment patterns
     const vendorSpend = {};
-    expenses.forEach(r => {
+    expenses.filter(r => !CC_PAYMENT_PATTERN.test(r.vendor || '')).forEach(r => {
         const v = r.vendor || 'Unknown';
         vendorSpend[v] = (vendorSpend[v] || 0) + r.amount_cents;
     });
@@ -245,9 +270,11 @@ async function buildMonthlyReport(supabase, userId, startStr, endStr, avgStartSt
         .slice(0, 5)
         .map(([vendor, cents]) => ({ vendor, cents }));
 
-    // New vendors — appeared last month but not in the prior 3-month window
+    // New vendors — appeared last month but not in prior 3-month window (excluding payments)
     const avgVendorSet = new Set(
-        (avgMonths || []).filter(r => (r.amount_cents || 0) > 0).map(r => (r.vendor || '').toLowerCase())
+        (avgMonths || [])
+            .filter(r => (r.amount_cents || 0) > 0 && !NON_SPEND_CATS.has(r.category))
+            .map(r => (r.vendor || '').toLowerCase())
     );
     const newVendors = Object.entries(vendorSpend)
         .filter(([v]) => v !== 'Unknown' && !avgVendorSet.has(v.toLowerCase()))
@@ -260,7 +287,7 @@ async function buildMonthlyReport(supabase, userId, startStr, endStr, avgStartSt
         topCategories, biggestChanges,
         subscriptionsList, subsCents,
         largestTransactions,
-        uncategorizedCount,
+        uncategorizedCount, uncategorizedCents,
         taxDeductibleCents,
         topVendors,
         newVendors
