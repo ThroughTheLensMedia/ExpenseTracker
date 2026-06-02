@@ -360,14 +360,25 @@ router.post("/manual-merge", async (req, res) => {
     const { data: del }  = await req.sb.from("expenses").select("*").eq("id", deleteId).eq("user_id", req.user.id).single();
     if (!keep || !del) return res.status(404).json({ error: "One or both transactions not found" });
 
-    // Add a merge note to the kept transaction
-    const mergeNote = `[Manually merged — removed $${(Math.abs(del.amount_cents)/100).toFixed(2)} ${del.vendor} on ${del.expense_date}]`;
-    const updatedNotes = keep.notes ? `${keep.notes} | ${mergeNote}` : mergeNote;
+    // Rescue enriched fields from the deleted record if the kept record is missing them
+    const rescued = {};
+    if (!keep.receipt_link   && del.receipt_link)   rescued.receipt_link   = del.receipt_link;
+    if (!keep.category       && del.category)       rescued.category       = del.category;
+    if (!keep.tax_bucket     && del.tax_bucket)     rescued.tax_bucket     = del.tax_bucket;
+    if ( keep.tax_deductible == null && del.tax_deductible != null) rescued.tax_deductible = del.tax_deductible;
+    if (!keep.business_use_pct && del.business_use_pct) rescued.business_use_pct = del.business_use_pct;
 
-    await req.sb.from("expenses").update({ needs_review: false, review_pair_id: null, notes: updatedNotes }).eq("id", keepId).eq("user_id", req.user.id);
+    // Merge notes from both records, then append merge audit trail
+    const combinedNotes = [keep.notes, del.notes].filter(Boolean).join(' | ');
+    const mergeNote = `[Merged: removed ${del.vendor} $${(Math.abs(del.amount_cents)/100).toFixed(2)} on ${del.expense_date}]`;
+    const updatedNotes = combinedNotes ? `${combinedNotes} | ${mergeNote}` : mergeNote;
+
+    await req.sb.from("expenses")
+      .update({ needs_review: false, review_pair_id: null, notes: updatedNotes, ...rescued })
+      .eq("id", keepId).eq("user_id", req.user.id);
     await req.sb.from("expenses").delete().eq("id", deleteId).eq("user_id", req.user.id);
 
-    res.json({ ok: true, kept: { ...keep, notes: updatedNotes } });
+    res.json({ ok: true, kept: { ...keep, notes: updatedNotes, ...rescued }, rescued: Object.keys(rescued) });
   } catch (e) {
     res.status(500).json({ error: String(e.message || e) });
   }

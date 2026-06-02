@@ -278,19 +278,35 @@ export default function Transactions() {
         const txA = expenses.find(e => e.id === ids[0]);
         const txB = expenses.find(e => e.id === ids[1]);
         if (!txA || !txB) return;
-        // Prompt user which to keep
+
+        const describeRow = (tx) => {
+            const parts = [];
+            if (tx.category) parts.push(`Category: ${tx.category}`);
+            if (tx.receipt_link) parts.push('📎 Has receipt');
+            if (tx.notes) parts.push(`Notes: "${tx.notes}"`);
+            if (tx.tax_deductible) parts.push('✅ Tax deductible');
+            return parts.length ? parts.join('  ·  ') : 'No enrichment';
+        };
+
         const keepA = await modal.confirm(
-            `Keep "${txA.vendor}" ${formatMoney(txA.amount_cents)} (${txA.expense_date}) and remove the other?`
+            `MERGE DUPLICATE — choose which record to keep:\n\n` +
+            `① KEEP: "${txA.vendor}"  ${formatMoney(txA.amount_cents)}  ${txA.expense_date}\n` +
+            `   ${describeRow(txA)}\n\n` +
+            `② REMOVE: "${txB.vendor}"  ${formatMoney(txB.amount_cents)}  ${txB.expense_date}\n` +
+            `   ${describeRow(txB)}\n\n` +
+            `Missing fields (receipt, category, notes) will be rescued from the removed record automatically.\n\n` +
+            `Keep ① and remove ②?`
         );
-        const keepId = keepA ? ids[0] : ids[1];
+        const keepId   = keepA ? ids[0] : ids[1];
         const deleteId = keepA ? ids[1] : ids[0];
         try {
-            await apiPost('/expenses/manual-merge', { keepId, deleteId });
+            const result = await apiPost('/expenses/manual-merge', { keepId, deleteId });
             setSelectedIds(new Set());
             invalidateExpensesCache();
             await loadData(true);
-            setToast({ ok: true, msg: 'Transactions merged. Merge note added to kept entry.' });
-            setTimeout(() => setToast(null), 4000);
+            const rescuedMsg = result.rescued?.length ? ` Rescued: ${result.rescued.join(', ')}.` : '';
+            setToast({ ok: true, msg: `Merged.${rescuedMsg} Merge note added.` });
+            setTimeout(() => setToast(null), 5000);
         } catch (e) {
             setToast({ ok: false, msg: `Merge failed: ${e.message}` });
             setTimeout(() => setToast(null), 4000);
