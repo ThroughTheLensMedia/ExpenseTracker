@@ -69,6 +69,29 @@ export default function Transactions() {
         return next;
     });
 
+    // Scan for duplicates
+    const [scanning, setScanning] = useState(false);
+    const handleScanDupes = async () => {
+        setScanning(true);
+        try {
+            const body = searchAccount ? { source: searchAccount } : {};
+            const result = await apiPost('/expenses/scan-dupes', body);
+            if (result.found === 0) {
+                setToast({ ok: true, msg: `No duplicate transactions found${searchAccount ? ' for this account' : ''}.` });
+            } else {
+                await loadData(true);
+                setNeedsReviewOnly(true);
+                setToast({ ok: true, msg: `Found ${result.found} potential duplicate pair${result.found > 1 ? 's' : ''} — flagged for review below.` });
+            }
+            setTimeout(() => setToast(null), 5000);
+        } catch (e) {
+            setToast({ ok: false, msg: `Scan failed: ${e.message}` });
+            setTimeout(() => setToast(null), 4000);
+        } finally {
+            setScanning(false);
+        }
+    };
+
     // Bulk delete
     const [bulkDeleting, setBulkDeleting] = useState(false);
     const handleBulkDelete = async () => {
@@ -478,6 +501,9 @@ export default function Transactions() {
                             <div style={{ display: 'flex', gap: '10px' }}>
                                 <button className="btn secondary sm" onClick={clearFilters} style={{ padding: '8px 20px', fontSize: '12px', fontWeight: 800 }}>RESET FILTERS</button>
                                 <button className="btn secondary sm" onClick={exportCsv} style={{ padding: '8px 20px', fontSize: '12px', fontWeight: 800 }}>EXPORT CSV</button>
+                                <button className="btn secondary sm" onClick={handleScanDupes} disabled={scanning} style={{ padding: '8px 20px', fontSize: '12px', fontWeight: 800, opacity: scanning ? 0.6 : 1 }}>
+                                    {scanning ? 'SCANNING...' : `🔍 SCAN DUPES${searchAccount ? ' (THIS ACCOUNT)' : ''}`}
+                                </button>
                             </div>
 
                             <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)' }} />
