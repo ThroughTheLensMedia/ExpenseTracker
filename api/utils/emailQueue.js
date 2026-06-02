@@ -9,6 +9,7 @@ const {
     sendInvoiceEmail: _sendInvoiceEmail,
     sendInviteEmail: _sendInviteEmail,
     sendDailyReportEmail: _sendDailyReportEmail,
+    sendMonthlyReportEmail: _sendMonthlyReportEmail,
     sendPromoEmail: _sendPromoEmail,
     sendContactRelayEmail: _sendContactRelayEmail,
     sendInvoiceApprovalEmail: _sendInvoiceApprovalEmail,
@@ -62,8 +63,9 @@ async function processEmail(type, payload) {
     switch (type) {
         case 'invoice':      return await _sendInvoiceEmail(payload);
         case 'invite':       return await _sendInviteEmail(payload);
-        case 'daily-report': return await _sendDailyReportEmail(payload);
-        case 'promo':        return await _sendPromoEmail(payload);
+        case 'daily-report':   return await _sendDailyReportEmail(payload);
+        case 'monthly-report': return await _sendMonthlyReportEmail(payload);
+        case 'promo':          return await _sendPromoEmail(payload);
         case 'contact-relay': return await _sendContactRelayEmail(payload);
         case 'approval':     return await _sendInvoiceApprovalEmail(payload);
         case 'health-alert': return await _sendHealthAlertEmail(payload);
@@ -85,6 +87,11 @@ async function queueInviteEmail(payload) {
 async function queueDailyReportEmail(payload) {
     if (useQueue) return emailQueue.add({ type: 'daily-report', payload }, { attempts: 2, backoff: 2000, removeOnComplete: true });
     return await _sendDailyReportEmail(payload);
+}
+
+async function queueMonthlyReportEmail(payload) {
+    if (useQueue) return emailQueue.add({ type: 'monthly-report', payload }, { attempts: 2, backoff: 3000, removeOnComplete: true });
+    return await _sendMonthlyReportEmail(payload);
 }
 
 async function queuePromoEmail(payload) {
@@ -112,6 +119,7 @@ module.exports = {
     queueInvoiceEmail,
     queueInviteEmail,
     queueDailyReportEmail,
+    queueMonthlyReportEmail,
     queuePromoEmail,
     queueContactRelayEmail,
     queueInvoiceApprovalEmail,

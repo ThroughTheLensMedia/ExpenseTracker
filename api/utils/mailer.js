@@ -430,6 +430,162 @@ async function sendInvoiceApprovalEmail({
     }
 }
 
+async function sendMonthlyReportEmail({
+    to, name, monthName, isPreview,
+    totalSpendCents, totalIncomeCents, avgTotalSpendCents,
+    topCategories, biggestChanges, subsCents
+}) {
+    console.log(`[MAILER] Sending Monthly Report to ${to}...`);
+    const resend = getResend();
+    if (!resend) return { success: false, error: "Mailer service not configured" };
+
+    const fmt = (cents) => {
+        const dollars = Math.abs(cents / 100);
+        return '$' + dollars.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    };
+
+    const spendChangePct = avgTotalSpendCents > 0
+        ? Math.round(((totalSpendCents - avgTotalSpendCents) / avgTotalSpendCents) * 100)
+        : null;
+    const spendChangeText = spendChangePct !== null
+        ? (spendChangePct >= 0
+            ? `A ${spendChangePct}% increase from your 3-month average`
+            : `A ${Math.abs(spendChangePct)}% decrease from your 3-month average`)
+        : 'No prior data to compare';
+    const spendChangeColor = spendChangePct > 0 ? '#f97316' : '#4ade80';
+
+    const incomeSpentPct = totalIncomeCents > 0
+        ? Math.round((totalSpendCents / totalIncomeCents) * 100)
+        : null;
+    const netCents = totalIncomeCents - totalSpendCents;
+    const incomeText = incomeSpentPct !== null
+        ? (netCents >= 0
+            ? `You spent ${fmt(netCents)} less than your income`
+            : `You spent ${fmt(Math.abs(netCents))} more than your income`)
+        : '';
+    const incomeColor = netCents >= 0 ? '#4ade80' : '#f97316';
+
+    const topCatRows = topCategories.map((c, i) => `
+        <tr>
+          <td style="padding:12px 0;${i < topCategories.length - 1 ? 'border-bottom:1px solid rgba(255,255,255,0.06);' : ''}">
+            <div style="font-size:15px;font-weight:700;color:#fff;">${c.cat}</div>
+            <div style="font-size:13px;color:#94a3b8;">${c.pct}% of spend</div>
+          </td>
+          <td style="text-align:right;padding:12px 0;font-size:18px;font-weight:900;color:#f97316;${i < topCategories.length - 1 ? 'border-bottom:1px solid rgba(255,255,255,0.06);' : ''}">${fmt(c.cents)}</td>
+        </tr>`).join('');
+
+    const changeRows = biggestChanges.map((c, i) => `
+        <tr>
+          <td colspan="2" style="padding:${i > 0 ? '16px' : '12px'} 0 12px;${i > 0 ? 'border-top:1px solid rgba(255,255,255,0.06);' : ''}">
+            <table style="width:100%;border-collapse:collapse;">
+              <tr>
+                <td style="font-size:15px;font-weight:700;color:#fff;">${c.cat}</td>
+                <td style="text-align:right;font-size:13px;font-weight:800;color:${c.delta > 0 ? '#f97316' : '#4ade80'};">
+                  ${c.delta > 0 ? '▲' : '▼'} ${fmt(Math.abs(c.delta))} ${c.delta > 0 ? 'more' : 'less'} than avg
+                </td>
+              </tr>
+              <tr>
+                <td style="font-size:12px;color:#64748b;padding-top:4px;">Last month</td>
+                <td style="text-align:right;font-size:12px;color:#94a3b8;padding-top:4px;">${fmt(c.current)}</td>
+              </tr>
+              <tr>
+                <td style="font-size:12px;color:#64748b;padding-top:2px;">3-mo avg</td>
+                <td style="text-align:right;font-size:12px;color:#94a3b8;padding-top:2px;">${fmt(c.avg)}</td>
+              </tr>
+            </table>
+          </td>
+        </tr>`).join('');
+
+    const fromEmail = process.env.RESEND_FROM || 'Lumière Ledger <support@throughthelens.media>';
+
+    const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#0f172a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+${isPreview ? `<div style="background:#f59e0b;color:#000;padding:10px;text-align:center;font-size:13px;font-weight:700;">🧪 PREVIEW — This is a test send. Real data, not sent to all users.</div>` : ''}
+<div style="max-width:600px;margin:0 auto;padding:40px 20px;">
+
+  <div style="text-align:center;margin-bottom:32px;">
+    <div style="font-size:20px;font-weight:900;letter-spacing:-0.02em;color:#fff;">LUMIÈRE LEDGER</div>
+    <div style="height:2px;width:40px;background:#f97316;margin:8px auto 0;"></div>
+  </div>
+
+  <h1 style="color:#fff;font-size:26px;font-weight:900;margin:0 0 8px;">Your ${monthName} financial report</h1>
+  <p style="color:#94a3b8;font-size:15px;margin:0 0 28px;line-height:1.6;">Hi ${name}, here's a summary of your financial activity last month.</p>
+
+  <!-- KPI Stats -->
+  <div style="background:#1e293b;border-radius:16px;padding:24px;margin-bottom:20px;">
+    <table style="width:100%;border-collapse:collapse;">
+      <tr>
+        <td style="padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <div style="font-size:13px;color:#94a3b8;margin-bottom:4px;">Total Spend</div>
+          <div style="font-size:30px;font-weight:900;color:#fff;">${fmt(totalSpendCents)}</div>
+          <div style="font-size:13px;color:${spendChangeColor};margin-top:3px;">${spendChangeText}</div>
+        </td>
+      </tr>
+      ${incomeSpentPct !== null ? `
+      <tr>
+        <td style="padding:14px 0;${subsCents > 0 ? 'border-bottom:1px solid rgba(255,255,255,0.06);' : ''}">
+          <div style="font-size:13px;color:#94a3b8;margin-bottom:4px;">% of Income Spent</div>
+          <div style="font-size:30px;font-weight:900;color:#fff;">${incomeSpentPct}%</div>
+          <div style="font-size:13px;color:${incomeColor};margin-top:3px;">${incomeText}</div>
+        </td>
+      </tr>` : ''}
+      ${subsCents > 0 ? `
+      <tr>
+        <td style="padding:14px 0;">
+          <div style="font-size:13px;color:#94a3b8;margin-bottom:4px;">Subscriptions Spend</div>
+          <div style="font-size:30px;font-weight:900;color:#fff;">${fmt(subsCents)}</div>
+          <div style="font-size:13px;color:#94a3b8;margin-top:3px;">Recurring charges detected last month</div>
+        </td>
+      </tr>` : ''}
+    </table>
+  </div>
+
+  ${topCategories.length > 0 ? `
+  <!-- Top Categories -->
+  <div style="background:#1e293b;border-radius:16px;padding:24px;margin-bottom:20px;">
+    <h2 style="color:#fff;font-size:18px;font-weight:800;margin:0 0 4px;">Top spending by category</h2>
+    <p style="color:#94a3b8;font-size:13px;margin:0 0 18px;">Categories that impacted your spending most last month.</p>
+    <table style="width:100%;border-collapse:collapse;">${topCatRows}</table>
+  </div>` : ''}
+
+  ${biggestChanges.length > 0 ? `
+  <!-- Biggest Changes -->
+  <div style="background:#1e293b;border-radius:16px;padding:24px;margin-bottom:20px;">
+    <h2 style="color:#fff;font-size:18px;font-weight:800;margin:0 0 4px;">Biggest Changes in Spending</h2>
+    <p style="color:#94a3b8;font-size:13px;margin:0 0 18px;">Categories with the biggest swings vs your 3-month average.</p>
+    <table style="width:100%;border-collapse:collapse;">${changeRows}</table>
+  </div>` : ''}
+
+  <!-- CTA -->
+  <div style="text-align:center;margin:28px 0 32px;">
+    <a href="https://www.lumiereledger.com" style="display:inline-block;background:#f97316;color:#fff;padding:14px 28px;border-radius:10px;font-weight:900;font-size:14px;text-decoration:none;">View Your Full Ledger →</a>
+  </div>
+
+  <p style="text-align:center;font-size:12px;color:#334155;margin:0;line-height:1.8;">
+    You're receiving this because you have a Lumière Ledger account.<br>
+    <a href="https://www.lumiereledger.com" style="color:#475569;">lumiereledger.com</a>
+  </p>
+</div>
+</body>
+</html>`;
+
+    try {
+        const data = await resend.emails.send({
+            from: fromEmail,
+            to: [to],
+            subject: `Your ${monthName} financial report`,
+            html
+        });
+        console.log(`[MAILER] Monthly report dispatched to ${to}:`, data);
+        return { success: true, data };
+    } catch (error) {
+        console.error(`[MAILER] Monthly report failed for ${to}:`, error);
+        return { success: false, error: error.message };
+    }
+}
+
 async function sendHealthAlertEmail({ to, issues }) {
     console.log(`[MAILER] Sending Health Alert to ${to}...`);
     const resend = getResend();
@@ -464,10 +620,11 @@ async function sendHealthAlertEmail({ to, issues }) {
     }
 }
 
-module.exports = { 
-    sendInvoiceEmail, 
-    sendInviteEmail, 
-    sendDailyReportEmail, 
+module.exports = {
+    sendInvoiceEmail,
+    sendInviteEmail,
+    sendDailyReportEmail,
+    sendMonthlyReportEmail,
     sendPromoEmail,
     sendContactRelayEmail,
     sendInvoiceApprovalEmail,

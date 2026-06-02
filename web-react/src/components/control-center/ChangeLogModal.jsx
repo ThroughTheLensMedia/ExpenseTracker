@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.50', date: 'JUN 2, 2026', color: '#f97316', items: [
+        '<strong>Monthly Financial Report Email:</strong> On the 1st of each month, Lumière Ledger sends you a financial summary for the prior month — Total Spend, % of Income Spent, Top 3 spending categories, and your biggest changes vs your 3-month average. Styled like a Rocket Money report but in Lumière Ledger\'s dark theme.',
+        '<strong>Subscriptions Line Item:</strong> If you have any Subscriptions-category transactions last month, the email breaks them out as a standalone line.',
+    ]},
     { version: '7.8.49', date: 'MAY 27, 2026', color: '#4ade80', items: [
         '<strong>Top Expense Drivers — Click to Drill Down:</strong> Every category row on the Dashboard is now a clickable link. Tap any category — Dining &amp; Drinks, Auto &amp; Transport, Shopping, etc. — and the Transaction Ledger opens filtered to exactly those transactions. Hover shows a subtle highlight and an → indicator. The UNCATEGORIZED row opens the ledger pre-filtered to transactions that still need a category.',
         '<strong>Category Filter — Uncategorized Option:</strong> The Category dropdown on the Transaction Ledger now includes "Uncategorized" at the top of the list. Select it to instantly see every transaction that hasn\'t been assigned a category yet — same as the monthly insights shortcut, but always available.',

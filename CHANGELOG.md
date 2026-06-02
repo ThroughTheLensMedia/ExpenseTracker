@@ -5,6 +5,20 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.50] — 2026-06-02
+
+### Monthly Financial Report Email + Daily Cron Fix
+
+#### Added
+- **`api/routes/cron.js`** — New `GET /cron/monthly-report` route. On the 1st of each month, queries last month's expenses for every user and sends a branded financial summary email. Sections: Total Spend (with % change vs 3-month avg), Income / % of income spent, Top 3 categories, Biggest spending changes, and Subscriptions. `?preview=1` sends only to `joshua.deuermeyer@gmail.com` with a yellow test banner — use this to verify before going live.
+- **`api/utils/mailer.js`** — `sendMonthlyReportEmail()` — dark-themed HTML email template modeled on Rocket Money's layout but Lumière Ledger branded (orange accents, slate cards). Handles all edge cases: no income data, no subscriptions, no prior average.
+- **`api/utils/emailQueue.js`** — `queueMonthlyReportEmail()` wrapper.
+
+#### Fixed
+- **`.env`** — `GITHUB_TOKEN` and `CRON_SECRET` were on the same line (no newline separator), causing `CRON_SECRET` to be undefined locally. Split into two separate lines.
+
+---
+
 ## [v7.8.49] — 2026-05-27
 
 ### Top Expense Drivers — clickable + Uncategorized filter

@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { supabase } = require("../db");
-const { queueDailyReportEmail, queueHealthAlertEmail } = require("../utils/emailQueue");
+const { queueDailyReportEmail, queueMonthlyReportEmail, queueHealthAlertEmail } = require("../utils/emailQueue");
 
 function isCronAuthorized(req) {
     const cronSecret = (process.env.CRON_SECRET || '').trim();
@@ -92,6 +92,131 @@ router.get("/daily-report", async (req, res) => {
         res.status(500).json({ error: e.message });
     }
 });
+
+// GET /cron/monthly-report
+// ?preview=1 → sends only to joshua.deuermeyer@gmail.com using his real data
+// Normal (no preview) → sends to all users in profiles
+router.get("/monthly-report", async (req, res) => {
+    if (!isCronAuthorized(req)) {
+        return res.status(403).json({ error: "Unauthorized" });
+    }
+
+    const isPreview = req.query.preview === '1';
+    const ADMIN_EMAIL = 'joshua.deuermeyer@gmail.com';
+    const ADMIN_UUID = '49e7efcb-6434-4f0c-9563-3151a6d50df9';
+
+    try {
+        if (!supabase) throw new Error("Supabase service client not initialized");
+
+        // Last month date range
+        const now = new Date();
+        const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+        const monthName = lastMonthStart.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        const startStr = lastMonthStart.toISOString().split('T')[0];
+        const endStr = lastMonthEnd.toISOString().split('T')[0];
+
+        // 3-month average window (the 3 months before last month)
+        const avgStart = new Date(now.getFullYear(), now.getMonth() - 4, 1);
+        const avgEnd = new Date(now.getFullYear(), now.getMonth() - 1, 0);
+        const avgStartStr = avgStart.toISOString().split('T')[0];
+        const avgEndStr = avgEnd.toISOString().split('T')[0];
+
+        // Resolve user list
+        let users = [];
+        if (isPreview) {
+            const { data: profile } = await supabase.from('profiles').select('id, email, display_name').eq('id', ADMIN_UUID).maybeSingle();
+            users = [{ id: ADMIN_UUID, email: ADMIN_EMAIL, name: (profile?.display_name) || 'Joshua' }];
+        } else {
+            const { data: profiles, error: profErr } = await supabase
+                .from('profiles')
+                .select('id, email, display_name')
+                .not('email', 'is', null);
+            if (profErr) throw profErr;
+            users = (profiles || []).filter(p => p.email).map(p => ({
+                id: p.id,
+                email: p.email,
+                name: p.display_name || p.email.split('@')[0]
+            }));
+        }
+
+        const results = [];
+        for (const user of users) {
+            try {
+                const report = await buildMonthlyReport(supabase, user.id, startStr, endStr, avgStartStr, avgEndStr);
+
+                // Skip users with no transactions last month
+                if (report.totalSpendCents === 0 && report.totalIncomeCents === 0) {
+                    results.push({ email: user.email, ok: false, skipped: true, reason: 'no transactions' });
+                    continue;
+                }
+
+                const targetEmail = isPreview ? ADMIN_EMAIL : user.email;
+                await queueMonthlyReportEmail({ to: targetEmail, name: user.name, monthName, isPreview, ...report });
+                results.push({ email: targetEmail, ok: true });
+            } catch (err) {
+                console.error(`[CRON] Monthly report failed for ${user.email}:`, err);
+                results.push({ email: user.email, ok: false, error: err.message });
+            }
+        }
+
+        res.json({ ok: true, isPreview, month: monthName, dateRange: `${startStr} → ${endStr}`, sent: results.filter(r => r.ok).length, results });
+    } catch (e) {
+        console.error("[CRON] Monthly report fatal error:", e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+async function buildMonthlyReport(supabase, userId, startStr, endStr, avgStartStr, avgEndStr) {
+    const [{ data: lastMonth }, { data: avgMonths }] = await Promise.all([
+        supabase.from('expenses').select('amount_cents, category').eq('user_id', userId).gte('expense_date', startStr).lte('expense_date', endStr),
+        supabase.from('expenses').select('amount_cents, category').eq('user_id', userId).gte('expense_date', avgStartStr).lte('expense_date', avgEndStr)
+    ]);
+
+    const expenses = (lastMonth || []).filter(r => (r.amount_cents || 0) > 0);
+    const income   = (lastMonth || []).filter(r => (r.amount_cents || 0) < 0);
+
+    const totalSpendCents  = expenses.reduce((s, r) => s + r.amount_cents, 0);
+    const totalIncomeCents = income.reduce((s, r) => s + Math.abs(r.amount_cents), 0);
+
+    // Per-category spend last month
+    const catSpend = {};
+    expenses.forEach(r => {
+        const cat = r.category || 'Uncategorized';
+        catSpend[cat] = (catSpend[cat] || 0) + r.amount_cents;
+    });
+
+    const topCategories = Object.entries(catSpend)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([cat, cents]) => ({
+            cat,
+            cents,
+            pct: totalSpendCents > 0 ? Math.round((cents / totalSpendCents) * 100) : 0
+        }));
+
+    // Per-category 3-month monthly average
+    const avgCatSpend = {};
+    (avgMonths || []).filter(r => (r.amount_cents || 0) > 0).forEach(r => {
+        const cat = r.category || 'Uncategorized';
+        avgCatSpend[cat] = (avgCatSpend[cat] || 0) + r.amount_cents;
+    });
+    Object.keys(avgCatSpend).forEach(k => { avgCatSpend[k] = Math.round(avgCatSpend[k] / 3); });
+
+    const avgTotalSpendCents = Object.values(avgCatSpend).reduce((s, v) => s + v, 0);
+
+    // Biggest changes vs average (only show categories with >$5 swing)
+    const allCats = new Set([...Object.keys(catSpend), ...Object.keys(avgCatSpend)]);
+    const biggestChanges = Array.from(allCats)
+        .map(cat => ({ cat, current: catSpend[cat] || 0, avg: avgCatSpend[cat] || 0, delta: (catSpend[cat] || 0) - (avgCatSpend[cat] || 0) }))
+        .filter(c => Math.abs(c.delta) > 500)
+        .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
+        .slice(0, 3);
+
+    const subsCents = expenses.filter(r => r.category === 'Subscriptions').reduce((s, r) => s + r.amount_cents, 0);
+
+    return { totalSpendCents, totalIncomeCents, avgTotalSpendCents, topCategories, biggestChanges, subsCents };
+}
 
 // GET /cron/watchdog
 router.get("/watchdog", async (req, res) => {

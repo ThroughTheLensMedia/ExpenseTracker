@@ -1,6 +1,6 @@
 {
-  "version": "7.8.49",
-  "release_date": "2026-05-27",
+  "version": "7.8.50",
+  "release_date": "2026-06-02",
   "codename": "Lumière Ledger",
-  "notes": "v7.8.49: Top Expense Drivers rows are clickable — tap any category to see those transactions in the ledger. Category filter now includes Uncategorized."
+  "notes": "v7.8.50: Monthly financial report email — delivered on the 1st of each month with spend totals, top categories, and biggest changes vs your average."
 }
