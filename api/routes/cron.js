@@ -152,7 +152,7 @@ router.get("/monthly-report", async (req, res) => {
                 }
 
                 const targetEmail = isPreview ? ADMIN_EMAIL : user.email;
-                await queueMonthlyReportEmail({ to: targetEmail, name: user.name, monthName, isPreview, ...report });
+                await queueMonthlyReportEmail({ to: targetEmail, name: user.name, monthName, isPreview, startStr, endStr, ...report });
                 results.push({ email: targetEmail, ok: true });
             } catch (err) {
                 console.error(`[CRON] Monthly report failed for ${user.email}:`, err);
@@ -179,7 +179,7 @@ const NON_SPEND_CATS = new Set([
 ]);
 
 // Vendor name patterns that indicate a credit card payment or fund transfer
-const CC_PAYMENT_PATTERN = /\b(autopay|payment|online pmt|e-payment|bill pay|epay|xfer|transfer)\b/i;
+const CC_PAYMENT_PATTERN = /\b(autopay|payment|epayment|pmt|e-payment|bill pay|epay|xfer|transfer|apple card|ach|wire)\b/i;
 
 async function buildMonthlyReport(supabase, userId, startStr, endStr, avgStartStr, avgEndStr) {
     const [{ data: lastMonth }, { data: avgMonths }] = await Promise.all([

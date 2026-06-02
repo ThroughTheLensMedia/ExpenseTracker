@@ -432,6 +432,7 @@ async function sendInvoiceApprovalEmail({
 
 async function sendMonthlyReportEmail({
     to, name, monthName, isPreview,
+    startStr, endStr,
     totalSpendCents, totalIncomeCents, netCents, avgTotalSpendCents,
     topCategories, biggestChanges,
     subscriptionsList, subsCents,
@@ -533,6 +534,7 @@ async function sendMonthlyReportEmail({
 
     const fromEmail = process.env.RESEND_FROM || 'Lumière Ledger <support@throughthelens.media>';
     const appUrl = 'https://www.lumiereledger.com';
+    const uncatUrl = `${uncatUrl}${startStr ? `&start=${startStr}` : ''}${endStr ? `&end=${endStr}` : ''}`;
 
     const html = `<!DOCTYPE html>
 <html>
@@ -597,7 +599,7 @@ ${isPreview ? `<div style="background:#f59e0b;color:#000;padding:10px;text-align
           <div style="font-size:13px;color:#94a3b8;">${fmt(uncategorizedCents)} in spending isn't categorized yet — affects your reports and tax deductions.</div>
         </td>
         <td style="text-align:right;white-space:nowrap;padding-left:16px;">
-          <a href="${appUrl}/transactions?needs_category=1" style="display:inline-block;background:#f97316;color:#fff;padding:9px 16px;border-radius:8px;font-weight:800;font-size:13px;text-decoration:none;">Fix now →</a>
+          <a href="${uncatUrl}" style="display:inline-block;background:#f97316;color:#fff;padding:9px 16px;border-radius:8px;font-weight:800;font-size:13px;text-decoration:none;">Fix now →</a>
         </td>
       </tr>
     </table>
@@ -613,7 +615,7 @@ ${isPreview ? `<div style="background:#f59e0b;color:#000;padding:10px;text-align
       <tr>
         <td style="padding:11px 0 0;border-top:1px solid rgba(255,255,255,0.06);">
           <div style="font-size:14px;font-weight:700;color:#f97316;">Uncategorized</div>
-          <div style="font-size:12px;color:#64748b;">${uncategorizedCount} transaction${uncategorizedCount > 1 ? 's' : ''} &nbsp;·&nbsp; <a href="${appUrl}/transactions?needs_category=1" style="color:#f97316;text-decoration:none;font-weight:700;">categorize →</a></div>
+          <div style="font-size:12px;color:#64748b;">${uncategorizedCount} transaction${uncategorizedCount > 1 ? 's' : ''} &nbsp;·&nbsp; <a href="${uncatUrl}" style="color:#f97316;text-decoration:none;font-weight:700;">categorize →</a></div>
         </td>
         <td style="text-align:right;padding:11px 0 0;border-top:1px solid rgba(255,255,255,0.06);font-size:17px;font-weight:900;color:#f97316;">${fmt(uncategorizedCents)}</td>
       </tr>` : ''}

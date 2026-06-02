@@ -156,6 +156,10 @@ export default function Transactions() {
             setSearchAccount(urlSource);
         }
         if (searchParams.get('needs_category') === '1') setNeedsCategoryFilter(true);
+        const urlStart = searchParams.get('start');
+        const urlEnd   = searchParams.get('end');
+        if (urlStart) setStart(urlStart);
+        if (urlEnd)   setEnd(urlEnd);
     }, []); // intentionally run once on mount only
 
     // Refresh when Brain Assistant approves a transaction action
