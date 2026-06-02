@@ -272,6 +272,27 @@ router.patch("/:id", async (req, res) => {
   }
 });
 
+// DELETE /expenses/bulk-delete — must be registered before /:id
+router.delete("/bulk-delete", async (req, res) => {
+  try {
+    const { ids } = req.body || {};
+    if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ error: 'ids must be a non-empty array' });
+    const numericIds = ids.map(Number).filter(n => !isNaN(n) && n > 0);
+    if (!numericIds.length) return res.status(400).json({ error: 'No valid ids' });
+
+    const { error, count } = await req.sb
+      .from('expenses')
+      .delete()
+      .in('id', numericIds)
+      .eq('user_id', req.user.id);
+
+    if (error) throw error;
+    res.json({ ok: true, deleted: numericIds.length });
+  } catch (e) {
+    res.status(500).json({ error: String(e.message || e) });
+  }
+});
+
 // DELETE /expenses/:id
 router.delete("/:id", async (req, res) => {
   try {

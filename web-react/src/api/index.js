@@ -123,13 +123,18 @@ export async function apiUpload(path, formData) {
     return r.json();
 }
 
-export async function apiDelete(path) {
+export async function apiDelete(path, body) {
     const headers = await getAuthHeaders();
-    const r = await fetch("/api" + path, {
+    const fetchOpts = {
         method: "DELETE",
         headers: { 'Authorization': headers.Authorization },
         credentials: "include"
-    });
+    };
+    if (body !== undefined) {
+        fetchOpts.headers['Content-Type'] = 'application/json';
+        fetchOpts.body = JSON.stringify(body);
+    }
+    const r = await fetch("/api" + path, fetchOpts);
     if (!r.ok) {
         let msg = `${r.status} ${r.statusText}`;
         try { 

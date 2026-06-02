@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { fetchAllExpenses, formatMoney, formatDate, invalidateExpensesCache, apiGet, apiPost, apiPatch, getExpensesCache } from '../api';
+import { fetchAllExpenses, formatMoney, formatDate, invalidateExpensesCache, apiGet, apiPost, apiPatch, apiDelete, getExpensesCache } from '../api';
 import TransactionDrawer from '../components/TransactionDrawer';
 import { useModal } from '../components/ModalContext.jsx';
 import CategorySelect from '../components/CategorySelect.jsx';
@@ -67,6 +67,28 @@ export default function Transactions() {
         next.has(id) ? next.delete(id) : next.add(id);
         return next;
     });
+
+    // Bulk delete
+    const [bulkDeleting, setBulkDeleting] = useState(false);
+    const handleBulkDelete = async () => {
+        const count = selectedIds.size;
+        const ok = await modal.confirm(`Delete ${count} transaction${count > 1 ? 's' : ''}? This cannot be undone.`);
+        if (!ok) return;
+        setBulkDeleting(true);
+        try {
+            await apiDelete('/expenses/bulk-delete', { ids: [...selectedIds] });
+            invalidateExpensesCache();
+            setSelectedIds(new Set());
+            await loadData(true);
+            setToast({ ok: true, msg: `${count} transaction${count > 1 ? 's' : ''} deleted.` });
+            setTimeout(() => setToast(null), 4000);
+        } catch (e) {
+            setToast({ ok: false, msg: `Delete failed: ${e.message}` });
+            setTimeout(() => setToast(null), 5000);
+        } finally {
+            setBulkDeleting(false);
+        }
+    };
 
     // Bulk reassign account
     const [reassignTarget, setReassignTarget] = useState('');
@@ -669,7 +691,7 @@ export default function Transactions() {
             })()}
 
             {/* ─── Multi-Select Floating Action Bar ─── */}
-            {selectedIds.size >= 2 && (
+            {selectedIds.size >= 1 && (
                 <div style={{ position: 'fixed', bottom: '28px', left: '50%', transform: 'translateX(-50%)', zIndex: 9999, display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', justifyContent: 'center', background: 'rgba(10,20,42,0.97)', border: '1px solid rgba(99,102,241,0.5)', borderRadius: '14px', padding: '12px 20px', boxShadow: '0 8px 40px rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)', maxWidth: '90vw' }}>
                     <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent)' }}>{selectedIds.size} selected</span>
                     <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.15)' }} />
@@ -708,6 +730,12 @@ export default function Transactions() {
                             onClick={handleManualMerge}
                         >Merge Duplicate</button>
                     )}
+                    <button
+                        className="btn"
+                        style={{ fontSize: '12px', padding: '8px 16px', fontWeight: 900, background: 'rgba(239,68,68,0.15)', borderColor: 'rgba(239,68,68,0.5)', color: '#ef4444', opacity: bulkDeleting ? 0.5 : 1 }}
+                        onClick={handleBulkDelete}
+                        disabled={bulkDeleting}
+                    >{bulkDeleting ? 'Deleting…' : '🗑 Delete Selected'}</button>
                     <button
                         className="btn secondary"
                         style={{ fontSize: '12px', padding: '8px 14px' }}
