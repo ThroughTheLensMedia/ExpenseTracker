@@ -69,6 +69,28 @@ export default function Transactions() {
         return next;
     });
 
+    // Clear review flags (dismiss false positives)
+    const [clearingReview, setClearingReview] = useState(false);
+    const handleClearReview = async () => {
+        const count = selectedIds.size;
+        const ok = await modal.confirm(`Mark ${count} transaction${count > 1 ? 's' : ''} as "Not a Duplicate"? This removes the review flag and they won't be flagged again by future scans.`);
+        if (!ok) return;
+        setClearingReview(true);
+        try {
+            await apiPatch('/expenses/bulk-clear-review', { ids: [...selectedIds] });
+            invalidateExpensesCache();
+            setSelectedIds(new Set());
+            await loadData(true);
+            setToast({ ok: true, msg: `${count} transaction${count > 1 ? 's' : ''} cleared — won't appear in future scans.` });
+            setTimeout(() => setToast(null), 4000);
+        } catch (e) {
+            setToast({ ok: false, msg: `Clear failed: ${e.message}` });
+            setTimeout(() => setToast(null), 4000);
+        } finally {
+            setClearingReview(false);
+        }
+    };
+
     // Scan for duplicates
     const [scanning, setScanning] = useState(false);
     const handleScanDupes = async () => {
@@ -759,9 +781,17 @@ export default function Transactions() {
                             onClick={handleManualMerge}
                         >Merge Duplicate</button>
                     )}
+                    {needsReviewOnly && (
+                        <button
+                            className="btn"
+                            style={{ fontSize: '12px', padding: '8px 16px', fontWeight: 700, background: 'rgba(100,116,139,0.15)', borderColor: 'rgba(100,116,139,0.4)', color: '#94a3b8', opacity: clearingReview ? 0.5 : 1 }}
+                            onClick={handleClearReview}
+                            disabled={clearingReview}
+                        >{clearingReview ? 'Clearing…' : 'Not a Duplicate'}</button>
+                    )}
                     <button
                         className="btn"
-                        style={{ fontSize: '12px', padding: '8px 16px', fontWeight: 900, background: 'rgba(239,68,68,0.15)', borderColor: 'rgba(239,68,68,0.5)', color: '#ef4444', opacity: bulkDeleting ? 0.5 : 1 }}
+                        style={{ fontSize: '12px', padding: '8px 16px', fontWeight: 700, background: 'rgba(239,68,68,0.15)', borderColor: 'rgba(239,68,68,0.5)', color: '#ef4444', opacity: bulkDeleting ? 0.5 : 1 }}
                         onClick={handleBulkDelete}
                         disabled={bulkDeleting}
                     >{bulkDeleting ? 'Deleting…' : 'Delete Selected'}</button>

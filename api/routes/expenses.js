@@ -347,8 +347,24 @@ router.patch("/:id/resolve-review", async (req, res) => {
   }
 });
 
+// Vendor similarity check — requires name overlap to avoid false positives
+// (e.g. Smith's $15 and Utah State Parks $15 on same day are NOT duplicates)
+function vendorsSimilar(a, b) {
+  const norm = s => (s || '').toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
+  const na = norm(a);
+  const nb = norm(b);
+  if (!na || !nb) return false;
+  if (na === nb) return true;
+  if (na.includes(nb) || nb.includes(na)) return true;
+  // Word overlap: at least one significant word (>3 chars) in common
+  const words = s => s.split(/\s+/).filter(w => w.length > 3);
+  const wa = new Set(words(na));
+  return words(nb).some(w => wa.has(w));
+}
+
 // POST /expenses/scan-dupes
-// Scans existing transactions for likely duplicates (same amount_cents, date within ±2 days).
+// Scans existing transactions for likely duplicates: same amount_cents, date within
+// ±2 days, AND vendor names must be similar (one contains the other, or word overlap).
 // Optionally scoped to a single account via { source }.
 // Marks found pairs with needs_review=true and a shared review_pair_id.
 // Skips pairs that are already flagged or already linked via plaid_transaction_id.
@@ -396,6 +412,10 @@ router.post("/scan-dupes", async (req, res) => {
           );
           if (dayDiff > 2) continue;
 
+          // Require vendor name similarity — prevents false positives on coincidental
+          // same-amount transactions from unrelated vendors on nearby dates
+          if (!vendorsSimilar(a.vendor, b.vendor)) continue;
+
           pairs.push({ a: a.id, b: b.id, amount_cents: a.amount_cents, vendorA: a.vendor, vendorB: b.vendor, dateA: a.expense_date, dateB: b.expense_date });
           flagged.add(a.id);
           flagged.add(b.id);
@@ -416,6 +436,28 @@ router.post("/scan-dupes", async (req, res) => {
     }
 
     res.json({ ok: true, found: pairs.length, pairs });
+  } catch (e) {
+    res.status(500).json({ error: String(e.message || e) });
+  }
+});
+
+// PATCH /expenses/bulk-clear-review — clears needs_review + review_pair_id on a batch of transactions
+// Used to dismiss false positives from the scan-dupes tool
+router.patch("/bulk-clear-review", async (req, res) => {
+  try {
+    const { ids } = req.body || {};
+    if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ error: 'ids required' });
+    const numericIds = ids.map(Number).filter(n => !isNaN(n) && n > 0);
+    if (!numericIds.length) return res.status(400).json({ error: 'No valid ids' });
+
+    const { error } = await req.sb
+      .from('expenses')
+      .update({ needs_review: false, review_pair_id: null })
+      .in('id', numericIds)
+      .eq('user_id', req.user.id);
+
+    if (error) throw error;
+    res.json({ ok: true, cleared: numericIds.length });
   } catch (e) {
     res.status(500).json({ error: String(e.message || e) });
   }
