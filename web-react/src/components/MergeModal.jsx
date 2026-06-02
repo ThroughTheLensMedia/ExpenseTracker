@@ -109,9 +109,9 @@ export default function MergeModal({ txA, txB, onConfirm, onCancel }) {
         </div>
     );
 
-    const FieldRow = ({ icon, label, children }) => (
+    const FieldRow = ({ label, children }) => (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', marginBottom: '6px' }}>
-            <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.75)', display: 'flex', alignItems: 'center', gap: '7px' }}>{icon} {label}</div>
+            <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.75)' }}>{label}</div>
             <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>{children}</div>
         </div>
     );
@@ -128,7 +128,6 @@ export default function MergeModal({ txA, txB, onConfirm, onCancel }) {
 
                 {/* Header */}
                 <div style={{ padding: '18px 22px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '16px' }}>🧬</span>
                     <span style={{ fontSize: '13px', fontWeight: 800, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Merge Duplicate Transactions</span>
                 </div>
 
@@ -149,7 +148,7 @@ export default function MergeModal({ txA, txB, onConfirm, onCancel }) {
 
                         {/* Receipt */}
                         {eitherHas('receipt_link') && (
-                            <FieldRow icon="📎" label="Receipt">
+                            <FieldRow label="Receipt">
                                 {has(b, 'receipt_link') && <Chip active={useReceipt === b.id} onClick={() => setUseReceipt(b.id)}>{sourceLabel(b)}</Chip>}
                                 {has(o, 'receipt_link') && <Chip active={useReceipt === o.id} onClick={() => setUseReceipt(o.id)}>{sourceLabel(o)}</Chip>}
                                 <Chip active={useReceipt === null} onClick={() => setUseReceipt(null)}>None</Chip>
@@ -158,7 +157,7 @@ export default function MergeModal({ txA, txB, onConfirm, onCancel }) {
 
                         {/* Category */}
                         {eitherHas('category') && (
-                            <FieldRow icon="🏷" label="Category">
+                            <FieldRow label="Category">
                                 {b.category !== o.category ? (
                                     <>
                                         <Chip active={useCategory === 'base'} onClick={() => setUseCategory('base')}>{b.category || '—'} ({sourceLabel(b)})</Chip>
@@ -172,7 +171,7 @@ export default function MergeModal({ txA, txB, onConfirm, onCancel }) {
 
                         {/* Notes */}
                         {eitherHas('notes') && (
-                            <FieldRow icon="📝" label="Notes">
+                            <FieldRow label="Notes">
                                 {has(b, 'notes') && <Chip active={useNotes === 'base'} onClick={() => setUseNotes('base')}>{sourceLabel(b)}</Chip>}
                                 {has(o, 'notes') && <Chip active={useNotes === 'other'} onClick={() => setUseNotes('other')}>{sourceLabel(o)}</Chip>}
                                 {has(b, 'notes') && has(o, 'notes') && <Chip active={useNotes === 'both'} onClick={() => setUseNotes('both')}>Both</Chip>}
@@ -182,7 +181,7 @@ export default function MergeModal({ txA, txB, onConfirm, onCancel }) {
 
                         {/* Tax deductible */}
                         {eitherHas('tax_deductible') && (
-                            <FieldRow icon="✅" label="Tax deductible">
+                            <FieldRow label="Tax deductible">
                                 <Chip active={useTaxDed === true} onClick={() => setUseTaxDed(true)}>Yes</Chip>
                                 <Chip active={useTaxDed === false} onClick={() => setUseTaxDed(false)}>No</Chip>
                             </FieldRow>
@@ -190,7 +189,7 @@ export default function MergeModal({ txA, txB, onConfirm, onCancel }) {
 
                         {/* Tax bucket */}
                         {eitherHas('tax_bucket') && b.tax_bucket !== o.tax_bucket && (
-                            <FieldRow icon="📋" label="Tax bucket">
+                            <FieldRow label="Tax bucket">
                                 {has(b, 'tax_bucket') && <Chip active={useTaxBucket === 'base'} onClick={() => setUseTaxBucket('base')}>{b.tax_bucket} ({sourceLabel(b)})</Chip>}
                                 {has(o, 'tax_bucket') && <Chip active={useTaxBucket === 'other'} onClick={() => setUseTaxBucket('other')}>{o.tax_bucket} ({sourceLabel(o)})</Chip>}
                             </FieldRow>
@@ -198,7 +197,7 @@ export default function MergeModal({ txA, txB, onConfirm, onCancel }) {
 
                         {/* Business use % */}
                         {eitherHas('business_use_pct') && b.business_use_pct !== o.business_use_pct && (
-                            <FieldRow icon="💼" label="Business use %">
+                            <FieldRow label="Business use %">
                                 {b.business_use_pct != null && <Chip active={useBizPct === 'base'} onClick={() => setUseBizPct('base')}>{b.business_use_pct}% ({sourceLabel(b)})</Chip>}
                                 {o.business_use_pct != null && <Chip active={useBizPct === 'other'} onClick={() => setUseBizPct('other')}>{o.business_use_pct}% ({sourceLabel(o)})</Chip>}
                             </FieldRow>

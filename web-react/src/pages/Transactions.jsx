@@ -502,7 +502,7 @@ export default function Transactions() {
                                 <button className="btn secondary sm" onClick={clearFilters} style={{ padding: '8px 20px', fontSize: '12px', fontWeight: 800 }}>RESET FILTERS</button>
                                 <button className="btn secondary sm" onClick={exportCsv} style={{ padding: '8px 20px', fontSize: '12px', fontWeight: 800 }}>EXPORT CSV</button>
                                 <button className="btn secondary sm" onClick={handleScanDupes} disabled={scanning} style={{ padding: '8px 20px', fontSize: '12px', fontWeight: 800, opacity: scanning ? 0.6 : 1 }}>
-                                    {scanning ? 'SCANNING...' : `🔍 SCAN DUPES${searchAccount ? ' (THIS ACCOUNT)' : ''}`}
+                                    {scanning ? 'SCANNING...' : `SCAN DUPES${searchAccount ? ' (THIS ACCOUNT)' : ''}`}
                                 </button>
                             </div>
 
@@ -764,7 +764,7 @@ export default function Transactions() {
                         style={{ fontSize: '12px', padding: '8px 16px', fontWeight: 900, background: 'rgba(239,68,68,0.15)', borderColor: 'rgba(239,68,68,0.5)', color: '#ef4444', opacity: bulkDeleting ? 0.5 : 1 }}
                         onClick={handleBulkDelete}
                         disabled={bulkDeleting}
-                    >{bulkDeleting ? 'Deleting…' : '🗑 Delete Selected'}</button>
+                    >{bulkDeleting ? 'Deleting…' : 'Delete Selected'}</button>
                     <button
                         className="btn secondary"
                         style={{ fontSize: '12px', padding: '8px 14px' }}

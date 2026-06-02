@@ -405,10 +405,10 @@ router.post("/scan-dupes", async (req, res) => {
 
     if (!pairs.length) return res.json({ ok: true, found: 0, pairs: [] });
 
-    // Assign shared review_pair_id and mark needs_review on each pair
-    let nextPairId = Date.now();
+    // Assign shared review_pair_id (UUID) and mark needs_review on each pair
+    const { randomUUID } = require('crypto');
     for (const pair of pairs) {
-      const pairId = String(nextPairId++);
+      const pairId = randomUUID();
       await req.sb.from('expenses')
         .update({ needs_review: true, review_pair_id: pairId })
         .in('id', [pair.a, pair.b])
