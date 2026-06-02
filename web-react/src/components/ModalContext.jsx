@@ -74,12 +74,11 @@ export function ModalProvider({ children }) {
 
                         {/* Body */}
                         <div style={{ padding: '22px 24px' }}>
-                            <p style={{
-                                margin: 0, fontSize: '14px', lineHeight: 1.65,
-                                color: 'rgba(255,255,255,0.88)'
-                            }}>
-                                {current.message}
-                            </p>
+                            {typeof current.message === 'string' ? (
+                                <p style={{ margin: 0, fontSize: '14px', lineHeight: 1.65, color: 'rgba(255,255,255,0.88)' }}>
+                                    {current.message}
+                                </p>
+                            ) : current.message}
                         </div>
 
                         {/* Actions */}

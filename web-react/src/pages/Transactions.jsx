@@ -279,23 +279,38 @@ export default function Transactions() {
         const txB = expenses.find(e => e.id === ids[1]);
         if (!txA || !txB) return;
 
-        const describeRow = (tx) => {
-            const parts = [];
-            if (tx.category) parts.push(`Category: ${tx.category}`);
-            if (tx.receipt_link) parts.push('📎 Has receipt');
-            if (tx.notes) parts.push(`Notes: "${tx.notes}"`);
-            if (tx.tax_deductible) parts.push('✅ Tax deductible');
-            return parts.length ? parts.join('  ·  ') : 'No enrichment';
+        const TxCard = ({ label, tx, accent }) => {
+            const bullets = [];
+            if (tx.category)      bullets.push({ icon: '🏷', text: tx.category });
+            if (tx.receipt_link)  bullets.push({ icon: '📎', text: 'Has receipt attached' });
+            if (tx.notes)         bullets.push({ icon: '📝', text: tx.notes });
+            if (tx.tax_deductible) bullets.push({ icon: '✅', text: 'Tax deductible' });
+            return (
+                <div style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${accent}`, borderRadius: '10px', padding: '12px 14px', marginBottom: '10px' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 800, color: accent, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>{label}</div>
+                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#fff', marginBottom: '4px' }}>{tx.vendor} &nbsp;·&nbsp; {formatMoney(tx.amount_cents)} &nbsp;·&nbsp; {tx.expense_date}</div>
+                    {bullets.length > 0 ? (
+                        <ul style={{ margin: '6px 0 0', padding: '0 0 0 4px', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                            {bullets.map((b, i) => (
+                                <li key={i} style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)' }}>{b.icon} {b.text}</li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', marginTop: '4px' }}>No category, receipt, or notes</div>
+                    )}
+                </div>
+            );
         };
 
         const keepA = await modal.confirm(
-            `MERGE DUPLICATE — choose which record to keep:\n\n` +
-            `① KEEP: "${txA.vendor}"  ${formatMoney(txA.amount_cents)}  ${txA.expense_date}\n` +
-            `   ${describeRow(txA)}\n\n` +
-            `② REMOVE: "${txB.vendor}"  ${formatMoney(txB.amount_cents)}  ${txB.expense_date}\n` +
-            `   ${describeRow(txB)}\n\n` +
-            `Missing fields (receipt, category, notes) will be rescued from the removed record automatically.\n\n` +
-            `Keep ① and remove ②?`
+            <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.75)' }}>
+                <div style={{ fontWeight: 800, color: '#fff', marginBottom: '14px', fontSize: '14px' }}>Merge duplicate — which record do you want to keep?</div>
+                <TxCard label="① Keep this one" tx={txA} accent="#4ade80" />
+                <TxCard label="② Remove this one" tx={txB} accent="#f97316" />
+                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '6px', lineHeight: 1.5 }}>
+                    Any missing fields (receipt, category, notes) will be rescued from the removed record automatically.
+                </div>
+            </div>
         );
         const keepId   = keepA ? ids[0] : ids[1];
         const deleteId = keepA ? ids[1] : ids[0];
