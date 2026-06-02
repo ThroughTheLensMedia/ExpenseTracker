@@ -161,7 +161,7 @@ const BANK_PROFILES = {
         accountCol: [],
         notesCol: ['type'],
         idCol: [],
-        signConvention: 'negative_is_expense',
+        signConvention: 'positive_is_expense',
         detectHeaders: ['merchant', 'amount (usd)'],
     },
     capitalone: {
