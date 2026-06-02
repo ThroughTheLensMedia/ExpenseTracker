@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.51] — 2026-06-02
+
+### Auto-sync on login + Connected Banks UI redesign
+
+#### Changed
+- **`web-react/src/components/PlaidLink.jsx`** — Account cards now show a green "● Connected" badge. Red Disconnect button replaced with a subtle `···` overflow button — destructive action is still one click away but no longer looks like an error state. Header buttons reordered: Sync Now first, Connect Bank second.
+- **`web-react/src/components/AuthContext.jsx`** — Silent background `POST /api/plaid/sync` fires on every `SIGNED_IN` event. No UI, no spinner — transactions arrive by the time the user navigates anywhere.
+
+---
+
 ## [v7.8.50] — 2026-06-02
 
 ### Monthly Financial Report Email + Daily Cron Fix

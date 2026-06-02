@@ -148,22 +148,22 @@ export default function PlaidLink({ onSync, autoConnect = false }) {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                 <div>
-                    <h3 style={{ margin: 0, fontSize: '1.4rem' }}>🏦 Connected Bank Accounts</h3>
-                    <p className="muted" style={{ fontSize: '13px', marginTop: '6px' }}>
-                        Auto-sync transactions directly from your bank via Plaid. No CSV uploads needed.
+                    <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>Connected Bank Accounts</h3>
+                    <p className="muted" style={{ fontSize: '12px', marginTop: '4px' }}>
+                        Transactions auto-sync daily via Plaid. No CSV uploads needed.
                     </p>
                 </div>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                    <button className="btn primary glow-blue" onClick={handleConnect} disabled={connecting} style={{ fontWeight: 900 }}>
-                        {connecting ? 'Connecting...' : '+ Connect Bank'}
-                    </button>
+                <div style={{ display: 'flex', gap: '8px' }}>
                     {activeAccounts.length > 0 && (
-                        <button className="btn secondary" onClick={handleSync} disabled={syncing} style={{ fontWeight: 900 }}>
-                            {syncing ? 'Syncing...' : '🔄 Sync All'}
+                        <button className="btn secondary" onClick={handleSync} disabled={syncing} style={{ fontWeight: 700, fontSize: '13px' }}>
+                            {syncing ? 'Syncing...' : '🔄 Sync Now'}
                         </button>
                     )}
+                    <button className="btn primary glow-blue" onClick={handleConnect} disabled={connecting} style={{ fontWeight: 700, fontSize: '13px' }}>
+                        {connecting ? 'Connecting...' : '+ Connect Bank'}
+                    </button>
                 </div>
             </div>
 
@@ -263,23 +263,24 @@ export default function PlaidLink({ onSync, autoConnect = false }) {
                     </div>
                 </div>
             ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {activeAccounts.map(acct => (
-                        <div key={acct.id} className="card glass" style={{ margin: 0, padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div key={acct.id} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '14px', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
-                                <div style={{ fontWeight: 800, fontSize: '15px' }}>🏦 {acct.institution_name}</div>
-                                <div className="muted" style={{ fontSize: '11px', marginTop: '4px' }}>
-                                    Last synced: {acct.last_synced_at
-                                        ? new Date(acct.last_synced_at).toLocaleString()
-                                        : 'Never'}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '5px' }}>
+                                    <span style={{ fontWeight: 800, fontSize: '15px' }}>🏦 {acct.institution_name}</span>
+                                    <span style={{ fontSize: '11px', fontWeight: 700, background: 'rgba(74,222,128,0.1)', color: '#4ade80', border: '1px solid rgba(74,222,128,0.2)', borderRadius: '20px', padding: '2px 9px' }}>● Connected</span>
+                                </div>
+                                <div style={{ fontSize: '12px', color: '#475569' }}>
+                                    Last synced: {acct.last_synced_at ? new Date(acct.last_synced_at).toLocaleString() : 'Never'}
                                 </div>
                             </div>
                             <button
-                                className="btn sm danger"
                                 onClick={() => handleDisconnect(acct.id, acct.institution_name)}
-                                style={{ fontSize: '11px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: 'none' }}
+                                title="Disconnect bank"
+                                style={{ background: 'none', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', cursor: 'pointer', color: '#475569', fontSize: '18px', padding: '4px 10px', lineHeight: 1, letterSpacing: '2px' }}
                             >
-                                Disconnect
+                                ···
                             </button>
                         </div>
                     ))}

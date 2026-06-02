@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.51', date: 'JUN 2, 2026', color: '#4ade80', items: [
+        '<strong>Auto-Sync on Login:</strong> Connected banks now sync automatically in the background every time you log in — no need to tap Sync manually.',
+        '<strong>Connected Banks — Redesigned:</strong> The bank connection cards now show a clear green "● Connected" badge so you can tell at a glance everything is working. The destructive Disconnect button is replaced with a subtle ··· menu so it no longer looks like an error state.',
+    ]},
     { version: '7.8.50', date: 'JUN 2, 2026', color: '#f97316', items: [
         '<strong>Monthly Financial Report Email:</strong> On the 1st of each month, Lumière Ledger sends you a financial summary for the prior month — Total Spend, % of Income Spent, Top 3 spending categories, and your biggest changes vs your 3-month average. Styled like a Rocket Money report but in Lumière Ledger\'s dark theme.',
         '<strong>Subscriptions Line Item:</strong> If you have any Subscriptions-category transactions last month, the email breaks them out as a standalone line.',

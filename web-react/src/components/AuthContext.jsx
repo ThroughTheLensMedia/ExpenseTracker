@@ -114,6 +114,14 @@ export function AuthProvider({ children }) {
       if (session?.user) {
         fetchSubscription(session.user.id); // no-op if ref already true
       }
+      // Silent background Plaid sync on each new login (not on session restore)
+      if (_event === 'SIGNED_IN' && session?.access_token) {
+        fetch('/api/plaid/sync', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' }
+        }).catch(e => console.warn('[AUTH] Background Plaid sync skipped:', e.message));
+      }
     });
 
     // 3. PWA re-open guard: force a token refresh when the app becomes visible.
