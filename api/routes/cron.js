@@ -169,8 +169,10 @@ router.get("/monthly-report", async (req, res) => {
 
 async function buildMonthlyReport(supabase, userId, startStr, endStr, avgStartStr, avgEndStr) {
     const [{ data: lastMonth }, { data: avgMonths }] = await Promise.all([
-        supabase.from('expenses').select('amount_cents, category').eq('user_id', userId).gte('expense_date', startStr).lte('expense_date', endStr),
-        supabase.from('expenses').select('amount_cents, category').eq('user_id', userId).gte('expense_date', avgStartStr).lte('expense_date', avgEndStr)
+        supabase.from('expenses').select('amount_cents, category, vendor, tax_deductible, expense_date')
+            .eq('user_id', userId).gte('expense_date', startStr).lte('expense_date', endStr),
+        supabase.from('expenses').select('amount_cents, category, vendor')
+            .eq('user_id', userId).gte('expense_date', avgStartStr).lte('expense_date', avgEndStr)
     ]);
 
     const expenses = (lastMonth || []).filter(r => (r.amount_cents || 0) > 0);
@@ -178,6 +180,7 @@ async function buildMonthlyReport(supabase, userId, startStr, endStr, avgStartSt
 
     const totalSpendCents  = expenses.reduce((s, r) => s + r.amount_cents, 0);
     const totalIncomeCents = income.reduce((s, r) => s + Math.abs(r.amount_cents), 0);
+    const netCents = totalIncomeCents - totalSpendCents;
 
     // Per-category spend last month
     const catSpend = {};
@@ -188,10 +191,9 @@ async function buildMonthlyReport(supabase, userId, startStr, endStr, avgStartSt
 
     const topCategories = Object.entries(catSpend)
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 3)
+        .slice(0, 5)
         .map(([cat, cents]) => ({
-            cat,
-            cents,
+            cat, cents,
             pct: totalSpendCents > 0 ? Math.round((cents / totalSpendCents) * 100) : 0
         }));
 
@@ -205,17 +207,64 @@ async function buildMonthlyReport(supabase, userId, startStr, endStr, avgStartSt
 
     const avgTotalSpendCents = Object.values(avgCatSpend).reduce((s, v) => s + v, 0);
 
-    // Biggest changes vs average (only show categories with >$5 swing)
+    // Biggest changes vs average (>$5 swing)
     const allCats = new Set([...Object.keys(catSpend), ...Object.keys(avgCatSpend)]);
     const biggestChanges = Array.from(allCats)
         .map(cat => ({ cat, current: catSpend[cat] || 0, avg: avgCatSpend[cat] || 0, delta: (catSpend[cat] || 0) - (avgCatSpend[cat] || 0) }))
         .filter(c => Math.abs(c.delta) > 500)
         .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
-        .slice(0, 3);
+        .slice(0, 5);
 
-    const subsCents = expenses.filter(r => r.category === 'Subscriptions').reduce((s, r) => s + r.amount_cents, 0);
+    // Subscriptions itemized
+    const subscriptionsList = expenses
+        .filter(r => r.category === 'Subscriptions')
+        .sort((a, b) => b.amount_cents - a.amount_cents)
+        .map(r => ({ vendor: r.vendor || 'Unknown', cents: r.amount_cents }));
+    const subsCents = subscriptionsList.reduce((s, r) => s + r.cents, 0);
 
-    return { totalSpendCents, totalIncomeCents, avgTotalSpendCents, topCategories, biggestChanges, subsCents };
+    // Largest single transactions
+    const largestTransactions = [...expenses]
+        .sort((a, b) => b.amount_cents - a.amount_cents)
+        .slice(0, 5)
+        .map(r => ({ vendor: r.vendor || 'Unknown', category: r.category || 'Uncategorized', cents: r.amount_cents, date: r.expense_date }));
+
+    // Uncategorized count
+    const uncategorizedCount = expenses.filter(r => !r.category || r.category === 'Uncategorized').length;
+
+    // Tax-deductible total
+    const taxDeductibleCents = expenses.filter(r => r.tax_deductible).reduce((s, r) => s + r.amount_cents, 0);
+
+    // Top vendors by spend
+    const vendorSpend = {};
+    expenses.forEach(r => {
+        const v = r.vendor || 'Unknown';
+        vendorSpend[v] = (vendorSpend[v] || 0) + r.amount_cents;
+    });
+    const topVendors = Object.entries(vendorSpend)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([vendor, cents]) => ({ vendor, cents }));
+
+    // New vendors — appeared last month but not in the prior 3-month window
+    const avgVendorSet = new Set(
+        (avgMonths || []).filter(r => (r.amount_cents || 0) > 0).map(r => (r.vendor || '').toLowerCase())
+    );
+    const newVendors = Object.entries(vendorSpend)
+        .filter(([v]) => v !== 'Unknown' && !avgVendorSet.has(v.toLowerCase()))
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([vendor, cents]) => ({ vendor, cents }));
+
+    return {
+        totalSpendCents, totalIncomeCents, netCents, avgTotalSpendCents,
+        topCategories, biggestChanges,
+        subscriptionsList, subsCents,
+        largestTransactions,
+        uncategorizedCount,
+        taxDeductibleCents,
+        topVendors,
+        newVendors
+    };
 }
 
 // GET /cron/watchdog

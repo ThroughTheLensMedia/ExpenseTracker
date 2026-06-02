@@ -432,8 +432,14 @@ async function sendInvoiceApprovalEmail({
 
 async function sendMonthlyReportEmail({
     to, name, monthName, isPreview,
-    totalSpendCents, totalIncomeCents, avgTotalSpendCents,
-    topCategories, biggestChanges, subsCents
+    totalSpendCents, totalIncomeCents, netCents, avgTotalSpendCents,
+    topCategories, biggestChanges,
+    subscriptionsList, subsCents,
+    largestTransactions,
+    uncategorizedCount,
+    taxDeductibleCents,
+    topVendors,
+    newVendors
 }) {
     console.log(`[MAILER] Sending Monthly Report to ${to}...`);
     const resend = getResend();
@@ -443,21 +449,26 @@ async function sendMonthlyReportEmail({
         const dollars = Math.abs(cents / 100);
         return '$' + dollars.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
     };
+    const fmtDate = (d) => {
+        if (!d) return '';
+        const [y, m, day] = d.split('-');
+        return new Date(y, m - 1, day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    };
+    const divider = `<tr><td colspan="2" style="padding:0;"><div style="height:1px;background:rgba(255,255,255,0.06);margin:0;"></div></td></tr>`;
+    const sectionLabel = (text) => `<div style="font-size:11px;font-weight:900;color:#f97316;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px;">${text}</div>`;
 
+    // KPI computations
     const spendChangePct = avgTotalSpendCents > 0
         ? Math.round(((totalSpendCents - avgTotalSpendCents) / avgTotalSpendCents) * 100)
         : null;
     const spendChangeText = spendChangePct !== null
         ? (spendChangePct >= 0
-            ? `A ${spendChangePct}% increase from your 3-month average`
-            : `A ${Math.abs(spendChangePct)}% decrease from your 3-month average`)
+            ? `▲ ${spendChangePct}% vs your 3-month average`
+            : `▼ ${Math.abs(spendChangePct)}% vs your 3-month average`)
         : 'No prior data to compare';
-    const spendChangeColor = spendChangePct > 0 ? '#f97316' : '#4ade80';
+    const spendChangeColor = spendChangePct !== null && spendChangePct > 0 ? '#f97316' : '#4ade80';
 
-    const incomeSpentPct = totalIncomeCents > 0
-        ? Math.round((totalSpendCents / totalIncomeCents) * 100)
-        : null;
-    const netCents = totalIncomeCents - totalSpendCents;
+    const incomeSpentPct = totalIncomeCents > 0 ? Math.round((totalSpendCents / totalIncomeCents) * 100) : null;
     const incomeText = incomeSpentPct !== null
         ? (netCents >= 0
             ? `You spent ${fmt(netCents)} less than your income`
@@ -465,107 +476,183 @@ async function sendMonthlyReportEmail({
         : '';
     const incomeColor = netCents >= 0 ? '#4ade80' : '#f97316';
 
+    // Row builders
     const topCatRows = topCategories.map((c, i) => `
-        <tr>
-          <td style="padding:12px 0;${i < topCategories.length - 1 ? 'border-bottom:1px solid rgba(255,255,255,0.06);' : ''}">
-            <div style="font-size:15px;font-weight:700;color:#fff;">${c.cat}</div>
-            <div style="font-size:13px;color:#94a3b8;">${c.pct}% of spend</div>
-          </td>
-          <td style="text-align:right;padding:12px 0;font-size:18px;font-weight:900;color:#f97316;${i < topCategories.length - 1 ? 'border-bottom:1px solid rgba(255,255,255,0.06);' : ''}">${fmt(c.cents)}</td>
-        </tr>`).join('');
+      <tr>
+        <td style="padding:11px 0;${i < topCategories.length - 1 ? 'border-bottom:1px solid rgba(255,255,255,0.06);' : ''}">
+          <div style="font-size:14px;font-weight:700;color:#fff;">${c.cat}</div>
+          <div style="font-size:12px;color:#64748b;">${c.pct}% of spend</div>
+        </td>
+        <td style="text-align:right;padding:11px 0;font-size:17px;font-weight:900;color:#f97316;${i < topCategories.length - 1 ? 'border-bottom:1px solid rgba(255,255,255,0.06);' : ''}">${fmt(c.cents)}</td>
+      </tr>`).join('');
 
     const changeRows = biggestChanges.map((c, i) => `
-        <tr>
-          <td colspan="2" style="padding:${i > 0 ? '16px' : '12px'} 0 12px;${i > 0 ? 'border-top:1px solid rgba(255,255,255,0.06);' : ''}">
-            <table style="width:100%;border-collapse:collapse;">
-              <tr>
-                <td style="font-size:15px;font-weight:700;color:#fff;">${c.cat}</td>
-                <td style="text-align:right;font-size:13px;font-weight:800;color:${c.delta > 0 ? '#f97316' : '#4ade80'};">
-                  ${c.delta > 0 ? '▲' : '▼'} ${fmt(Math.abs(c.delta))} ${c.delta > 0 ? 'more' : 'less'} than avg
-                </td>
-              </tr>
-              <tr>
-                <td style="font-size:12px;color:#64748b;padding-top:4px;">Last month</td>
-                <td style="text-align:right;font-size:12px;color:#94a3b8;padding-top:4px;">${fmt(c.current)}</td>
-              </tr>
-              <tr>
-                <td style="font-size:12px;color:#64748b;padding-top:2px;">3-mo avg</td>
-                <td style="text-align:right;font-size:12px;color:#94a3b8;padding-top:2px;">${fmt(c.avg)}</td>
-              </tr>
-            </table>
-          </td>
-        </tr>`).join('');
+      <tr>
+        <td colspan="2" style="padding:${i > 0 ? '14px' : '10px'} 0 12px;${i > 0 ? 'border-top:1px solid rgba(255,255,255,0.06);' : ''}">
+          <table style="width:100%;border-collapse:collapse;">
+            <tr>
+              <td style="font-size:14px;font-weight:700;color:#fff;">${c.cat}</td>
+              <td style="text-align:right;font-size:13px;font-weight:800;color:${c.delta > 0 ? '#f97316' : '#4ade80'};">
+                ${c.delta > 0 ? '▲' : '▼'} ${fmt(Math.abs(c.delta))} ${c.delta > 0 ? 'more' : 'less'}
+              </td>
+            </tr>
+            <tr>
+              <td style="font-size:12px;color:#64748b;padding-top:3px;">Last month &nbsp;<span style="color:#94a3b8;font-weight:600;">${fmt(c.current)}</span></td>
+              <td style="text-align:right;font-size:12px;color:#64748b;padding-top:3px;">3-mo avg &nbsp;<span style="color:#94a3b8;font-weight:600;">${fmt(c.avg)}</span></td>
+            </tr>
+          </table>
+        </td>
+      </tr>`).join('');
+
+    const subsRows = subscriptionsList.map((s, i) => `
+      <tr>
+        <td style="padding:10px 0;font-size:14px;color:#fff;${i < subscriptionsList.length - 1 ? 'border-bottom:1px solid rgba(255,255,255,0.06);' : ''}">${s.vendor}</td>
+        <td style="text-align:right;padding:10px 0;font-size:14px;font-weight:700;color:#94a3b8;${i < subscriptionsList.length - 1 ? 'border-bottom:1px solid rgba(255,255,255,0.06);' : ''}">${fmt(s.cents)}</td>
+      </tr>`).join('');
+
+    const vendorRows = topVendors.map((v, i) => `
+      <tr>
+        <td style="padding:10px 0;font-size:14px;color:#fff;${i < topVendors.length - 1 ? 'border-bottom:1px solid rgba(255,255,255,0.06);' : ''}">${v.vendor}</td>
+        <td style="text-align:right;padding:10px 0;font-size:14px;font-weight:700;color:#f97316;${i < topVendors.length - 1 ? 'border-bottom:1px solid rgba(255,255,255,0.06);' : ''}">${fmt(v.cents)}</td>
+      </tr>`).join('');
+
+    const largeRows = largestTransactions.map((t, i) => `
+      <tr>
+        <td style="padding:10px 0;${i < largestTransactions.length - 1 ? 'border-bottom:1px solid rgba(255,255,255,0.06);' : ''}">
+          <div style="font-size:14px;color:#fff;font-weight:600;">${t.vendor}</div>
+          <div style="font-size:12px;color:#64748b;">${t.category} &nbsp;·&nbsp; ${fmtDate(t.date)}</div>
+        </td>
+        <td style="text-align:right;padding:10px 0;font-size:16px;font-weight:900;color:#fff;${i < largestTransactions.length - 1 ? 'border-bottom:1px solid rgba(255,255,255,0.06);' : ''}">${fmt(t.cents)}</td>
+      </tr>`).join('');
+
+    const newVendorRows = newVendors.map((v, i) => `
+      <tr>
+        <td style="padding:10px 0;font-size:14px;color:#fff;${i < newVendors.length - 1 ? 'border-bottom:1px solid rgba(255,255,255,0.06);' : ''}">${v.vendor}</td>
+        <td style="text-align:right;padding:10px 0;font-size:14px;font-weight:700;color:#94a3b8;${i < newVendors.length - 1 ? 'border-bottom:1px solid rgba(255,255,255,0.06);' : ''}">${fmt(v.cents)}</td>
+      </tr>`).join('');
 
     const fromEmail = process.env.RESEND_FROM || 'Lumière Ledger <support@throughthelens.media>';
+    const appUrl = 'https://www.lumiereledger.com';
 
     const html = `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#0f172a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-${isPreview ? `<div style="background:#f59e0b;color:#000;padding:10px;text-align:center;font-size:13px;font-weight:700;">🧪 PREVIEW — This is a test send. Real data, not sent to all users.</div>` : ''}
-<div style="max-width:600px;margin:0 auto;padding:40px 20px;">
+${isPreview ? `<div style="background:#f59e0b;color:#000;padding:10px;text-align:center;font-size:13px;font-weight:700;">🧪 PREVIEW — Test send only. Real data, not delivered to all users.</div>` : ''}
+<div style="max-width:600px;margin:0 auto;padding:36px 20px;">
 
-  <div style="text-align:center;margin-bottom:32px;">
+  <!-- Header -->
+  <div style="text-align:center;margin-bottom:28px;">
     <div style="font-size:20px;font-weight:900;letter-spacing:-0.02em;color:#fff;">LUMIÈRE LEDGER</div>
     <div style="height:2px;width:40px;background:#f97316;margin:8px auto 0;"></div>
   </div>
 
-  <h1 style="color:#fff;font-size:26px;font-weight:900;margin:0 0 8px;">Your ${monthName} financial report</h1>
-  <p style="color:#94a3b8;font-size:15px;margin:0 0 28px;line-height:1.6;">Hi ${name}, here's a summary of your financial activity last month.</p>
+  <h1 style="color:#fff;font-size:25px;font-weight:900;margin:0 0 8px;">Your ${monthName} financial report</h1>
+  <p style="color:#94a3b8;font-size:14px;margin:0 0 24px;line-height:1.6;">Hi ${name}, here's a summary of your financial activity last month.</p>
 
-  <!-- KPI Stats -->
-  <div style="background:#1e293b;border-radius:16px;padding:24px;margin-bottom:20px;">
+  <!-- ── KPI Stats ── -->
+  <div style="background:#1e293b;border-radius:16px;padding:22px 24px;margin-bottom:16px;">
     <table style="width:100%;border-collapse:collapse;">
       <tr>
-        <td style="padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
-          <div style="font-size:13px;color:#94a3b8;margin-bottom:4px;">Total Spend</div>
-          <div style="font-size:30px;font-weight:900;color:#fff;">${fmt(totalSpendCents)}</div>
-          <div style="font-size:13px;color:${spendChangeColor};margin-top:3px;">${spendChangeText}</div>
+        <td style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <div style="font-size:12px;color:#94a3b8;margin-bottom:3px;">Total Spend</div>
+          <div style="font-size:28px;font-weight:900;color:#fff;line-height:1.1;">${fmt(totalSpendCents)}</div>
+          <div style="font-size:12px;color:${spendChangeColor};margin-top:4px;">${spendChangeText}</div>
         </td>
       </tr>
       ${incomeSpentPct !== null ? `
       <tr>
-        <td style="padding:14px 0;${subsCents > 0 ? 'border-bottom:1px solid rgba(255,255,255,0.06);' : ''}">
-          <div style="font-size:13px;color:#94a3b8;margin-bottom:4px;">% of Income Spent</div>
-          <div style="font-size:30px;font-weight:900;color:#fff;">${incomeSpentPct}%</div>
-          <div style="font-size:13px;color:${incomeColor};margin-top:3px;">${incomeText}</div>
+        <td style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <div style="font-size:12px;color:#94a3b8;margin-bottom:3px;">% of Income Spent</div>
+          <div style="font-size:28px;font-weight:900;color:#fff;line-height:1.1;">${incomeSpentPct}%</div>
+          <div style="font-size:12px;color:${incomeColor};margin-top:4px;">${incomeText}</div>
         </td>
       </tr>` : ''}
-      ${subsCents > 0 ? `
+      ${totalIncomeCents > 0 ? `
       <tr>
-        <td style="padding:14px 0;">
-          <div style="font-size:13px;color:#94a3b8;margin-bottom:4px;">Subscriptions Spend</div>
-          <div style="font-size:30px;font-weight:900;color:#fff;">${fmt(subsCents)}</div>
-          <div style="font-size:13px;color:#94a3b8;margin-top:3px;">Recurring charges detected last month</div>
+        <td style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <div style="font-size:12px;color:#94a3b8;margin-bottom:3px;">Net (Income − Spend)</div>
+          <div style="font-size:28px;font-weight:900;color:${netCents >= 0 ? '#4ade80' : '#f97316'};line-height:1.1;">${netCents >= 0 ? '+' : '-'}${fmt(Math.abs(netCents))}</div>
+          <div style="font-size:12px;color:#64748b;margin-top:4px;">${netCents >= 0 ? 'You came out ahead last month' : 'You spent more than you earned'}</div>
+        </td>
+      </tr>` : ''}
+      ${taxDeductibleCents > 0 ? `
+      <tr>
+        <td style="padding:12px 0;">
+          <div style="font-size:12px;color:#94a3b8;margin-bottom:3px;">Tax-Deductible Spend</div>
+          <div style="font-size:28px;font-weight:900;color:#38bdf8;line-height:1.1;">${fmt(taxDeductibleCents)}</div>
+          <div style="font-size:12px;color:#64748b;margin-top:4px;">Marked deductible in your ledger last month</div>
         </td>
       </tr>` : ''}
     </table>
   </div>
 
+  <!-- ── Top 5 Categories ── -->
   ${topCategories.length > 0 ? `
-  <!-- Top Categories -->
-  <div style="background:#1e293b;border-radius:16px;padding:24px;margin-bottom:20px;">
-    <h2 style="color:#fff;font-size:18px;font-weight:800;margin:0 0 4px;">Top spending by category</h2>
-    <p style="color:#94a3b8;font-size:13px;margin:0 0 18px;">Categories that impacted your spending most last month.</p>
+  <div style="background:#1e293b;border-radius:16px;padding:22px 24px;margin-bottom:16px;">
+    ${sectionLabel('Top spending by category')}
     <table style="width:100%;border-collapse:collapse;">${topCatRows}</table>
   </div>` : ''}
 
+  <!-- ── Biggest Changes ── -->
   ${biggestChanges.length > 0 ? `
-  <!-- Biggest Changes -->
-  <div style="background:#1e293b;border-radius:16px;padding:24px;margin-bottom:20px;">
-    <h2 style="color:#fff;font-size:18px;font-weight:800;margin:0 0 4px;">Biggest Changes in Spending</h2>
-    <p style="color:#94a3b8;font-size:13px;margin:0 0 18px;">Categories with the biggest swings vs your 3-month average.</p>
+  <div style="background:#1e293b;border-radius:16px;padding:22px 24px;margin-bottom:16px;">
+    ${sectionLabel('Biggest changes in spending')}
+    <p style="color:#64748b;font-size:12px;margin:0 0 14px;">Compared to your 3-month average.</p>
     <table style="width:100%;border-collapse:collapse;">${changeRows}</table>
   </div>` : ''}
 
-  <!-- CTA -->
-  <div style="text-align:center;margin:28px 0 32px;">
-    <a href="https://www.lumiereledger.com" style="display:inline-block;background:#f97316;color:#fff;padding:14px 28px;border-radius:10px;font-weight:900;font-size:14px;text-decoration:none;">View Your Full Ledger →</a>
+  <!-- ── Top Vendors ── -->
+  ${topVendors.length > 0 ? `
+  <div style="background:#1e293b;border-radius:16px;padding:22px 24px;margin-bottom:16px;">
+    ${sectionLabel('Top vendors by spend')}
+    <table style="width:100%;border-collapse:collapse;">${vendorRows}</table>
+  </div>` : ''}
+
+  <!-- ── Largest Transactions ── -->
+  ${largestTransactions.length > 0 ? `
+  <div style="background:#1e293b;border-radius:16px;padding:22px 24px;margin-bottom:16px;">
+    ${sectionLabel('Largest single transactions')}
+    <table style="width:100%;border-collapse:collapse;">${largeRows}</table>
+  </div>` : ''}
+
+  <!-- ── New Vendors ── -->
+  ${newVendors.length > 0 ? `
+  <div style="background:#1e293b;border-radius:16px;padding:22px 24px;margin-bottom:16px;">
+    ${sectionLabel('New vendors this month')}
+    <p style="color:#64748b;font-size:12px;margin:0 0 14px;">Merchants that didn't appear in the prior 3 months — worth a look.</p>
+    <table style="width:100%;border-collapse:collapse;">${newVendorRows}</table>
+  </div>` : ''}
+
+  <!-- ── Subscriptions ── -->
+  ${subscriptionsList.length > 0 ? `
+  <div style="background:#1e293b;border-radius:16px;padding:22px 24px;margin-bottom:16px;">
+    ${sectionLabel('Subscriptions')}
+    <table style="width:100%;border-collapse:collapse;">
+      ${subsRows}
+      <tr>
+        <td style="padding:12px 0 0;border-top:1px solid rgba(255,255,255,0.06);font-size:13px;font-weight:700;color:#94a3b8;">Total</td>
+        <td style="text-align:right;padding:12px 0 0;border-top:1px solid rgba(255,255,255,0.06);font-size:15px;font-weight:900;color:#fff;">${fmt(subsCents)}</td>
+      </tr>
+    </table>
+  </div>` : ''}
+
+  <!-- ── Uncategorized CTA ── -->
+  ${uncategorizedCount > 0 ? `
+  <div style="background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.25);border-radius:16px;padding:20px 24px;margin-bottom:16px;">
+    <div style="font-size:14px;font-weight:700;color:#f97316;margin-bottom:6px;">⚠️ ${uncategorizedCount} uncategorized transaction${uncategorizedCount > 1 ? 's' : ''}</div>
+    <div style="font-size:13px;color:#94a3b8;margin-bottom:14px;">Categorizing them keeps your reports accurate and your tax deductions clean.</div>
+    <a href="${appUrl}/transactions?needs_category=1" style="display:inline-block;background:#f97316;color:#fff;padding:10px 20px;border-radius:8px;font-weight:800;font-size:13px;text-decoration:none;">Fix them now →</a>
+  </div>` : ''}
+
+  <!-- ── CTA ── -->
+  <div style="text-align:center;margin:24px 0 28px;">
+    <a href="${appUrl}" style="display:inline-block;background:#f97316;color:#fff;padding:14px 28px;border-radius:10px;font-weight:900;font-size:14px;text-decoration:none;">View Your Full Ledger →</a>
   </div>
 
   <p style="text-align:center;font-size:12px;color:#334155;margin:0;line-height:1.8;">
     You're receiving this because you have a Lumière Ledger account.<br>
-    <a href="https://www.lumiereledger.com" style="color:#475569;">lumiereledger.com</a>
+    <a href="${appUrl}" style="color:#475569;">lumiereledger.com</a>
   </p>
 </div>
 </body>
