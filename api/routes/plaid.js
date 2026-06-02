@@ -338,61 +338,107 @@ router.delete('/link/:source_key', async (req, res) => {
 
 // ─── Cross-source dedup ───────────────────────────────────────────────────────
 // Before inserting Plaid transactions, check whether CSV/manual versions already
-// exist (plaid_transaction_id IS NULL, same date + same amount_cents).
-// If matched: stamp the Plaid transaction ID onto the existing row — preserving
-// the user's category, notes, receipts, and tax flags — and skip insertion.
+// exist (plaid_transaction_id IS NULL, same amount_cents within ±2 days).
+//
+// Uses a ±2 day window (not exact date) to handle settlement date skew — e.g.
+// a transaction entered manually on 2026-05-28 that Plaid reports as 2026-05-29
+// due to bank clearing delay.
+//
+// When multiple candidates exist for the same amount/window, prefer the record
+// with the most enrichment (receipt > notes > category > manual source).
+//
+// On link: also update vendor to the official Plaid merchant name if the existing
+// vendor is a substring of it (e.g. "Crafted" → "Crafted Terminal").
+//
+// If matched: stamp plaid_transaction_id onto the existing row, preserving all
+// user enrichment — and skip insertion.
 // If no match: insert as a new Plaid transaction.
+function addDaysToDate(dateStr, days) {
+    const d = new Date(dateStr + 'T00:00:00');
+    d.setDate(d.getDate() + days);
+    return d.toISOString().slice(0, 10);
+}
+
+function daysBetween(a, b) {
+    return Math.abs((new Date(a + 'T00:00:00') - new Date(b + 'T00:00:00')) / 86400000);
+}
+
+function enrichmentScore(e) {
+    // Higher = more enriched = preferred candidate to keep
+    return (e.receipt_link ? 4 : 0) + (e.notes ? 2 : 0) + (e.category ? 1 : 0);
+}
+
 async function crossSourceDedup(sb, userId, rows) {
     if (!rows.length) return { toInsert: [], linked: 0 };
 
+    // Expand date window by ±2 days to catch settlement date skew
     const dates = rows.map(r => r.expense_date);
-    const minDate = dates.reduce((a, b) => (a < b ? a : b));
-    const maxDate = dates.reduce((a, b) => (a > b ? a : b));
+    const minDate = addDaysToDate(dates.reduce((a, b) => (a < b ? a : b)), -2);
+    const maxDate = addDaysToDate(dates.reduce((a, b) => (a > b ? a : b)),  2);
 
     const { data: existing } = await sb
         .from('expenses')
-        .select('id, expense_date, amount_cents')
+        .select('id, expense_date, amount_cents, vendor, receipt_link, notes, category, source')
         .eq('user_id', userId)
-        .is('plaid_transaction_id', null)   // CSV / manual only
+        .is('plaid_transaction_id', null)   // CSV / manual only — not already linked
         .gte('expense_date', minDate)
         .lte('expense_date', maxDate);
 
     if (!existing?.length) return { toInsert: rows, linked: 0 };
 
-    // Build a map: "date|amount_cents" → first unclaimed existing row id
-    const lookup = new Map();
+    // Build amount → candidates list (all rows with that amount in the window)
+    const byAmount = new Map();
     for (const e of existing) {
-        const key = `${e.expense_date}|${e.amount_cents}`;
-        if (!lookup.has(key)) lookup.set(key, e.id);
+        const k = String(e.amount_cents);
+        if (!byAmount.has(k)) byAmount.set(k, []);
+        byAmount.get(k).push(e);
     }
 
     const toInsert = [];
-    const toLink   = []; // { existingId, plaid_transaction_id, plaid_account_id }
+    const toLink   = []; // { existingId, plaid_transaction_id, plaid_account_id, plaidVendor }
     const claimed  = new Set();
 
     for (const row of rows) {
-        const key = `${row.expense_date}|${row.amount_cents}`;
-        const existingId = lookup.get(key);
-        if (existingId && !claimed.has(existingId)) {
-            claimed.add(existingId);
-            toLink.push({
-                existingId,
-                plaid_transaction_id: row.plaid_transaction_id,
-                plaid_account_id: row.plaid_account_id || null,
-            });
-        } else {
+        const candidates = (byAmount.get(String(row.amount_cents)) || [])
+            .filter(e => !claimed.has(e.id) && daysBetween(e.expense_date, row.expense_date) <= 2);
+
+        if (!candidates.length) {
             toInsert.push(row);
+            continue;
         }
+
+        // Pick best candidate: highest enrichment score, then closest date
+        candidates.sort((a, b) => {
+            const scoreDiff = enrichmentScore(b) - enrichmentScore(a);
+            if (scoreDiff !== 0) return scoreDiff;
+            return daysBetween(a.expense_date, row.expense_date) - daysBetween(b.expense_date, row.expense_date);
+        });
+
+        const best = candidates[0];
+        claimed.add(best.id);
+        toLink.push({
+            existingId:          best.id,
+            existingVendor:      best.vendor,
+            plaid_transaction_id: row.plaid_transaction_id,
+            plaid_account_id:    row.plaid_account_id || null,
+            plaidVendor:         row.vendor,
+        });
     }
 
-    // Stamp Plaid IDs + account ID onto existing CSV/manual rows
+    // Stamp Plaid IDs onto existing rows; update vendor to official Plaid name
+    // if the existing name is a substring (e.g. "Crafted" → "Crafted Terminal")
     for (const link of toLink) {
-        await sb
-            .from('expenses')
-            .update({
-                plaid_transaction_id: link.plaid_transaction_id,
-                plaid_account_id:     link.plaid_account_id,
-            })
+        const update = {
+            plaid_transaction_id: link.plaid_transaction_id,
+            plaid_account_id:     link.plaid_account_id,
+        };
+        const existingLower = (link.existingVendor || '').toLowerCase();
+        const plaidLower    = (link.plaidVendor    || '').toLowerCase();
+        if (plaidLower && existingLower && plaidLower !== existingLower &&
+            plaidLower.includes(existingLower)) {
+            update.vendor = link.plaidVendor; // upgrade to official name
+        }
+        await sb.from('expenses').update(update)
             .eq('id', link.existingId)
             .eq('user_id', userId);
     }
