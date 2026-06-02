@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { fetchAllExpenses, formatMoney, formatDate, invalidateExpensesCache, apiGet, apiPost, apiPatch, apiDelete, getExpensesCache } from '../api';
 import TransactionDrawer from '../components/TransactionDrawer';
 import { useModal } from '../components/ModalContext.jsx';
+import MergeModal from '../components/MergeModal.jsx';
 import CategorySelect from '../components/CategorySelect.jsx';
 import { ALL_CATEGORIES, CATEGORY_GROUPS } from '../constants/categories.js';
 import useExpenseFilters, { useFilterOptions } from '../hooks/useExpenseFilters';
@@ -272,56 +273,27 @@ export default function Transactions() {
         }
     };
 
-    const handleManualMerge = async () => {
+    // MergeModal state
+    const [mergeModalTxs, setMergeModalTxs] = useState(null); // { txA, txB } | null
+
+    const handleManualMerge = () => {
         const ids = [...selectedIds];
         if (ids.length !== 2) return;
         const txA = expenses.find(e => e.id === ids[0]);
         const txB = expenses.find(e => e.id === ids[1]);
         if (!txA || !txB) return;
+        setMergeModalTxs({ txA, txB });
+    };
 
-        const TxCard = ({ label, tx, accent }) => {
-            const bullets = [];
-            if (tx.category)      bullets.push({ icon: '🏷', text: tx.category });
-            if (tx.receipt_link)  bullets.push({ icon: '📎', text: 'Has receipt attached' });
-            if (tx.notes)         bullets.push({ icon: '📝', text: tx.notes });
-            if (tx.tax_deductible) bullets.push({ icon: '✅', text: 'Tax deductible' });
-            return (
-                <div style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${accent}`, borderRadius: '10px', padding: '12px 14px', marginBottom: '10px' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 800, color: accent, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>{label}</div>
-                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#fff', marginBottom: '4px' }}>{tx.vendor} &nbsp;·&nbsp; {formatMoney(tx.amount_cents)} &nbsp;·&nbsp; {tx.expense_date}</div>
-                    {bullets.length > 0 ? (
-                        <ul style={{ margin: '6px 0 0', padding: '0 0 0 4px', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                            {bullets.map((b, i) => (
-                                <li key={i} style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)' }}>{b.icon} {b.text}</li>
-                            ))}
-                        </ul>
-                    ) : (
-                        <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', marginTop: '4px' }}>No category, receipt, or notes</div>
-                    )}
-                </div>
-            );
-        };
-
-        const keepA = await modal.confirm(
-            <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.75)' }}>
-                <div style={{ fontWeight: 800, color: '#fff', marginBottom: '14px', fontSize: '14px' }}>Merge duplicate — which record do you want to keep?</div>
-                <TxCard label="① Keep this one" tx={txA} accent="#4ade80" />
-                <TxCard label="② Remove this one" tx={txB} accent="#f97316" />
-                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '6px', lineHeight: 1.5 }}>
-                    Any missing fields (receipt, category, notes) will be rescued from the removed record automatically.
-                </div>
-            </div>
-        );
-        const keepId   = keepA ? ids[0] : ids[1];
-        const deleteId = keepA ? ids[1] : ids[0];
+    const handleMergeConfirm = async ({ keepId, deleteId, overrides }) => {
+        setMergeModalTxs(null);
         try {
-            const result = await apiPost('/expenses/manual-merge', { keepId, deleteId });
+            await apiPost('/expenses/manual-merge', { keepId, deleteId, overrides });
             setSelectedIds(new Set());
             invalidateExpensesCache();
             await loadData(true);
-            const rescuedMsg = result.rescued?.length ? ` Rescued: ${result.rescued.join(', ')}.` : '';
-            setToast({ ok: true, msg: `Merged.${rescuedMsg} Merge note added.` });
-            setTimeout(() => setToast(null), 5000);
+            setToast({ ok: true, msg: 'Transactions merged.' });
+            setTimeout(() => setToast(null), 4000);
         } catch (e) {
             setToast({ ok: false, msg: `Merge failed: ${e.message}` });
             setTimeout(() => setToast(null), 4000);
@@ -784,6 +756,15 @@ export default function Transactions() {
                     </div>
                 </div>
             )}
+        {/* Merge Modal */}
+        {mergeModalTxs && (
+            <MergeModal
+                txA={mergeModalTxs.txA}
+                txB={mergeModalTxs.txB}
+                onConfirm={handleMergeConfirm}
+                onCancel={() => setMergeModalTxs(null)}
+            />
+        )}
         </section>
     );
 }

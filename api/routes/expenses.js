@@ -360,25 +360,40 @@ router.post("/manual-merge", async (req, res) => {
     const { data: del }  = await req.sb.from("expenses").select("*").eq("id", deleteId).eq("user_id", req.user.id).single();
     if (!keep || !del) return res.status(404).json({ error: "One or both transactions not found" });
 
-    // Rescue enriched fields from the deleted record if the kept record is missing them
-    const rescued = {};
-    if (!keep.receipt_link   && del.receipt_link)   rescued.receipt_link   = del.receipt_link;
-    if (!keep.category       && del.category)       rescued.category       = del.category;
-    if (!keep.tax_bucket     && del.tax_bucket)     rescued.tax_bucket     = del.tax_bucket;
-    if ( keep.tax_deductible == null && del.tax_deductible != null) rescued.tax_deductible = del.tax_deductible;
-    if (!keep.business_use_pct && del.business_use_pct) rescued.business_use_pct = del.business_use_pct;
+    // Apply user-selected field overrides (from MergeModal), then fall back to
+    // auto-rescuing any missing fields from the deleted record.
+    const { overrides = {} } = req.body;
+    const ALLOWED_OVERRIDES = ['receipt_link', 'category', 'notes', 'tax_deductible', 'tax_bucket', 'business_use_pct'];
+    const safeOverrides = {};
+    for (const key of ALLOWED_OVERRIDES) {
+      if (Object.prototype.hasOwnProperty.call(overrides, key)) safeOverrides[key] = overrides[key];
+    }
 
-    // Merge notes from both records, then append merge audit trail
-    const combinedNotes = [keep.notes, del.notes].filter(Boolean).join(' | ');
+    // Auto-rescue any fields not covered by overrides and missing from the kept record
+    if (!('receipt_link'    in safeOverrides) && !keep.receipt_link    && del.receipt_link)    safeOverrides.receipt_link    = del.receipt_link;
+    if (!('category'        in safeOverrides) && !keep.category        && del.category)        safeOverrides.category        = del.category;
+    if (!('tax_bucket'      in safeOverrides) && !keep.tax_bucket      && del.tax_bucket)      safeOverrides.tax_bucket      = del.tax_bucket;
+    if (!('tax_deductible'  in safeOverrides) && keep.tax_deductible == null && del.tax_deductible != null) safeOverrides.tax_deductible = del.tax_deductible;
+    if (!('business_use_pct' in safeOverrides) && !keep.business_use_pct && del.business_use_pct) safeOverrides.business_use_pct = del.business_use_pct;
+
+    // Notes: if not overridden, combine both
+    if (!('notes' in safeOverrides)) {
+      const combined = [keep.notes, del.notes].filter(Boolean).join(' | ');
+      if (combined) safeOverrides.notes = combined;
+    }
+
     const mergeNote = `[Merged: removed ${del.vendor} $${(Math.abs(del.amount_cents)/100).toFixed(2)} on ${del.expense_date}]`;
-    const updatedNotes = combinedNotes ? `${combinedNotes} | ${mergeNote}` : mergeNote;
+    const finalNotes = safeOverrides.notes
+      ? `${safeOverrides.notes} | ${mergeNote}`
+      : mergeNote;
+    safeOverrides.notes = finalNotes;
 
     await req.sb.from("expenses")
-      .update({ needs_review: false, review_pair_id: null, notes: updatedNotes, ...rescued })
+      .update({ needs_review: false, review_pair_id: null, ...safeOverrides })
       .eq("id", keepId).eq("user_id", req.user.id);
     await req.sb.from("expenses").delete().eq("id", deleteId).eq("user_id", req.user.id);
 
-    res.json({ ok: true, kept: { ...keep, notes: updatedNotes, ...rescued }, rescued: Object.keys(rescued) });
+    res.json({ ok: true, kept: { ...keep, ...safeOverrides }, rescued: Object.keys(safeOverrides) });
   } catch (e) {
     res.status(500).json({ error: String(e.message || e) });
   }
