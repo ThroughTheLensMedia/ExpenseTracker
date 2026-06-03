@@ -88,17 +88,22 @@ export default function MonthlyInsightsModal({ onClose }) {
             position: 'fixed', inset: 0, zIndex: 9999,
             background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)',
             display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+            paddingBottom: 'calc(env(safe-area-inset-bottom) + 68px)',
         }} onClick={handleClose}>
             <div
                 onClick={e => e.stopPropagation()}
                 style={{
                     background: '#0f1117', border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '24px 24px 0 0', width: '100%', maxWidth: '520px',
-                    padding: '28px 24px 32px', boxSizing: 'border-box',
+                    borderRadius: '24px', width: '100%', maxWidth: '520px',
+                    padding: '28px 24px 0', boxSizing: 'border-box',
                     animation: 'slideUp 0.3s ease-out',
+                    maxHeight: '90dvh', display: 'flex', flexDirection: 'column',
                 }}
             >
                 <style>{`@keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }`}</style>
+
+                {/* Scrollable content area */}
+                <div style={{ overflowY: 'auto', flex: 1, paddingBottom: 8 }}>
 
                 {/* Progress dots */}
                 <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginBottom: 20 }}>
@@ -194,7 +199,10 @@ export default function MonthlyInsightsModal({ onClose }) {
                     </>
                 )}
 
-                {/* CTA buttons */}
+                </div>{/* end scrollable content */}
+
+                {/* CTA buttons — always visible, safe-area aware */}
+                <div style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom))', paddingTop: 12, flexShrink: 0 }}>
                 {current.type === 'uncategorized' ? (
                     <div style={{ display: 'flex', gap: 10 }}>
                         <button
@@ -225,6 +233,7 @@ export default function MonthlyInsightsModal({ onClose }) {
                         Skip monthly summary
                     </button>
                 )}
+                </div>
             </div>
         </div>
     );
