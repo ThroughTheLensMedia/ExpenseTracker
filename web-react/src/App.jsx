@@ -416,7 +416,7 @@ function AppContent() {
                   letterSpacing: '0.08em', marginBottom: '4px',
                 }}
               >
-                ✦ WHAT'S NEW IN v7.6.3
+                ✦ WHAT'S NEW
               </button>
             )}
 
