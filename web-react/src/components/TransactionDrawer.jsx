@@ -488,28 +488,39 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
                     <div className="row two" style={{ marginTop: '10px' }}>
                         <div>
                             <small className="muted">Tax bucket</small>
-                            <select
-                                value={taxBucket}
-                                onChange={e => {
-                                    const newBucket = e.target.value;
-                                    field('taxBucket', newBucket);
-                                    if (newBucket === 'Personal Expense') {
-                                        field('deduct', false);
-                                    } else if (newBucket) {
-                                        field('deduct', true); // any business category → auto-deductible
-                                    }
-                                }}
-                                style={{ width: '100%', padding: '8px' }}
-                            >
-                                <option value="">-- Unassigned --</option>
-                                {[
+                            {(() => {
+                                const ALL_BUCKETS = [
                                     'Advertising', 'Car and truck', 'Commissions and fees', 'Contract labor',
                                     'Depreciation', 'Insurance', 'Interest', 'Legal and professional',
                                     'Office expense', 'Rent/lease', 'Repairs and maintenance', 'Supplies',
                                     'Taxes and licenses', 'Travel', 'Meals (50%)', 'Utilities', 'Wages', 'Other',
                                     'Personal Expense'
-                                ].map(b => <option key={b} value={b}>{b}</option>)}
-                            </select>
+                                ];
+                                // When a category has a direct mapping, only show that bucket
+                                // + Personal Expense as a manual override option.
+                                const mapped = CATEGORY_TAX_BUCKET_MAP[category];
+                                const buckets = mapped
+                                    ? [...new Set([mapped.bucket, 'Personal Expense'])]
+                                    : ALL_BUCKETS;
+                                return (
+                                    <select
+                                        value={taxBucket}
+                                        onChange={e => {
+                                            const newBucket = e.target.value;
+                                            field('taxBucket', newBucket);
+                                            if (newBucket === 'Personal Expense') {
+                                                field('deduct', false);
+                                            } else if (newBucket) {
+                                                field('deduct', true);
+                                            }
+                                        }}
+                                        style={{ width: '100%', padding: '8px' }}
+                                    >
+                                        <option value="">-- Unassigned --</option>
+                                        {buckets.map(b => <option key={b} value={b}>{b}</option>)}
+                                    </select>
+                                );
+                            })()}
                         </div>
                         <div>
                             <small className="muted">Business use %</small>
