@@ -5,6 +5,29 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.53] — 2026-06-02
+
+### Smart receipt scanner — tip detection + split-charge merge
+
+#### Changed
+- **`api/routes/receipts.js`** — `/receipts/extract` Gemini prompt now extracts `subtotal`, `tip`, `tax`, `total`, and `tip_split_likely`. Amount is always the final total charged (tip-inclusive). Notes auto-format as "Subtotal $X + tip $Y = $Z" when a tip is present.
+- **`api/routes/expenses.js`** — New `POST /expenses/tip-split-check`. Given a scanned receipt with a tip, finds whether the bank posted two separate charges (meal + tip) instead of one combined total. Returns both row IDs if a split pair is found.
+- **`web-react/src/components/TransactionDrawer.jsx`** — Scanner now uses `total` as the saved amount. When a tip is detected: shows a breakdown badge (subtotal + tip + tax = total). When a split charge pair is found in the bank feed: shows a blue notice and auto-merges the tip charge into the main entry on save.
+
+---
+
+## [v7.8.52] — 2026-06-02
+
+### Fix manual-vs-Plaid duplicate transactions
+
+#### Changed
+- **`api/routes/expenses.js`** — `POST /expenses` now checks for an existing Plaid row (same `amount_cents`, date ±3 days, vendor similarity) before inserting a manual entry. If a match is found, enrichment (receipt, notes, category, tax fields) is merged onto the Plaid row and no duplicate is created. Response includes `merged: true`.
+- **`api/routes/expenses.js`** — New `POST /expenses/link-manual-to-plaid` retroactive cleanup endpoint. Scans all unlinked manual rows, finds Plaid counterparts by amount + date ±4 days + vendor, merges enrichment, and deletes the orphaned manual row. Safe to re-run.
+- **`api/routes/import.js`** — CSV import merge no longer overwrites `source`, `vendor`, `expense_date`, or `amount_cents` when the merge target is an existing Plaid row — only enrichment fields are applied.
+- **`web-react/src/components/TransactionDrawer.jsx`** — Shows "Receipt attached to your bank transaction." or "Matched to your existing bank transaction." when a manual save merges into an existing Plaid row instead of creating a new entry.
+
+---
+
 ## [v7.8.51] — 2026-06-02
 
 ### Auto-sync on login + Connected Banks UI redesign

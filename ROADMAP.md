@@ -1,6 +1,6 @@
 # Lumière Ledger — Master Roadmap
 
-**Version:** v7.8.32 | **Last reviewed:** 2026-05-20  
+**Version:** v7.8.53 | **Last reviewed:** 2026-06-02  
 Source of truth for all sprint work, security status, and product phases.
 
 ---
@@ -39,7 +39,7 @@ Source of truth for all sprint work, security status, and product phases.
 |------|------|-------|
 | ~~**Run DB migration 001**~~ | ~~Supabase SQL Editor~~ | ✅ Done 2026-05-20 — `plaid_account_id` column + index live. |
 | ~~**Stripe webhook fix**~~ | ~~`api/server.js`~~ | ✅ Done v7.8.27 — webhook mounted before `express.json()` on `app` directly. |
-| **Stripe — end-to-end test** | Stripe CLI | Checkout → webhook fires → `plan_type` updates in Supabase → `UpgradeGate` drops. Webhook is fixed — needs formal test-card verification. |
+| ~~**Stripe — end-to-end test**~~ | ~~Stripe CLI~~ | ✅ Done 2026-06-02 — checkout → webhook 200 → `plan_type: sync_monthly` + `stripe_customer_id` + `stripe_subscription_id` written to Supabase. Full chain verified. |
 | ~~**Supabase schema migration**~~ | ~~Supabase SQL Editor~~ | ✅ Done 2026-05-20 — `stripe_subscription_id` + `current_period_end` added to `user_subscriptions`. |
 | ~~**Grandfathered users `admin_tier` fix**~~ | ~~Supabase SQL Editor~~ | ✅ Done 2026-05-20 — all beta/lifetime users granted Studio admin_tier. |
 | ~~**Sync tier Stripe price IDs**~~ | ~~Stripe + Vercel~~ | ✅ Done — Sync product created in Stripe. `VITE_STRIPE_PRICE_SYNC_*` and `STRIPE_PRICE_SYNC_*` set in Vercel. |
@@ -54,12 +54,14 @@ Source of truth for all sprint work, security status, and product phases.
 | ~~**Account merging (linked_source)**~~ | ✅ v7.8.30 | CSV accounts can be merged into a target; absorbed accounts hidden; unmerge available. Pending SQL: `ALTER TABLE account_aliases ADD COLUMN IF NOT EXISTS linked_source TEXT;` |
 | ~~**Account display names in ledger/drawer**~~ | ✅ v7.8.31 | TransactionDrawer + filter dropdown driven by /accounts/summary aliases. |
 | ~~**Bulk reassign account**~~ | ✅ v7.8.32 | Multi-select → "Reassign account…" dropdown → Apply. PATCH /expenses/bulk-source. |
-| **Account → Transaction count tile click (Plaid card)** | 🔄 In progress | "Transactions" tile on Live Sync card doesn't navigate — `txSource = null` for source='plaid'. Fix: navigate to `/transactions?source=plaid`. |
-| **Account merging by last-4 digits** | ⬜ Backlog | Auto-match CSV source to Plaid sub-account by institution + last 4 digits. Deferred — manual merge works for now. |
+| ~~**Account → Transaction count tile click (Plaid card)**~~ | ✅ Confirmed done | Navigates to `/transactions?source=plaid`. |
+| ~~**Manual vs Plaid duplicate transactions**~~ | ✅ v7.8.52 | Pre-insert Plaid match check in `POST /expenses`; retroactive `link-manual-to-plaid` pass; CSV import no longer overwrites Plaid rows. |
+| ~~**Smart Receipt Scanner — tip detection**~~ | ✅ v7.8.53 | Gemini extracts subtotal/tip/tax/total; tip breakdown badge in drawer; split-charge auto-merge when bank posts meal + tip separately. |
+| ~~**Maps Autopilot**~~ | ✅ Confirmed done | Google Maps A→B→A with waypoint, autocomplete, auto-populated miles. |
+| **Account merging by last-4 digits** | ⬜ Backlog | Auto-match CSV source to Plaid sub-account by institution + last 4 digits. Manual merge covers this for now. |
 | **Michelle Gornichec UUID in PLAID_BILLING_EXEMPT** | ⬜ Waiting | UUID unknown. Add to `api/routes/plaid.js` + `api/routes/stripe.js` when received. |
-| **Maps Autopilot** | ⬜ Next after Plaid | Google Maps A→B→A mileage round-trip. Joshua working on this after Plaid updates. |
-| **Brain — Chart/Analysis Popup (Phase 2 Step 5)** | ⬜ Last | Chart.js modal when AI requests visual analysis. Post-launch. |
-| **Brain — Invoice creation tool (Step 6)** | ⬜ Last | `create_invoice_draft` write tool with confirmation card. Post-launch. |
+| **Brain — Chart/Analysis Popup (Phase 2 Step 5)** | ⬜ Post-launch | Chart.js modal when AI requests visual analysis. |
+| **Brain — Invoice creation tool (Step 6)** | ⬜ Post-launch | `create_invoice_draft` write tool with confirmation card. |
 
 ---
 
@@ -135,8 +137,8 @@ Source of truth for all sprint work, security status, and product phases.
 ## 📷 Phase 3: Computer Vision & RAG
 
 - [x] **Fast Receipt Processing** ✅ shipped v7.5.9
-- [ ] RAG — index uploaded PDFs; extract serial #s, term dates, interest rates
-- [ ] Smart Receipt Scanner (deferred) — OpenCV.js edge detection + perspective warp
+- [x] **Smart Receipt Scanner — tip detection + split-charge merge** ✅ v7.8.53 — Gemini extracts subtotal/tip/tax/total; auto-merges split bank charges; tip breakdown badge in drawer
+- [ ] **RAG — PDF indexing + semantic retrieval** — Enable pgvector in Supabase; embed uploaded PDFs (contracts, warranties, insurance policies); Brain answers questions like "when does my equipment warranty expire?" or "what's my van loan rate?". Requires: `vector` extension migration, `embeddings` table, chunking pipeline on upload, cosine similarity query in Brain.
 
 ---
 

@@ -376,7 +376,7 @@ async function parseCsvAndImport(sb, filePath, profileKey, res) {
 
         const { data: existing } = await sb
             .from('expenses')
-            .select('id, expense_date, vendor, amount_cents, source, category, notes, receipt_link, tax_deductible, tax_bucket, business_use_pct, needs_review, review_pair_id')
+            .select('id, expense_date, vendor, amount_cents, source, category, notes, receipt_link, tax_deductible, tax_bucket, business_use_pct, needs_review, review_pair_id, plaid_transaction_id')
             .gte('expense_date', windowStart)
             .lte('expense_date', windowEnd);
 
@@ -420,15 +420,18 @@ async function parseCsvAndImport(sb, filePath, profileKey, res) {
                     ? `${target.notes} | ${historyNote}`
                     : historyNote;
 
+                // If the existing row is a Plaid row, preserve its source and financial
+                // fields — only merge enrichment onto it. Never overwrite plaid_transaction_id.
+                const targetIsPlaid = !!target.plaid_transaction_id;
                 toMerge.push({
                     existingId: target.id,
                     updates: {
-                        // Bank wins: authoritative financial data
-                        vendor:           item.vendor,
-                        expense_date:     item.expense_date,
-                        amount_cents:     item.amount_cents,
-                        source:           item.source,
-                        // Manual wins: your enrichment data
+                        // Financial fields: Plaid rows keep their own data; manual targets adopt CSV
+                        vendor:           targetIsPlaid ? target.vendor : item.vendor,
+                        expense_date:     targetIsPlaid ? target.expense_date : item.expense_date,
+                        amount_cents:     targetIsPlaid ? target.amount_cents : item.amount_cents,
+                        source:           targetIsPlaid ? target.source : item.source,
+                        // Enrichment: existing wins if populated, otherwise CSV fills in
                         category:         target.category && target.category !== 'Uncategorized' ? target.category : item.category,
                         tax_deductible:   target.tax_deductible,
                         tax_bucket:       target.tax_bucket || item.tax_bucket,

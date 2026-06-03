@@ -170,6 +170,31 @@ export default function Import() {
     const [pendingPairs, setPendingPairs] = useState([]);
     const [dismissedPairs, setDismissedPairs] = useState(new Set());
 
+    // Link-manual-to-plaid state
+    const [linking, setLinking] = useState(false);
+    const [linkResult, setLinkResult] = useState(null); // { merged } | { error }
+
+    const runLinkManualToPlaid = async () => {
+        setLinking(true);
+        setLinkResult(null);
+        try {
+            const headers = await getFreshAuthHeader();
+            const res = await fetch('/api/expenses/link-manual-to-plaid', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { ...headers, 'Content-Type': 'application/json' },
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || res.statusText);
+            if (data.merged > 0) invalidateExpensesCache();
+            setLinkResult(data);
+        } catch (e) {
+            setLinkResult({ error: e.message });
+        } finally {
+            setLinking(false);
+        }
+    };
+
     // Last import staleness badge
     const [lastImportCreatedAt, setLastImportCreatedAt] = useState(null);
 
@@ -520,6 +545,34 @@ export default function Import() {
                     >
                         {scanning ? '⏳ Scanning…' : '⚡ Auto-Merge High Confidence'}
                     </button>
+                </div>
+
+                {/* Link manual entries to existing Plaid rows */}
+                <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--line)' }}>
+                    <div style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '10px', lineHeight: 1.5 }}>
+                        <strong style={{ color: 'var(--text)' }}>Link receipts to bank transactions</strong> — finds manual entries (receipts added from your phone) that already exist as a bank-synced transaction and merges them. Cleans up past duplicates created before this was fixed.
+                    </div>
+                    <button
+                        className="btn secondary"
+                        style={{ width: '100%', padding: '14px', fontWeight: 900, fontSize: '13px', borderColor: 'rgba(74,222,128,0.4)', color: '#4ade80' }}
+                        disabled={linking}
+                        onClick={runLinkManualToPlaid}
+                    >
+                        {linking ? '⏳ Linking…' : '🔗 Link Manual Entries to Bank Transactions'}
+                    </button>
+                    {linkResult && !linkResult.error && (
+                        <div style={{ marginTop: '10px', padding: '12px 16px', borderRadius: '10px', background: 'rgba(74,222,128,0.06)', border: '1px solid rgba(74,222,128,0.2)', fontSize: '13px' }}>
+                            {linkResult.merged > 0
+                                ? <span style={{ color: '#4ade80', fontWeight: 700 }}>✅ {linkResult.merged} manual {linkResult.merged === 1 ? 'entry' : 'entries'} linked to bank transactions and removed.</span>
+                                : <span style={{ color: 'var(--muted)' }}>Nothing to link — no unmatched manual entries found.</span>
+                            }
+                        </div>
+                    )}
+                    {linkResult?.error && (
+                        <div style={{ marginTop: '10px', padding: '12px 16px', borderRadius: '10px', background: 'rgba(255,77,77,0.1)', border: '1px solid rgba(255,77,77,0.3)', fontSize: '13px', color: '#ff7777' }}>
+                            ❌ {linkResult.error}
+                        </div>
+                    )}
                 </div>
 
                 {/* Scan result summary */}

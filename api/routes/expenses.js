@@ -9,6 +9,16 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+function shiftDate(dateStr, days) {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function daysBetween(a, b) {
+  return Math.abs((new Date(a + 'T00:00:00') - new Date(b + 'T00:00:00')) / 86400000);
+}
+
 // Zod Schemas for robust validation
 const QuerySchema = z.object({
   start: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid start date format").optional().nullable(),
@@ -165,6 +175,54 @@ router.post("/", async (req, res) => {
     // Auto tax_deductible: any business tax bucket implies deductible
     if (data.tax_bucket && data.tax_bucket !== 'Personal Expense') {
       data.tax_deductible = true;
+    }
+
+    // Plaid dedup: if this is a manual entry with a real amount, check whether a
+    // Plaid row already exists for the same transaction before inserting a new row.
+    // This catches the common case where the user attaches a receipt manually after
+    // Plaid has already synced the transaction.
+    if (data.source === 'manual' && data.amount_cents > 0 && data.expense_date && data.vendor) {
+      const windowStart = shiftDate(data.expense_date, -3);
+      const windowEnd   = shiftDate(data.expense_date,  3);
+
+      const { data: plaidRows } = await req.sb
+        .from('expenses')
+        .select('id, expense_date, vendor, amount_cents, plaid_transaction_id, source, category, tax_deductible, tax_bucket, business_use_pct, notes, receipt_link')
+        .eq('user_id', req.user.id)
+        .not('plaid_transaction_id', 'is', null)
+        .eq('amount_cents', data.amount_cents)
+        .gte('expense_date', windowStart)
+        .lte('expense_date', windowEnd);
+
+      if (plaidRows?.length) {
+        const match = plaidRows
+          .filter(r => vendorsSimilar(r.vendor, data.vendor))
+          .sort((a, b) => daysBetween(a.expense_date, data.expense_date) - daysBetween(b.expense_date, data.expense_date))[0];
+
+        if (match) {
+          // Merge enrichment onto the existing Plaid row — don't insert a duplicate
+          const enrichment = { updated_at: nowIso() };
+          if (data.category && data.category !== 'Uncategorized') enrichment.category = data.category;
+          if (data.tax_bucket) enrichment.tax_bucket = data.tax_bucket;
+          if (data.tax_deductible) enrichment.tax_deductible = data.tax_deductible;
+          if (data.business_use_pct != null) enrichment.business_use_pct = data.business_use_pct;
+          if (data.receipt_link) enrichment.receipt_link = data.receipt_link;
+          if (data.notes) {
+            enrichment.notes = match.notes ? `${match.notes} | ${data.notes}` : data.notes;
+          }
+
+          const { data: merged, error: mergeErr } = await req.sb
+            .from('expenses')
+            .update(enrichment)
+            .eq('id', match.id)
+            .eq('user_id', req.user.id)
+            .select()
+            .single();
+
+          if (mergeErr) throw mergeErr;
+          return res.json({ ...merged, merged: true });
+        }
+      }
     }
 
     const { data: inserted, error } = await req.sb
@@ -361,6 +419,128 @@ function vendorsSimilar(a, b) {
   const wa = new Set(words(na));
   return words(nb).some(w => wa.has(w));
 }
+
+// POST /expenses/tip-split-check
+// Given a scanned receipt with a tip, checks whether the bank has already posted
+// TWO separate charges — one for the subtotal and one for the tip — instead of
+// one combined total. Returns both row IDs if found so the UI can offer to merge.
+router.post("/tip-split-check", async (req, res) => {
+  try {
+    const { date, subtotal_cents, tip_cents, vendor } = req.body || {};
+    if (!date || !subtotal_cents || !tip_cents) return res.json({ found: false });
+
+    const windowStart = shiftDate(date, -2);
+    const windowEnd   = shiftDate(date,  2);
+
+    const { data: rows } = await req.sb
+      .from('expenses')
+      .select('id, expense_date, vendor, amount_cents, source, plaid_transaction_id')
+      .eq('user_id', req.user.id)
+      .gte('expense_date', windowStart)
+      .lte('expense_date', windowEnd)
+      .gt('amount_cents', 0);
+
+    if (!rows?.length) return res.json({ found: false });
+
+    // Find the meal charge: exact amount + vendor similarity
+    const mealMatch = rows
+      .filter(r => r.amount_cents === subtotal_cents && vendorsSimilar(r.vendor, vendor))
+      .sort((a, b) => daysBetween(a.expense_date, date) - daysBetween(b.expense_date, date))[0];
+
+    if (!mealMatch) return res.json({ found: false });
+
+    // Find the tip charge: exact amount, nearby date, same or generic vendor
+    // Tip charges often share the same vendor name or come through as a separate line
+    const tipMatch = rows
+      .filter(r => r.id !== mealMatch.id && r.amount_cents === tip_cents)
+      .sort((a, b) => daysBetween(a.expense_date, date) - daysBetween(b.expense_date, date))[0];
+
+    if (!tipMatch) return res.json({ found: false });
+
+    res.json({
+      found: true,
+      mealId:     mealMatch.id,
+      tipId:      tipMatch.id,
+      mealVendor: mealMatch.vendor,
+      mealDate:   mealMatch.expense_date,
+      tipDate:    tipMatch.expense_date,
+      mealSource: mealMatch.source,
+      tipSource:  tipMatch.source,
+    });
+  } catch (e) {
+    res.status(500).json({ error: String(e.message || e) });
+  }
+});
+
+// POST /expenses/link-manual-to-plaid
+// Retroactive pass: finds unlinked manual rows that match existing Plaid rows by
+// amount_cents + date ±4 days + vendor similarity. Merges enrichment (receipt, notes,
+// category, tax fields) onto the Plaid row and removes the orphaned manual entry.
+// Safe to re-run — won't match rows that are already linked.
+router.post("/link-manual-to-plaid", async (req, res) => {
+  try {
+    const { data: manualRows, error: mErr } = await req.sb
+      .from('expenses')
+      .select('id, expense_date, vendor, amount_cents, category, tax_deductible, tax_bucket, business_use_pct, notes, receipt_link')
+      .eq('user_id', req.user.id)
+      .eq('source', 'manual')
+      .is('plaid_transaction_id', null)
+      .gt('amount_cents', 0);
+    if (mErr) throw mErr;
+    if (!manualRows?.length) return res.json({ ok: true, merged: 0 });
+
+    const { data: plaidRows, error: pErr } = await req.sb
+      .from('expenses')
+      .select('id, expense_date, vendor, amount_cents, notes, receipt_link, category, tax_bucket, tax_deductible, business_use_pct')
+      .eq('user_id', req.user.id)
+      .not('plaid_transaction_id', 'is', null)
+      .gt('amount_cents', 0);
+    if (pErr) throw pErr;
+    if (!plaidRows?.length) return res.json({ ok: true, merged: 0 });
+
+    // Index Plaid rows by amount for fast lookup
+    const plaidByAmount = new Map();
+    for (const r of plaidRows) {
+      const k = String(r.amount_cents);
+      if (!plaidByAmount.has(k)) plaidByAmount.set(k, []);
+      plaidByAmount.get(k).push(r);
+    }
+
+    const claimed = new Set();
+    let merged = 0;
+
+    for (const manual of manualRows) {
+      if (!manual.vendor?.trim()) continue;
+
+      const candidates = (plaidByAmount.get(String(manual.amount_cents)) || [])
+        .filter(r => !claimed.has(r.id) && daysBetween(r.expense_date, manual.expense_date) <= 4 && vendorsSimilar(r.vendor, manual.vendor));
+
+      if (!candidates.length) continue;
+
+      candidates.sort((a, b) => daysBetween(a.expense_date, manual.expense_date) - daysBetween(b.expense_date, manual.expense_date));
+      const target = candidates[0];
+      claimed.add(target.id);
+
+      const enrichment = { updated_at: nowIso() };
+      if (manual.category && manual.category !== 'Uncategorized') enrichment.category = manual.category;
+      if (manual.tax_bucket) enrichment.tax_bucket = manual.tax_bucket;
+      if (manual.tax_deductible) enrichment.tax_deductible = manual.tax_deductible;
+      if (manual.business_use_pct != null) enrichment.business_use_pct = manual.business_use_pct;
+      if (manual.receipt_link && !target.receipt_link) enrichment.receipt_link = manual.receipt_link;
+      if (manual.notes) {
+        enrichment.notes = target.notes ? `${target.notes} | ${manual.notes}` : manual.notes;
+      }
+
+      await req.sb.from('expenses').update(enrichment).eq('id', target.id).eq('user_id', req.user.id);
+      await req.sb.from('expenses').delete().eq('id', manual.id).eq('user_id', req.user.id);
+      merged++;
+    }
+
+    res.json({ ok: true, merged });
+  } catch (e) {
+    res.status(500).json({ error: String(e.message || e) });
+  }
+});
 
 // POST /expenses/scan-dupes
 // Scans existing transactions for likely duplicates: same amount_cents, date within

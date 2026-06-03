@@ -42,6 +42,8 @@ const initialState = {
     bizPct: 100, deduct: false, isSub: false, notes: '', receiptLink: '',
     receiptFile: null, source: 'manual', msg: '', savedId: null, saving: false,
     scanning: false, scanMsg: '',
+    tipBreakdown: null,   // { subtotal, tip, tax, total } when tip detected on receipt
+    tipSplitPair: null,   // { mealId, tipId, mealVendor, mealDate } when two split charges found
 };
 
 function reducer(state, action) {
@@ -99,7 +101,8 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
     const modal = useModal();
     const [state, dispatch] = useReducer(reducer, initialState);
     const { date, amount, vendor, category, taxBucket, bizPct, deduct, isSub, notes,
-            receiptLink, receiptFile, source, msg, savedId, scanning, scanMsg } = state;
+            receiptLink, receiptFile, source, msg, savedId, scanning, scanMsg,
+            tipBreakdown, tipSplitPair } = state;
 
     const field = (name, value) => dispatch({ type: 'SET_FIELD', field: name, value });
 
@@ -113,25 +116,49 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
     const handleScan = async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        e.target.value = ''; // allow re-selecting the same file
+        e.target.value = '';
 
         field('scanning', true);
         field('scanMsg', '');
+        field('tipBreakdown', null);
+        field('tipSplitPair', null);
 
         try {
-            // Send to Gemini Vision via extract endpoint
             const fd = new FormData();
             fd.append('file', file);
             const extracted = await apiUpload('/receipts/extract', fd);
 
-            // Pre-fill form fields from extraction result
-            if (extracted.vendor)            field('vendor', extracted.vendor);
-            if (extracted.amount != null)    field('amount', String(extracted.amount));
-            if (extracted.date)              field('date', extracted.date);
-            if (extracted.category)          field('category', extracted.category);
-            if (extracted.notes && !notes)   field('notes', extracted.notes);
+            // Use total as the canonical amount (includes tip when charged together)
+            const finalAmount = extracted.total ?? extracted.amount;
+            if (extracted.vendor)          field('vendor', extracted.vendor);
+            if (finalAmount != null)       field('amount', String(finalAmount));
+            if (extracted.date)            field('date', extracted.date);
+            if (extracted.category)        field('category', extracted.category);
+            if (extracted.notes && !notes) field('notes', extracted.notes);
 
-            // Convert image to PDF for storage (PDFs pass through unchanged)
+            // Capture tip breakdown for UI and split-charge detection
+            if (extracted.tip > 0) {
+                const breakdown = {
+                    subtotal: extracted.subtotal,
+                    tip:      extracted.tip,
+                    tax:      extracted.tax,
+                    total:    finalAmount,
+                };
+                field('tipBreakdown', breakdown);
+
+                // Check whether the bank posted this as two separate charges
+                try {
+                    const splitRes = await apiPost('/expenses/tip-split-check', {
+                        date:           extracted.date || new Date().toISOString().slice(0, 10),
+                        subtotal_cents: Math.round((extracted.subtotal || 0) * 100),
+                        tip_cents:      Math.round(extracted.tip * 100),
+                        vendor:         extracted.vendor || '',
+                    });
+                    if (splitRes?.found) field('tipSplitPair', splitRes);
+                } catch (_) { /* non-fatal — tip split check is best-effort */ }
+            }
+
+            // Convert image to PDF for storage
             let storageFile = file;
             if (!file.type.includes('pdf')) {
                 const pdfBlob = await imageToPdf(file);
@@ -144,12 +171,9 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
         } catch (err) {
             const msg = err.message || '';
             if (msg === 'no_key' || msg.includes('no_key')) {
-                // No Gemini key — still attach the original file without extraction
                 field('receiptFile', file);
                 field('scanMsg', 'No Gemini key set in Control Center — file attached without auto-fill.');
             } else {
-                // Network failure or extraction error — still attach the file so the
-                // user doesn't lose their selection. They can fill fields manually.
                 field('receiptFile', file);
                 field('scanMsg', 'Auto-fill failed — check signal. File attached. Fill fields manually and save.');
             }
@@ -191,16 +215,40 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
                     const withReceipt = await apiUpload(`/receipts/expenses/${updated.id}`, fd);
                     updated = withReceipt;
                     dispatch({ type: 'RECEIPT_UPLOADED', link: updated.receipt_link });
-                    dispatch({ type: 'SET_MSG', value: 'Saved with receipt.' });
+                    dispatch({ type: 'SET_MSG', value: updated.merged ? 'Receipt attached to your bank transaction.' : 'Saved with receipt.' });
                 } catch (err) {
                     dispatch({ type: 'SET_MSG', value: `Saved, but receipt upload failed: ${err?.message || err}` });
                 }
             } else {
-                if (!transaction?.id && !savedId) {
+                if (updated.merged) {
+                    dispatch({ type: 'SET_MSG', value: 'Matched to your existing bank transaction.' });
+                } else if (!transaction?.id && !savedId) {
                     dispatch({ type: 'SAVED_NEW', id: updated.id });
                 } else {
                     dispatch({ type: 'SET_MSG', value: 'Saved.' });
                 }
+            }
+
+            // Tip-split merge: if the receipt scanner found a separate tip charge in the
+            // bank feed, merge it into the transaction we just saved. keepId = the new/merged
+            // transaction, deleteId = the orphaned tip-only charge.
+            if (tipSplitPair?.found && updated?.id) {
+                try {
+                    const keepId   = updated.id;
+                    const deleteId = tipSplitPair.tipId;
+                    if (keepId !== deleteId) {
+                        await apiPost('/expenses/manual-merge', {
+                            keepId,
+                            deleteId,
+                            overrides: {
+                                notes: notes
+                                    ? `${notes} (tip merged)`
+                                    : `Tip $${tipBreakdown?.tip?.toFixed(2)} merged`,
+                            },
+                        });
+                        dispatch({ type: 'SET_MSG', value: `Saved — tip charge merged in.` });
+                    }
+                } catch (_) { /* non-fatal */ }
             }
 
             if (onSave) onSave(updated);
@@ -288,7 +336,7 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
                                 <button
                                     className="btn secondary"
                                     style={{ fontSize: '12px', padding: '4px 10px', flexShrink: 0 }}
-                                    onClick={() => { field('receiptFile', null); field('receiptLink', ''); field('scanMsg', ''); }}
+                                    onClick={() => { field('receiptFile', null); field('receiptLink', ''); field('scanMsg', ''); field('tipBreakdown', null); field('tipSplitPair', null); }}
                                 >
                                     Remove
                                 </button>
@@ -324,6 +372,39 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
                                 color: scanMsg.startsWith('✓') ? '#4ade80' : '#f59e0b'
                             }}>
                                 {scanMsg}
+                            </div>
+                        )}
+
+                        {/* Tip breakdown — shown when receipt includes a tip */}
+                        {tipBreakdown?.tip > 0 && (
+                            <div style={{
+                                marginTop: '10px', padding: '10px 12px', borderRadius: '8px',
+                                background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.25)',
+                                fontSize: '12px', lineHeight: 1.6
+                            }}>
+                                <div style={{ fontWeight: 700, color: '#fbbf24', marginBottom: '4px' }}>Tip detected on receipt</div>
+                                <div className="muted">
+                                    Subtotal <strong style={{ color: 'var(--text)' }}>${tipBreakdown.subtotal?.toFixed(2)}</strong>
+                                    {' + '}tip <strong style={{ color: 'var(--text)' }}>${tipBreakdown.tip?.toFixed(2)}</strong>
+                                    {tipBreakdown.tax > 0 && <> + tax <strong style={{ color: 'var(--text)' }}>${tipBreakdown.tax?.toFixed(2)}</strong></>}
+                                    {' = '}
+                                    <strong style={{ color: '#4ade80' }}>${tipBreakdown.total?.toFixed(2)}</strong> saved
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Split-charge alert — two separate bank charges detected */}
+                        {tipSplitPair?.found && (
+                            <div style={{
+                                marginTop: '8px', padding: '10px 12px', borderRadius: '8px',
+                                background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.25)',
+                                fontSize: '12px', lineHeight: 1.6
+                            }}>
+                                <div style={{ fontWeight: 700, color: '#38bdf8', marginBottom: '4px' }}>Split charge found</div>
+                                <div className="muted">
+                                    Your bank posted the meal and tip as two separate charges.
+                                    They'll be <strong style={{ color: 'var(--text)' }}>merged into one entry</strong> when you save.
+                                </div>
                             </div>
                         )}
                     </div>

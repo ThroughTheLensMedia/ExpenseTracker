@@ -1,6 +1,6 @@
 {
-  "version": "7.8.51",
+  "version": "7.8.53",
   "release_date": "2026-06-02",
   "codename": "Lumière Ledger",
-  "notes": "v7.8.50: Monthly financial report email — delivered on the 1st of each month with spend totals, top categories, and biggest changes vs your average."
+  "notes": "v7.8.53: Smart receipt scanner — tip detection, split-charge auto-merge, and tip breakdown display."
 }

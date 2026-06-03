@@ -1,6 +1,15 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.53', date: 'JUN 2, 2026', color: '#fbbf24', items: [
+        '<strong>Tip Detection on Receipts:</strong> Scanning a receipt that includes a tip now shows a breakdown — subtotal + tip + tax = total — and saves the full charged amount so it matches your bank statement. No more manually adjusting the amount after scanning.',
+        '<strong>Split Tip Charges — Auto-Merged:</strong> Some restaurants post the meal and tip as two separate bank charges. When the scanner detects this, it shows a "Split charge found" notice and automatically merges both charges into one entry when you save.',
+    ]},
+    { version: '7.8.52', date: 'JUN 2, 2026', color: '#f97316', items: [
+        '<strong>No More Duplicate Transactions:</strong> Adding a manual entry (especially with a receipt from your phone) no longer creates a duplicate when Plaid or a CSV has already imported the same transaction. The system now checks for a matching bank transaction before saving — and if it finds one, it attaches your receipt and notes directly to the existing entry instead.',
+        '<strong>Retroactive Cleanup:</strong> A new background cleanup pass links existing orphaned manual entries to their Plaid counterparts. Previous duplicates can now be resolved via Bank Import → Scan for Duplicates.',
+        '<strong>CSV Import Fix:</strong> Importing a CSV file no longer overwrites the source, vendor, or amount on a transaction that was already synced from Plaid — only missing enrichment (category, tax info) is filled in.',
+    ]},
     { version: '7.8.51', date: 'JUN 2, 2026', color: '#4ade80', items: [
         '<strong>Auto-Sync on Login:</strong> Connected banks now sync automatically in the background every time you log in — no need to tap Sync manually.',
         '<strong>Connected Banks — Redesigned:</strong> The bank connection cards now show a clear green "● Connected" badge so you can tell at a glance everything is working. The destructive Disconnect button is replaced with a subtle ··· menu so it no longer looks like an error state.',

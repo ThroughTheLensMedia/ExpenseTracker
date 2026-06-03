@@ -80,13 +80,20 @@ router.post("/extract", upload.single("file"), async (req, res) => {
         const prompt = `You are a receipt parser for a professional photographer's expense tracker.
 Extract these fields from the receipt image or PDF:
 - vendor: business name only (no address, no phone)
-- amount: total amount charged as a positive number (dollars.cents)
 - date: transaction date in YYYY-MM-DD format (use "${today}" if not visible)
+- subtotal: pre-tip, pre-tax subtotal as a positive number (null if not visible)
+- tip: tip amount as a positive number (null if no tip line or tip is $0)
+- tax: tax amount as a positive number (null if not visible)
+- total: final total charged including tip and tax — this is what hits the card (null if not visible)
+- amount: same value as total (for backward compatibility)
+- tip_split_likely: true if the tip was written in by hand or added after the card was run (i.e. blank tip line, tip written in pencil, or "TIP" line shows $0 with a handwritten amount), false otherwise
 - category: best match from — Advertising, Auto & Transport, Bills & Utilities, Camera & Equipment, Clothing, Dining & Drinks, Education, Entertainment, Gas & Fuel, Groceries, Health & Medical, Home & Garden, Insurance (Business), Insurance (Personal), Office Supplies, Parking & Tolls, Personal Care, Pets, Photography, Professional Services, Rent / Lease, Repairs & Maintenance, Shopping, Software & Tech, Subscriptions, Supplies, Taxes & Licenses, Travel & Vacation, Personal Expense
 - notes: one short phrase about what was purchased (10 words max)
 
+If a tip is present, build the notes as: "Subtotal \$X + tip \$Y = \$Z" — otherwise use your own short description.
 Return ONLY a valid JSON object. Use null for any field you cannot read.
-Example: {"vendor":"Best Buy","amount":249.99,"date":"${today}","category":"Camera & Equipment","notes":"Memory cards and lens filter"}`;
+Example with tip: {"vendor":"The Capital Grille","date":"${today}","subtotal":45.00,"tip":9.00,"tax":3.85,"total":57.85,"amount":57.85,"tip_split_likely":false,"category":"Dining & Drinks","notes":"Subtotal $45.00 + tip $9.00 = $57.85"}
+Example no tip: {"vendor":"Best Buy","date":"${today}","subtotal":null,"tip":null,"tax":null,"total":249.99,"amount":249.99,"tip_split_likely":false,"category":"Camera & Equipment","notes":"Memory cards and lens filter"}`;
 
         const imagePart = {
             inlineData: {
