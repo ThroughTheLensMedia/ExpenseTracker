@@ -11,6 +11,7 @@ import HelpTab from '../components/control-center/HelpTab.jsx';
 import SaasTab from '../components/control-center/SaasTab.jsx';
 import IntegrationTab from '../components/control-center/IntegrationTab.jsx';
 import FeedbackTab from '../components/control-center/FeedbackTab.jsx';
+import DocumentsTab from '../components/control-center/DocumentsTab.jsx';
 
 const DEFAULT_SETTINGS = {
     business_name: '', contact_name: '', website: '', email: '', phone: '', address: '',
@@ -155,6 +156,7 @@ export default function Backup() {
                     <button className={`pill ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>Business Profile</button>
                     <button className={`pill ${activeTab === 'automation' ? 'active' : ''}`} onClick={() => setActiveTab('automation')}>Automation</button>
                     <button className={`pill ${activeTab === 'intelligence' ? 'active' : ''}`} onClick={() => setActiveTab('intelligence')}>AI Intelligence</button>
+                    <button className={`pill ${activeTab === 'documents' ? 'active' : ''}`} onClick={() => setActiveTab('documents')}>Documents</button>
                     {isAdmin && <button className={`pill ${activeTab === 'infrastructure' ? 'active' : ''}`} onClick={() => setActiveTab('infrastructure')}>Infrastructure</button>}
                     <button className={`pill ${activeTab === 'integration' ? 'active' : ''}`} onClick={() => setActiveTab('integration')}>Integrations</button>
                     <button className={`pill ${activeTab === 'help' ? 'active' : ''}`} onClick={() => setActiveTab('help')}>Documentation</button>
@@ -209,6 +211,7 @@ export default function Backup() {
             )}
             {!showSkeleton && activeTab === 'profile' && <ProfileTab settings={settings} setSettings={setSettings} onReload={loadData} />}
             {!showSkeleton && activeTab === 'intelligence' && <IntelligenceTab settings={settings} setSettings={setSettings} user={user} loading={loading} setLoading={setLoading} onReload={loadData} />}
+            {!showSkeleton && activeTab === 'documents' && <DocumentsTab settings={settings} user={user} />}
             {!showSkeleton && activeTab === 'automation' && <AutomationTab rules={rules} allExpenses={allExpenses} onReload={loadData} />}
             {!showSkeleton && activeTab === 'infrastructure' && <InfrastructureTab subscription={subscription} onReload={loadData} />}
             {!showSkeleton && activeTab === 'integration' && <IntegrationTab />}

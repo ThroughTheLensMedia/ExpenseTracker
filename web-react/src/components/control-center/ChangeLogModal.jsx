@@ -1,6 +1,13 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.56', date: 'JUN 2, 2026', color: '#818cf8', items: [
+        '<strong>Brain Reads Your Documents:</strong> Upload a contract, warranty, insurance policy, or loan document in Control Center → Documents. Brain will index it and answer questions about it — expiration dates, coverage limits, interest rates, serial numbers, anything in the text. Just ask: "When does my Sony warranty expire?" or "What\'s my van loan interest rate?"',
+        '<strong>Document Library:</strong> The new Documents tab in Control Center shows all your indexed documents with type, section count, and upload date. Remove any document to clear it from Brain\'s knowledge.',
+    ]},
+    { version: '7.8.55', date: 'JUN 2, 2026', color: '#4ade80', items: [
+        '<strong>Billing Exemptions:</strong> Internal billing exemptions updated for comped accounts.',
+    ]},
     { version: '7.8.54', date: 'JUN 2, 2026', color: '#4ade80', items: [
         '<strong>Tax Bucket — Filtered by Category:</strong> The tax bucket dropdown now shows only the valid option for your selected category. Pick Advertising and you see Advertising. Pick Dining &amp; Drinks and you see Meals (50%). No more scrolling through 18 buckets to find the right one. Personal Expense is always available as an override.',
     ]},

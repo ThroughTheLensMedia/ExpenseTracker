@@ -5,6 +5,33 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.56] — 2026-06-02
+
+### RAG — Document indexing + Brain integration
+
+#### Added
+- **`api/routes/documents.js`** — New route. `POST /documents/upload` accepts PDF or image, extracts text (pdf-parse for PDFs, Gemini Vision for images), chunks into ~2000-char segments, embeds each chunk via Gemini `text-embedding-004`, stores in Supabase pgvector. `GET /documents` lists indexed docs. `DELETE /documents/:id` removes doc + all chunks.
+- **`web-react/src/components/control-center/DocumentsTab.jsx`** — New Control Center tab. Upload zone with doc type selector (General/Warranty/Contract/Insurance/Loan), indexed document list with chunk count and date, remove button.
+- **Supabase migrations** — `vector` extension enabled; `user_documents` and `document_chunks` tables created with RLS; `match_document_chunks` Postgres function for cosine similarity search.
+
+#### Changed
+- **`api/routes/brain.js`** — RAG context injection before `sendMessage`. Embeds the user's question, runs similarity search against their indexed documents, prepends top 4 matching chunks as `[DOCUMENT CONTEXT]`. Non-fatal — Brain works normally if no documents are indexed or if the lookup fails. System prompt updated to advertise document Q&A capability.
+- **`api/utils/gemini.js`** — Added `getEmbedding(apiKey, text)` using `text-embedding-004` (768 dims).
+- **`api/server.js`** — Mounted `documentsRouter` at `/documents`.
+- **`web-react/src/pages/Backup.jsx`** — Added Documents tab between AI Intelligence and Integrations.
+- **`api/package.json`** + **`api/package-lock.json`** — Added `pdf-parse ^1.1.1`.
+
+---
+
+## [v7.8.55] — 2026-06-02
+
+### Michelle Gornichec — Plaid billing exempt
+
+#### Changed
+- **`api/routes/plaid.js`** + **`api/routes/stripe.js`** — Added `fcb92809-70f1-4ae0-b39c-e317378a01a7` to `PLAID_BILLING_EXEMPT`.
+
+---
+
 ## [v7.8.54] — 2026-06-02
 
 ### Tax bucket dropdown filtered by category

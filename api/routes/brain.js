@@ -559,6 +559,7 @@ What I can look up:
 - CRM leads — pipeline value, lead status, client name lookup, project type.
 - Accounts — list all bank accounts and credit cards that have transactions in the ledger.
 - Credit card payment history — total paid per card/account for any time period.
+- Documents — contracts, warranties, insurance policies, loan documents you've uploaded. I can answer questions about their contents: expiration dates, coverage amounts, interest rates, terms, serial numbers, and anything else in the text. Document context is injected automatically when your question is relevant.
 
 What I can change (requires your approval before anything saves):
 - Create a new transaction (I'll ask for vendor, amount, and date if missing).
@@ -634,7 +635,27 @@ PURCHASE vs PAYMENT DISTINCTION (critical):
         while (geminiHistory.length > 0 && geminiHistory[0].role !== 'user') geminiHistory.shift();
 
         const chat = model.startChat({ tools: BRAIN_TOOLS, history: geminiHistory });
-        let result = await chat.sendMessage(prompt);
+
+        // ── RAG context injection ─────────────────────────────────────────────
+        // If the user has indexed documents, embed the question and prepend the
+        // most relevant chunks so Brain can answer questions about them.
+        // Fully non-fatal — if anything fails, Brain answers without document context.
+        let augmentedPrompt = prompt;
+        try {
+            const { getEmbedding } = require('../utils/gemini');
+            const queryEmbedding = await getEmbedding(settings.gemini_api_key, prompt);
+            const { data: ragChunks } = await req.sb.rpc('match_document_chunks', {
+                query_embedding: queryEmbedding,
+                match_user_id:   req.user.id,
+                match_count:     4,
+            });
+            if (ragChunks?.length) {
+                const docContext = ragChunks.map(c => c.chunk_text).join('\n---\n');
+                augmentedPrompt = `${prompt}\n\n[DOCUMENT CONTEXT — from your uploaded documents]\n${docContext}`;
+            }
+        } catch (_) { /* non-fatal */ }
+
+        let result = await chat.sendMessage(augmentedPrompt);
 
         // Function calling loop — max 6 rounds
         // Supports multi-step requests (e.g. look up 2 invoices then write 2 updates = 4 rounds)
