@@ -1,0 +1,24 @@
+User-agent: *
+
+# Allow public-facing pages
+Allow: /
+Allow: /privacy
+Allow: /terms
+Allow: /security-policy
+
+# Block app routes — behind auth, not indexable
+Disallow: /dashboard
+Disallow: /transactions
+Disallow: /accounts
+Disallow: /invoices
+Disallow: /leads
+Disallow: /mileage
+Disallow: /import
+Disallow: /tax
+Disallow: /assets
+Disallow: /StudioControlCenter
+Disallow: /login
+Disallow: /pay/
+Disallow: /api/
+
+Sitemap: https://www.lumiereledger.com/sitemap.xml
