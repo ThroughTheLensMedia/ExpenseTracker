@@ -55,7 +55,7 @@ router.use(requirePlaidConfig);
 // Users exempt from Plaid billing — Joshua pays Plaid directly; Michelle is comped.
 const PLAID_BILLING_EXEMPT = new Set([
     '49e7efcb-6434-4f0c-9563-3151a6d50df9', // Joshua Deuermeyer (admin)
-    // Michelle Gornichec — add UUID here once confirmed
+    'fcb92809-70f1-4ae0-b39c-e317378a01a7', // Michelle Gornichec (gornichecme@gmail.com)
 ]);
 
 // ─── 1. Create Link Token ───

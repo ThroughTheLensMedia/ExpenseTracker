@@ -59,7 +59,7 @@ Source of truth for all sprint work, security status, and product phases.
 | ~~**Smart Receipt Scanner — tip detection**~~ | ✅ v7.8.53 | Gemini extracts subtotal/tip/tax/total; tip breakdown badge in drawer; split-charge auto-merge when bank posts meal + tip separately. |
 | ~~**Maps Autopilot**~~ | ✅ Confirmed done | Google Maps A→B→A with waypoint, autocomplete, auto-populated miles. |
 | **Account merging by last-4 digits** | ⬜ Backlog | Auto-match CSV source to Plaid sub-account by institution + last 4 digits. Manual merge covers this for now. |
-| **Michelle Gornichec UUID in PLAID_BILLING_EXEMPT** | ⬜ Waiting | UUID unknown. Add to `api/routes/plaid.js` + `api/routes/stripe.js` when received. |
+| ~~**Michelle Gornichec UUID in PLAID_BILLING_EXEMPT**~~ | ✅ v7.8.55 | `fcb92809-70f1-4ae0-b39c-e317378a01a7` added to both `plaid.js` and `stripe.js`. |
 | **Brain — Chart/Analysis Popup (Phase 2 Step 5)** | ⬜ Post-launch | Chart.js modal when AI requests visual analysis. |
 | **Brain — Invoice creation tool (Step 6)** | ⬜ Post-launch | `create_invoice_draft` write tool with confirmation card. |
 
