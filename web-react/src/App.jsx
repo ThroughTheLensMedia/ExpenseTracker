@@ -481,7 +481,7 @@ function AppContent() {
                 onClick={() => setMobileMenuOpen(false)}
                 className={() => `dropdown-item ${location.pathname === '/StudioControlCenter' && location.search.includes('tab=help') ? 'active' : ''}`}
             >
-              Documentation & FAQ
+              Help Center
             </NavLink>
             <NavLink to="/addons" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
               Add-Ons

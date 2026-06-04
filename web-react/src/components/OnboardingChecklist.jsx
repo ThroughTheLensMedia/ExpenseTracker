@@ -58,9 +58,9 @@ const STEPS = [
     {
         id: 'docs',
         icon: '📖',
-        title: 'Explore the Help Docs & FAQs',
+        title: 'Explore the Help Center',
         desc: 'Tips on CSV import, tax categories, mileage tracking, and more.',
-        action: { label: 'Open Docs', path: '/StudioControlCenter?tab=help' },
+        action: { label: 'Open Help Center', path: '/StudioControlCenter?tab=help' },
         required: false,
     },
 ];
