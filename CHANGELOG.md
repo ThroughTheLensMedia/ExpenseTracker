@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.54] — 2026-06-02
+
+### Tax bucket dropdown filtered by category
+
+#### Changed
+- **`web-react/src/components/TransactionDrawer.jsx`** — Tax bucket select now shows only the mapped bucket + "Personal Expense" when a category with a direct mapping is selected. Unmapped or no-category shows all 18 buckets as before.
+
+---
+
 ## [v7.8.53] — 2026-06-02
 
 ### Smart receipt scanner — tip detection + split-charge merge

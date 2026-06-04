@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.54', date: 'JUN 2, 2026', color: '#4ade80', items: [
+        '<strong>Tax Bucket — Filtered by Category:</strong> The tax bucket dropdown now shows only the valid option for your selected category. Pick Advertising and you see Advertising. Pick Dining &amp; Drinks and you see Meals (50%). No more scrolling through 18 buckets to find the right one. Personal Expense is always available as an override.',
+    ]},
     { version: '7.8.53', date: 'JUN 2, 2026', color: '#fbbf24', items: [
         '<strong>Tip Detection on Receipts:</strong> Scanning a receipt that includes a tip now shows a breakdown — subtotal + tip + tax = total — and saves the full charged amount so it matches your bank statement. No more manually adjusting the amount after scanning.',
         '<strong>Split Tip Charges — Auto-Merged:</strong> Some restaurants post the meal and tip as two separate bank charges. When the scanner detects this, it shows a "Split charge found" notice and automatically merges both charges into one entry when you save.',

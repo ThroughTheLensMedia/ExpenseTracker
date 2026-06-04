@@ -1,6 +1,1 @@
-{
-  "version": "7.8.53",
-  "release_date": "2026-06-02",
-  "codename": "Lumière Ledger",
-  "notes": "v7.8.53: Smart receipt scanner — tip detection, split-charge auto-merge, and tip breakdown display."
-}
+{"version":"7.8.54","release_date":"2026-06-02","codename":"Lumière Ledger","notes":"v7.8.54: Tax bucket dropdown now filters to only valid options for the selected category."}
