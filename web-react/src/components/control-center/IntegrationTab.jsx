@@ -55,7 +55,7 @@ fetch("https://your-site.com/api/form", {
     );
 }
 
-const RECEIPT_EMAIL = 'receipts+jd@lumiereledger.com';
+const RECEIPT_EMAIL = 'b1eedb087c80679a30142ee1f36b7aa4@inbound.postmarkapp.com';
 
 function EmailReceiptCard() {
     return (
