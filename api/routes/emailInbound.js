@@ -44,7 +44,7 @@ router.post('/', async (req, res) => {
             return;
         }
 
-        // Parse token from To address (e.g. receipts+jd@throughthelens.media → "jd")
+        // Parse token from To address (e.g. receipts+jd@lumiereledger.com → "jd")
         const toAddress = Array.isArray(payload.ToFull)
             ? payload.ToFull[0]?.Email || payload.To
             : payload.To;
