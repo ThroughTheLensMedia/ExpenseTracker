@@ -51,10 +51,12 @@ router.post('/', async (req, res) => {
 
         const tokenMatch = toAddress.match(/receipts\+([^@]+)@/i);
         const token = tokenMatch ? tokenMatch[1].toLowerCase() : null;
-        const userId = token ? TOKEN_MAP[token] : null;
+        // Phase 1: fall back to Joshua's user ID if no token found (direct Postmark address forwarding)
+        const FALLBACK_USER_ID = TOKEN_MAP['jd'];
+        const userId = (token ? TOKEN_MAP[token] : null) || FALLBACK_USER_ID;
 
         if (!userId) {
-            console.warn('[EmailInbound] Unknown token:', token, '— ignoring');
+            console.warn('[EmailInbound] No user resolved — ignoring');
             return;
         }
 

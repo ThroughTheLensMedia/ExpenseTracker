@@ -55,7 +55,7 @@ fetch("https://your-site.com/api/form", {
     );
 }
 
-const RECEIPT_EMAIL = 'receipts+jd@throughthelens.media';
+const RECEIPT_EMAIL = 'b1eedb087c80679a30142ee1f36b7aa4@inbound.postmarkapp.com';
 
 function EmailReceiptCard() {
     return (
@@ -63,7 +63,7 @@ function EmailReceiptCard() {
             <div style={{ marginBottom: '16px' }}>
                 <h2 style={{ margin: '0 0 6px', fontSize: '1.4rem', fontWeight: 900 }}>Email Receipt Forwarding</h2>
                 <div className="muted" style={{ fontSize: '13px' }}>
-                    Forward any receipt email to automatically attach it to the matching transaction. Receipts waiting on a bank transaction to post will match automatically within 1–3 business days.
+                    Forward any receipt email to this address and it will be automatically parsed and attached to the matching transaction. Save it as a contact for quick access.
                 </div>
             </div>
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -73,7 +73,7 @@ function EmailReceiptCard() {
                 <CopyButton value={RECEIPT_EMAIL} label="Copy Address" />
             </div>
             <div className="muted" style={{ fontSize: '12px', marginTop: '12px' }}>
-                Save this as a contact in your email app for quick forwarding. Works with PDF attachments and plain-text receipt emails.
+                Works with PDF attachments and plain-text receipt emails. Receipts that arrive before the bank transaction posts will match automatically when your bank syncs (1–3 days).
             </div>
         </div>
     );
