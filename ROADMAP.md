@@ -46,6 +46,19 @@ Source of truth for all sprint work, security status, and product phases.
 
 ---
 
+## 📧 Email Receipt Forwarding — Phase 2 (Per-User Addresses)
+
+> Phase 1 shipped v7.8.58 — hardcoded to Joshua only. Phase 2 makes it self-serve for all users.
+
+| Item | Status | Notes |
+|------|--------|-------|
+| **Per-user token derivation** | ⬜ Backlog | `sha256(userId + RECEIPT_HMAC_SECRET).slice(0,8)` — deterministic, no DB column needed |
+| **Wildcard address routing** | ⬜ Backlog | `receipts.<token>@lumiereledger.com` — Postmark inbound domain already set, just update token resolution in `emailInbound.js` |
+| **Auto-show address in Integrations tab** | ⬜ Backlog | Replace hardcoded address with derived token per logged-in user — `IntegrationTab.jsx` reads `user.id`, computes token client-side |
+| **7-day unmatched receipt digest** | ⬜ Backlog | Cron/UptimeRobot endpoint — email user list of `pending_receipts` older than 7 days |
+
+---
+
 ## 🟡 Next Sprint — High Value
 
 | Item | Status | Notes |
@@ -62,6 +75,18 @@ Source of truth for all sprint work, security status, and product phases.
 | ~~**Michelle Gornichec UUID in PLAID_BILLING_EXEMPT**~~ | ✅ v7.8.55 | `fcb92809-70f1-4ae0-b39c-e317378a01a7` added to both `plaid.js` and `stripe.js`. |
 | **Brain — Chart/Analysis Popup (Phase 2 Step 5)** | ⬜ Post-launch | Chart.js modal when AI requests visual analysis. |
 | **Brain — Invoice creation tool (Step 6)** | ⬜ Post-launch | `create_invoice_draft` write tool with confirmation card. |
+
+---
+
+## 🎛 Dashboard Customization (Good to Have — High Impact)
+
+> Users pick which widgets appear on their dashboard. Removes photographer-specific clutter for non-photographers.
+
+| Item | Notes |
+|------|-------|
+| **Widget visibility toggles** | User selects which tiles/charts appear — Equipment, Mileage, Category Breakdown, Forecast, KPIs, etc. Stored in `settings` table per user |
+| **Drag-to-reorder** | Optional phase 2 — reorder widget position. Build toggles first. |
+| **Non-photographer mode** | Preset that hides Camera & Equipment, Mileage, Photography category tiles in one click |
 
 ---
 
