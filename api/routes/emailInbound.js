@@ -27,10 +27,11 @@ router.post('/', async (req, res) => {
     res.sendStatus(200);
 
     try {
-        // Verify Postmark webhook token
+        // Verify token passed as query param in webhook URL
+        // Postmark webhook URL format: /api/receipts/email-inbound?token=<POSTMARK_INBOUND_TOKEN>
         const inboundToken = process.env.POSTMARK_INBOUND_TOKEN;
         if (inboundToken) {
-            const provided = req.headers['x-postmark-inbound-token'];
+            const provided = req.query.token;
             if (provided !== inboundToken) {
                 console.warn('[EmailInbound] Invalid token — ignoring');
                 return;
