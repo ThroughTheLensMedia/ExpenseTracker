@@ -462,6 +462,52 @@ function makePlaidSourceKey(institutionName, account) {
     return base;
 }
 
+/**
+ * matchPendingReceipts(sb, userId, newExpenses)
+ * Pass 2 of email receipt matching. After Plaid inserts new transactions,
+ * check pending_receipts for any that match on amount_cents + date ±3 days.
+ * On match: attach file_path to expense receipt_link, delete pending record.
+ */
+async function matchPendingReceipts(sb, userId, newExpenses) {
+    try {
+        const { data: pending } = await sb
+            .from('pending_receipts')
+            .select('*')
+            .eq('user_id', userId);
+
+        if (!pending || pending.length === 0) return;
+
+        for (const pr of pending) {
+            if (!pr.amount_cents || !pr.receipt_date) continue;
+
+            const base = new Date(pr.receipt_date + 'T12:00:00Z');
+            const from = new Date(base); from.setDate(base.getDate() - 3);
+            const to   = new Date(base); to.setDate(base.getDate() + 3);
+            const fromStr = from.toISOString().slice(0, 10);
+            const toStr   = to.toISOString().slice(0, 10);
+
+            const match = newExpenses.find(e =>
+                e.amount_cents === pr.amount_cents &&
+                e.expense_date >= fromStr &&
+                e.expense_date <= toStr
+            );
+
+            if (match) {
+                await sb.from('expenses')
+                    .update({ receipt_link: pr.file_path, updated_at: new Date().toISOString() })
+                    .eq('id', match.id)
+                    .eq('user_id', userId);
+
+                await sb.from('pending_receipts').delete().eq('id', pr.id);
+
+                console.log(`[Plaid] Pass-2 receipt match: pending ${pr.id} → expense ${match.id} ($${(pr.amount_cents / 100).toFixed(2)})`);
+            }
+        }
+    } catch (err) {
+        console.error('[Plaid] matchPendingReceipts error:', err.message);
+    }
+}
+
 async function syncTransactions(sb, plaidClient, connection, userId) {
     let cursor = connection.cursor;
     let added = 0;
@@ -532,10 +578,16 @@ async function syncTransactions(sb, plaidClient, connection, userId) {
             linked += linkCount;
 
             if (toInsert.length > 0) {
-                const { error } = await sb
+                const { data: inserted, error } = await sb
                     .from("expenses")
-                    .upsert(toInsert, { onConflict: "plaid_transaction_id", ignoreDuplicates: true });
+                    .upsert(toInsert, { onConflict: "plaid_transaction_id", ignoreDuplicates: true })
+                    .select('id, amount_cents, expense_date');
                 if (error) console.error("[Plaid] Insert error:", error);
+
+                // Pass 2: match newly inserted transactions to any pending email receipts
+                if (inserted && inserted.length > 0) {
+                    await matchPendingReceipts(sb, userId, inserted);
+                }
             }
             added += toInsert.length;
         }

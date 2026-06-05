@@ -29,6 +29,7 @@ const payRouter = require("./routes/pay");    // Public Payment Portal (no auth)
 const intakeRouter     = require("./routes/intake");      // Public TTLM website lead intake (no auth)
 const intakeKeysRouter = require("./routes/intake-keys"); // Authenticated key management
 const { router: stripeRouter, stripeWebhook } = require("./routes/stripe"); // Stripe billing
+const emailInboundRouter = require("./routes/emailInbound"); // Postmark inbound email receipts (no auth)
 const metricsRouter = require("./routes/metrics"); // Dashboard metrics layer
 const vendorsRouter = require("./routes/vendors"); // Vendor specific settings
 const feedbackRouter = require("./routes/feedback"); // In-app feedback form
@@ -98,6 +99,7 @@ const { licensingMiddleware } = require("./middleware/licensing");
 apiRouter.use("/pay", payRouter);
 apiRouter.use("/intake", intakeRouter); // TTLM website booking form → Lumiere Ledger
 apiRouter.use("/cron", require("./routes/cron")); // CRON_SECRET auth — no JWT needed
+apiRouter.use("/receipts/email-inbound", emailInboundRouter); // Postmark inbound webhook — POSTMARK_INBOUND_TOKEN auth
 
 // Account Request — public form that emails the admin
 apiRouter.post("/account-request", async (req, res) => {

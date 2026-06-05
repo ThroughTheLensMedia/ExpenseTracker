@@ -728,6 +728,68 @@ async function sendHealthAlertEmail({ to, issues }) {
     }
 }
 
+/**
+ * sendReceiptConfirmationEmail
+ * Sent back to the forwarder after email receipt ingestion.
+ * outcome: 'matched' | 'pending' | 'failed'
+ */
+async function sendReceiptConfirmationEmail({ to, outcome, vendor, amountCents, expenseDate, subject }) {
+    console.log(`[MAILER] Sending receipt confirmation (${outcome}) to ${to}`);
+    const resend = getResend();
+    if (!resend) return { success: false, error: 'Mailer service not configured' };
+
+    const fromEmail = process.env.RESEND_FROM || 'Lumière Ledger <support@throughthelens.media>';
+    const appUrl = process.env.APP_URL || 'https://www.lumiereledger.com';
+    const amount = amountCents != null ? `$${(amountCents / 100).toFixed(2)}` : '';
+
+    let emailSubject, bodyHtml;
+
+    if (outcome === 'matched') {
+        emailSubject = `Receipt attached — ${vendor} ${amount}`;
+        bodyHtml = `
+            <div style="background:#0f172a;color:#f8fafc;padding:40px;font-family:sans-serif;border-radius:12px;max-width:600px;">
+                <h2 style="color:#f59e0b;margin-top:0;">Receipt Attached</h2>
+                <p>Your forwarded receipt was matched and attached to your transaction:</p>
+                <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);padding:16px;border-radius:8px;margin:16px 0;">
+                    <strong>${vendor}</strong> &nbsp;·&nbsp; ${amount} &nbsp;·&nbsp; ${expenseDate || ''}
+                </div>
+                <a href="${appUrl}" style="display:inline-block;background:#f59e0b;color:#0f172a;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">View Transaction</a>
+            </div>`;
+    } else if (outcome === 'pending') {
+        emailSubject = `Receipt saved — waiting for bank transaction`;
+        bodyHtml = `
+            <div style="background:#0f172a;color:#f8fafc;padding:40px;font-family:sans-serif;border-radius:12px;max-width:600px;">
+                <h2 style="color:#f59e0b;margin-top:0;">Receipt Saved</h2>
+                <p>Your receipt for <strong>${vendor || 'unknown vendor'} ${amount}</strong> has been saved.</p>
+                <p style="color:#94a3b8;">The bank transaction hasn't posted yet. It will be automatically attached once your bank syncs (usually 1–3 business days).</p>
+                <a href="${appUrl}" style="display:inline-block;background:#f59e0b;color:#0f172a;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Open Lumière Ledger</a>
+            </div>`;
+    } else {
+        emailSubject = `Receipt not processed`;
+        bodyHtml = `
+            <div style="background:#0f172a;color:#f8fafc;padding:40px;font-family:sans-serif;border-radius:12px;max-width:600px;">
+                <h2 style="color:#ef4444;margin-top:0;">Receipt Not Processed</h2>
+                <p>We received your forwarded email but couldn't find a transaction amount.</p>
+                <p style="color:#94a3b8;">Original subject: <em>${subject || '(none)'}</em></p>
+                <p>If this was a receipt, try forwarding the attachment directly or uploading it manually.</p>
+                <a href="${appUrl}" style="display:inline-block;background:#f59e0b;color:#0f172a;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Upload Manually</a>
+            </div>`;
+    }
+
+    try {
+        const data = await resend.emails.send({
+            from: fromEmail,
+            to: [to],
+            subject: emailSubject,
+            html: bodyHtml,
+        });
+        return { success: true, data };
+    } catch (error) {
+        console.error('[MAILER] Receipt confirmation send failed:', error);
+        return { success: false, error: error.message };
+    }
+}
+
 module.exports = {
     sendInvoiceEmail,
     sendInviteEmail,
@@ -737,4 +799,5 @@ module.exports = {
     sendContactRelayEmail,
     sendInvoiceApprovalEmail,
     sendHealthAlertEmail,
+    sendReceiptConfirmationEmail,
 };

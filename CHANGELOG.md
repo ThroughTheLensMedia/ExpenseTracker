@@ -5,6 +5,29 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.58] — 2026-06-05
+
+### Email Receipt Forwarding
+
+#### Added
+- **`api/routes/emailInbound.js`** — Postmark inbound webhook. Verifies token, resolves user from `receipts+jd@` address, extracts receipt via Gemini Vision (PDF/image attachment priority) or Gemini text (body fallback), runs two-pass transaction match, uploads file to Supabase Storage.
+- **`api/utils/receiptEmailParser.js`** — `parseReceiptFromEmailBody()` (Gemini text mode) and `parseReceiptFromFile()` (Gemini Vision) with FWD: chain stripping.
+- **`api/tests/pending-receipts-migration.sql`** — Idempotent migration for `pending_receipts` table (Supabase applied).
+- **`pending_receipts` table** — Holds email receipts that arrived before the bank transaction posted. Matched on next Plaid sync.
+- **`matchPendingReceipts()`** in `api/routes/plaid.js` — Pass 2 match: after Plaid inserts new transactions, checks `pending_receipts` by `amount_cents` + date ±3 days; attaches file and deletes pending record on match.
+
+#### Changed
+- **`api/utils/mailer.js`** — Added `sendReceiptConfirmationEmail()` with matched / pending / failed outcomes.
+- **`api/server.js`** — Mounted `emailInboundRouter` at `/receipts/email-inbound` (no auth — Postmark token protected).
+- **`web-react/src/components/control-center/IntegrationTab.jsx`** — Added `EmailReceiptCard` at top of Integrations tab showing forwarding address with copy button.
+
+#### Setup Required
+- Postmark account → create inbound stream → set webhook URL to `https://www.lumiereledger.com/api/receipts/email-inbound`
+- Add `POSTMARK_INBOUND_TOKEN` and `RECEIPT_HMAC_SECRET` to Vercel env panel
+- Add Postmark MX record to `throughthelens.media` DNS: `MX inbound.postmarkapp.com 10`
+
+---
+
 ## [v7.8.56] — 2026-06-02
 
 ### RAG — Document indexing + Brain integration

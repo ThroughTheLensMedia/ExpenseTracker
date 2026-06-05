@@ -1,6 +1,11 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.58', date: 'JUN 5, 2026', color: '#f59e0b', items: [
+        '<strong>Email Receipt Forwarding:</strong> Forward any receipt email to <code>receipts+jd@throughthelens.media</code> and it\'s automatically parsed and attached to the matching transaction.',
+        '<strong>Auto-match on Plaid sync:</strong> Receipts that arrive before the bank transaction posts are held and matched automatically when your bank syncs (usually 1–3 days).',
+        '<strong>Forwarding address in Integrations tab:</strong> Find your personal receipt address with a one-tap copy button in Control Center → Integrations.',
+    ]},
     { version: '7.8.56', date: 'JUN 2, 2026', color: '#818cf8', items: [
         '<strong>Brain Reads Your Documents:</strong> Upload a contract, warranty, insurance policy, or loan document in Control Center → Documents. Brain will index it and answer questions about it — expiration dates, coverage limits, interest rates, serial numbers, anything in the text. Just ask: "When does my Sony warranty expire?" or "What\'s my van loan interest rate?"',
         '<strong>Document Library:</strong> The new Documents tab in Control Center shows all your indexed documents with type, section count, and upload date. Remove any document to clear it from Brain\'s knowledge.',

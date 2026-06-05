@@ -55,6 +55,30 @@ fetch("https://your-site.com/api/form", {
     );
 }
 
+const RECEIPT_EMAIL = 'receipts+jd@throughthelens.media';
+
+function EmailReceiptCard() {
+    return (
+        <div className="card glass" style={{ margin: 0, padding: '28px', borderTop: '4px solid #f59e0b' }}>
+            <div style={{ marginBottom: '16px' }}>
+                <h2 style={{ margin: '0 0 6px', fontSize: '1.4rem', fontWeight: 900 }}>Email Receipt Forwarding</h2>
+                <div className="muted" style={{ fontSize: '13px' }}>
+                    Forward any receipt email to automatically attach it to the matching transaction. Receipts waiting on a bank transaction to post will match automatically within 1–3 business days.
+                </div>
+            </div>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+                <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '8px', padding: '10px 16px', fontSize: '13px', fontWeight: 700 }}>
+                    <span style={{ color: '#f59e0b', fontFamily: 'monospace' }}>{RECEIPT_EMAIL}</span>
+                </div>
+                <CopyButton value={RECEIPT_EMAIL} label="Copy Address" />
+            </div>
+            <div className="muted" style={{ fontSize: '12px', marginTop: '12px' }}>
+                Save this as a contact in your email app for quick forwarding. Works with PDF attachments and plain-text receipt emails.
+            </div>
+        </div>
+    );
+}
+
 export default function IntegrationTab() {
     const modal = useModal();
     const [keys, setKeys] = useState([]);
@@ -108,6 +132,10 @@ export default function IntegrationTab() {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+
+            {/* Email Receipt Forwarding */}
+            <EmailReceiptCard />
+
             {/* Header */}
             <div className="card glass" style={{ margin: 0, padding: '28px', borderTop: '4px solid #38bdf8' }}>
                 <div style={{ marginBottom: '16px' }}>
