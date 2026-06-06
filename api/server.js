@@ -12,32 +12,39 @@ const fs = require("fs");
 const { initDb, supabase } = require("./db");
 const authMiddleware = require("./middleware/auth");
 
-const expenseRouter = require("./routes/expenses");
-const taxRouter = require("./routes/tax");
-const importRouter = require("./routes/import");
-const receiptsRouter = require("./routes/receipts");
-const rulesRouter = require("./routes/rules");
-const mileageRouter = require("./routes/mileage");
-const assetsRouter = require("./routes/assets");
-const invoiceRouter = require("./routes/invoices");
-const adminRouter = require("./routes/admin");
-const leadsRouter = require("./routes/leads");
-const pwaRouter = require("./routes/pwa");
-const settingsRouter = require("./routes/settings");
-const subscriptionRouter = require("./routes/subscription");
-const activityRouter = require("./routes/activity");
-const brainRouter = require("./routes/brain"); // AI Intelligence Engine
-const plaidRouter = require("./routes/plaid"); // Plaid Bank Sync
-const payRouter = require("./routes/pay");    // Public Payment Portal (no auth)
-const intakeRouter     = require("./routes/intake");      // Public TTLM website lead intake (no auth)
-const intakeKeysRouter = require("./routes/intake-keys"); // Authenticated key management
-const { router: stripeRouter, stripeWebhook } = require("./routes/stripe"); // Stripe billing
-const emailInboundRouter = require("./routes/emailInbound"); // Postmark inbound email receipts (no auth)
-const metricsRouter = require("./routes/metrics"); // Dashboard metrics layer
-const vendorsRouter = require("./routes/vendors"); // Vendor specific settings
-const feedbackRouter = require("./routes/feedback"); // In-app feedback form
-const accountsRouter  = require("./routes/accounts");   // Accounts page summary
-const documentsRouter = require("./routes/documents");  // RAG document indexing
+function safeRequire(path) {
+  try { return require(path); }
+  catch(e) { console.error(`[STARTUP] FATAL require failed: ${path} — ${e.message}`); return null; }
+}
+
+const expenseRouter      = safeRequire("./routes/expenses");
+const taxRouter          = safeRequire("./routes/tax");
+const importRouter       = safeRequire("./routes/import");
+const receiptsRouter     = safeRequire("./routes/receipts");
+const rulesRouter        = safeRequire("./routes/rules");
+const mileageRouter      = safeRequire("./routes/mileage");
+const assetsRouter       = safeRequire("./routes/assets");
+const invoiceRouter      = safeRequire("./routes/invoices");
+const adminRouter        = safeRequire("./routes/admin");
+const leadsRouter        = safeRequire("./routes/leads");
+const pwaRouter          = safeRequire("./routes/pwa");
+const settingsRouter     = safeRequire("./routes/settings");
+const subscriptionRouter = safeRequire("./routes/subscription");
+const activityRouter     = safeRequire("./routes/activity");
+const brainRouter        = safeRequire("./routes/brain");
+const plaidRouter        = safeRequire("./routes/plaid");
+const payRouter          = safeRequire("./routes/pay");
+const intakeRouter       = safeRequire("./routes/intake");
+const intakeKeysRouter   = safeRequire("./routes/intake-keys");
+const stripeImport       = safeRequire("./routes/stripe");
+const stripeRouter       = stripeImport?.router || null;
+const stripeWebhook      = stripeImport?.stripeWebhook || null;
+const emailInboundRouter = safeRequire("./routes/emailInbound");
+const metricsRouter      = safeRequire("./routes/metrics");
+const vendorsRouter      = safeRequire("./routes/vendors");
+const feedbackRouter     = safeRequire("./routes/feedback");
+const accountsRouter     = safeRequire("./routes/accounts");
+const documentsRouter    = safeRequire("./routes/documents");
 
 // Initialize Database — log clearly if it fails
 if (!initDb()) {
@@ -59,7 +66,7 @@ app.use(cors({
   credentials: true,
 }));
 // Stripe webhook MUST be mounted before express.json() — raw body required for signature verification
-app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), stripeWebhook);
+if (stripeWebhook) app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), stripeWebhook);
 
 app.use(express.json({ limit: "10mb" }));
 
@@ -105,10 +112,11 @@ const { licensingMiddleware } = require("./middleware/licensing");
 
 // --- PUBLIC ROUTES (no auth required) ---
 // Must be mounted BEFORE authMiddleware
-apiRouter.use("/pay", payRouter);
-apiRouter.use("/intake", intakeRouter); // TTLM website booking form → Lumiere Ledger
-apiRouter.use("/cron", require("./routes/cron")); // CRON_SECRET auth — no JWT needed
-apiRouter.use("/receipts/email-inbound", emailInboundRouter); // Postmark inbound webhook — POSTMARK_INBOUND_TOKEN auth
+if (payRouter)          apiRouter.use("/pay", payRouter);
+if (intakeRouter)       apiRouter.use("/intake", intakeRouter);
+const cronRouter = safeRequire("./routes/cron");
+if (cronRouter)         apiRouter.use("/cron", cronRouter);
+if (emailInboundRouter) apiRouter.use("/receipts/email-inbound", emailInboundRouter);
 
 // Account Request — public form that emails the admin
 apiRouter.post("/account-request", async (req, res) => {
@@ -150,35 +158,35 @@ apiRouter.post("/account-request", async (req, res) => {
 apiRouter.use(authMiddleware);
 
 // Feedback — auth required, not license-gated (any user can report issues)
-apiRouter.use("/feedback", feedbackRouter);
+if (feedbackRouter) apiRouter.use("/feedback", feedbackRouter);
 
 // --- ATTACH LICENSING MIDDLEWARE ---
 // Every route below this line is restricted by subscription status
 apiRouter.use(licensingMiddleware);
 
 // Standard routes (now using authenticated clients via req.sb)
-apiRouter.use("/expenses", expenseRouter);
-apiRouter.use("/tax", taxRouter);
-apiRouter.use("/import", importRouter);
-apiRouter.use("/receipts", receiptsRouter);
-apiRouter.use("/rules", rulesRouter);
-apiRouter.use("/mileage", mileageRouter);
-apiRouter.use("/assets", assetsRouter);
-apiRouter.use("/invoices", invoiceRouter);
-apiRouter.use("/admin", adminRouter);
-apiRouter.use("/leads", leadsRouter);
-apiRouter.use("/intake-keys", intakeKeysRouter);
-apiRouter.use("/pwa", pwaRouter);
-apiRouter.use("/settings", settingsRouter);
-apiRouter.use("/subscription", subscriptionRouter);
-apiRouter.use("/activity", activityRouter);
-apiRouter.use("/brain", brainRouter);
-apiRouter.use("/plaid", plaidRouter);
-apiRouter.use("/stripe", stripeRouter);
-apiRouter.use("/metrics", metricsRouter);
-apiRouter.use("/vendors", vendorsRouter);
-apiRouter.use("/accounts",  accountsRouter);
-apiRouter.use("/documents", documentsRouter);
+if (expenseRouter)      apiRouter.use("/expenses",      expenseRouter);
+if (taxRouter)          apiRouter.use("/tax",            taxRouter);
+if (importRouter)       apiRouter.use("/import",         importRouter);
+if (receiptsRouter)     apiRouter.use("/receipts",       receiptsRouter);
+if (rulesRouter)        apiRouter.use("/rules",          rulesRouter);
+if (mileageRouter)      apiRouter.use("/mileage",        mileageRouter);
+if (assetsRouter)       apiRouter.use("/assets",         assetsRouter);
+if (invoiceRouter)      apiRouter.use("/invoices",       invoiceRouter);
+if (adminRouter)        apiRouter.use("/admin",          adminRouter);
+if (leadsRouter)        apiRouter.use("/leads",          leadsRouter);
+if (intakeKeysRouter)   apiRouter.use("/intake-keys",    intakeKeysRouter);
+if (pwaRouter)          apiRouter.use("/pwa",            pwaRouter);
+if (settingsRouter)     apiRouter.use("/settings",       settingsRouter);
+if (subscriptionRouter) apiRouter.use("/subscription",   subscriptionRouter);
+if (activityRouter)     apiRouter.use("/activity",       activityRouter);
+if (brainRouter)        apiRouter.use("/brain",          brainRouter);
+if (plaidRouter)        apiRouter.use("/plaid",          plaidRouter);
+if (stripeRouter)       apiRouter.use("/stripe",         stripeRouter);
+if (metricsRouter)      apiRouter.use("/metrics",        metricsRouter);
+if (vendorsRouter)      apiRouter.use("/vendors",        vendorsRouter);
+if (accountsRouter)     apiRouter.use("/accounts",       accountsRouter);
+if (documentsRouter)    apiRouter.use("/documents",      documentsRouter);
 
 // Mount all API routes under /api
 // Mount all API routes under /api AND root (for Vercel flexibility)
