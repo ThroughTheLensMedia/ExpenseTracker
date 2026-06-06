@@ -1,1 +1,1 @@
-{"version":"7.8.58","release_date":"2026-06-05","codename":"Lumière Ledger","notes":"v7.8.58: Email Receipt Forwarding — forward receipts to auto-attach to transactions."}
+{"version":"7.8.59","release_date":"2026-06-05","codename":"Lumière Ledger","notes":"v7.8.59: Error tracking — Sentry (frontend) + Logtail (backend) wired in."}

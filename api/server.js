@@ -5,6 +5,7 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const fs = require("fs");
+const logger = require("./utils/logger");
 
 const { initDb, supabase } = require("./db");
 const authMiddleware = require("./middleware/auth");
@@ -182,9 +183,14 @@ app.get("/api/test-direct", (req, res) => res.json({ ok: true, source: "direct-s
 
 // Global Error Handler
 app.use((err, req, res, next) => {
-  console.error("--- UNHANDLED ERROR ---");
-  console.error("Path:", req.path);
-  console.error("Error:", err);
+  logger.error({
+    msg: 'Unhandled error',
+    path: req.path,
+    method: req.method,
+    error: err.message,
+    stack: err.stack,
+    user: req.user?.id ?? 'unauthenticated',
+  });
   res.status(500).json({
     error: "Internal Server Error",
     message: err.message

@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import * as Sentry from '@sentry/react';
 import { useActivityPulse } from "./hooks/useActivityPulse";
 import { useLeadsRealtime } from "./hooks/useLeadsRealtime";
 import { BrowserRouter as Router, Routes, Route, NavLink, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth, supabase } from './components/AuthContext';
 import { ModalProvider } from './components/ModalContext';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Code-split every page — only load the chunk when the user navigates to it
 const DashboardV2    = lazy(() => import('./pages/DashboardV2'));
@@ -159,7 +161,7 @@ function AppContent() {
   // --- Version Check Hook ---
   // DEPLOY SOP: update CURRENT_VERSION here AND web-react/public/version.json on every release.
   useEffect(() => {
-    const CURRENT_VERSION = "7.8.58";
+    const CURRENT_VERSION = "7.8.59";
 
     // What's New: show button if user hasn't dismissed it for this version
     const seen = localStorage.getItem('ll_whats_new_seen');
@@ -581,14 +583,22 @@ function AppContent() {
 }
 
 function App() {
+  useEffect(() => {
+    const handler = (event) => Sentry.captureException(event.reason);
+    window.addEventListener('unhandledrejection', handler);
+    return () => window.removeEventListener('unhandledrejection', handler);
+  }, []);
+
   return (
-    <AuthProvider>
-      <ModalProvider>
-        <Router>
-          <AppContent />
-        </Router>
-      </ModalProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <ModalProvider>
+          <Router>
+            <AppContent />
+          </Router>
+        </ModalProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

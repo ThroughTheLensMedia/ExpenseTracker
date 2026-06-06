@@ -5,6 +5,27 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.59] — 2026-06-05
+
+### Error Tracking — Sentry + Logtail
+
+#### Added
+- **`web-react/src/components/ErrorBoundary.jsx`** — React error boundary wrapping the full app. Catches component crashes, sends to Sentry, shows "Reload App" fallback UI.
+- **`api/utils/logger.js`** — Pino structured logger with Logtail transport. Falls back to stdout if `LOGTAIL_SOURCE_TOKEN` not set.
+
+#### Changed
+- **`web-react/src/main.jsx`** — `Sentry.init()` with DSN, environment, browser tracing (10% sample rate). Disabled in dev.
+- **`web-react/src/App.jsx`** — Wrapped with `<ErrorBoundary>`; `window.onunhandledrejection` forwards to Sentry.
+- **`web-react/src/api/index.js`** — All API methods (GET/POST/PATCH/PUT/DELETE) capture exceptions to Sentry with path + method tags before re-throwing.
+- **`web-react/src/components/AuthContext.jsx`** — `Sentry.setUser()` on SIGNED_IN; `Sentry.setUser(null)` on SIGNED_OUT.
+- **`api/server.js`** — Global error handler uses structured `logger.error()` with path, method, user ID, stack.
+
+#### Setup Required
+- Add `VITE_SENTRY_DSN` to Vercel env panel (get from sentry.io → your project → DSN)
+- Add `LOGTAIL_SOURCE_TOKEN` to Vercel env panel (get from betterstack.com → Logs → your source)
+
+---
+
 ## [v7.8.58] — 2026-06-05
 
 ### Email Receipt Forwarding

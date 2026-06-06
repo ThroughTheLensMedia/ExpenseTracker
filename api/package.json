@@ -8,23 +8,26 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
-    "libsodium-wrappers": "^0.7.15",
-    "plaid": "^29.0.0",
+    "@logtail/node": "^0.5.8",
     "@supabase/supabase-js": "^2.99.1",
     "archiver": "^7.0.1",
     "bull": "^4.16.5",
     "cors": "^2.8.5",
     "csv-parser": "^3.2.0",
     "dotenv": "^16.4.7",
-    "uuid": "^9.0.0",
     "express": "^4.19.2",
     "file-type": "16.5.4",
     "jsonwebtoken": "^9.0.3",
     "jwks-rsa": "^4.0.1",
+    "libsodium-wrappers": "^0.7.15",
     "multer": "^2.1.0",
+    "pdf-parse": "^1.1.1",
+    "pino": "^10.3.1",
+    "pino-http": "^11.0.0",
+    "plaid": "^29.0.0",
     "resend": "2.1.0",
     "stripe": "^17.7.0",
-    "zod": "^3.23.8",
-    "pdf-parse": "^1.1.1"
+    "uuid": "^9.0.0",
+    "zod": "^3.23.8"
   }
 }

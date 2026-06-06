@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import * as Sentry from '@sentry/react';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -103,11 +104,14 @@ export function AuthProvider({ children }) {
     // 2. Auth State Listener
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (_event === 'SIGNED_OUT') {
-        // Reset ref and ready flag so the next sign-in triggers a fresh fetch
         subscriptionFetchedRef.current = false;
         setSubscription(null);
         setSubscriptionReady(false);
         setSettings(null);
+        Sentry.setUser(null);
+      }
+      if (_event === 'SIGNED_IN' && session?.user) {
+        Sentry.setUser({ id: session.user.id, email: session.user.email });
       }
       setSession(session);
       setUser(session?.user ?? null);

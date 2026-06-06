@@ -1,5 +1,6 @@
 // API Data Fetching Service (SaaS Authenticated Version)
 import { supabase } from '../components/AuthContext';
+import * as Sentry from '@sentry/react';
 
 async function getAuthHeaders() {
     const { data: { session } } = await supabase.auth.getSession();
@@ -12,20 +13,22 @@ async function getAuthHeaders() {
 
 export async function apiGet(path) {
     const headers = await getAuthHeaders();
-    const r = await fetch("/api" + path, { 
+    const r = await fetch("/api" + path, {
         headers: { 'Authorization': headers.Authorization },
-        credentials: "include" 
+        credentials: "include"
     });
     if (!r.ok) {
         let msg = `${r.status} ${r.statusText} (Path: ${path})`;
-        try { 
-            const j = await r.json(); 
+        try {
+            const j = await r.json();
             if (j && j.error) {
                 const inner = typeof j.error === 'string' ? j.error : JSON.stringify(j.error);
                 msg = `${r.status}: ${inner}`;
             }
         } catch (_) { }
-        throw new Error(msg);
+        const err = new Error(msg);
+        Sentry.captureException(err, { tags: { api_path: path, method: 'GET' } });
+        throw err;
     }
     return r.json();
 }
@@ -40,13 +43,13 @@ export async function apiPatch(path, payload) {
     });
     if (!r.ok) {
         let msg = `${r.status} ${r.statusText}`;
-        try { 
-            const j = await r.json(); 
-            if (j && j.error) {
-                msg = typeof j.error === 'string' ? j.error : JSON.stringify(j.error);
-            }
+        try {
+            const j = await r.json();
+            if (j && j.error) msg = typeof j.error === 'string' ? j.error : JSON.stringify(j.error);
         } catch (_) { }
-        throw new Error(msg);
+        const err = new Error(msg);
+        Sentry.captureException(err, { tags: { api_path: path, method: 'PATCH' } });
+        throw err;
     }
     return r.json();
 }
@@ -61,13 +64,13 @@ export async function apiPost(path, payload) {
     });
     if (!r.ok) {
         let msg = `${r.status} ${r.statusText}`;
-        try { 
-            const j = await r.json(); 
-            if (j && j.error) {
-                msg = typeof j.error === 'string' ? j.error : JSON.stringify(j.error);
-            }
+        try {
+            const j = await r.json();
+            if (j && j.error) msg = typeof j.error === 'string' ? j.error : JSON.stringify(j.error);
         } catch (_) { }
-        throw new Error(msg);
+        const err = new Error(msg);
+        Sentry.captureException(err, { tags: { api_path: path, method: 'POST' } });
+        throw err;
     }
     return r.json();
 }
@@ -82,13 +85,13 @@ export async function apiPut(path, payload) {
     });
     if (!r.ok) {
         let msg = `${r.status} ${r.statusText}`;
-        try { 
-            const j = await r.json(); 
-            if (j && j.error) {
-                msg = typeof j.error === 'string' ? j.error : JSON.stringify(j.error);
-            }
+        try {
+            const j = await r.json();
+            if (j && j.error) msg = typeof j.error === 'string' ? j.error : JSON.stringify(j.error);
         } catch (_) { }
-        throw new Error(msg);
+        const err = new Error(msg);
+        Sentry.captureException(err, { tags: { api_path: path, method: 'PUT' } });
+        throw err;
     }
     return r.json();
 }
@@ -137,13 +140,13 @@ export async function apiDelete(path, body) {
     const r = await fetch("/api" + path, fetchOpts);
     if (!r.ok) {
         let msg = `${r.status} ${r.statusText}`;
-        try { 
-            const j = await r.json(); 
-            if (j && j.error) {
-                msg = typeof j.error === 'string' ? j.error : JSON.stringify(j.error);
-            }
+        try {
+            const j = await r.json();
+            if (j && j.error) msg = typeof j.error === 'string' ? j.error : JSON.stringify(j.error);
         } catch (_) { }
-        throw new Error(msg);
+        const err = new Error(msg);
+        Sentry.captureException(err, { tags: { api_path: path, method: 'DELETE' } });
+        throw err;
     }
     if (r.status === 204 || r.headers.get('content-length') === '0') return {};
     return r.json();
