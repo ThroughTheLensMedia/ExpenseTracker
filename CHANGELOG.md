@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.68] — 2026-06-06
+
+### Document Embedding Model Fix
+
+#### Fixed
+- **`api/utils/gemini.js`** — `text-embedding-004` was removed by Google. Switched to `text-embedding-005` (same 768-dimension output, drop-in replacement). Also reverted the unnecessary `apiVersion: 'v1'` override added in v7.8.67.
+
+---
+
 ## [v7.8.67] — 2026-06-06
 
 ### Receipt Email Deep Link + Document Embedding Fix
