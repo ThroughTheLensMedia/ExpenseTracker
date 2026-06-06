@@ -5,6 +5,19 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.60] — 2026-06-06
+
+### Plaid Balance Cost Control
+
+#### Changed
+- **`web-react/src/pages/Accounts.jsx`** — Added 10-day TTL to Plaid balance cache. Balance API calls (`$0.10/call`) are now skipped if cached data is less than 10 days old. Both `BalanceRows` and the parent component read from the same cache — reducing from 3+ calls per page load to at most 1 call per 10-day window.
+- **`web-react/src/pages/Accounts.jsx`** — `handleSync` now clears the balance cache after a transaction sync so the next page visit pulls fresh balances from Plaid.
+
+#### Added
+- **`SERVICES.md`** — Master list of all connected external services with purpose, plan, dashboard links, and cost notes.
+
+---
+
 ## [v7.8.59] — 2026-06-05
 
 ### Error Tracking — Sentry + Logtail

@@ -130,6 +130,8 @@ function ConnBadge({ type }) {
 // ─── Balance rows (Plaid sub-accounts) ────────────────────────────────────────
 const BALANCES_CACHE_KEY     = 'll_plaid_balances_cache';
 const BALANCES_LAST_GOOD_KEY = 'll_plaid_balances_last_good';
+// Balance calls cost $0.10 each — only refresh once every 10 days or on explicit Sync.
+const BALANCES_TTL_MS        = 10 * 24 * 60 * 60 * 1000;
 
 // Map app filterType → Plaid account type/subtype
 function matchesFilter(a, filterType) {
@@ -168,6 +170,14 @@ function BalanceRows({ source, plaidConnections, filterType = 'all', connectionI
 
     useEffect(() => {
         let cancelled = false;
+        // Skip the $0.10 Plaid balance call if cache is less than 10 days old
+        try {
+            const cached = JSON.parse(localStorage.getItem(BALANCES_CACHE_KEY) || 'null');
+            if (cached?.ts && (Date.now() - cached.ts) < BALANCES_TTL_MS && cached?.institutions?.length) {
+                setState({ loading:false, institutions: cached.institutions, error:false, stale:false });
+                return;
+            }
+        } catch {}
         apiGet('/plaid/balances')
             .then(r => {
                 if (cancelled) return;
@@ -681,8 +691,15 @@ export default function Accounts() {
         } catch { return {}; }
     });
 
-    // Fetch fresh balance data to populate sub-account map for "Plaid Linked" badges
+    // Populate sub-account map for "Plaid Linked" badges — use cache if less than 10 days old
     useEffect(() => {
+        try {
+            const cached = JSON.parse(localStorage.getItem(BALANCES_CACHE_KEY) || 'null');
+            if (cached?.ts && (Date.now() - cached.ts) < BALANCES_TTL_MS && cached?.institutions?.length) {
+                setPlaidSubAccountMap(buildPlaidMap(cached.institutions));
+                return;
+            }
+        } catch {}
         apiGet('/plaid/balances')
             .then(r => setPlaidSubAccountMap(buildPlaidMap(r.institutions || [])))
             .catch(() => {});
@@ -717,6 +734,8 @@ export default function Accounts() {
             const r = await apiPost('/plaid/sync');
             const note = r.linked > 0 ? ` ${r.linked} matched to existing.` : '';
             setSyncMsg({ ok:true, text:`✅ ${r.added} new, ${r.modified} updated, ${r.removed} removed.${note}` });
+            // Clear balance cache so the next page load pulls fresh balances from Plaid
+            try { localStorage.removeItem(BALANCES_CACHE_KEY); } catch {}
             await load(true); // silent refresh — don't flash loading state
         } catch(e) {
             setSyncMsg({ ok:false, text:`❌ Sync failed: ${e.message}` });

@@ -1,6 +1,11 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.60', date: 'JUN 6, 2026', color: '#38bdf8', items: [
+        '<strong>Plaid Balance Cost Control:</strong> Live account balances are now cached for 10 days. The app was calling Plaid\'s balance API (billed at $0.10/call) on every page load — now it only calls when the cache expires or you hit Sync.',
+        '<strong>Sync clears balance cache:</strong> Hitting the Sync button pulls fresh transactions and resets the balance cache so your next visit shows updated balances.',
+        '<strong>Transactions unchanged:</strong> Transaction sync is a flat monthly fee per account — unaffected by how often you sync.',
+    ]},
     { version: '7.8.59', date: 'JUN 5, 2026', color: '#4ade80', items: [
         '<strong>Error Tracking:</strong> Sentry now captures frontend crashes, unhandled errors, and failed API calls with full stack traces and user context.',
         '<strong>Structured Logging:</strong> Backend errors stream to Logtail with path, method, and user ID — no more digging through raw Vercel logs.',
