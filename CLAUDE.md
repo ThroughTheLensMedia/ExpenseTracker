@@ -151,6 +151,7 @@ Express 4.19 API (api/)
 - **Auth redirect URLs:** `https://www.lumiereledger.com/**` is allowlisted. `app.throughthelens.media` remains active during parallel-run period.
 - **Email templates:** ✅ Updated 2026-05-19 — Supabase "Confirm signup" template now branded as Lumière Ledger, explains noreply@mail.app.supabase.io sender.
 - **Storage:** Receipts stored as relative paths, always accessed via `/api/receipts/signed-url?path=`. Never use direct Storage URLs.
+- **Storage buckets:** `receipts` (public), `documents` (private). Private buckets have no RLS policies — `req.sb` (anon client) will silently fail on all Storage ops. **Always use `adminClient` from `../db` for Storage operations on private buckets.** DB table ops stay on `req.sb`.
 - **Tables of note:** `account_aliases` (user display names + hide flags per source key) — added v7.7.1, migration at `api/tests/account-aliases-migration.sql`.
 
 ### Vercel
@@ -278,6 +279,7 @@ Express 4.19 API (api/)
 
 - **Never pass the Supabase service role key to the frontend**
 - `requireRole()` uses the service role client to bypass RLS on `user_roles` lookup only
+- **Supabase Storage on private buckets: always use `adminClient`, never `req.sb`** — `req.sb` is the anon client (user JWT) and silently fails on private buckets with no RLS policies. Import `adminClient` from `../db`. DB table ops stay on `req.sb`. (Root cause of v7.8.71 fix.)
 - `isLocalDev` in `auth.js` uses AND logic: `!process.env.VERCEL && process.env.NODE_ENV !== 'production'` — dev bypass cannot activate on Vercel
 - Licensing middleware fail-closed: DB error → 503, not pass-through
 - All destructive operations (DELETE) include `.eq('user_id', req.user.id)` as defense-in-depth beyond RLS
