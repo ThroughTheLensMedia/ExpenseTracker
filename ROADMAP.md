@@ -100,7 +100,8 @@ Source of truth for all sprint work, security status, and product phases.
 | Brain — Invoice creation tool (Step 5) | `create_invoice_draft` write tool with confirmation card |
 | REDIS_URL in Vercel | Required to activate email queueing (currently using direct Resend fallback — works fine) |
 | Rate limiting on `/subscription/redeem` | Backlog |
-| Error tracking (Sentry / Logtail) | Backlog |
+| Backend structured logging (Logtail/pino) | Attempted v7.8.59 — crashed API due to dynamic require + missing bundle. Needs proper implementation with static requires and committed package-lock. Do NOT use safeRequire() wrapper. |
+| Sentry backend DSN + user context | Sentry frontend SDK installed (v7.8.59) but DSN was never configured. Need to set `VITE_SENTRY_DSN` in Vercel and wire `Sentry.setUser()` in AuthContext. Check `web-react/src/main.jsx` for current init. |
 
 ---
 
