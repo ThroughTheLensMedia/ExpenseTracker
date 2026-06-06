@@ -1,6 +1,10 @@
 // Load environment variables (graceful — no .env in Vercel production)
 try { require("dotenv").config(); } catch (e) { /* env vars come from Vercel dashboard */ }
 
+// Catch silent crashes that would otherwise produce a 500 with no log
+process.on('uncaughtException',  (err) => console.error('[FATAL] uncaughtException',  err?.message, err?.stack));
+process.on('unhandledRejection', (reason) => console.error('[FATAL] unhandledRejection', reason?.message || reason));
+
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
@@ -58,6 +62,12 @@ app.use(cors({
 app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), stripeWebhook);
 
 app.use(express.json({ limit: "10mb" }));
+
+// Request tracer — first middleware, logs every incoming request so we can confirm Express is receiving them
+app.use((req, _res, next) => {
+  console.log(`[REQ] ${req.method} ${req.path}`);
+  next();
+});
 
 // Routing
 const apiRouter = express.Router();
