@@ -101,6 +101,17 @@ apiRouter.get("/health", async (req, res) => {
         key_mode: process.env.SUPABASE_SERVICE_ROLE_KEY ? "ADMIN_PRIVILEGED" : "STANDARD_USER",
         node_env: process.env.NODE_ENV
       },
+      routes: {
+        expenses: !!expenseRouter, tax: !!taxRouter, import: !!importRouter,
+        receipts: !!receiptsRouter, rules: !!rulesRouter, mileage: !!mileageRouter,
+        assets: !!assetsRouter, invoices: !!invoiceRouter, admin: !!adminRouter,
+        leads: !!leadsRouter, pwa: !!pwaRouter, settings: !!settingsRouter,
+        subscription: !!subscriptionRouter, activity: !!activityRouter,
+        brain: !!brainRouter, plaid: !!plaidRouter, pay: !!payRouter,
+        intake: !!intakeRouter, stripe: !!stripeRouter, emailInbound: !!emailInboundRouter,
+        metrics: !!metricsRouter, vendors: !!vendorsRouter, feedback: !!feedbackRouter,
+        accounts: !!accountsRouter, documents: !!documentsRouter,
+      },
       timestamp: new Date().toISOString()
     });
   } catch (e) {
