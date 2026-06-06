@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.70] — 2026-06-06
+
+### Documents Tab — UI Polish
+
+#### Changed
+- **`web-react/src/components/control-center/DocumentsTab.jsx`** — Replaced native `window.confirm()` on Remove with themed `modal.confirm()`. Upload success/error messages now display as styled banners with green (success) or red (error) borders. Renamed "Indexed Documents" section header to "My Documents".
+
+---
+
 ## [v7.8.69] — 2026-06-06
 
 ### Document System — Remove Embedding Dependency + Add PDF Storage

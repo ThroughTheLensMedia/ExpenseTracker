@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../AuthContext';
+import { useModal } from '../ModalContext.jsx';
 
 const DOC_TYPES = [
     { value: 'general',   label: 'General' },
@@ -23,12 +24,13 @@ async function getFreshHeader() {
 }
 
 export default function DocumentsTab({ settings }) {
-    const [docs, setDocs]         = useState([]);
-    const [loading, setLoading]   = useState(true);
+    const modal = useModal();
+    const [docs, setDocs]           = useState([]);
+    const [loading, setLoading]     = useState(true);
     const [uploading, setUploading] = useState(false);
-    const [docType, setDocType]   = useState('general');
-    const [msg, setMsg]           = useState('');
-    const [deleting, setDeleting] = useState(null);
+    const [docType, setDocType]     = useState('general');
+    const [msg, setMsg]             = useState(null); // { text, ok } | null
+    const [deleting, setDeleting]   = useState(null);
     const [downloading, setDownloading] = useState(null);
     const fileRef = useRef(null);
 
@@ -55,7 +57,7 @@ export default function DocumentsTab({ settings }) {
         e.target.value = '';
 
         setUploading(true);
-        setMsg('Indexing document…');
+        setMsg(null);
 
         try {
             const headers = await getFreshHeader();
@@ -72,17 +74,17 @@ export default function DocumentsTab({ settings }) {
 
             if (!res.ok) {
                 if (data.error === 'no_key') {
-                    setMsg('⚠️ Set your Gemini API key in AI Intelligence first.');
+                    setMsg({ text: '⚠️ Set your Gemini API key in AI Intelligence first.', ok: false });
                 } else {
-                    setMsg(`❌ ${data.error || 'Upload failed'}`);
+                    setMsg({ text: data.error || 'Upload failed', ok: false });
                 }
                 return;
             }
 
-            setMsg(`✓ "${data.filename}" indexed — ${data.chunk_count} sections ready for Brain.`);
+            setMsg({ text: `"${data.filename}" saved — ${data.chunk_count} sections ready for Brain.`, ok: true });
             await loadDocs();
-        } catch (e) {
-            setMsg(`❌ Upload failed: ${e.message}`);
+        } catch (err) {
+            setMsg({ text: `Upload failed: ${err.message}`, ok: false });
         } finally {
             setUploading(false);
         }
@@ -95,27 +97,28 @@ export default function DocumentsTab({ settings }) {
             const res = await fetch(`/api/documents/${id}/download`, { headers });
             const data = await res.json();
             if (!res.ok) {
-                setMsg(`❌ ${data.error || 'Could not retrieve file'}`);
+                setMsg({ text: data.error || 'Could not retrieve file', ok: false });
                 return;
             }
             window.open(data.url, '_blank', 'noopener');
-        } catch (e) {
-            setMsg(`❌ Download failed: ${e.message}`);
+        } catch (err) {
+            setMsg({ text: `Download failed: ${err.message}`, ok: false });
         } finally {
             setDownloading(null);
         }
     };
 
     const handleDelete = async (id, filename) => {
-        if (!confirm(`Remove "${filename}" from Brain's knowledge? This cannot be undone.`)) return;
+        const ok = await modal.confirm(`Remove "${filename}" from Brain's knowledge? This cannot be undone.`);
+        if (!ok) return;
         setDeleting(id);
         try {
             const headers = await getFreshHeader();
             await fetch(`/api/documents/${id}`, { method: 'DELETE', headers });
             setDocs(prev => prev.filter(d => d.id !== id));
-            setMsg(`Removed "${filename}".`);
+            setMsg({ text: `"${filename}" removed.`, ok: false });
         } catch (_) {
-            setMsg('Delete failed — try again.');
+            setMsg({ text: 'Delete failed — try again.', ok: false });
         } finally {
             setDeleting(null);
         }
@@ -177,17 +180,21 @@ export default function DocumentsTab({ settings }) {
 
                 {msg && (
                     <div style={{
-                        marginTop: '14px', fontSize: '13px',
-                        color: msg.startsWith('✓') ? '#4ade80' : msg.startsWith('⚠') ? '#f97316' : msg.startsWith('❌') ? '#f87171' : 'var(--muted)',
+                        marginTop: '14px', padding: '12px 16px', borderRadius: '10px', fontSize: '13px',
+                        background: msg.ok ? 'rgba(74,222,128,0.08)' : 'rgba(248,113,113,0.08)',
+                        border: `1px solid ${msg.ok ? 'rgba(74,222,128,0.3)' : 'rgba(248,113,113,0.25)'}`,
+                        color: msg.ok ? '#4ade80' : '#f87171',
+                        display: 'flex', alignItems: 'center', gap: '8px',
                     }}>
-                        {msg}
+                        <span>{msg.ok ? '✅' : '⚠️'}</span>
+                        <span>{msg.text}</span>
                     </div>
                 )}
             </div>
 
             {/* Indexed documents list */}
             <div className="card glass" style={{ padding: '24px 28px' }}>
-                <div style={{ fontWeight: 900, fontSize: '16px', marginBottom: '16px' }}>Indexed Documents</div>
+                <div style={{ fontWeight: 900, fontSize: '16px', marginBottom: '16px' }}>My Documents</div>
 
                 {loading ? (
                     <div className="muted" style={{ fontSize: '13px' }}>Loading…</div>

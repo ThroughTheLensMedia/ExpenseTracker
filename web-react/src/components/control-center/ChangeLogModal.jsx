@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.70', date: 'JUN 6, 2026', color: '#818cf8', items: [
+        '<strong>Documents Tab Polish:</strong> Removing a document now shows a styled confirmation dialog instead of a plain browser popup. Upload results display as clear green (success) or red (error) banners so you know the upload worked at a glance.',
+        '<strong>Renamed "Indexed Documents" → "My Documents"</strong> — cleaner label.',
+    ]},
     { version: '7.8.69', date: 'JUN 6, 2026', color: '#4ade80', items: [
         '<strong>Document Upload Fixed:</strong> PDF and image documents can now be uploaded and read by Brain without any API key restrictions. The underlying embedding system has been replaced with a simpler, more reliable approach.',
         '<strong>View Original:</strong> Each uploaded document now has a 📄 View button that opens the original PDF or image in a new tab — so you can reference your insurance policy, warranty, or contract directly.',
