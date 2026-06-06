@@ -10,6 +10,7 @@ Sentry.init({
   environment: import.meta.env.MODE,
   integrations: [Sentry.browserTracingIntegration()],
   tracesSampleRate: 0.1,
+  sendDefaultPii: true,
   // Only send errors in production — avoids noise during local dev
   enabled: import.meta.env.PROD,
 })
