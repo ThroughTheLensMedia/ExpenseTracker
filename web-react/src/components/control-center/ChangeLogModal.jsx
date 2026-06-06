@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.71', date: 'JUN 6, 2026', color: '#4ade80', items: [
+        '<strong>Document View Fixed:</strong> The 📄 View button now appears after uploading a PDF or image. A Storage permission issue was silently preventing the file from saving — fixed.',
+    ]},
     { version: '7.8.70', date: 'JUN 6, 2026', color: '#818cf8', items: [
         '<strong>Documents Tab Polish:</strong> Removing a document now shows a styled confirmation dialog instead of a plain browser popup. Upload results display as clear green (success) or red (error) banners so you know the upload worked at a glance.',
         '<strong>Renamed "Indexed Documents" → "My Documents"</strong> — cleaner label.',

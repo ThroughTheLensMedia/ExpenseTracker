@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.71] — 2026-06-06
+
+### Fix: Document View Button Not Appearing After Upload
+
+#### Fixed
+- **`api/routes/documents.js`** — Storage operations (upload, signed URL, remove) now use `adminClient` (service role) instead of `req.sb` (user-scoped anon client). The `documents` bucket is private with no RLS policies, so the anon client was silently failing on every upload, leaving `file_path` as null and preventing the View button from rendering.
+
+---
+
 ## [v7.8.70] — 2026-06-06
 
 ### Documents Tab — UI Polish

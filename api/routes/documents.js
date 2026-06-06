@@ -1,6 +1,7 @@
 const express = require('express');
 const multer  = require('multer');
 const { getGeminiModel } = require('../utils/gemini');
+const { supabase: adminClient } = require('../db'); // service role — needed for Storage (bucket has no RLS policies)
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } }); // 20MB max
@@ -81,7 +82,7 @@ router.get('/:id/download', async (req, res) => {
         if (!doc.file_path) return res.status(404).json({ error: 'Original file not available for this document' });
 
         // Use service-role client (req.sb) to create signed URL — bucket is private
-        const { data: signedData, error: signErr } = await req.sb.storage
+        const { data: signedData, error: signErr } = await adminClient.storage
             .from('documents')
             .createSignedUrl(doc.file_path, 3600); // 1-hour expiry
 
@@ -148,7 +149,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
         const storagePath = `${req.user.id}/${datePath}/${Date.now()}_${safeFilename}`;
 
         let filePath = null;
-        const { error: storageErr } = await req.sb.storage
+        const { error: storageErr } = await adminClient.storage
             .from('documents')
             .upload(storagePath, req.file.buffer, { contentType: mime });
 
@@ -182,7 +183,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
         if (chunkErr) {
             // Roll back document row and storage file if chunks fail
             await req.sb.from('user_documents').delete().eq('id', doc.id).eq('user_id', req.user.id);
-            if (filePath) await req.sb.storage.from('documents').remove([filePath]);
+            if (filePath) await adminClient.storage.from('documents').remove([filePath]);
             throw chunkErr;
         }
 
@@ -214,7 +215,7 @@ router.delete('/:id', async (req, res) => {
 
         // Clean up Storage file (non-fatal if missing)
         if (doc?.file_path) {
-            await req.sb.storage.from('documents').remove([doc.file_path]).catch(() => {});
+            await adminClient.storage.from('documents').remove([doc.file_path]).catch(() => {});
         }
 
         res.json({ ok: true });
