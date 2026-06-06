@@ -1,6 +1,8 @@
 # Lumière Ledger — Claude Operational Brief
 
-**Read this file first. Then read `ROADMAP.md` and `SPEC.md` before touching any code.**
+**Read this file first. Then read `ROADMAP.md`, `SPEC.md`, and `SERVICES.md` before touching any code.**
+
+> `SERVICES.md` — master list of every connected external service, what it does, its cost model, and dashboard link. Before adding any new service or dependency, check it first. If a service is removed, update it. This is the guardrail against over-engineering.
 
 ---
 
@@ -8,8 +10,8 @@
 
 | Property | Value |
 |----------|-------|
-| **Version** | v7.6.7c |
-| **Status** | Active Development — Pre-SaaS Launch |
+| **Version** | v7.7.8 |
+| **Status** | Active Development — Post-Beta Launch |
 | **Deploy target** | `www.lumiereledger.com` (primary) — `app.throughthelens.media` 301 redirects to it |
 | **Deployment** | Vercel (auto-deploy on `git push origin main`) |
 | **Database** | Supabase (PostgreSQL + Auth + Storage + Realtime) |
@@ -29,6 +31,7 @@
 8. **Preserve existing working logic** — do not refactor what isn't broken.
 9. **Database changes must be idempotent** — never write a migration that fails on re-run or destroys data.
 10. **Always commit `api/package-lock.json`** — Vercel caches `node_modules` between builds. Without a committed lock file, `npm install` hits the stale cache and skips new packages entirely. Any time a new dependency is added to `api/package.json`, run `npm install` locally inside `api/` first, then commit BOTH `package.json` and `package-lock.json` together. Pushing `package.json` alone will not install the new package on Vercel. **This was the root cause of the v7.6.7 production outage.**
+11. **Never add Co-Authored-By trailers.** All commits belong to Joshua Deuermeyer / Through The Lens Media only. Commit format: `"vX.X.X — Short title\n\n- file — why"`. No trailer lines, ever.
 
 ---
 
@@ -51,6 +54,39 @@ Add the item under the appropriate category in the relevant phase or backlog sec
 
 ---
 
+## Coding Efficiency Rules
+
+### DEFAULTS
+1. Kill filler — Start with the answer. No padding.
+2. Match length — Short for simple, full for complex. No fluff.
+3. Show options — Give 2-3 approaches first. Wait for my choice.
+4. Admit gaps — If unsure, say it before including it.
+5. Lock voice — Casual, direct, spoken style. No fluff.
+
+### BEHAVIOR
+6. Stay in scope — Only touch what's asked.
+7. Ask first — Describe changes and wait for my yes.
+8. Confirm destruct — Before deleting, list what's affected and confirm.
+9. Hard stops — For deploy, migrate, or major changes, get explicit yes.
+10. Show changes — Tell me exactly which files you'll touch.
+11. No acting alone — Never send, post, or publish without my yes.
+12. Think first — Reason step by step before coding.
+
+### CODING
+- Always write clean, well-commented code with good variable names.
+- Suggest the simplest solution first that gets the job done.
+- Before writing code, ask if I want tests or documentation too.
+- After writing code, always suggest the next logical step.
+- When I share errors, check ERRORS.md first before suggesting fixes.
+
+### The Big 4
+- Ask, don't assume
+- Simplest first
+- Don't touch unrelated
+- Flag uncertainty
+
+---
+
 ## Deploy Workflow
 
 ```
@@ -65,12 +101,13 @@ Add the item under the appropriate category in the relevant phase or backlog sec
    - web-react/public/version.json  → "version": "X.X.X"
    - web-react/src/App.jsx          → CURRENT_VERSION = "X.X.X"  (comment says DEPLOY SOP)
 6. Commit: "vX.X.X — Short title\n\n- file.jsx — why\n- Update CHANGELOG.md"
+   NEVER add Co-Authored-By trailers.
 7. git push origin main → Vercel auto-builds and deploys
 ```
 
 No manual build step. Vercel runs `npm run build` automatically.
 
-**Version banner:** Users who already have the app open see "UPDATE AVAILABLE — REFRESH" in the header within 5 minutes of a new deploy. Clicking it hard-reloads their tab. Users who open the app fresh after deploy get the new code automatically — no banner needed.
+**Version banner:** Users who already have the app open see "UPDATE AVAILABLE — CLICK TO REFRESH" in the header within 5 minutes of a new deploy.
 
 ---
 
@@ -94,7 +131,7 @@ Express 4.19 API (api/)
     ├── Supabase (PostgreSQL + RLS + Storage + Realtime)
     ├── Google Gemini 2.5 Flash (BYOB — user provides own API key)
     ├── Resend (transactional email)
-    ├── Plaid (banking — pending approval)
+    ├── Plaid (✅ LIVE — production banking sync with billing gate)
     └── Google Maps API (mileage automation — in progress)
 ```
 
@@ -111,8 +148,10 @@ Express 4.19 API (api/)
 - **Admin UUID:** `49e7efcb-6434-4f0c-9563-3151a6d50df9`
 - **Env vars:** `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (server — bypasses RLS), `SUPABASE_ANON_KEY`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
 - **Key behavior:** `autoRefreshToken: true`, `persistSession: true`, `storageKey: 'lumiere-ledger-auth'`. PWA uses `visibilitychange` listener to refresh token on foreground.
-- **Auth redirect URLs:** `https://www.lumiereledger.com/**` is allowlisted (added 2026-05-14). `app.throughthelens.media` remains active during parallel-run period.
+- **Auth redirect URLs:** `https://www.lumiereledger.com/**` is allowlisted. `app.throughthelens.media` remains active during parallel-run period.
+- **Email templates:** ✅ Updated 2026-05-19 — Supabase "Confirm signup" template now branded as Lumière Ledger, explains noreply@mail.app.supabase.io sender.
 - **Storage:** Receipts stored as relative paths, always accessed via `/api/receipts/signed-url?path=`. Never use direct Storage URLs.
+- **Tables of note:** `account_aliases` (user display names + hide flags per source key) — added v7.7.1, migration at `api/tests/account-aliases-migration.sql`.
 
 ### Vercel
 - **Plan:** Free (Hobby)
@@ -125,20 +164,20 @@ Express 4.19 API (api/)
   - ✅ `JWT_SECRET`, `CRON_SECRET`, `NODE_ENV=production`
   - ✅ `RESEND_API_KEY`, `RESEND_FROM`
   - ✅ `VITE_GOOGLE_MAPS_API_KEY`
+  - ✅ `ENCRYPTION_KEY` — set, required for Plaid token encryption
+  - ✅ `PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENV=production`
   - ⚠️ `REDIS_URL` — **NOT YET SET** — required to activate email queueing
-  - ⚠️ `ENCRYPTION_KEY` — **NOT YET SET** — required before Plaid goes live
-  - Optional: `PLAID_CLIENT_ID`, `PLAID_SECRET`, `APP_URL`, `LUMIERE_INTAKE_SECRET`
+  - Optional: `APP_URL`, `LUMIERE_INTAKE_SECRET`
 - **Deploy tokens (local .env only — never commit):**
   - `VERCEL_TOKEN` — Vercel personal access token (`vcp_...`). Used for CLI deploys if GitHub webhook fails.
   - `GITHUB_TOKEN` — GitHub PAT with `repo` scope. Used by Cowork agent to push commits.
-  - **Webhook note:** If auto-deploy stops, go to Vercel → project → Settings → Git → Disconnect → Reconnect `ThroughTheLensMedia/ExpenseTracker`.
 
 ### Resend
-- **Purpose:** Transactional email — invoices, daily admin reports, beta invitations, feedback
+- **Purpose:** Transactional email — invoices, daily admin reports, beta invitations
 - **Env vars:** `RESEND_API_KEY`, `RESEND_FROM`
 - **Verified sending domain:** `throughthelens.media` ONLY. `lumiereledger.com` is NOT verified — Resend silently drops all mail from unverified domains (API returns 200, nothing delivers).
 - **Correct `RESEND_FROM`:** `Lumière Ledger <support@throughthelens.media>` — branded display name, verified sending domain.
-- **⚠️ Known gap:** `api/server.js` line 115 and `api/utils/mailer.js` line 32 have hardcoded fallback `support@lumiereledger.com`. If `RESEND_FROM` env var is ever missing, email silently breaks. Fix pending (see ROADMAP.md Launch Gate).
+- **⚠️ Known gap:** `api/server.js` and `api/utils/mailer.js` have hardcoded fallback `support@lumiereledger.com`. If `RESEND_FROM` env var is ever missing, email silently breaks.
 - **Queueing:** `emailQueue.js` exists with direct fallback. Redis-backed queuing not yet active (`REDIS_URL` missing in Vercel).
 
 ### Google Gemini 2.5 Flash
@@ -147,13 +186,15 @@ Express 4.19 API (api/)
 - **BYOB Architecture:** Users supply their own Gemini API keys. Stored per-user in settings table.
 - **Reliability:** 503 errors trigger automatic retries via `repairLedgerBatch()` in `utils/gemini.js`
 - **Persona:** "Lumière Assistant" — not "Studio Assistant"
-- **Note:** All AI features use Gemini exclusively. No OpenAI or other providers.
+- **SUBSCRIPTIONS RULE:** When user asks about subscriptions/recurring charges, Brain searches ALL categories (no category filter) over 60-90 days for vendor frequency patterns. Never dead-end on zero Software & Subscriptions results.
 
-### Plaid (Pending)
-- **Status:** API built (`api/routes/plaid.js`, `PlaidLink.jsx`). **Hard-blocked — do not activate:**
-  - Plaid account approval pending
-  - `cryptoUtil.js` is a stub — replace with real `libsodium-wrappers` async implementation
-  - `ENCRYPTION_KEY` not set in Vercel
+### Plaid ✅ LIVE
+- **Status:** Production — fully wired and gated. `PLAID_ENV=production`, `PLAID_CLIENT_ID`, `PLAID_SECRET`, `ENCRYPTION_KEY` all set in Vercel.
+- **Encryption:** Real `libsodium-wrappers` implementation in `cryptoUtil.js` — async `encrypt()`/`decrypt()`.
+- **Billing gate:** `POST /plaid/create-link-token` checks `PLAID_BILLING_EXEMPT` set, then `stripe_customer_id` in `user_subscriptions`. Non-exempt users without billing method → HTTP 402. Frontend shows fee disclosure modal before Plaid Link opens.
+- **Exempt users:** `PLAID_BILLING_EXEMPT` Set in both `api/routes/plaid.js` and `api/routes/stripe.js`. Joshua pre-populated; Michelle Gornichec UUID pending.
+- **Cross-source dedup:** Before inserting Plaid transactions, matches existing CSV rows on `date+amount_cents`, stamps `plaid_transaction_id` onto match — preserves all user enrichment.
+- **Accounts page:** Live balances, institution names, sync button, disconnect (Unsync) button, type grouping (Credit/Checking/Manual), synced accounts section at top.
 
 ### Google Cloud Console (OAuth + Maps)
 - **OAuth:** Google sign-in. `lumiereledger.com` added to authorized domains + redirect URIs (done 2026-05-16).
@@ -169,8 +210,11 @@ Express 4.19 API (api/)
 | Gap | File | Impact |
 |-----|------|--------|
 | `ALLOWED_ORIGINS` missing `https://www.lumiereledger.com` | `api/server.js` | CORS failures on new domain |
-| `APP_URL` fallback still `app.throughthelens.media` | `api/routes/invoices.js` line 236 | Pay portal links in emails point to old domain |
-| Mailer fallback from-address `support@lumiereledger.com` | `api/server.js` line 115, `api/utils/mailer.js` line 32 | Email silent-fails if `RESEND_FROM` env var missing |
+| `APP_URL` fallback still `app.throughthelens.media` | `api/routes/invoices.js` | Pay portal links in emails point to old domain |
+| Mailer fallback from-address `support@lumiereledger.com` | `api/server.js`, `api/utils/mailer.js` | Email silent-fails if `RESEND_FROM` env var missing |
+| `REDIS_URL` not set in Vercel | Vercel env panel | Email queueing inactive — direct Resend fallback used |
+| Michelle Gornichec UUID | `api/routes/plaid.js`, `api/routes/stripe.js` | Her Plaid billing exemption is a placeholder comment |
+| `plaid_account_id` not stored on transactions | `expenses` table, `api/routes/plaid.js` | Sub-account spending breakdown not possible; needs `ALTER TABLE expenses ADD COLUMN plaid_account_id TEXT` + sync code change |
 
 ---
 
@@ -181,6 +225,9 @@ Express 4.19 API (api/)
 | `SPEC.md` | **Master engineering spec — read before every session** |
 | `CHANGELOG.md` | Version history — update on every change |
 | `ROADMAP.md` | **Single source of truth for all roadmap, fixes, and launch gate** |
+| `SERVICES.md` | **All connected external services — read before adding any dependency** |
+| `PLAID_BILLING_SPEC.md` | Plaid usage billing design — pricing, exemptions, Stripe flow |
+| `STRIPE_ROADMAP.md` | Stripe subscription build plan and feature gate matrix |
 
 > `FIX_ROADMAP.md` and `LAUNCH_FIXES.md` are archived — `ROADMAP.md` supersedes both.
 
@@ -193,15 +240,19 @@ Express 4.19 API (api/)
 | `api/middleware/licensing.js` | Subscription gate — fail-closed (503 on DB error, not pass-through) |
 | `api/utils/emailQueue.js` | Email queue with direct Resend fallback |
 | `api/utils/mailer.js` | Resend email bridge — invoices, invites, alerts |
+| `api/utils/cryptoUtil.js` | ✅ Real libsodium implementation — async encrypt/decrypt for Plaid tokens |
 
 ### Critical Frontend Files
 | File | Purpose |
 |------|---------|
 | `web-react/src/components/AuthContext.jsx` | Global auth + session persistence. Exports `supabase` client. |
 | `web-react/src/pages/DashboardV2.jsx` | Business analytics — KPIs, charts, forecasts |
-| `web-react/src/pages/Transactions.jsx` | Full ledger — filtering, sorting, audit, near-duplicate review |
+| `web-react/src/pages/Transactions.jsx` | Full ledger — filtering, sorting, audit, near-duplicate review. Supports `?search=` and `?source=` URL params. |
+| `web-react/src/pages/Accounts.jsx` | Accounts overview — type groups, live Plaid balances, sync, disconnect, alias, hide |
 | `web-react/src/components/TransactionDrawer.jsx` | Transaction form — CRUD, receipt upload, dynamic source dropdown |
 | `web-react/src/pages/Backup.jsx` | Ledger Control Center — SaaS, feedback, integrations, profile tabs |
+| `web-react/src/components/OnboardingChecklist.jsx` | 4-step new-user setup guide — shown once on first login |
+| `web-react/src/components/PlaidLink.jsx` | Plaid Link SDK — fee confirmation modal, account connection, sync, disconnect |
 
 ---
 
@@ -214,9 +265,12 @@ Express 4.19 API (api/)
 | Dates | Always `YYYY-MM-DD`. iOS formats normalized via `z.preprocess()` in Zod schema |
 | Sources | `source` field is user-scoped. Display via `SOURCE_LABELS` + `formatSourceKey()` fallback |
 | Dedup | Three-pass: exact (`date|vendor|amount_cents`) + fuzzy cross-source (`date|amount_cents`) + near-duplicate (vendor substring + ±1 day + ≤$50 diff) |
+| Plaid dedup | Before inserting Plaid transactions, matches existing CSV rows on `date+amount_cents` — stamps `plaid_transaction_id` onto match, skips insert |
 | Receipts | Stored as relative paths. Always access via `/api/receipts/signed-url?path=`. Never use direct Storage URLs. |
 | Missing doc | Badge fires when: `amount_cents > 7500` AND `tax_deductible = true` AND `receipt_link` is null |
 | Import clock | `daysSinceImport` ignores `source === 'manual'` — only bank/CSV imports reset the clock |
+| Account aliases | `account_aliases` table: `(user_id, source_key, display_name, visible)`. Upsert via `PUT /api/accounts/alias`. |
+| Plaid billing exempt | `PLAID_BILLING_EXEMPT` Set in `api/routes/plaid.js` and `api/routes/stripe.js`. Joshua pre-populated; Michelle UUID pending. |
 
 ---
 
@@ -227,7 +281,7 @@ Express 4.19 API (api/)
 - `isLocalDev` in `auth.js` uses AND logic: `!process.env.VERCEL && process.env.NODE_ENV !== 'production'` — dev bypass cannot activate on Vercel
 - Licensing middleware fail-closed: DB error → 503, not pass-through
 - All destructive operations (DELETE) include `.eq('user_id', req.user.id)` as defense-in-depth beyond RLS
-- `cryptoUtil.js` is a stub — do not use in production
+- Plaid billing gate: `create-link-token` blocks non-exempt users without `stripe_customer_id` — HTTP 402
 
 ---
 
