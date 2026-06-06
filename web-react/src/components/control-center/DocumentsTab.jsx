@@ -29,6 +29,7 @@ export default function DocumentsTab({ settings }) {
     const [docType, setDocType]   = useState('general');
     const [msg, setMsg]           = useState('');
     const [deleting, setDeleting] = useState(null);
+    const [downloading, setDownloading] = useState(null);
     const fileRef = useRef(null);
 
     const hasKey = !!settings?.gemini_api_key;
@@ -87,6 +88,24 @@ export default function DocumentsTab({ settings }) {
         }
     };
 
+    const handleDownload = async (id, filename) => {
+        setDownloading(id);
+        try {
+            const headers = await getFreshHeader();
+            const res = await fetch(`/api/documents/${id}/download`, { headers });
+            const data = await res.json();
+            if (!res.ok) {
+                setMsg(`❌ ${data.error || 'Could not retrieve file'}`);
+                return;
+            }
+            window.open(data.url, '_blank', 'noopener');
+        } catch (e) {
+            setMsg(`❌ Download failed: ${e.message}`);
+        } finally {
+            setDownloading(null);
+        }
+    };
+
     const handleDelete = async (id, filename) => {
         if (!confirm(`Remove "${filename}" from Brain's knowledge? This cannot be undone.`)) return;
         setDeleting(id);
@@ -112,14 +131,14 @@ export default function DocumentsTab({ settings }) {
 
             {/* Upload card */}
             <div className="card glass" style={{ padding: '24px 28px' }}>
-                <div style={{ fontWeight: 900, fontSize: '16px', marginBottom: '6px' }}>📄 Index a Document</div>
+                <div style={{ fontWeight: 900, fontSize: '16px', marginBottom: '6px' }}>📄 Add a Document</div>
                 <div className="muted" style={{ fontSize: '13px', marginBottom: '18px', lineHeight: 1.6 }}>
-                    Upload a contract, warranty, insurance policy, or loan document. Brain will read it and answer questions about it — expiration dates, coverage limits, interest rates, serial numbers, anything in the text.
+                    Upload a contract, warranty, insurance policy, or loan document. Brain will read it and answer questions about it — expiration dates, coverage limits, interest rates, serial numbers, anything in the text. You can also view the original file anytime.
                 </div>
 
                 {!hasKey && (
                     <div style={{ padding: '12px 16px', borderRadius: '10px', background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.3)', fontSize: '13px', color: '#f97316', marginBottom: '16px' }}>
-                        ⚠️ Set your Gemini API key in the <strong>AI Intelligence</strong> tab first — indexing requires it.
+                        ⚠️ Set your Gemini API key in the <strong>AI Intelligence</strong> tab first — image documents require it for text extraction.
                     </div>
                 )}
 
@@ -137,21 +156,21 @@ export default function DocumentsTab({ settings }) {
 
                     <label style={{
                         display: 'inline-flex', alignItems: 'center', gap: '8px',
-                        padding: '10px 18px', borderRadius: '10px', cursor: uploading || !hasKey ? 'not-allowed' : 'pointer',
-                        background: uploading || !hasKey ? 'rgba(255,255,255,0.04)' : 'rgba(129,140,248,0.12)',
-                        border: `1px solid ${uploading || !hasKey ? 'rgba(255,255,255,0.1)' : 'rgba(129,140,248,0.4)'}`,
-                        color: uploading || !hasKey ? 'rgba(255,255,255,0.3)' : '#818cf8',
+                        padding: '10px 18px', borderRadius: '10px', cursor: uploading ? 'not-allowed' : 'pointer',
+                        background: uploading ? 'rgba(255,255,255,0.04)' : 'rgba(129,140,248,0.12)',
+                        border: `1px solid ${uploading ? 'rgba(255,255,255,0.1)' : 'rgba(129,140,248,0.4)'}`,
+                        color: uploading ? 'rgba(255,255,255,0.3)' : '#818cf8',
                         fontWeight: 700, fontSize: '13px', userSelect: 'none',
-                        opacity: uploading || !hasKey ? 0.6 : 1,
+                        opacity: uploading ? 0.6 : 1,
                     }}>
-                        {uploading ? '⏳ Indexing…' : '⬆ Upload PDF or Image'}
+                        {uploading ? '⏳ Processing…' : '⬆ Upload PDF or Image'}
                         <input
                             ref={fileRef}
                             type="file"
                             accept=".pdf,image/*"
                             style={{ display: 'none' }}
                             onChange={handleUpload}
-                            disabled={uploading || !hasKey}
+                            disabled={uploading}
                         />
                     </label>
                 </div>
@@ -202,14 +221,26 @@ export default function DocumentsTab({ settings }) {
                                         {' · '}{formatDate(doc.created_at)}
                                     </div>
                                 </div>
-                                <button
-                                    className="btn secondary"
-                                    style={{ fontSize: '11px', padding: '4px 10px', flexShrink: 0, color: '#f87171', borderColor: 'rgba(248,113,113,0.3)' }}
-                                    disabled={deleting === doc.id}
-                                    onClick={() => handleDelete(doc.id, doc.filename)}
-                                >
-                                    {deleting === doc.id ? '…' : 'Remove'}
-                                </button>
+                                <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                                    {doc.file_path && (
+                                        <button
+                                            className="btn secondary"
+                                            style={{ fontSize: '11px', padding: '4px 10px', color: '#818cf8', borderColor: 'rgba(129,140,248,0.3)' }}
+                                            disabled={downloading === doc.id}
+                                            onClick={() => handleDownload(doc.id, doc.filename)}
+                                        >
+                                            {downloading === doc.id ? '…' : '📄 View'}
+                                        </button>
+                                    )}
+                                    <button
+                                        className="btn secondary"
+                                        style={{ fontSize: '11px', padding: '4px 10px', color: '#f87171', borderColor: 'rgba(248,113,113,0.3)' }}
+                                        disabled={deleting === doc.id}
+                                        onClick={() => handleDelete(doc.id, doc.filename)}
+                                    >
+                                        {deleting === doc.id ? '…' : 'Remove'}
+                                    </button>
+                                </div>
                             </div>
                         ))}
                     </div>

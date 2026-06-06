@@ -5,6 +5,24 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.69] — 2026-06-06
+
+### Document System — Remove Embedding Dependency + Add PDF Storage
+
+#### Changed
+- **`api/routes/documents.js`** — Removed all embedding calls. Documents are now stored as plain text chunks only. Brain injects all chunks directly into Gemini's context window (no vector search needed). Also: original file is now saved to Supabase Storage (`documents/` bucket) on upload, and cleaned up on delete.
+- **`api/routes/brain.js`** — Replaced `getEmbedding` + `match_document_chunks` RPC with a simple `SELECT chunk_text FROM document_chunks WHERE user_id = ?` (limit 30). Works with any Gemini API key — no embedding access required.
+- **`web-react/src/components/control-center/DocumentsTab.jsx`** — PDF upload no longer requires a Gemini API key (only image uploads do). Added 📄 View button per document that fetches a signed URL and opens the original file in a new tab.
+
+#### Added
+- **`GET /api/documents/:id/download`** — Returns a 1-hour signed URL for the original uploaded file from Supabase Storage.
+- **DB migration** — `user_documents.file_path TEXT` column added for Storage path. `documents` Storage bucket created (private).
+
+#### Root cause note
+Google AI Studio BYOB keys do not have `embedContent` access — only `generateContent`. All embedding models (`text-embedding-004`, `text-embedding-005`, `gemini-embedding-exp-03-07`) return 404 for these keys regardless of model name or API version. Embedding dependency removed permanently.
+
+---
+
 ## [v7.8.68] — 2026-06-06
 
 ### Document Embedding Model Fix

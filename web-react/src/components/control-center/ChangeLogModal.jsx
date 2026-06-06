@@ -1,6 +1,11 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.69', date: 'JUN 6, 2026', color: '#4ade80', items: [
+        '<strong>Document Upload Fixed:</strong> PDF and image documents can now be uploaded and read by Brain without any API key restrictions. The underlying embedding system has been replaced with a simpler, more reliable approach.',
+        '<strong>View Original:</strong> Each uploaded document now has a 📄 View button that opens the original PDF or image in a new tab — so you can reference your insurance policy, warranty, or contract directly.',
+        '<strong>Gemini Key No Longer Required for PDFs:</strong> Only image uploads need your Gemini API key (for text extraction via Vision). PDFs can be uploaded without it.',
+    ]},
     { version: '7.8.67', date: 'JUN 6, 2026', color: '#f97316', items: [
         '<strong>Receipt Email — Direct Transaction Link:</strong> The "View Transaction" button in receipt confirmation emails now opens the exact transaction and pops the edit drawer — no searching required.',
         '<strong>Document Indexing Fixed:</strong> Uploading PDFs for Brain to index was broken due to a Google API version mismatch. Fixed — documents can now be uploaded and queried again.',

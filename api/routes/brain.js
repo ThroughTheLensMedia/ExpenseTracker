@@ -636,19 +636,19 @@ PURCHASE vs PAYMENT DISTINCTION (critical):
 
         const chat = model.startChat({ tools: BRAIN_TOOLS, history: geminiHistory });
 
-        // ── RAG context injection ─────────────────────────────────────────────
-        // If the user has indexed documents, embed the question and prepend the
-        // most relevant chunks so Brain can answer questions about them.
+        // ── Document context injection ────────────────────────────────────────
+        // If the user has indexed documents, inject all text chunks directly into
+        // the prompt using Gemini 2.5 Flash's large context window (1M tokens).
+        // No embeddings needed — simple SELECT, works with any Gemini API key.
         // Fully non-fatal — if anything fails, Brain answers without document context.
         let augmentedPrompt = prompt;
         try {
-            const { getEmbedding } = require('../utils/gemini');
-            const queryEmbedding = await getEmbedding(settings.gemini_api_key, prompt);
-            const { data: ragChunks } = await req.sb.rpc('match_document_chunks', {
-                query_embedding: queryEmbedding,
-                match_user_id:   req.user.id,
-                match_count:     4,
-            });
+            const { data: ragChunks } = await req.sb
+                .from('document_chunks')
+                .select('chunk_text')
+                .eq('user_id', req.user.id)
+                .order('chunk_index', { ascending: true })
+                .limit(30); // ~60k chars — well within 1M token context window
             if (ragChunks?.length) {
                 const docContext = ragChunks.map(c => c.chunk_text).join('\n---\n');
                 augmentedPrompt = `${prompt}\n\n[DOCUMENT CONTEXT — from your uploaded documents]\n${docContext}`;
