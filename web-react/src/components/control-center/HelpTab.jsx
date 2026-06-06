@@ -29,7 +29,16 @@ export default function HelpTab() {
                         <h2 style={{ fontSize: '2.2rem', margin: 0 }}>Ledger Onboarding Guide</h2>
                         <p className="muted" style={{ fontSize: '18px' }}>Follow these steps to transition your business into full automation.</p>
                     </div>
-                    <button className="pill" onClick={() => setShowChangeLog(true)} style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--accent)', border: '1px solid var(--accent)' }}>📙 CHANGE LOG</button>
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                        <button
+                            className="pill"
+                            onClick={() => window.dispatchEvent(new CustomEvent('ll:reopen-onboarding'))}
+                            style={{ background: 'var(--accent)', color: 'black', fontWeight: 800, border: 'none' }}
+                        >
+                            📋 Resume Setup Checklist →
+                        </button>
+                        <button className="pill" onClick={() => setShowChangeLog(true)} style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--accent)', border: '1px solid var(--accent)' }}>📙 CHANGE LOG</button>
+                    </div>
                 </div>
 
                 <div style={{ marginTop: '40px', display: 'flex', flexDirection: 'column', gap: '40px' }}>

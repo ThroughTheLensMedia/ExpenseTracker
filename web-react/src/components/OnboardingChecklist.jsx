@@ -285,8 +285,8 @@ function StepRow({ step, checked, onToggle, onGo, accent }) {
 }
 
 // ─── Main export ───────────────────────────────────────────────────────────
-export default function OnboardingChecklist({ onDismiss }) {
-    const [page, setPage] = useState(0);
+export default function OnboardingChecklist({ onDismiss, initialPage = 0 }) {
+    const [page, setPage] = useState(initialPage);
     const [minimized, setMinimized] = useState(false);
 
     function dismiss() {

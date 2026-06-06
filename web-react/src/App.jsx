@@ -157,11 +157,12 @@ function AppContent() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showMonthlyInsights, setShowMonthlyInsights] = useState(false);
   const menuRef = useRef(null);
+  const reopenOnboarding = useRef(false);
 
   // --- Version Check Hook ---
   // DEPLOY SOP: update CURRENT_VERSION here AND web-react/public/version.json on every release.
   useEffect(() => {
-    const CURRENT_VERSION = "7.8.65";
+    const CURRENT_VERSION = "7.8.66";
 
     // What's New: show button if user hasn't dismissed it for this version
     const seen = localStorage.getItem('ll_whats_new_seen');
@@ -225,6 +226,18 @@ function AppContent() {
     persistOnboardingDismissed();
     navigate('/StudioControlCenter?tab=profile');
   };
+
+  // ── Manual re-open from Help Center ──────────────────────────────────────
+  // HelpTab dispatches 'll:reopen-onboarding'. We set a ref so the modal
+  // opens directly on the checklist page (page 2) instead of the welcome screen.
+  useEffect(() => {
+    const handler = () => {
+      reopenOnboarding.current = true;
+      setShowOnboarding(true);
+    };
+    window.addEventListener('ll:reopen-onboarding', handler);
+    return () => window.removeEventListener('ll:reopen-onboarding', handler);
+  }, []);
 
   const handleWhatsNewClick = () => {
     const CURRENT_VERSION = "7.8.56";
@@ -560,7 +573,7 @@ function AppContent() {
       {showChangelogModal && <ChangeLogModal onClose={() => setShowChangelogModal(false)} />}
       {showMonthlyInsights && <MonthlyInsightsModal onClose={() => setShowMonthlyInsights(false)} />}
       {showOnboarding && (
-        <OnboardingChecklist onDismiss={handleOnboardingDismiss} />
+        <OnboardingChecklist onDismiss={handleOnboardingDismiss} initialPage={reopenOnboarding.current ? 2 : 0} />
       )}
 
       {/* Focused Mobile Navigation */}

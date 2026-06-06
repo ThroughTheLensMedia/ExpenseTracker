@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.66', date: 'JUN 6, 2026', color: '#f59e0b', items: [
+        '<strong>Resume Setup from Help Center:</strong> A new "Resume Setup Checklist" button in Help Center reopens the setup guide right where you left off — drops you directly onto the checklist with your previous progress intact.',
+    ]},
     { version: '7.8.65', date: 'JUN 6, 2026', color: '#4ade80', items: [
         '<strong>Welcome Screen Fix:</strong> The "Welcome to Lumière Ledger" setup screen no longer pops up every time you open the app on mobile. Once you dismiss it, it stays gone — even if your phone clears local storage.',
     ]},

@@ -5,6 +5,17 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.66] — 2026-06-06
+
+### Resume Setup Checklist from Help Center
+
+#### Added
+- **`web-react/src/components/control-center/HelpTab.jsx`** — "Resume Setup Checklist →" button at the top of the Help Center. Dispatches a custom `ll:reopen-onboarding` window event that reopens the onboarding modal directly on the checklist page.
+- **`web-react/src/App.jsx`** — Window event listener for `ll:reopen-onboarding`. When fired, opens the modal on page 2 (checklist) instead of the welcome screen via `reopenOnboarding` ref.
+- **`web-react/src/components/OnboardingChecklist.jsx`** — Added `initialPage` prop so the modal can open at any page (defaults to 0).
+
+---
+
 ## [v7.8.65] — 2026-06-06
 
 ### Welcome Modal — Suppress After Dismiss (Mobile PWA Fix)
