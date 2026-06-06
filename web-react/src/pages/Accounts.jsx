@@ -190,9 +190,22 @@ function BalanceRows({ source, plaidConnections, filterType = 'all', connectionI
                 const lastGoodById = {};
                 for (const lg of lastGood) lastGoodById[lg.id] = lg;
 
+                // Rate-limit codes are expected (our 10-day TTL) — show last-known silently, no warning banner
+                const SILENT_CODES = new Set(['BALANCE_LIMIT', 'RATE_LIMIT_EXCEEDED', 'TOO_MANY_REQUESTS']);
+
                 const merged = fresh.map(inst => {
+                    const isRateLimit = SILENT_CODES.has(inst.error_code);
                     if (inst.balance_error && lastGoodById[inst.id]?.accounts?.length) {
-                        return { ...inst, accounts: lastGoodById[inst.id].accounts, balance_stale: true };
+                        return {
+                            ...inst,
+                            accounts: lastGoodById[inst.id].accounts,
+                            balance_stale: !isRateLimit,   // stale=false suppresses orange banner
+                            balance_rate_limited: isRateLimit,
+                        };
+                    }
+                    // Rate-limited with no last-good data — hide the error, show nothing
+                    if (inst.balance_error && isRateLimit) {
+                        return { ...inst, balance_rate_limited: true };
                     }
                     return inst;
                 });
@@ -306,26 +319,28 @@ function BalanceRows({ source, plaidConnections, filterType = 'all', connectionI
             {!state.loading && !state.error && (
                 <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
                     {myInstitutions.map(inst => {
-                        if (inst.balance_error && !inst.balance_stale) {
-                            // No cached fallback — show why
+                        // Rate-limited = our cost-control (10-day TTL). Never show error to user.
+                        if (inst.balance_error && !inst.balance_stale && !inst.balance_rate_limited) {
+                            // No cached fallback and not a rate limit — show why
                             const msg = inst.needs_reauth
                                 ? 'Bank connection needs re-authentication — click Unsync, reconnect your bank.'
                                 : `Balance unavailable for ${inst.institution_name}. Sync again to retry.`;
                             return (
                                 <div key={inst.id} style={{ fontSize:11, color:'#f97316', background:'rgba(249,115,22,0.07)', border:'1px solid rgba(249,115,22,0.2)', borderRadius:8, padding:'7px 11px', fontWeight:700 }}>
                                     {msg}
-                                    {inst.error_code && <span style={{ marginLeft:6, opacity:0.6, fontFamily:'monospace', fontSize:10 }}>({inst.error_code})</span>}
                                 </div>
                             );
                         }
+                        // Rate-limited with no cached data — show nothing
+                        if (inst.balance_rate_limited && !inst.accounts?.length) return null;
+
                         const visible = (inst.accounts || []).filter(a => !hiddenIds.has(a.account_id) && matchesFilter(a, filterType));
                         return (
                             <React.Fragment key={inst.id}>
-                                {inst.balance_stale && (
+                                {inst.balance_stale && !inst.balance_rate_limited && (
                                     <div style={{ fontSize:10, color:'#f97316', background:'rgba(249,115,22,0.07)', border:'1px solid rgba(249,115,22,0.15)', borderRadius:7, padding:'5px 10px', fontWeight:700, marginBottom:2 }}>
                                         Live balance unavailable — showing last known
                                         {inst.needs_reauth && <span style={{ marginLeft:6 }}>· Bank re-authentication required</span>}
-                                        {inst.error_code && <span style={{ marginLeft:6, opacity:0.55, fontFamily:'monospace' }}>({inst.error_code})</span>}
                                     </div>
                                 )}
                                 {visible.map(a => <SubRow key={a.account_id} a={a} faded={false} />)}
