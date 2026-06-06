@@ -10,7 +10,8 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 ### Document Embedding Model Fix
 
 #### Fixed
-- **`api/utils/gemini.js`** — `text-embedding-004` was removed by Google. Switched to `text-embedding-005` (same 768-dimension output, drop-in replacement). Also reverted the unnecessary `apiVersion: 'v1'` override added in v7.8.67.
+- **`api/utils/gemini.js`** — `text-embedding-004` and `text-embedding-005` were both removed from Google's public AI Studio API. Switched to `gemini-embedding-exp-03-07` (3072 dimensions). Reverted unnecessary `apiVersion: 'v1'` override.
+- **DB migration** — `document_chunks.embedding` column updated from `vector(768)` to `vector(3072)` to match new model. Table had 0 rows — no data lost.
 
 ---
 

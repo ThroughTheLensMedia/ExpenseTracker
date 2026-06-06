@@ -138,13 +138,13 @@ async function classifyTransactions(apiKey, transactions) {
 
 /**
  * Generate a 768-dimension embedding vector for a text string.
- * Uses Gemini text-embedding-005 via the user's BYOB API key.
- * Returns a float[] suitable for pgvector storage.
+ * Uses Gemini gemini-embedding-exp-03-07 via the user's BYOB API key.
+ * Returns a float[] suitable for pgvector storage (3072 dimensions).
  */
 async function getEmbedding(apiKey, text) {
     if (!apiKey) throw new Error('Gemini API key required for embeddings');
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'text-embedding-005' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-embedding-exp-03-07' });
     const result = await model.embedContent(text);
     return result.embedding.values; // float[]
 }
