@@ -733,13 +733,14 @@ async function sendHealthAlertEmail({ to, issues }) {
  * Sent back to the forwarder after email receipt ingestion.
  * outcome: 'matched' | 'pending' | 'failed'
  */
-async function sendReceiptConfirmationEmail({ to, outcome, vendor, amountCents, expenseDate, subject }) {
+async function sendReceiptConfirmationEmail({ to, outcome, vendor, amountCents, expenseDate, expenseId, subject }) {
     console.log(`[MAILER] Sending receipt confirmation (${outcome}) to ${to}`);
     const resend = getResend();
     if (!resend) return { success: false, error: 'Mailer service not configured' };
 
     const fromEmail = process.env.RESEND_FROM || 'Lumière Ledger <support@throughthelens.media>';
     const appUrl = process.env.APP_URL || 'https://www.lumiereledger.com';
+    const txUrl = expenseId ? `${appUrl}/Transactions?expense=${expenseId}` : appUrl;
     const amount = amountCents != null ? `$${(amountCents / 100).toFixed(2)}` : '';
 
     let emailSubject, bodyHtml;
@@ -753,7 +754,7 @@ async function sendReceiptConfirmationEmail({ to, outcome, vendor, amountCents, 
                 <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);padding:16px;border-radius:8px;margin:16px 0;">
                     <strong>${vendor}</strong> &nbsp;·&nbsp; ${amount} &nbsp;·&nbsp; ${expenseDate || ''}
                 </div>
-                <a href="${appUrl}" style="display:inline-block;background:#f59e0b;color:#0f172a;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">View Transaction</a>
+                <a href="${txUrl}" style="display:inline-block;background:#f59e0b;color:#0f172a;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">View Transaction</a>
             </div>`;
     } else if (outcome === 'pending') {
         emailSubject = `Receipt saved — waiting for bank transaction`;

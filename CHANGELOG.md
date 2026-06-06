@@ -5,6 +5,21 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.67] — 2026-06-06
+
+### Receipt Email Deep Link + Document Embedding Fix
+
+#### Fixed
+- **`api/utils/gemini.js`** — Document indexing was failing with a 404 error because `text-embedding-004` is only available on Google's stable `v1` API, but the SDK defaulted to `v1beta`. Fixed by passing `{ apiVersion: 'v1' }` to `getGenerativeModel`.
+- **`api/routes/emailInbound.js`** — Pass `expenseId` to the receipt confirmation email on successful match.
+- **`api/utils/mailer.js`** — "View Transaction" button in receipt confirmation email now deep-links to `/Transactions?expense=<id>` instead of the generic homepage.
+- **`web-react/src/pages/Transactions.jsx`** — Handle `?expense=<id>` URL param: after transactions load, automatically open the TransactionDrawer for the linked expense.
+
+#### Added
+- **`ROADMAP.md`** — Apple Card CSV ingestion via email flagged as Good to Have.
+
+---
+
 ## [v7.8.66] — 2026-06-06
 
 ### Resume Setup Checklist from Help Center

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { fetchAllExpenses, formatMoney, formatDate, invalidateExpensesCache, apiGet, apiPost, apiPatch, apiDelete, getExpensesCache } from '../api';
 import TransactionDrawer from '../components/TransactionDrawer';
@@ -15,6 +15,7 @@ export default function Transactions() {
 
     const [expenses, setExpenses] = useState([]);
     const [loading, setLoading] = useState(true);
+    const deepLinkOpened = useRef(false);
 
     // Filters
     const [start, setStart] = useState('');
@@ -229,6 +230,18 @@ export default function Transactions() {
         if (urlStart) setStart(urlStart);
         if (urlEnd)   setEnd(urlEnd);
     }, []); // intentionally run once on mount only
+
+    // Deep-link: ?expense=<id> from receipt confirmation email — open drawer for that transaction
+    useEffect(() => {
+        if (deepLinkOpened.current) return;
+        const urlExpense = searchParams.get('expense');
+        if (!urlExpense || !expenses.length) return;
+        const id = parseInt(urlExpense, 10);
+        if (expenses.find(x => x.id === id)) {
+            deepLinkOpened.current = true;
+            setEditingId(id);
+        }
+    }, [expenses]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Refresh when Brain Assistant approves a transaction action
     useEffect(() => {

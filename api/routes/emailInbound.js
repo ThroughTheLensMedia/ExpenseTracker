@@ -182,6 +182,7 @@ router.post('/', async (req, res) => {
                 vendor: match.vendor || extracted.vendor,
                 amountCents,
                 expenseDate: match.expense_date,
+                expenseId: match.id,
             }).catch(() => {});
 
         } else {

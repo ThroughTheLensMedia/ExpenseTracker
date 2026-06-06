@@ -102,6 +102,7 @@ Source of truth for all sprint work, security status, and product phases.
 | Rate limiting on `/subscription/redeem` | Backlog |
 | Backend structured logging (Logtail/pino) | Attempted v7.8.59 — crashed API due to dynamic require + missing bundle. Needs proper implementation with static requires and committed package-lock. Do NOT use safeRequire() wrapper. |
 | Sentry backend DSN + user context | Sentry frontend SDK installed (v7.8.59) but DSN was never configured. Need to set `VITE_SENTRY_DSN` in Vercel and wire `Sentry.setUser()` in AuthContext. Check `web-react/src/main.jsx` for current init. |
+| Apple Card CSV via email | Apple Card can't connect via Plaid. Detect `.csv` attachment in `emailInbound.js`, parse Apple Card CSV format (Transaction Date/Clearing Date/Description/Merchant/Category/Type/Amount/Purchased By), bulk-insert with existing dedup logic. Workaround for now: manual CSV import on Ledger page. Build after email ingestion is stable. |
 
 ---
 

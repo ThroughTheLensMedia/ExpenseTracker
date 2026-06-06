@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.67', date: 'JUN 6, 2026', color: '#f97316', items: [
+        '<strong>Receipt Email — Direct Transaction Link:</strong> The "View Transaction" button in receipt confirmation emails now opens the exact transaction and pops the edit drawer — no searching required.',
+        '<strong>Document Indexing Fixed:</strong> Uploading PDFs for Brain to index was broken due to a Google API version mismatch. Fixed — documents can now be uploaded and queried again.',
+    ]},
     { version: '7.8.66', date: 'JUN 6, 2026', color: '#f59e0b', items: [
         '<strong>Resume Setup from Help Center:</strong> A new "Resume Setup Checklist" button in Help Center reopens the setup guide right where you left off — drops you directly onto the checklist with your previous progress intact.',
     ]},

@@ -144,7 +144,7 @@ async function classifyTransactions(apiKey, transactions) {
 async function getEmbedding(apiKey, text) {
     if (!apiKey) throw new Error('Gemini API key required for embeddings');
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'text-embedding-004' });
+    const model = genAI.getGenerativeModel({ model: 'text-embedding-004' }, { apiVersion: 'v1' });
     const result = await model.embedContent(text);
     return result.embedding.values; // float[]
 }
