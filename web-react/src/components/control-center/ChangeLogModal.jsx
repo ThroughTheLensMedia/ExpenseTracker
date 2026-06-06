@@ -33,7 +33,7 @@ const RELEASES = [
         '<strong>Structured Logging:</strong> Backend errors stream to Logtail with path, method, and user ID — no more digging through raw Vercel logs.',
     ]},
     { version: '7.8.58', date: 'JUN 5, 2026', color: '#f59e0b', items: [
-        '<strong>Email Receipt Forwarding:</strong> Forward any receipt email to <code>receipts+jd@throughthelens.media</code> and it\'s automatically parsed and attached to the matching transaction.',
+        '<strong>Email Receipt Forwarding:</strong> Forward any receipt email to the address shown in Control Center → Integrations and it\'s automatically parsed and attached to the matching transaction.',
         '<strong>Auto-match on Plaid sync:</strong> Receipts that arrive before the bank transaction posts are held and matched automatically when your bank syncs (usually 1–3 days).',
         '<strong>Forwarding address in Integrations tab:</strong> Find your personal receipt address with a one-tap copy button in Control Center → Integrations.',
     ]},

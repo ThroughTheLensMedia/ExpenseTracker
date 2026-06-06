@@ -168,6 +168,7 @@ Express 4.19 API (api/)
   - ✅ `ENCRYPTION_KEY` — set, required for Plaid token encryption
   - ✅ `PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENV=production`
   - ⚠️ `REDIS_URL` — **NOT YET SET** — required to activate email queueing
+  - ⚠️ `POSTMARK_INBOUND_TOKEN` — **NOT YET SET** — security token for inbound email webhook. Without it, the endpoint is open (functional but unauthenticated). Set in Vercel, then add `?token=<value>` to the Postmark webhook URL.
   - Optional: `APP_URL`, `LUMIERE_INTAKE_SECRET`
 - **Deploy tokens (local .env only — never commit):**
   - `VERCEL_TOKEN` — Vercel personal access token (`vcp_...`). Used for CLI deploys if GitHub webhook fails.

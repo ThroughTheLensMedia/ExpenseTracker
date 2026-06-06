@@ -47,6 +47,9 @@
 **Dashboard:** https://account.postmarkapp.com
 **MX record:** `inbound.postmarkapp.com` on `lumiereledger.com`
 **Used for:** `api/routes/emailInbound.js` — receipt extraction pipeline
+**⚠️ Webhook URL must be:** `https://www.lumiereledger.com/api/receipts/email-inbound?token=<POSTMARK_INBOUND_TOKEN>`
+**⚠️ Wrong URL = 401:** `/api/receipts` (without `/email-inbound`) is auth-protected — Postmark gets 401, no receipt is processed, no confirmation email is sent. Root cause of Jun 2026 outage.
+**Raw inbound address:** `b1eedb087c80679a30142ee1f36b7aa4@inbound.postmarkapp.com` (shown in IntegrationTab.jsx)
 
 ---
 
