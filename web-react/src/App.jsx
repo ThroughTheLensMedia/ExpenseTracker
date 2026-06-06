@@ -161,7 +161,7 @@ function AppContent() {
   // --- Version Check Hook ---
   // DEPLOY SOP: update CURRENT_VERSION here AND web-react/public/version.json on every release.
   useEffect(() => {
-    const CURRENT_VERSION = "7.8.64";
+    const CURRENT_VERSION = "7.8.65";
 
     // What's New: show button if user hasn't dismissed it for this version
     const seen = localStorage.getItem('ll_whats_new_seen');
@@ -198,20 +198,31 @@ function AppContent() {
     // settings starts as null (AuthContext init) and stays null if /api/settings returns
     // PGRST116 (no row found for new user). Guard only against undefined (not yet attempted).
     if (!user || !subscriptionReady || settings === undefined) return;
-    const dismissed = localStorage.getItem('ll_onboarding_dismissed_v2');
+    const dismissed = localStorage.getItem('ll_onboarding_dismissed_v2') || settings?.onboarding_dismissed;
     if (dismissed) return;
     // Show for all users who haven't dismissed v2 — including existing users with business names
     setShowOnboarding(true);
   }, [user?.id, subscriptionReady, settings]);
 
+  const persistOnboardingDismissed = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+      body: JSON.stringify({ onboarding_dismissed: true }),
+    });
+  };
+
   const handleOnboardingDismiss = () => {
     localStorage.setItem('ll_onboarding_dismissed_v2', '1');
     setShowOnboarding(false);
+    persistOnboardingDismissed();
   };
 
   const handleOnboardingGoSetup = () => {
     localStorage.setItem('ll_onboarding_done_' + user?.id, '1');
     setShowOnboarding(false);
+    persistOnboardingDismissed();
     navigate('/StudioControlCenter?tab=profile');
   };
 

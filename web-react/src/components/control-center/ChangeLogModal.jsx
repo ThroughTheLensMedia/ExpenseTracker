@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.65', date: 'JUN 6, 2026', color: '#4ade80', items: [
+        '<strong>Welcome Screen Fix:</strong> The "Welcome to Lumière Ledger" setup screen no longer pops up every time you open the app on mobile. Once you dismiss it, it stays gone — even if your phone clears local storage.',
+    ]},
     { version: '7.8.60', date: 'JUN 6, 2026', color: '#38bdf8', items: [
         '<strong>Plaid Balance Cost Control:</strong> Live account balances are now cached for 10 days. The app was calling Plaid\'s balance API (billed at $0.10/call) on every page load — now it only calls when the cache expires or you hit Sync.',
         '<strong>Sync clears balance cache:</strong> Hitting the Sync button pulls fresh transactions and resets the balance cache so your next visit shows updated balances.',

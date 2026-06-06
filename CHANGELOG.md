@@ -5,6 +5,18 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.65] — 2026-06-06
+
+### Welcome Modal — Suppress After Dismiss (Mobile PWA Fix)
+
+#### Fixed
+- **`web-react/src/App.jsx`** — Welcome/onboarding modal no longer re-appears on every mobile PWA login after dismissal. Dismissed state is now persisted to Supabase (`settings.onboarding_dismissed`) in addition to localStorage. iOS Safari clears localStorage after ~7 days of PWA inactivity — the server-side flag ensures the modal stays suppressed regardless of local storage state.
+
+#### Changed
+- **`api/` (migration)** — Added `onboarding_dismissed BOOLEAN DEFAULT FALSE` column to `settings` table (idempotent).
+
+---
+
 ## [v7.8.60] — 2026-06-06
 
 ### Plaid Balance Cost Control
