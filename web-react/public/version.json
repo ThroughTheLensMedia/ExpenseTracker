@@ -1,1 +1,1 @@
-{"version":"7.8.60","release_date":"2026-06-06","codename":"Lumière Ledger","notes":"v7.8.60: Plaid balance cache TTL — 10-day cache to control $0.10/call balance API cost."}
+{"version":"7.8.64","release_date":"2026-06-06","codename":"Lumière Ledger","notes":"v7.8.64: Fix API routes — replace safeRequire wrapper with static requires for Vercel bundler compatibility."}

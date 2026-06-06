@@ -12,39 +12,39 @@ const fs = require("fs");
 const { initDb, supabase } = require("./db");
 const authMiddleware = require("./middleware/auth");
 
-function safeRequire(path) {
-  try { return require(path); }
-  catch(e) { console.error(`[STARTUP] FATAL require failed: ${path} — ${e.message}`); return null; }
-}
-
-const expenseRouter      = safeRequire("./routes/expenses");
-const taxRouter          = safeRequire("./routes/tax");
-const importRouter       = safeRequire("./routes/import");
-const receiptsRouter     = safeRequire("./routes/receipts");
-const rulesRouter        = safeRequire("./routes/rules");
-const mileageRouter      = safeRequire("./routes/mileage");
-const assetsRouter       = safeRequire("./routes/assets");
-const invoiceRouter      = safeRequire("./routes/invoices");
-const adminRouter        = safeRequire("./routes/admin");
-const leadsRouter        = safeRequire("./routes/leads");
-const pwaRouter          = safeRequire("./routes/pwa");
-const settingsRouter     = safeRequire("./routes/settings");
-const subscriptionRouter = safeRequire("./routes/subscription");
-const activityRouter     = safeRequire("./routes/activity");
-const brainRouter        = safeRequire("./routes/brain");
-const plaidRouter        = safeRequire("./routes/plaid");
-const payRouter          = safeRequire("./routes/pay");
-const intakeRouter       = safeRequire("./routes/intake");
-const intakeKeysRouter   = safeRequire("./routes/intake-keys");
-const stripeImport       = safeRequire("./routes/stripe");
-const stripeRouter       = stripeImport?.router || null;
-const stripeWebhook      = stripeImport?.stripeWebhook || null;
-const emailInboundRouter = safeRequire("./routes/emailInbound");
-const metricsRouter      = safeRequire("./routes/metrics");
-const vendorsRouter      = safeRequire("./routes/vendors");
-const feedbackRouter     = safeRequire("./routes/feedback");
-const accountsRouter     = safeRequire("./routes/accounts");
-const documentsRouter    = safeRequire("./routes/documents");
+// Static requires — each is a literal string so Vercel's bundler (ncc) can trace them.
+// DO NOT replace with a safeRequire(variable) wrapper — dynamic require() breaks ncc bundling.
+let expenseRouter;      try { expenseRouter      = require("./routes/expenses");    } catch(e) { console.error('[STARTUP] FAIL expenses:',    e.message); }
+let taxRouter;          try { taxRouter          = require("./routes/tax");         } catch(e) { console.error('[STARTUP] FAIL tax:',         e.message); }
+let importRouter;       try { importRouter       = require("./routes/import");      } catch(e) { console.error('[STARTUP] FAIL import:',      e.message); }
+let receiptsRouter;     try { receiptsRouter     = require("./routes/receipts");    } catch(e) { console.error('[STARTUP] FAIL receipts:',    e.message); }
+let rulesRouter;        try { rulesRouter        = require("./routes/rules");       } catch(e) { console.error('[STARTUP] FAIL rules:',       e.message); }
+let mileageRouter;      try { mileageRouter      = require("./routes/mileage");     } catch(e) { console.error('[STARTUP] FAIL mileage:',     e.message); }
+let assetsRouter;       try { assetsRouter       = require("./routes/assets");      } catch(e) { console.error('[STARTUP] FAIL assets:',      e.message); }
+let invoiceRouter;      try { invoiceRouter      = require("./routes/invoices");    } catch(e) { console.error('[STARTUP] FAIL invoices:',    e.message); }
+let adminRouter;        try { adminRouter        = require("./routes/admin");       } catch(e) { console.error('[STARTUP] FAIL admin:',       e.message); }
+let leadsRouter;        try { leadsRouter        = require("./routes/leads");       } catch(e) { console.error('[STARTUP] FAIL leads:',       e.message); }
+let pwaRouter;          try { pwaRouter          = require("./routes/pwa");         } catch(e) { console.error('[STARTUP] FAIL pwa:',         e.message); }
+let settingsRouter;     try { settingsRouter     = require("./routes/settings");    } catch(e) { console.error('[STARTUP] FAIL settings:',    e.message); }
+let subscriptionRouter; try { subscriptionRouter = require("./routes/subscription");} catch(e) { console.error('[STARTUP] FAIL subscription:', e.message); }
+let activityRouter;     try { activityRouter     = require("./routes/activity");    } catch(e) { console.error('[STARTUP] FAIL activity:',    e.message); }
+let brainRouter;        try { brainRouter        = require("./routes/brain");       } catch(e) { console.error('[STARTUP] FAIL brain:',       e.message); }
+let plaidRouter;        try { plaidRouter        = require("./routes/plaid");       } catch(e) { console.error('[STARTUP] FAIL plaid:',       e.message); }
+let payRouter;          try { payRouter          = require("./routes/pay");         } catch(e) { console.error('[STARTUP] FAIL pay:',         e.message); }
+let intakeRouter;       try { intakeRouter       = require("./routes/intake");      } catch(e) { console.error('[STARTUP] FAIL intake:',      e.message); }
+let intakeKeysRouter;   try { intakeKeysRouter   = require("./routes/intake-keys"); } catch(e) { console.error('[STARTUP] FAIL intake-keys:', e.message); }
+let stripeRouter, stripeWebhook;
+try {
+  const stripeImport = require("./routes/stripe");
+  stripeRouter  = stripeImport?.router || null;
+  stripeWebhook = stripeImport?.stripeWebhook || null;
+} catch(e) { console.error('[STARTUP] FAIL stripe:', e.message); }
+let emailInboundRouter; try { emailInboundRouter = require("./routes/emailInbound");} catch(e) { console.error('[STARTUP] FAIL emailInbound:', e.message); }
+let metricsRouter;      try { metricsRouter      = require("./routes/metrics");     } catch(e) { console.error('[STARTUP] FAIL metrics:',     e.message); }
+let vendorsRouter;      try { vendorsRouter      = require("./routes/vendors");     } catch(e) { console.error('[STARTUP] FAIL vendors:',     e.message); }
+let feedbackRouter;     try { feedbackRouter     = require("./routes/feedback");    } catch(e) { console.error('[STARTUP] FAIL feedback:',    e.message); }
+let accountsRouter;     try { accountsRouter     = require("./routes/accounts");    } catch(e) { console.error('[STARTUP] FAIL accounts:',    e.message); }
+let documentsRouter;    try { documentsRouter    = require("./routes/documents");   } catch(e) { console.error('[STARTUP] FAIL documents:',   e.message); }
 
 // Initialize Database — log clearly if it fails
 if (!initDb()) {
@@ -70,12 +70,6 @@ if (stripeWebhook) app.post("/api/stripe/webhook", express.raw({ type: "applicat
 
 app.use(express.json({ limit: "10mb" }));
 
-// Request tracer — first middleware, logs every incoming request so we can confirm Express is receiving them
-app.use((req, _res, next) => {
-  console.log(`[REQ] ${req.method} ${req.path}`);
-  next();
-});
-
 // Routing
 const apiRouter = express.Router();
 
@@ -86,37 +80,14 @@ apiRouter.get("/ping", (_req, res) => {
 });
 
 // Public Health check
-apiRouter.get("/health", async (req, res) => {
-  try {
-    res.json({
-      ok: true,
-      environment: process.env.VERCEL ? "vercel" : "local",
-      lockdown: "enabled",
-      mailer: !!process.env.RESEND_API_KEY,
-      db: !!supabase,
-      diagnostics: {
-        has_url: !!(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL),
-        has_key: !!(process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY),
-        has_service_key: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-        key_mode: process.env.SUPABASE_SERVICE_ROLE_KEY ? "ADMIN_PRIVILEGED" : "STANDARD_USER",
-        node_env: process.env.NODE_ENV
-      },
-      routes: {
-        expenses: !!expenseRouter, tax: !!taxRouter, import: !!importRouter,
-        receipts: !!receiptsRouter, rules: !!rulesRouter, mileage: !!mileageRouter,
-        assets: !!assetsRouter, invoices: !!invoiceRouter, admin: !!adminRouter,
-        leads: !!leadsRouter, pwa: !!pwaRouter, settings: !!settingsRouter,
-        subscription: !!subscriptionRouter, activity: !!activityRouter,
-        brain: !!brainRouter, plaid: !!plaidRouter, pay: !!payRouter,
-        intake: !!intakeRouter, stripe: !!stripeRouter, emailInbound: !!emailInboundRouter,
-        metrics: !!metricsRouter, vendors: !!vendorsRouter, feedback: !!feedbackRouter,
-        accounts: !!accountsRouter, documents: !!documentsRouter,
-      },
-      timestamp: new Date().toISOString()
-    });
-  } catch (e) {
-    res.status(500).json({ ok: false, error: "Health check logic failed", detail: e.message });
-  }
+apiRouter.get("/health", (_req, res) => {
+  res.json({
+    ok: true,
+    environment: process.env.VERCEL ? "vercel" : "local",
+    mailer: !!process.env.RESEND_API_KEY,
+    db: !!supabase,
+    timestamp: new Date().toISOString()
+  });
 });
 
 const { licensingMiddleware } = require("./middleware/licensing");
@@ -125,7 +96,7 @@ const { licensingMiddleware } = require("./middleware/licensing");
 // Must be mounted BEFORE authMiddleware
 if (payRouter)          apiRouter.use("/pay", payRouter);
 if (intakeRouter)       apiRouter.use("/intake", intakeRouter);
-const cronRouter = safeRequire("./routes/cron");
+let cronRouter; try { cronRouter = require("./routes/cron"); } catch(e) { console.error('[STARTUP] FAIL cron:', e.message); }
 if (cronRouter)         apiRouter.use("/cron", cronRouter);
 if (emailInboundRouter) apiRouter.use("/receipts/email-inbound", emailInboundRouter);
 
