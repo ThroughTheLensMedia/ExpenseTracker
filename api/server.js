@@ -39,7 +39,7 @@ try {
   stripeRouter  = stripeImport?.router || null;
   stripeWebhook = stripeImport?.stripeWebhook || null;
 } catch(e) { console.error('[STARTUP] FAIL stripe:', e.message); }
-let emailInboundRouter; try { emailInboundRouter = require("./routes/emailInbound"); console.log('[STARTUP] emailInbound OK'); } catch(e) { console.error('[STARTUP] FAIL emailInbound:', e.message, e.stack); }
+let emailInboundHandler; try { emailInboundHandler = require("./routes/emailInbound"); console.log('[STARTUP] emailInbound OK'); } catch(e) { console.error('[STARTUP] FAIL emailInbound:', e.message, e.stack); }
 let metricsRouter;      try { metricsRouter      = require("./routes/metrics");     } catch(e) { console.error('[STARTUP] FAIL metrics:',     e.message); }
 let vendorsRouter;      try { vendorsRouter      = require("./routes/vendors");     } catch(e) { console.error('[STARTUP] FAIL vendors:',     e.message); }
 let feedbackRouter;     try { feedbackRouter     = require("./routes/feedback");    } catch(e) { console.error('[STARTUP] FAIL feedback:',    e.message); }
@@ -170,14 +170,9 @@ if (vendorsRouter)      apiRouter.use("/vendors",        vendorsRouter);
 if (accountsRouter)     apiRouter.use("/accounts",       accountsRouter);
 if (documentsRouter)    apiRouter.use("/documents",      documentsRouter);
 
-// emailInbound — mounted at app level, before apiRouter, so it never hits authMiddleware.
-// Sub-router path-stripping via apiRouter.use() was causing the route to not match on Vercel.
-if (emailInboundRouter) {
-  app.post("/api/receipts/email-inbound", (req, res, next) => {
-    req.url = "/";
-    emailInboundRouter(req, res, next);
-  });
-}
+// emailInbound — plain async handler, mounted directly on app before apiRouter.
+// No sub-router, no path manipulation — simplest possible wiring.
+if (emailInboundHandler) app.post("/api/receipts/email-inbound", emailInboundHandler);
 
 // Mount all API routes under /api
 app.use("/api", apiRouter);

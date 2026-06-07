@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.73] — 2026-06-07
+
+### Fix: Receipt Email Inbound 401 (attempt 2)
+
+#### Fixed
+- **`api/routes/emailInbound.js`** — Removed Express Router wrapper entirely. Now exports the async handler function directly (`module.exports = handler`). The sub-router path-stripping was the root cause of the 401 across multiple attempts.
+- **`api/server.js`** — Simplified mount to `app.post("/api/receipts/email-inbound", emailInboundHandler)`. No `req.url` mutation, no router invocation, no indirection.
+
+---
+
 ## [v7.8.72] — 2026-06-07
 
 ### Fix: Receipt Email Inbound 401

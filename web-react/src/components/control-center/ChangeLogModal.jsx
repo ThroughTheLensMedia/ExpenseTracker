@@ -1,7 +1,7 @@
 import React from 'react';
 
 const RELEASES = [
-    { version: '7.8.72', date: 'JUN 7, 2026', color: '#f97316', items: [
+    { version: '7.8.73', date: 'JUN 7, 2026', color: '#f97316', items: [
         '<strong>Receipt Email Fix:</strong> Forwarded receipts were returning a 401 error and never processing. The inbound email handler is now wired correctly — receipt emails will parse, match to a transaction, and send a confirmation again.',
     ]},
     { version: '7.8.71', date: 'JUN 6, 2026', color: '#4ade80', items: [

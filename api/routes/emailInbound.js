@@ -1,9 +1,6 @@
-const express = require('express');
 const { supabase } = require('../db');
 const { parseReceiptFromEmailBody, parseReceiptFromFile } = require('../utils/receiptEmailParser');
 const { sendReceiptConfirmationEmail } = require('../utils/mailer');
-
-const router = express.Router();
 
 // Phase 1: single user. "jd" maps to Joshua's user ID.
 const TOKEN_MAP = {
@@ -12,17 +9,11 @@ const TOKEN_MAP = {
 
 /**
  * POST /api/receipts/email-inbound
- * Postmark inbound webhook. No JWT auth — protected by POSTMARK_INBOUND_TOKEN header check.
- *
- * Flow:
- * 1. Verify Postmark token
- * 2. Resolve user from To: address token
- * 3. Extract receipt data (PDF attachment > image > email body)
- * 4. Pass 1: match to existing expense by amount + date
- * 5. If no match: store in pending_receipts for Pass 2 (Plaid sync)
- * 6. Send confirmation email
+ * Postmark inbound webhook. No JWT auth — protected by POSTMARK_INBOUND_TOKEN query param.
+ * Exported as a plain async handler (not an Express Router) so it can be mounted directly
+ * on app.post() without sub-router path-stripping complications.
  */
-router.post('/', async (req, res) => {
+const handler = async (req, res) => {
     // Always return 200 immediately — Postmark retries on non-2xx
     res.sendStatus(200);
 
@@ -215,4 +206,4 @@ router.post('/', async (req, res) => {
     }
 });
 
-module.exports = router;
+module.exports = handler;

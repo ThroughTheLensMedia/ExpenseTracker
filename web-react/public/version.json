@@ -1,1 +1,1 @@
-{"version":"7.8.72","release_date":"2026-06-07","codename":"Lumière Ledger","notes":"v7.8.72: Fix receipt email inbound 401 — route now mounted at app level before auth."}
+{"version":"7.8.73","release_date":"2026-06-07","codename":"Lumière Ledger","notes":"v7.8.73: Fix receipt email inbound 401 — handler exported directly, no sub-router."}
