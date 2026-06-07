@@ -62,7 +62,7 @@ const handler = async (req) => {
         const plainBody = payload.TextBody || payload.StrippedTextReply || '';
 
         // Instant acknowledgment — fires before Gemini so user gets feedback within ~2s
-        sendReceiptConfirmationEmail({ to: senderEmail, outcome: 'received' })
+        sendReceiptConfirmationEmail({ to: senderEmail, outcome: 'received', subject })
             .then(r => console.log('[EmailInbound] Ack email sent:', JSON.stringify(r)))
             .catch(e => console.error('[EmailInbound] Ack email failed:', e.message));
 

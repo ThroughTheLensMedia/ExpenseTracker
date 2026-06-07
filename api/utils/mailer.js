@@ -747,11 +747,12 @@ async function sendReceiptConfirmationEmail({ to, outcome, vendor, amountCents, 
 
     if (outcome === 'received') {
         emailSubject = `Receipt received — processing now`;
+        const subjectLabel = subject ? ` for <strong>${subject}</strong>` : '';
         bodyHtml = `
             <div style="background:#0f172a;color:#f8fafc;padding:40px;font-family:sans-serif;border-radius:12px;max-width:600px;">
                 <h2 style="color:#f59e0b;margin-top:0;">Receipt Received</h2>
-                <p>Lumière Ledger received your forwarded email and is processing it now.</p>
-                <p style="color:#94a3b8;">You'll get a follow-up in the next few seconds confirming whether the receipt was matched to a transaction or saved for when your bank syncs.</p>
+                <p>Lumière Ledger received your forwarded email${subjectLabel} and is processing it now.</p>
+                <p style="color:#94a3b8;">Once processed, you'll get a follow-up email confirming whether the receipt was matched to a transaction or saved for when your account syncs.</p>
                 <a href="${appUrl}" style="display:inline-block;background:#f59e0b;color:#0f172a;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Open Lumière Ledger</a>
             </div>`;
     } else if (outcome === 'matched') {
