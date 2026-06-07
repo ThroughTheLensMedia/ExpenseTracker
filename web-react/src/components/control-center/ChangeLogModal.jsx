@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.82', date: 'JUN 7, 2026', color: '#4ade80', items: [
+        '<strong>Receipt Email — Instant Reply:</strong> You now get a "Receipt Received" email within seconds of forwarding. A second email follows with the full result once the AI matches it to a transaction.',
+        '<strong>Receipt Email — Timeout Fixed:</strong> The server function timeout was silently killing email processing before it could finish. Extended to 60 seconds — the full Gemini + match + reply flow now completes reliably.',
+    ]},
     { version: '7.8.81', date: 'JUN 6, 2026', color: '#4ade80', items: [
         '<strong>Receipt Email — Root Cause Fixed:</strong> Every forwarded receipt was silently failing due to a stale database connection in the email handler. Fixed. The handler now opens a fresh connection on every email, the same way every other route works.',
     ]},

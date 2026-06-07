@@ -5,6 +5,20 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.82] — 2026-06-07
+
+### Fix: Lambda timeout + instant receipt acknowledgment
+
+#### Root Cause
+`vercel.json` had no `functions` config — Vercel defaulted to a 10-second Lambda timeout. The fresh Supabase client connection + Gemini Vision on a PDF attachment routinely exceeded 10 seconds, killing the handler before it could parse, match, or send any reply email.
+
+#### Fixed
+- **`vercel.json`** — Added `"functions": { "api/server.js": { "maxDuration": 60 } }`. Vercel Hobby plan allows 60s max. This gives the handler enough time to complete Gemini Vision + retries + storage + matching + email send.
+- **`api/routes/emailInbound.js`** — Sends an instant "Receipt Received — processing now" acknowledgment email immediately after the user is resolved (before Gemini). User gets feedback within ~2 seconds of forwarding. A follow-up result email (matched/pending/failed) follows once processing completes.
+- **`api/utils/mailer.js`** — Added `received` outcome to `sendReceiptConfirmationEmail`.
+
+---
+
 ## [v7.8.81] — 2026-06-06
 
 ### Fix: EmailInbound — fresh Supabase client per invocation

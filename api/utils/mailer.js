@@ -731,7 +731,7 @@ async function sendHealthAlertEmail({ to, issues }) {
 /**
  * sendReceiptConfirmationEmail
  * Sent back to the forwarder after email receipt ingestion.
- * outcome: 'matched' | 'pending' | 'failed' | 'already_linked'
+ * outcome: 'received' | 'matched' | 'pending' | 'failed' | 'already_linked'
  */
 async function sendReceiptConfirmationEmail({ to, outcome, vendor, amountCents, expenseDate, expenseId, subject }) {
     console.log(`[MAILER] Sending receipt confirmation (${outcome}) to ${to}`);
@@ -745,7 +745,16 @@ async function sendReceiptConfirmationEmail({ to, outcome, vendor, amountCents, 
 
     let emailSubject, bodyHtml;
 
-    if (outcome === 'matched') {
+    if (outcome === 'received') {
+        emailSubject = `Receipt received — processing now`;
+        bodyHtml = `
+            <div style="background:#0f172a;color:#f8fafc;padding:40px;font-family:sans-serif;border-radius:12px;max-width:600px;">
+                <h2 style="color:#f59e0b;margin-top:0;">Receipt Received</h2>
+                <p>Lumière Ledger received your forwarded email and is processing it now.</p>
+                <p style="color:#94a3b8;">You'll get a follow-up in the next few seconds confirming whether the receipt was matched to a transaction or saved for when your bank syncs.</p>
+                <a href="${appUrl}" style="display:inline-block;background:#f59e0b;color:#0f172a;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Open Lumière Ledger</a>
+            </div>`;
+    } else if (outcome === 'matched') {
         emailSubject = `Receipt attached — ${vendor} ${amount}`;
         bodyHtml = `
             <div style="background:#0f172a;color:#f8fafc;padding:40px;font-family:sans-serif;border-radius:12px;max-width:600px;">
