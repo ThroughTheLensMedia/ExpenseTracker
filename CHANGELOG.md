@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.76] — 2026-06-07
+
+### Fix: Receipt Email — Resend module not found (ncc bundling)
+
+#### Fixed
+- **`api/server.js`** — Reverted dynamic `require()` inside handler body back to static top-level require. ncc (Vercel's bundler) only traces `require()` calls at module scope — a `require()` inside a function body isn't traced, so `resend` and other dependencies of `emailInbound.js` were excluded from the production bundle. Static require restored; route registration remains unconditional with no `if()` guard, and `res.sendStatus(200)` still fires before any processing.
+
+---
+
 ## [v7.8.75] — 2026-06-07
 
 ### Fix: Receipt Email SyntaxError (root cause of all 401s)

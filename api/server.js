@@ -169,17 +169,15 @@ if (vendorsRouter)      apiRouter.use("/vendors",        vendorsRouter);
 if (accountsRouter)     apiRouter.use("/accounts",       accountsRouter);
 if (documentsRouter)    apiRouter.use("/documents",      documentsRouter);
 
-// emailInbound — unconditional route, no startup require, no if() guard.
-// res.sendStatus(200) fires before any module load — Postmark always gets 200.
-// Dynamic require() here uses a string literal so Vercel/ncc can still trace it.
+// emailInbound — static require (ncc must trace deps at build time — dynamic require breaks bundling).
+// Route registered UNCONDITIONALLY — no if() guard. res.sendStatus(200) fires before any processing
+// so Postmark always gets 200 even if the module failed to load at startup.
+let _emailInboundProcessor = null;
+try { _emailInboundProcessor = require("./routes/emailInbound"); } catch(e) { console.error('[STARTUP] FAIL emailInbound:', e.message, e.stack); }
 app.post("/api/receipts/email-inbound", async (req, res) => {
     res.sendStatus(200);
-    try {
-        const processInboundEmail = require("./routes/emailInbound");
-        await processInboundEmail(req);
-    } catch (e) {
-        console.error('[EmailInbound] Error:', e.message, e.stack);
-    }
+    if (!_emailInboundProcessor) { console.error('[EmailInbound] Handler not loaded — check startup errors'); return; }
+    try { await _emailInboundProcessor(req); } catch (e) { console.error('[EmailInbound] Error:', e.message, e.stack); }
 });
 
 // Mount all API routes under /api

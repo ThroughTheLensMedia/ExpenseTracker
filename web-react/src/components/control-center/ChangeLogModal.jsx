@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.76', date: 'JUN 7, 2026', color: '#4ade80', items: [
+        '<strong>Receipt Email — Confirmation Emails Sending:</strong> A bundling issue was preventing the confirmation email from being sent after a receipt was processed. Fixed — you\'ll now receive a confirmation (or failure notice) after forwarding a receipt.',
+    ]},
     { version: '7.8.75', date: 'JUN 7, 2026', color: '#4ade80', items: [
         '<strong>Receipt Email — Now Actually Working:</strong> A single-character syntax error in the email handler was silently crashing the module at startup — causing every forwarded receipt to return a 401 since v7.8.58. Fixed. Receipt emails will now parse, match to a transaction, and send a confirmation.',
     ]},
