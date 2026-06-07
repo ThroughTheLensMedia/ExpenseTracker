@@ -152,12 +152,13 @@ const handler = async (req) => {
         const receiptDate = extracted.date;
         const amountCents = extracted.amount_cents;
 
-        // Build date range ±3 days
+        // Build date range ±7 days — covers billing date vs bank posting date lag
+        // (e.g. invoice dated June 1 but AmEx posts June 7 = 6-day gap)
         const baseDate = new Date(receiptDate + 'T12:00:00Z');
-        const dateMinus3 = new Date(baseDate); dateMinus3.setDate(baseDate.getDate() - 3);
-        const datePlus3  = new Date(baseDate); datePlus3.setDate(baseDate.getDate() + 3);
-        const from = dateMinus3.toISOString().slice(0, 10);
-        const to   = datePlus3.toISOString().slice(0, 10);
+        const dateMinus7 = new Date(baseDate); dateMinus7.setDate(baseDate.getDate() - 7);
+        const datePlus7  = new Date(baseDate); datePlus7.setDate(baseDate.getDate() + 7);
+        const from = dateMinus7.toISOString().slice(0, 10);
+        const to   = datePlus7.toISOString().slice(0, 10);
 
         const { data: matches } = await supabase
             .from('expenses')

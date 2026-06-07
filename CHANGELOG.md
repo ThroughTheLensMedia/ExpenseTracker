@@ -5,6 +5,18 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.83] — 2026-06-07
+
+### Fix: Receipt email matching — widen date window to ±7 days
+
+#### Root Cause
+Matching used ±3 days. Invoice/billing date on a receipt often differs from the bank posting date by more than 3 days (e.g. Plaid invoice dated June 1, AmEx posts June 7 = 6-day gap → no match → stored as pending instead of attached).
+
+#### Fixed
+- **`api/routes/emailInbound.js`** — Date range widened from ±3 to ±7 days. Covers typical billing-date vs bank-posting-date lag without significantly increasing false positive risk (amount_cents is still an exact match).
+
+---
+
 ## [v7.8.82] — 2026-06-07
 
 ### Fix: Lambda timeout + instant receipt acknowledgment
