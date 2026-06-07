@@ -1,4 +1,4 @@
-const { supabase } = require('../db');
+const { createClient } = require('@supabase/supabase-js');
 const { parseReceiptFromEmailBody, parseReceiptFromFile } = require('../utils/receiptEmailParser');
 const { sendReceiptConfirmationEmail } = require('../utils/mailer');
 
@@ -16,6 +16,13 @@ const TOKEN_MAP = {
 // res.sendStatus(200) is now handled unconditionally in server.js before this function is called.
 // This function receives only req — it processes and logs, never touches res.
 const handler = async (req) => {
+    // Fresh client per invocation — avoids stale HTTP connections from module-level singleton
+    const supabase = createClient(
+        process.env.SUPABASE_URL,
+        process.env.SUPABASE_SERVICE_ROLE_KEY,
+        { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+
     try {
         // Verify token passed as query param in webhook URL
         // Postmark webhook URL format: /api/receipts/email-inbound?token=<POSTMARK_INBOUND_TOKEN>

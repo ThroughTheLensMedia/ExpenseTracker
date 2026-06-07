@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.81', date: 'JUN 6, 2026', color: '#4ade80', items: [
+        '<strong>Receipt Email — Root Cause Fixed:</strong> Every forwarded receipt was silently failing due to a stale database connection in the email handler. Fixed. The handler now opens a fresh connection on every email, the same way every other route works.',
+    ]},
     { version: '7.8.80', date: 'JUN 6, 2026', color: '#4ade80', items: [
         '<strong>Email Receipts — Gemini Retry:</strong> Transient Gemini outages (503 overload) now retry automatically up to 3 times before giving up. Previously a single overload silently dropped the parse.',
         '<strong>Email Receipts — Delivery Logging:</strong> Confirmation emails now log delivery status so failures are visible in logs instead of disappearing silently.',

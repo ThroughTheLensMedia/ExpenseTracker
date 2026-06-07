@@ -99,7 +99,7 @@ Return ONLY a valid JSON object. Use null for fields you cannot read.`;
             const isTransient = /503|502|500|unavailable|overloaded/i.test(err.message);
             if (isTransient && attempt < 3) {
                 console.warn(`[EmailParser] Gemini Vision attempt ${attempt} failed (${err.message}) — retrying in ${attempt * 2}s`);
-                await new Promise(r => setTimeout(r, attempt * 2000));
+                await new Promise(r => setTimeout(r, attempt * 1000));
                 continue;
             }
             console.error('[EmailParser] Gemini Vision call failed after', attempt, 'attempts:', err.message);

@@ -5,6 +5,21 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.81] — 2026-06-06
+
+### Fix: EmailInbound — fresh Supabase client per invocation
+
+#### Root Cause
+`emailInbound.js` used `const { supabase } = require('../db')` — the module-level singleton. When the handler runs fire-and-forget after `res.sendStatus(200)`, the singleton's HTTP connections are stale in that Lambda context. Result: every Supabase query fails with `TypeError: fetch failed`, handler exits before Gemini, before parsing, before any reply email.
+
+Every other route uses `req.sb` (a fresh per-request client from auth middleware). emailInbound bypasses auth, so it was stuck with the broken singleton.
+
+#### Fixed
+- **`api/routes/emailInbound.js`** — Replaced singleton import with `createClient()` called inside the handler body (fresh client per invocation, `autoRefreshToken: false`, `persistSession: false`). Supabase queries now have clean HTTP connections every time.
+- **`api/utils/receiptEmailParser.js`** — Shortened Gemini retry back-off from 2s/4s → 1s/2s. Max transient delay drops from 6s to 3s.
+
+---
+
 ## [v7.8.80] — 2026-06-06
 
 ### Fix: Email confirmation logging + Gemini retry + filter UI polish
