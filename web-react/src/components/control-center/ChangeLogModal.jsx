@@ -1,6 +1,11 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.80', date: 'JUN 6, 2026', color: '#4ade80', items: [
+        '<strong>Email Receipts — Gemini Retry:</strong> Transient Gemini outages (503 overload) now retry automatically up to 3 times before giving up. Previously a single overload silently dropped the parse.',
+        '<strong>Email Receipts — Delivery Logging:</strong> Confirmation emails now log delivery status so failures are visible in logs instead of disappearing silently.',
+        '<strong>Transactions Filter:</strong> Date pickers and quick-range buttons are now grouped in a single clean row.',
+    ]},
     { version: '7.8.79', date: 'JUN 6, 2026', color: '#4ade80', items: [
         '<strong>Smarter Receipt Emails:</strong> Forwarding a receipt for a transaction that already has one now sends a clear "Receipt already on file" reply — no duplicate pending receipt created.',
         '<strong>Transactions Page — 90-Day Default:</strong> The ledger now loads the last 90 days on open instead of all 3,600+ rows. Loads significantly faster. Added quick-range buttons: 30d / 90d / YTD / All.',

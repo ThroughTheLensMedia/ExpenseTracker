@@ -109,11 +109,12 @@ const handler = async (req) => {
         // If we still have no amount, bail
         if (!extracted || extracted.amount_cents == null) {
             console.log('[EmailInbound] No amount found in email from', senderEmail, '| subject:', subject);
-            await sendReceiptConfirmationEmail({
+            const failResult = await sendReceiptConfirmationEmail({
                 to: senderEmail,
                 outcome: 'failed',
                 subject,
-            }).catch(() => {});
+            }).catch(e => ({ success: false, error: e.message }));
+            console.log('[EmailInbound] Failed confirmation email result:', JSON.stringify(failResult));
             return;
         }
 
@@ -169,27 +170,29 @@ const handler = async (req) => {
 
             console.log(`[EmailInbound] Matched receipt to expense ${match.id} (${match.vendor} $${(amountCents / 100).toFixed(2)})`);
 
-            await sendReceiptConfirmationEmail({
+            sendReceiptConfirmationEmail({
                 to: senderEmail,
                 outcome: 'matched',
                 vendor: match.vendor || extracted.vendor,
                 amountCents,
                 expenseDate: match.expense_date,
                 expenseId: match.id,
-            }).catch(() => {});
+            }).then(r => console.log('[EmailInbound] Matched confirmation sent:', JSON.stringify(r)))
+              .catch(e => console.error('[EmailInbound] Matched confirmation failed:', e.message));
 
         } else if (unlinked.length === 0 && alreadyLinked.length > 0) {
             // Transaction exists but already has a receipt attached
             const match = alreadyLinked[0];
             console.log(`[EmailInbound] Transaction ${match.id} already has receipt — notifying sender`);
-            await sendReceiptConfirmationEmail({
+            sendReceiptConfirmationEmail({
                 to: senderEmail,
                 outcome: 'already_linked',
                 vendor: match.vendor || extracted.vendor,
                 amountCents,
                 expenseDate: match.expense_date,
                 expenseId: match.id,
-            }).catch(() => {});
+            }).then(r => console.log('[EmailInbound] Already-linked confirmation sent:', JSON.stringify(r)))
+              .catch(e => console.error('[EmailInbound] Already-linked confirmation failed:', e.message));
 
         } else {
             // No match or ambiguous — store as pending
@@ -208,12 +211,13 @@ const handler = async (req) => {
 
             console.log(`[EmailInbound] No match — stored pending receipt for $${(amountCents / 100).toFixed(2)} from ${extracted.vendor}`);
 
-            await sendReceiptConfirmationEmail({
+            sendReceiptConfirmationEmail({
                 to: senderEmail,
                 outcome: 'pending',
                 vendor: extracted.vendor,
                 amountCents,
-            }).catch(() => {});
+            }).then(r => console.log('[EmailInbound] Pending confirmation sent:', JSON.stringify(r)))
+              .catch(e => console.error('[EmailInbound] Pending confirmation failed:', e.message));
         }
 
     } catch (err) {

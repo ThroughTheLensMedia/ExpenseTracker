@@ -5,6 +5,19 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.80] — 2026-06-06
+
+### Fix: Email confirmation logging + Gemini retry + filter UI polish
+
+#### Fixed
+- **`api/utils/receiptEmailParser.js`** — Gemini Vision now retries up to 3 times on 503/502/500 (transient overload), with 2s/4s back-off. Previously a single 503 silently dropped the parse.
+- **`api/routes/emailInbound.js`** — All confirmation email sends now log their result (`matched/pending/failed/already_linked` + Resend response or error message). Previously `.catch(() => {})` swallowed failures with no trace.
+
+#### Polish
+- **`web-react/src/pages/Transactions.jsx`** — Date pickers and quick-range buttons (30d / 90d / YTD / All) now grouped in a single `DATE RANGE` row with an inline arrow separator. Cleaner, no orphaned column.
+
+---
+
 ## [v7.8.79] — 2026-06-06
 
 ### Fix: Receipt email — already_linked case + Transactions 90-day default

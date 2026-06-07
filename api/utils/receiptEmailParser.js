@@ -89,13 +89,24 @@ Return ONLY a valid JSON object. Use null for fields you cannot read.`;
     };
 
     let raw;
-    try {
-        const result = await model.generateContent([prompt, imagePart]);
-        raw = result.response.text().trim().replace(/```json|```/g, '').trim();
-    } catch (err) {
-        console.error('[EmailParser] Gemini Vision call failed:', err.message);
-        return null;
+    // Retry up to 2 times on transient 503/500 errors
+    for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+            const result = await model.generateContent([prompt, imagePart]);
+            raw = result.response.text().trim().replace(/```json|```/g, '').trim();
+            break; // success
+        } catch (err) {
+            const isTransient = /503|502|500|unavailable|overloaded/i.test(err.message);
+            if (isTransient && attempt < 3) {
+                console.warn(`[EmailParser] Gemini Vision attempt ${attempt} failed (${err.message}) — retrying in ${attempt * 2}s`);
+                await new Promise(r => setTimeout(r, attempt * 2000));
+                continue;
+            }
+            console.error('[EmailParser] Gemini Vision call failed after', attempt, 'attempts:', err.message);
+            return null;
+        }
     }
+    if (raw == null) return null;
 
     try {
         return JSON.parse(raw);

@@ -468,29 +468,27 @@ export default function Transactions() {
                         )}
                         {/* Row 1: Filters */}
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', justifyContent: 'center', width: '100%' }}>
+                            {/* Date range block: pickers + quick buttons grouped together */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                <small className="muted" style={{ fontWeight: 800 }}>START DATE</small>
-                                <input type="date" value={start} onChange={e => setStart(e.target.value)} style={{ width: '150px' }} />
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                <small className="muted" style={{ fontWeight: 800 }}>END DATE</small>
-                                <input type="date" value={end} onChange={e => setEnd(e.target.value)} style={{ width: '150px' }} />
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', justifyContent: 'flex-end' }}>
-                                <small className="muted" style={{ fontWeight: 800 }}>QUICK RANGE</small>
-                                <div style={{ display: 'flex', gap: '6px' }}>
-                                    {[
-                                        { label: '30d',  fn: () => { setStart(daysAgoStr(30));  setEnd(todayStr()); } },
-                                        { label: '90d',  fn: () => { setStart(daysAgoStr(90));  setEnd(todayStr()); } },
-                                        { label: 'YTD',  fn: () => { setStart(ytdStartStr());    setEnd(todayStr()); } },
-                                        { label: 'All',  fn: () => { setStart(''); setEnd(''); } },
-                                    ].map(({ label, fn }) => (
-                                        <button key={label} onClick={fn} style={{
-                                            padding: '4px 10px', fontSize: '12px', borderRadius: '6px',
-                                            border: '1px solid #334155', background: '#1e293b', color: '#94a3b8',
-                                            cursor: 'pointer', whiteSpace: 'nowrap',
-                                        }}>{label}</button>
-                                    ))}
+                                <small className="muted" style={{ fontWeight: 800 }}>DATE RANGE</small>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <input type="date" value={start} onChange={e => setStart(e.target.value)} style={{ width: '145px' }} />
+                                    <span style={{ color: '#475569', fontSize: '13px' }}>→</span>
+                                    <input type="date" value={end} onChange={e => setEnd(e.target.value)} style={{ width: '145px' }} />
+                                    <div style={{ display: 'flex', gap: '4px', marginLeft: '4px' }}>
+                                        {[
+                                            { label: '30d',  fn: () => { setStart(daysAgoStr(30));  setEnd(todayStr()); } },
+                                            { label: '90d',  fn: () => { setStart(daysAgoStr(90));  setEnd(todayStr()); } },
+                                            { label: 'YTD',  fn: () => { setStart(ytdStartStr());    setEnd(todayStr()); } },
+                                            { label: 'All',  fn: () => { setStart(''); setEnd(''); } },
+                                        ].map(({ label, fn }) => (
+                                            <button key={label} onClick={fn} style={{
+                                                padding: '6px 10px', fontSize: '12px', borderRadius: '6px',
+                                                border: '1px solid #334155', background: '#1e293b', color: '#94a3b8',
+                                                cursor: 'pointer', whiteSpace: 'nowrap', height: '36px',
+                                            }}>{label}</button>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
