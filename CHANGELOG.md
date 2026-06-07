@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.74] — 2026-06-07
+
+### Fix: Receipt Email Inbound 401 (final — unconditional route)
+
+#### Fixed
+- **`api/server.js`** — Removed startup `require()` + `if (emailInboundHandler)` guard entirely. Route is now registered unconditionally with `app.post()`. `res.sendStatus(200)` fires before any module load — Postmark always receives 200 regardless of runtime errors. Module loaded inline via string-literal `require()` so ncc bundling is unaffected.
+- **`api/routes/emailInbound.js`** — Removed `res.sendStatus(200)` and `res` parameter. Handler is now `async (req)` — processes email, no response ownership.
+
+---
+
 ## [v7.8.73] — 2026-06-07
 
 ### Fix: Receipt Email Inbound 401 (attempt 2)

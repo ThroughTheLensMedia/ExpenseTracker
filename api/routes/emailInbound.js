@@ -13,10 +13,9 @@ const TOKEN_MAP = {
  * Exported as a plain async handler (not an Express Router) so it can be mounted directly
  * on app.post() without sub-router path-stripping complications.
  */
-const handler = async (req, res) => {
-    // Always return 200 immediately — Postmark retries on non-2xx
-    res.sendStatus(200);
-
+// res.sendStatus(200) is now handled unconditionally in server.js before this function is called.
+// This function receives only req — it processes and logs, never touches res.
+const handler = async (req) => {
     try {
         // Verify token passed as query param in webhook URL
         // Postmark webhook URL format: /api/receipts/email-inbound?token=<POSTMARK_INBOUND_TOKEN>

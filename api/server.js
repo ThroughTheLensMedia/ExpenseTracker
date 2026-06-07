@@ -39,7 +39,6 @@ try {
   stripeRouter  = stripeImport?.router || null;
   stripeWebhook = stripeImport?.stripeWebhook || null;
 } catch(e) { console.error('[STARTUP] FAIL stripe:', e.message); }
-let emailInboundHandler; try { emailInboundHandler = require("./routes/emailInbound"); console.log('[STARTUP] emailInbound OK'); } catch(e) { console.error('[STARTUP] FAIL emailInbound:', e.message, e.stack); }
 let metricsRouter;      try { metricsRouter      = require("./routes/metrics");     } catch(e) { console.error('[STARTUP] FAIL metrics:',     e.message); }
 let vendorsRouter;      try { vendorsRouter      = require("./routes/vendors");     } catch(e) { console.error('[STARTUP] FAIL vendors:',     e.message); }
 let feedbackRouter;     try { feedbackRouter     = require("./routes/feedback");    } catch(e) { console.error('[STARTUP] FAIL feedback:',    e.message); }
@@ -98,7 +97,7 @@ if (payRouter)          apiRouter.use("/pay", payRouter);
 if (intakeRouter)       apiRouter.use("/intake", intakeRouter);
 let cronRouter; try { cronRouter = require("./routes/cron"); } catch(e) { console.error('[STARTUP] FAIL cron:', e.message); }
 if (cronRouter)         apiRouter.use("/cron", cronRouter);
-// emailInbound mounted at app level below (after apiRouter is defined) to bypass sub-router path issues
+// emailInbound mounted unconditionally at app level below — see route block after apiRouter definition
 
 // Account Request — public form that emails the admin
 apiRouter.post("/account-request", async (req, res) => {
@@ -170,9 +169,18 @@ if (vendorsRouter)      apiRouter.use("/vendors",        vendorsRouter);
 if (accountsRouter)     apiRouter.use("/accounts",       accountsRouter);
 if (documentsRouter)    apiRouter.use("/documents",      documentsRouter);
 
-// emailInbound — plain async handler, mounted directly on app before apiRouter.
-// No sub-router, no path manipulation — simplest possible wiring.
-if (emailInboundHandler) app.post("/api/receipts/email-inbound", emailInboundHandler);
+// emailInbound — unconditional route, no startup require, no if() guard.
+// res.sendStatus(200) fires before any module load — Postmark always gets 200.
+// Dynamic require() here uses a string literal so Vercel/ncc can still trace it.
+app.post("/api/receipts/email-inbound", async (req, res) => {
+    res.sendStatus(200);
+    try {
+        const processInboundEmail = require("./routes/emailInbound");
+        await processInboundEmail(req);
+    } catch (e) {
+        console.error('[EmailInbound] Error:', e.message, e.stack);
+    }
+});
 
 // Mount all API routes under /api
 app.use("/api", apiRouter);

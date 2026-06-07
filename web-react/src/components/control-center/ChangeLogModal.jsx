@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.74', date: 'JUN 7, 2026', color: '#4ade80', items: [
+        '<strong>Receipt Email Fix (Final):</strong> Forwarded receipts were still returning 401 errors on some requests. The root cause was a conditional route guard that silently prevented the handler from registering if any dependency failed at startup. The route is now registered unconditionally — receipt emails will always return 200 and process correctly.',
+    ]},
     { version: '7.8.73', date: 'JUN 7, 2026', color: '#f97316', items: [
         '<strong>Receipt Email Fix:</strong> Forwarded receipts were returning a 401 error and never processing. The inbound email handler is now wired correctly — receipt emails will parse, match to a transaction, and send a confirmation again.',
     ]},
