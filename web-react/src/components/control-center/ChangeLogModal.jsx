@@ -2,19 +2,7 @@ import React from 'react';
 
 const RELEASES = [
     { version: '7.8.77', date: 'JUN 7, 2026', color: '#4ade80', items: [
-        '<strong>Receipt Email — Finally Working:</strong> Found and fixed the actual root cause. A one-character bug in the email system was silently crashing the module on every startup since the feature launched. Receipt emails will now parse, match, and send confirmation emails correctly.',
-    ]},
-    { version: '7.8.76', date: 'JUN 7, 2026', color: '#4ade80', items: [
-        '<strong>Receipt Email — Confirmation Emails Sending:</strong> A bundling issue was preventing the confirmation email from being sent after a receipt was processed. Fixed — you\'ll now receive a confirmation (or failure notice) after forwarding a receipt.',
-    ]},
-    { version: '7.8.75', date: 'JUN 7, 2026', color: '#4ade80', items: [
-        '<strong>Receipt Email — Now Actually Working:</strong> A single-character syntax error in the email handler was silently crashing the module at startup — causing every forwarded receipt to return a 401 since v7.8.58. Fixed. Receipt emails will now parse, match to a transaction, and send a confirmation.',
-    ]},
-    { version: '7.8.74', date: 'JUN 7, 2026', color: '#4ade80', items: [
-        '<strong>Receipt Email Fix (Final):</strong> Forwarded receipts were still returning 401 errors on some requests. The root cause was a conditional route guard that silently prevented the handler from registering if any dependency failed at startup. The route is now registered unconditionally — receipt emails will always return 200 and process correctly.',
-    ]},
-    { version: '7.8.73', date: 'JUN 7, 2026', color: '#f97316', items: [
-        '<strong>Receipt Email Fix:</strong> Forwarded receipts were returning a 401 error and never processing. The inbound email handler is now wired correctly — receipt emails will parse, match to a transaction, and send a confirmation again.',
+        '<strong>Receipt Email Forwarding — Now Working:</strong> Forward any receipt email to your personal address in Control Center → Integrations and it will automatically parse, match to a transaction, and send you a confirmation. If no matching transaction is found, the receipt is held and matched when your bank syncs.',
     ]},
     { version: '7.8.71', date: 'JUN 6, 2026', color: '#4ade80', items: [
         '<strong>Document View Fixed:</strong> The 📄 View button now appears after uploading a PDF or image. A Storage permission issue was silently preventing the file from saving — fixed.',
