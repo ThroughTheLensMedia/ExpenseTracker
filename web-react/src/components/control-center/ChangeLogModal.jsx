@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.77', date: 'JUN 7, 2026', color: '#4ade80', items: [
+        '<strong>Receipt Email — Finally Working:</strong> Found and fixed the actual root cause. A one-character bug in the email system was silently crashing the module on every startup since the feature launched. Receipt emails will now parse, match, and send confirmation emails correctly.',
+    ]},
     { version: '7.8.76', date: 'JUN 7, 2026', color: '#4ade80', items: [
         '<strong>Receipt Email — Confirmation Emails Sending:</strong> A bundling issue was preventing the confirmation email from being sent after a receipt was processed. Fixed — you\'ll now receive a confirmation (or failure notice) after forwarding a receipt.',
     ]},

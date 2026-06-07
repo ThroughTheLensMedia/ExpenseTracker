@@ -1,1 +1,1 @@
-{"version":"7.8.76","release_date":"2026-06-07","codename":"Lumière Ledger","notes":"v7.8.76: Fix receipt email resend bundling — confirmation emails now send correctly."}
+{"version":"7.8.77","release_date":"2026-06-07","codename":"Lumière Ledger","notes":"v7.8.77: Fix TDZ bug in mailer.js — root cause of all receipt email failures since v7.8.58."}

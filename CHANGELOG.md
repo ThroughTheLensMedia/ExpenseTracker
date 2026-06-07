@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.77] — 2026-06-07
+
+### Fix: Receipt Email — True Root Cause (TDZ bug in mailer.js)
+
+#### Fixed
+- **`api/utils/mailer.js` line 537** — `const uncatUrl = \`${uncatUrl}...\`` was a self-referential Temporal Dead Zone bug. `uncatUrl` referenced itself before initialization, throwing a `ReferenceError` when `mailer.js` loaded. This killed the entire `emailInbound.js` require chain at startup — causing every version from v7.8.58 onward to fail silently. ncc's module wrapper swallowed the error without triggering the try/catch in server.js. Fixed to `\`${appUrl}/Transactions?filter=uncategorized...\``.
+
+---
+
 ## [v7.8.76] — 2026-06-07
 
 ### Fix: Receipt Email — Resend module not found (ncc bundling)

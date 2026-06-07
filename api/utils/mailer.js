@@ -534,7 +534,7 @@ async function sendMonthlyReportEmail({
 
     const fromEmail = process.env.RESEND_FROM || 'Lumière Ledger <support@throughthelens.media>';
     const appUrl = 'https://www.lumiereledger.com';
-    const uncatUrl = `${uncatUrl}${startStr ? `&start=${startStr}` : ''}${endStr ? `&end=${endStr}` : ''}`;
+    const uncatUrl = `${appUrl}/Transactions?filter=uncategorized${startStr ? `&start=${startStr}` : ''}${endStr ? `&end=${endStr}` : ''}`;
 
     const html = `<!DOCTYPE html>
 <html>
