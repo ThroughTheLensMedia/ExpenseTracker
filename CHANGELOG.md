@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.75] — 2026-06-07
+
+### Fix: Receipt Email SyntaxError (root cause of all 401s)
+
+#### Fixed
+- **`api/routes/emailInbound.js`** — Fixed `});` → `};` closing the handler. This SyntaxError was the true root cause of every 401 from v7.8.71 onward: the module threw at startup, `emailInboundHandler` was `undefined`, the `if()` guard was false, and the route was never registered. v7.8.74's unconditional route exposed the error via logs. One character fixed.
+
+---
+
 ## [v7.8.74] — 2026-06-07
 
 ### Fix: Receipt Email Inbound 401 (final — unconditional route)

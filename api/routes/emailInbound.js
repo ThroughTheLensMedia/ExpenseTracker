@@ -203,6 +203,6 @@ const handler = async (req) => {
     } catch (err) {
         console.error('[EmailInbound] Unhandled error:', err.message, err.stack);
     }
-});
+};
 
 module.exports = handler;
