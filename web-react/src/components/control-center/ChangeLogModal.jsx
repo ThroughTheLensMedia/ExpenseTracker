@@ -1,8 +1,8 @@
 import React from 'react';
 
 const RELEASES = [
-    { version: '7.8.77', date: 'JUN 7, 2026', color: '#4ade80', items: [
-        '<strong>Receipt Email Forwarding — Now Working:</strong> Forward any receipt email to your personal address in Control Center → Integrations and it will automatically parse, match to a transaction, and send you a confirmation. If no matching transaction is found, the receipt is held and matched when your bank syncs.',
+    { version: '7.8.78', date: 'JUN 7, 2026', color: '#4ade80', items: [
+        '<strong>Email System Fixed:</strong> A dependency packaging bug was preventing all emails from sending — receipt confirmations, invoice notifications, and account request alerts were silently failing. Fixed. Receipt email forwarding, invoice emails, and all other email features are now working.',
     ]},
     { version: '7.8.71', date: 'JUN 6, 2026', color: '#4ade80', items: [
         '<strong>Document View Fixed:</strong> The 📄 View button now appears after uploading a PDF or image. A Storage permission issue was silently preventing the file from saving — fixed.',

@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.78] — 2026-06-07
+
+### Fix: Email system — resend upgrade removes ncc bundling blocker
+
+#### Fixed
+- **`api/package.json`** — Upgraded `resend` from 2.1.0 → 6.12.4. resend 2.x depended on `@react-email/render` → `react-dom/server`, which ncc (Vercel's bundler) could not bundle. ncc marked `resend` as an external module; at Lambda runtime there is no `node_modules` folder, so all email sends failed with "Cannot find module 'resend'". resend 6.x has no React dependency — only `postal-mime` and `standardwebhooks`. This fixes receipt email forwarding, invoice email sends, and all other mailer routes.
+- **`api/package-lock.json`** — Regenerated; removes 380+ lines of React dependency chain.
+
+---
+
 ## [v7.8.77] — 2026-06-07
 
 ### Fix: Receipt Email — True Root Cause (TDZ bug in mailer.js)
