@@ -55,15 +55,17 @@ const handler = async (req) => {
         const plainBody = payload.TextBody || payload.StrippedTextReply || '';
 
         // Load user's Gemini API key
-        const { data: settings } = await supabase
+        const { data: settings, error: settingsErr } = await supabase
             .from('settings')
             .select('gemini_api_key')
             .eq('user_id', userId)
             .maybeSingle();
 
+        console.log('[EmailInbound] Settings query — userId:', userId, '| data:', settings ? 'ROW RETURNED' : 'NULL', '| error:', settingsErr?.message || 'none');
+
         const apiKey = settings?.gemini_api_key;
         if (!apiKey) {
-            console.error('[EmailInbound] No Gemini API key for user', userId);
+            console.error('[EmailInbound] No Gemini API key for user', userId, '| settingsErr:', settingsErr?.message);
             return;
         }
 
