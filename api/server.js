@@ -39,7 +39,7 @@ try {
   stripeRouter  = stripeImport?.router || null;
   stripeWebhook = stripeImport?.stripeWebhook || null;
 } catch(e) { console.error('[STARTUP] FAIL stripe:', e.message); }
-let emailInboundRouter; try { emailInboundRouter = require("./routes/emailInbound");} catch(e) { console.error('[STARTUP] FAIL emailInbound:', e.message); }
+let emailInboundRouter; try { emailInboundRouter = require("./routes/emailInbound"); console.log('[STARTUP] emailInbound OK'); } catch(e) { console.error('[STARTUP] FAIL emailInbound:', e.message, e.stack); }
 let metricsRouter;      try { metricsRouter      = require("./routes/metrics");     } catch(e) { console.error('[STARTUP] FAIL metrics:',     e.message); }
 let vendorsRouter;      try { vendorsRouter      = require("./routes/vendors");     } catch(e) { console.error('[STARTUP] FAIL vendors:',     e.message); }
 let feedbackRouter;     try { feedbackRouter     = require("./routes/feedback");    } catch(e) { console.error('[STARTUP] FAIL feedback:',    e.message); }
