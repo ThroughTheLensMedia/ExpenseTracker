@@ -17,9 +17,16 @@ export default function Transactions() {
     const [loading, setLoading] = useState(true);
     const deepLinkOpened = useRef(false);
 
-    // Filters
-    const [start, setStart] = useState('');
-    const [end, setEnd] = useState('');
+    // Helpers to build date strings
+    const todayStr = () => new Date().toISOString().slice(0, 10);
+    const daysAgoStr = (n) => {
+        const d = new Date(); d.setDate(d.getDate() - n); return d.toISOString().slice(0, 10);
+    };
+    const ytdStartStr = () => `${new Date().getFullYear()}-01-01`;
+
+    // Filters — default to last 90 days
+    const [start, setStart] = useState(() => daysAgoStr(90));
+    const [end, setEnd] = useState(() => todayStr());
     const [searchVendor, setSearchVendor] = useState('');
     const [searchCategory, setSearchCategory] = useState('');
     const [searchNotes, setSearchNotes] = useState('');
@@ -171,20 +178,10 @@ export default function Transactions() {
             .catch(() => {});
     }, []);
 
-    const loadData = async (force = false) => {
-        // Stale-while-revalidate: if we have cached data, show it instantly
-        // then silently refresh in the background
-        const cached = getExpensesCache();
-        if (!force && cached) {
-            setExpenses(cached);
-            setLoading(false);
-            // Silently refresh in background
-            fetchAllExpenses(true).then(data => setExpenses(data)).catch(() => {});
-            return;
-        }
+    const loadData = async (force = false, rangeStart = start, rangeEnd = end) => {
         setLoading(true);
         try {
-            const data = await fetchAllExpenses(force);
+            const data = await fetchAllExpenses(force, null, rangeStart || null, rangeEnd || null);
             setExpenses(data);
         } catch (e) {
             console.error(e);
@@ -193,16 +190,17 @@ export default function Transactions() {
         }
     };
 
+    // Initial load
     useEffect(() => {
-        // Cold start: fetch first 25 instantly for immediate render, then load all
-        if (!getExpensesCache()) {
-            apiGet('/expenses?limit=25&offset=0').then(data => {
-                if (data?.rows?.length) setExpenses(data.rows);
-                setLoading(false);
-            }).catch(() => {});
-        }
-        loadData();
-    }, []);
+        loadData(false, daysAgoStr(90), todayStr());
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Re-fetch when date range changes (user picks different window)
+    const isFirstRender = useRef(true);
+    useEffect(() => {
+        if (isFirstRender.current) { isFirstRender.current = false; return; }
+        loadData(true, start || null, end || null);
+    }, [start, end]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Pre-populate filters from URL params (?search=, ?source=, ?plaid_account_id=)
     useEffect(() => {
@@ -310,10 +308,10 @@ export default function Transactions() {
     };
 
     const clearFilters = () => {
-        setStart(''); setEnd(''); setSearchVendor(''); setSearchCategory('');
+        setStart(daysAgoStr(90)); setEnd(todayStr()); setSearchVendor(''); setSearchCategory('');
         setSearchAccount(''); setInstitutionFilter(''); setPlaidAccountId(''); setPlaidAccountName(''); setPlaidSourceKey('');
         setSearchNotes(''); setDeductOnly(false); setMissingReceiptOnly(false); setNeedsCategoryFilter(false);
-        setToast({ ok: true, msg: 'All filters cleared. Showing full ledger.' });
+        setToast({ ok: true, msg: 'Filters cleared. Showing last 90 days.' });
         setTimeout(() => setToast(null), 3000);
     };
 
@@ -477,6 +475,23 @@ export default function Transactions() {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                 <small className="muted" style={{ fontWeight: 800 }}>END DATE</small>
                                 <input type="date" value={end} onChange={e => setEnd(e.target.value)} style={{ width: '150px' }} />
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', justifyContent: 'flex-end' }}>
+                                <small className="muted" style={{ fontWeight: 800 }}>QUICK RANGE</small>
+                                <div style={{ display: 'flex', gap: '6px' }}>
+                                    {[
+                                        { label: '30d',  fn: () => { setStart(daysAgoStr(30));  setEnd(todayStr()); } },
+                                        { label: '90d',  fn: () => { setStart(daysAgoStr(90));  setEnd(todayStr()); } },
+                                        { label: 'YTD',  fn: () => { setStart(ytdStartStr());    setEnd(todayStr()); } },
+                                        { label: 'All',  fn: () => { setStart(''); setEnd(''); } },
+                                    ].map(({ label, fn }) => (
+                                        <button key={label} onClick={fn} style={{
+                                            padding: '4px 10px', fontSize: '12px', borderRadius: '6px',
+                                            border: '1px solid #334155', background: '#1e293b', color: '#94a3b8',
+                                            cursor: 'pointer', whiteSpace: 'nowrap',
+                                        }}>{label}</button>
+                                    ))}
+                                </div>
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                 <small className="muted" style={{ fontWeight: 800 }}>VENDOR</small>

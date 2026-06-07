@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.79', date: 'JUN 6, 2026', color: '#4ade80', items: [
+        '<strong>Smarter Receipt Emails:</strong> Forwarding a receipt for a transaction that already has one now sends a clear "Receipt already on file" reply — no duplicate pending receipt created.',
+        '<strong>Transactions Page — 90-Day Default:</strong> The ledger now loads the last 90 days on open instead of all 3,600+ rows. Loads significantly faster. Added quick-range buttons: 30d / 90d / YTD / All.',
+    ]},
     { version: '7.8.78', date: 'JUN 7, 2026', color: '#4ade80', items: [
         '<strong>Email System Fixed:</strong> A dependency packaging bug was preventing all emails from sending — receipt confirmations, invoice notifications, and account request alerts were silently failing. Fixed. Receipt email forwarding, invoice emails, and all other email features are now working.',
     ]},

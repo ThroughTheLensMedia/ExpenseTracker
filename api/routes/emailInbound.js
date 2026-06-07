@@ -154,8 +154,9 @@ const handler = async (req) => {
             .gte('expense_date', from)
             .lte('expense_date', to);
 
-        // Filter out transactions that already have a receipt
+        // Separate matches into unlinked (no receipt) and already-linked (has receipt)
         const unlinked = (matches || []).filter(e => !e.receipt_link);
+        const alreadyLinked = (matches || []).filter(e => e.receipt_link);
 
         if (unlinked.length === 1) {
             // Perfect match — attach receipt
@@ -171,6 +172,19 @@ const handler = async (req) => {
             await sendReceiptConfirmationEmail({
                 to: senderEmail,
                 outcome: 'matched',
+                vendor: match.vendor || extracted.vendor,
+                amountCents,
+                expenseDate: match.expense_date,
+                expenseId: match.id,
+            }).catch(() => {});
+
+        } else if (unlinked.length === 0 && alreadyLinked.length > 0) {
+            // Transaction exists but already has a receipt attached
+            const match = alreadyLinked[0];
+            console.log(`[EmailInbound] Transaction ${match.id} already has receipt — notifying sender`);
+            await sendReceiptConfirmationEmail({
+                to: senderEmail,
+                outcome: 'already_linked',
                 vendor: match.vendor || extracted.vendor,
                 amountCents,
                 expenseDate: match.expense_date,

@@ -5,6 +5,20 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.79] — 2026-06-06
+
+### Fix: Receipt email — already_linked case + Transactions 90-day default
+
+#### Fixed
+- **`api/routes/emailInbound.js`** — When a matching transaction exists but already has a receipt, the handler now sends an `already_linked` confirmation email ("Receipt already on file") instead of storing a pending receipt. Added `alreadyLinked` variable to separate matches with vs. without existing receipts.
+- **`api/utils/mailer.js`** — Added `already_linked` outcome to `sendReceiptConfirmationEmail`: distinct subject line, body copy, and "View Transaction" CTA.
+
+#### Performance
+- **`web-react/src/pages/Transactions.jsx`** — Transactions page now defaults to last 90 days instead of loading all rows. Added quick-range buttons (30d / 90d / YTD / All). Date range change triggers a fresh server-side fetch. `clearFilters` resets to 90-day window.
+- **`web-react/src/api/index.js`** — `fetchAllExpenses` now accepts `start`/`end` params. When provided, bypasses cache and fetches only that window from the server.
+
+---
+
 ## [v7.8.78] — 2026-06-07
 
 ### Fix: Email system — resend upgrade removes ncc bundling blocker

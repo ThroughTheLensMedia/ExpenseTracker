@@ -175,29 +175,39 @@ export function invalidateCache(key) {
 let _expensesCache = null;
 let _expensesAge = 0;
 
-// Fetch expenses, optionally filtered by year
-export async function fetchAllExpenses(force = false, year = null) {
+// Fetch expenses, optionally filtered by date range or year.
+// start/end (YYYY-MM-DD) bypass the global cache — fetch exactly that window from the server.
+export async function fetchAllExpenses(force = false, year = null, start = null, end = null) {
     const now = Date.now();
-    
+
+    // Date-range fetch: bypass cache entirely, always hits server
+    if (start || end) {
+        const PAGE = 1000;
+        let offset = 0;
+        let allRows = [];
+        while (true) {
+            const queryParams = [`limit=${PAGE}`, `offset=${offset}`];
+            if (start) queryParams.push(`start=${start}`);
+            if (end)   queryParams.push(`end=${end}`);
+            const data = await apiGet(`/expenses?${queryParams.join('&')}`);
+            const rows = data.rows || [];
+            allRows = allRows.concat(rows);
+            if (rows.length === PAGE) { offset += PAGE; } else { break; }
+        }
+        return allRows;
+    }
+
     // 1. Return cache if still valid and not forced
     if (!force && _expensesCache && (now - _expensesAge < CACHE_TTL)) {
         if (!year) return _expensesCache;
         return _expensesCache.filter(e => String(e.expense_date || '').startsWith(String(year)));
     }
-    
-    // 2. Optimization: If we have a valid cache but it's older than TTL, 
-    // we still might want to return it quickly and refresh in background, 
-    // but for now let's just fetch if force is true or cache is old.
-    
+
     const PAGE = 1000;
     let offset = 0;
     let allRows = [];
-    
-    // If we are forcing a refresh but ONLY for a specific year, we could optimize the API call,
-    // but to keep the global cache consistent, we'll fetch all.
-    // However, if the user has TONS of data, we should probably only fetch the year requested.
-    // Let's compromise: if we're forcing and have a year, only fetch that year.
-    
+
+    // If forcing a specific year, only fetch that year
     const useYearFilter = force && year;
 
     while (true) {
@@ -206,19 +216,13 @@ export async function fetchAllExpenses(force = false, year = null) {
             queryParams.push(`start=${year}-01-01`);
             queryParams.push(`end=${year}-12-31`);
         }
-        
         const data = await apiGet(`/expenses?${queryParams.join('&')}`);
         const rows = data.rows || [];
         allRows = allRows.concat(rows);
-        
-        if (rows.length === PAGE) {
-            offset += PAGE;
-        } else {
-            break;
-        }
+        if (rows.length === PAGE) { offset += PAGE; } else { break; }
     }
 
-    // 3. Update global cache (only if we fetched everything)
+    // Update global cache only if we fetched everything (no year filter)
     if (!useYearFilter) {
         _expensesCache = allRows;
         _expensesAge = now;

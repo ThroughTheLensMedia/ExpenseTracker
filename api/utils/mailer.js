@@ -731,7 +731,7 @@ async function sendHealthAlertEmail({ to, issues }) {
 /**
  * sendReceiptConfirmationEmail
  * Sent back to the forwarder after email receipt ingestion.
- * outcome: 'matched' | 'pending' | 'failed'
+ * outcome: 'matched' | 'pending' | 'failed' | 'already_linked'
  */
 async function sendReceiptConfirmationEmail({ to, outcome, vendor, amountCents, expenseDate, expenseId, subject }) {
     console.log(`[MAILER] Sending receipt confirmation (${outcome}) to ${to}`);
@@ -764,6 +764,15 @@ async function sendReceiptConfirmationEmail({ to, outcome, vendor, amountCents, 
                 <p>Your receipt for <strong>${vendor || 'unknown vendor'} ${amount}</strong> has been saved.</p>
                 <p style="color:#94a3b8;">The bank transaction hasn't posted yet. It will be automatically attached once your bank syncs (usually 1–3 business days).</p>
                 <a href="${appUrl}" style="display:inline-block;background:#f59e0b;color:#0f172a;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Open Lumière Ledger</a>
+            </div>`;
+    } else if (outcome === 'already_linked') {
+        emailSubject = `Receipt already on file — ${vendor} ${amount}`;
+        bodyHtml = `
+            <div style="background:#0f172a;color:#f8fafc;padding:40px;font-family:sans-serif;border-radius:12px;max-width:600px;">
+                <h2 style="color:#38bdf8;margin-top:0;">Receipt Already Saved</h2>
+                <p>Your transaction for <strong>${vendor || 'unknown vendor'} ${amount}</strong> already has a receipt attached.</p>
+                <p style="color:#94a3b8;">No changes were made. If you meant to replace the existing receipt, open the transaction and upload manually.</p>
+                <a href="${txUrl}" style="display:inline-block;background:#f59e0b;color:#0f172a;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">View Transaction</a>
             </div>`;
     } else {
         emailSubject = `Receipt not processed`;
