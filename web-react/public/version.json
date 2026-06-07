@@ -1,1 +1,1 @@
-{"version":"7.8.71","release_date":"2026-06-06","codename":"Lumière Ledger","notes":"v7.8.70: Documents tab UI — themed confirm modal, success indicator, renamed section header."}
+{"version":"7.8.72","release_date":"2026-06-07","codename":"Lumière Ledger","notes":"v7.8.72: Fix receipt email inbound 401 — route now mounted at app level before auth."}

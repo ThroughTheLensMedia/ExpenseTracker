@@ -98,7 +98,7 @@ if (payRouter)          apiRouter.use("/pay", payRouter);
 if (intakeRouter)       apiRouter.use("/intake", intakeRouter);
 let cronRouter; try { cronRouter = require("./routes/cron"); } catch(e) { console.error('[STARTUP] FAIL cron:', e.message); }
 if (cronRouter)         apiRouter.use("/cron", cronRouter);
-if (emailInboundRouter) apiRouter.use("/receipts/email-inbound", emailInboundRouter);
+// emailInbound mounted at app level below (after apiRouter is defined) to bypass sub-router path issues
 
 // Account Request — public form that emails the admin
 apiRouter.post("/account-request", async (req, res) => {
@@ -170,10 +170,17 @@ if (vendorsRouter)      apiRouter.use("/vendors",        vendorsRouter);
 if (accountsRouter)     apiRouter.use("/accounts",       accountsRouter);
 if (documentsRouter)    apiRouter.use("/documents",      documentsRouter);
 
+// emailInbound — mounted at app level, before apiRouter, so it never hits authMiddleware.
+// Sub-router path-stripping via apiRouter.use() was causing the route to not match on Vercel.
+if (emailInboundRouter) {
+  app.post("/api/receipts/email-inbound", (req, res, next) => {
+    req.url = "/";
+    emailInboundRouter(req, res, next);
+  });
+}
+
 // Mount all API routes under /api
-// Mount all API routes under /api AND root (for Vercel flexibility)
 app.use("/api", apiRouter);
-app.use("/", apiRouter);
 
 // Top-level health check
 app.get("/health", (_req, res) => res.json({ ok: true }));

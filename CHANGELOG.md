@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.72] — 2026-06-07
+
+### Fix: Receipt Email Inbound 401
+
+#### Fixed
+- **`api/server.js`** — Moved `emailInbound` route mount from `apiRouter.use()` to a direct `app.post()` at the app level, before `apiRouter`. The sub-router path-stripping via `apiRouter.use("/receipts/email-inbound", ...)` was silently failing to match on Vercel, causing every Postmark webhook to fall through to `authMiddleware` and return 401. Mounting directly on `app` with `req.url = "/"` ensures the handler always runs before auth.
+- Removed vestigial `app.use("/", apiRouter)` double-mount that could cause double-dispatch on matched routes.
+
+---
+
 ## [v7.8.71] — 2026-06-06
 
 ### Fix: Document View Button Not Appearing After Upload
