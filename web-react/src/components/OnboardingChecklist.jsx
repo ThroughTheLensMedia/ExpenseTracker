@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { apiPost } from '../api';
 
 const STORAGE_KEY   = 'll_onboarding_dismissed_v2'; // bump version to re-show for all users
 const CHECKED_KEY   = 'll_onboarding_checked';
@@ -93,6 +94,88 @@ function ModalShell({ children, accent = '#f97316' }) {
     );
 }
 
+// ─── Role presets ─────────────────────────────────────────────────────────
+const ROLE_PRESETS = {
+    photographer: { invoices: true, forecast: true, performance_chart: true, top_expenses: true, insights: true, operational_intelligence: true },
+    freelancer:   { invoices: true, forecast: false, performance_chart: true, top_expenses: true, insights: true, operational_intelligence: false },
+    small_business: { invoices: true, forecast: true, performance_chart: true, top_expenses: true, insights: true, operational_intelligence: true },
+    personal:     { invoices: false, forecast: false, performance_chart: true, top_expenses: true, insights: true, operational_intelligence: false },
+};
+
+const ROLES = [
+    { id: 'photographer', icon: '📷', label: 'Photographer', sub: 'Includes Videographers', accent: '#f97316' },
+    { id: 'freelancer',   icon: '💻', label: 'Freelancer',   sub: 'Consultants, designers, writers', accent: '#38bdf8' },
+    { id: 'small_business', icon: '🏢', label: 'Small Business', sub: 'Retail, services, agencies', accent: '#10b981' },
+    { id: 'personal',     icon: '🎯', label: 'Personal / Side Hustle', sub: 'Simple income & expense tracking', accent: '#a78bfa' },
+];
+
+// ─── Page 1: Role Selector ─────────────────────────────────────────────────
+function PageRoleSelector({ onNext, onBack, onSkip }) {
+    const [selected, setSelected] = useState(null);
+    const [saving, setSaving] = useState(false);
+
+    async function pick(roleId) {
+        setSelected(roleId);
+        setSaving(true);
+        try {
+            await apiPost('/settings', {
+                dashboard_config: { role: roleId, widgets: ROLE_PRESETS[roleId] },
+            });
+        } catch {
+            // non-blocking — dashboard defaults to all-on if save fails
+        }
+        setSaving(false);
+        onNext();
+    }
+
+    return (
+        <ModalShell accent="#a78bfa">
+            <div style={{ marginBottom: 24 }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Step 1 of 3</div>
+                <h2 style={{ fontSize: 20, fontWeight: 950, letterSpacing: '-0.02em', margin: '0 0 6px', color: 'white' }}>
+                    🎯 What best describes you?
+                </h2>
+                <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', fontWeight: 600, margin: 0, lineHeight: 1.6 }}>
+                    Personalizes your dashboard to show what matters most to you. You can change this any time.
+                </p>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
+                {ROLES.map(role => (
+                    <button
+                        key={role.id}
+                        onClick={() => pick(role.id)}
+                        disabled={saving}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: 14,
+                            background: selected === role.id ? `${role.accent}18` : 'rgba(255,255,255,0.03)',
+                            border: `1px solid ${selected === role.id ? `${role.accent}55` : 'rgba(255,255,255,0.08)'}`,
+                            borderRadius: 14, padding: '14px 18px', cursor: saving ? 'wait' : 'pointer',
+                            textAlign: 'left', width: '100%', transition: 'all 0.15s',
+                        }}
+                    >
+                        <span style={{ fontSize: 26, flexShrink: 0 }}>{role.icon}</span>
+                        <div>
+                            <div style={{ fontSize: 14, fontWeight: 900, color: 'white', marginBottom: 2 }}>{role.label}</div>
+                            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>{role.sub}</div>
+                        </div>
+                        {selected === role.id && (
+                            <span style={{ marginLeft: 'auto', fontSize: 16, color: role.accent }}>✓</span>
+                        )}
+                    </button>
+                ))}
+            </div>
+
+            <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={onBack} style={{ flex: '0 0 auto', padding: '12px 20px', borderRadius: 12, background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', fontWeight: 800, fontSize: 13, cursor: 'pointer' }}>← Back</button>
+                <button onClick={onNext} style={{ flex: 1, padding: '12px', borderRadius: 12, background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', fontWeight: 800, fontSize: 13, cursor: 'pointer' }}>
+                    Skip for now →
+                </button>
+            </div>
+        </ModalShell>
+    );
+}
+
 // ─── Page 0: Welcome ──────────────────────────────────────────────────────
 function PageWelcome({ onNext, onSkip }) {
     return (
@@ -138,7 +221,7 @@ function PageDataImport({ onNext, onBack, onSkip }) {
     return (
         <ModalShell accent="#38bdf8">
             <div style={{ marginBottom: 24 }}>
-                <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Step 1 of 2</div>
+                <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Step 2 of 3</div>
                 <h2 style={{ fontSize: 20, fontWeight: 950, letterSpacing: '-0.02em', margin: '0 0 6px', color: 'white' }}>
                     📥 Getting Your Transactions In
                 </h2>
@@ -229,7 +312,7 @@ function PageChecklist({ onDone, onBack, minimized, onMinimize, onRestore }) {
         <ModalShell accent="#a78bfa">
             {/* Header */}
             <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Step 2 of 2</div>
+                <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Step 3 of 3</div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                     <h2 style={{ fontSize: 20, fontWeight: 950, letterSpacing: '-0.02em', margin: 0, color: 'white' }}>
                         ✅ Setup Checklist
@@ -303,11 +386,12 @@ export default function OnboardingChecklist({ onDismiss, initialPage = 0 }) {
     }
 
     if (page === 0) return <PageWelcome onNext={() => setPage(1)} onSkip={dismiss} />;
-    if (page === 1) return <PageDataImport onNext={() => setPage(2)} onBack={() => setPage(0)} onSkip={dismiss} />;
+    if (page === 1) return <PageRoleSelector onNext={() => setPage(2)} onBack={() => setPage(0)} onSkip={() => setPage(2)} />;
+    if (page === 2) return <PageDataImport onNext={() => setPage(3)} onBack={() => setPage(1)} onSkip={dismiss} />;
     return (
         <PageChecklist
             onDone={dismiss}
-            onBack={() => setPage(1)}
+            onBack={() => setPage(2)}
             minimized={minimized}
             onMinimize={() => setMinimized(true)}
             onRestore={() => setMinimized(false)}

@@ -14,6 +14,7 @@ import FeedbackTab from '../components/control-center/FeedbackTab.jsx';
 import DocumentsTab from '../components/control-center/DocumentsTab.jsx';
 import SystemLogsTab from '../components/control-center/SystemLogsTab.jsx';
 import SecurityReviewTab from '../components/control-center/SecurityReviewTab.jsx';
+import DashboardTab from '../components/control-center/DashboardTab.jsx';
 
 const DEFAULT_SETTINGS = {
     business_name: '', contact_name: '', website: '', email: '', phone: '', address: '',
@@ -49,7 +50,7 @@ export default function Backup() {
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const t = params.get('tab');
-        if (t && ['automation', 'profile', 'infrastructure', 'help', 'saas', 'intelligence', 'integration', 'feedback', 'logs', 'documents', 'security'].includes(t)) {
+        if (t && ['automation', 'profile', 'infrastructure', 'help', 'saas', 'intelligence', 'integration', 'feedback', 'logs', 'documents', 'security', 'dashboard'].includes(t)) {
             setActiveTab(t);
         }
     }, [window.location.search]);
@@ -156,6 +157,7 @@ export default function Backup() {
 
                 <nav style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
                     <button className={`pill ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>Business Profile</button>
+                    <button className={`pill ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>Dashboard</button>
                     <button className={`pill ${activeTab === 'automation' ? 'active' : ''}`} onClick={() => setActiveTab('automation')}>Automation</button>
                     <button className={`pill ${activeTab === 'intelligence' ? 'active' : ''}`} onClick={() => setActiveTab('intelligence')}>AI Intelligence</button>
                     <button className={`pill ${activeTab === 'documents' ? 'active' : ''}`} onClick={() => setActiveTab('documents')}>Documents</button>
@@ -214,6 +216,7 @@ export default function Backup() {
                 </div>
             )}
             {!showSkeleton && activeTab === 'profile' && <ProfileTab settings={settings} setSettings={setSettings} onReload={loadData} />}
+            {!showSkeleton && activeTab === 'dashboard' && <DashboardTab settings={settings} setSettings={setSettings} />}
             {!showSkeleton && activeTab === 'intelligence' && <IntelligenceTab settings={settings} setSettings={setSettings} user={user} loading={loading} setLoading={setLoading} onReload={loadData} />}
             {!showSkeleton && activeTab === 'documents' && <DocumentsTab settings={settings} user={user} />}
             {!showSkeleton && activeTab === 'automation' && <AutomationTab rules={rules} allExpenses={allExpenses} onReload={loadData} />}

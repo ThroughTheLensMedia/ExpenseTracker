@@ -1,7 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import OperationalIntelligenceSection from '../components/dashboard/OperationalIntelligenceSection.jsx';
-import { fetchDashboardMetrics, getDashboardMetricsCache } from '../api';
+import { fetchDashboardMetrics, getDashboardMetricsCache, apiGet, apiPost } from '../api';
+
+const DEFAULT_WIDGETS = {
+    invoices: true,
+    forecast: true,
+    performance_chart: true,
+    top_expenses: true,
+    insights: true,
+    operational_intelligence: true,
+};
 
 export default function DashboardV2({ apiStatus }) {
     const navigate = useNavigate();
@@ -9,6 +18,11 @@ export default function DashboardV2({ apiStatus }) {
     const [error, setError] = useState(null);
     const [metrics, setMetrics] = useState(null);
     const [topCatFilter, setTopCatFilter] = useState('ytd'); // 'year', 'last_year', 'ytd', 'month'
+
+    // Widget visibility
+    const [widgets, setWidgets] = useState(DEFAULT_WIDGETS);
+    const [showGearPanel, setShowGearPanel] = useState(false);
+    const gearRef = useRef(null);
 
     // Phase F: Forecast Assumptions
     const [growthAssump, setGrowthAssump] = useState(1.10); // 10% defaults
@@ -26,17 +40,21 @@ export default function DashboardV2({ apiStatus }) {
     const targetYear = new Date().getFullYear();
 
     useEffect(() => {
-        const loadMetrics = async () => {
+        const loadAll = async () => {
+            // Load settings (for widget config) in parallel with metrics
+            apiGet('/settings').then(s => {
+                const cfg = s?.dashboard_config?.widgets;
+                if (cfg) setWidgets({ ...DEFAULT_WIDGETS, ...cfg });
+            }).catch(() => {}); // non-blocking — default to all-on on error
+
             // Stale-while-revalidate: if cached data exists, show it instantly
-            // then silently refresh in the background
             const cached = getDashboardMetricsCache(targetYear);
             if (cached) {
                 setMetrics(cached);
                 setLoading(false);
-                // Background refresh — update data without showing a loading state
                 fetchDashboardMetrics(targetYear, true)
                     .then(({ data }) => setMetrics(data))
-                    .catch(() => {}); // silent — user already sees data
+                    .catch(() => {});
                 return;
             }
             // Cold load: no cache yet
@@ -51,8 +69,31 @@ export default function DashboardV2({ apiStatus }) {
                 setLoading(false);
             }
         };
-        loadMetrics();
+        loadAll();
     }, [targetYear]);
+
+    // Close gear panel on outside click
+    useEffect(() => {
+        function handleClick(e) {
+            if (gearRef.current && !gearRef.current.contains(e.target)) setShowGearPanel(false);
+        }
+        document.addEventListener('mousedown', handleClick);
+        return () => document.removeEventListener('mousedown', handleClick);
+    }, []);
+
+    async function saveWidgets(next) {
+        setWidgets(next);
+        try {
+            const current = await apiGet('/settings');
+            await apiPost('/settings', {
+                dashboard_config: { ...(current?.dashboard_config || {}), widgets: next },
+            });
+        } catch {} // non-blocking
+    }
+
+    function toggleWidget(key) {
+        saveWidgets({ ...widgets, [key]: !widgets[key] });
+    }
 
     // Format currency
     const formatMoney = (cents) => {
@@ -77,8 +118,40 @@ export default function DashboardV2({ apiStatus }) {
                             {loading && <span className="spinner-small" style={{ marginLeft: '10px' }}></span>}
                         </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                        {/* Legacy toggle removed */}
+                    <div style={{ display: 'flex', gap: '10px', position: 'relative' }} ref={gearRef}>
+                        <button
+                            onClick={() => setShowGearPanel(p => !p)}
+                            title="Customize dashboard"
+                            style={{ background: showGearPanel ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '8px 12px', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: 16, lineHeight: 1 }}
+                        >
+                            ⚙️
+                        </button>
+                        {showGearPanel && (
+                            <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, padding: '16px', width: 240, zIndex: 100, boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
+                                <div style={{ fontSize: 11, fontWeight: 900, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>Show / Hide Sections</div>
+                                {[
+                                    { key: 'invoices', label: 'Invoice & Receivables' },
+                                    { key: 'forecast', label: 'Year-End Forecast' },
+                                    { key: 'performance_chart', label: 'Monthly Performance' },
+                                    { key: 'insights', label: 'Financial Insights' },
+                                    { key: 'top_expenses', label: 'Top Expense Drivers' },
+                                    { key: 'operational_intelligence', label: 'Operational Intelligence' },
+                                ].map(({ key, label }) => (
+                                    <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={widgets[key] !== false}
+                                            onChange={() => toggleWidget(key)}
+                                            style={{ accentColor: '#f97316', width: 15, height: 15, flexShrink: 0 }}
+                                        />
+                                        <span style={{ fontSize: 13, fontWeight: 700, color: widgets[key] !== false ? 'white' : 'rgba(255,255,255,0.35)' }}>{label}</span>
+                                    </label>
+                                ))}
+                                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', fontWeight: 600, margin: '10px 0 0', textAlign: 'center' }}>
+                                    Also in Control Center → Dashboard
+                                </p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -137,7 +210,7 @@ export default function DashboardV2({ apiStatus }) {
             </div>
 
             {/* Layer 5: Cash, Receivables, Obligations (Moved up) */}
-            <div className="card glass" style={{ margin: 0, padding: '30px' }}>
+            {widgets.invoices !== false && <div className="card glass" style={{ margin: 0, padding: '30px' }}>
                 <div style={{ marginBottom: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                     <div>
                         <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900 }}>Invoice & Obligations Health</h2>
@@ -169,10 +242,17 @@ export default function DashboardV2({ apiStatus }) {
                     </div>
 
                 </div>
-            </div>
+                {/* Empty state — no invoices yet */}
+                {!loading && metrics?.obligations?.overdueCents === 0 && metrics?.obligations?.overdueInvoices === 0 && metrics?.snapshot?.openReceivablesCents === 0 && (
+                    <div style={{ marginTop: 16, padding: '14px 20px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, textAlign: 'center' }}>
+                        <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)', fontWeight: 700 }}>No open invoices yet. </span>
+                        <button onClick={() => navigate('/crm/financials')} style={{ fontSize: 13, fontWeight: 800, color: '#fcd34d', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>Send your first invoice →</button>
+                    </div>
+                )}
+            </div>}
 
             {/* Layer 6: Forecast & Scenario Modeling (Moved up) */}
-            <div className="card glass" style={{ margin: 0, padding: '30px', borderTop: '4px solid #a855f7' }}>
+            {widgets.forecast !== false && <div className="card glass" style={{ margin: 0, padding: '30px', borderTop: '4px solid #a855f7' }}>
                 <div style={{ marginBottom: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '15px' }}>
                     <div>
                         <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900 }}>Year-End Growth Forecast</h2>
@@ -218,13 +298,13 @@ export default function DashboardV2({ apiStatus }) {
                         <div style={{ fontSize: '2rem', fontWeight: 950, color: 'white' }}>{loading ? '-' : formatMoney(projectedNet)}</div>
                     </div>
                 </div>
-            </div>
+            </div>}
 
             {/* Layer 2 & Layer 3 Container */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '20px' }}>
                 
                 {/* Layer 2: Core Performance (Revenue vs Expense vs Net) */}
-                <div className="card glass" style={{ margin: 0, padding: '30px' }}>
+                {widgets.performance_chart !== false && <div className="card glass" style={{ margin: 0, padding: '30px' }}>
                     <div style={{ marginBottom: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                         <div>
                             <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900 }}>Monthly Performance</h2>
@@ -254,8 +334,14 @@ export default function DashboardV2({ apiStatus }) {
                              )
                          })}
                     </div>
+                    {/* Empty state — no performance data yet */}
+                    {!loading && metrics?.performance?.every(m => m.income === 0 && m.spend === 0) && (
+                        <div style={{ padding: '20px', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 13, fontWeight: 700 }}>
+                            No transaction data yet for this year. Import transactions to see performance.
+                        </div>
+                    )}
                     {/* Financial Insight Strip — Phase 1 + 2 */}
-                    {(() => {
+                    {widgets.insights !== false && (() => {
                         const ins = metrics?.insights;
                         const sc = { healthy: '#4ade80', watch: '#fcd34d', risk: '#ef4444' };
                         const bg = { healthy: 'rgba(74,222,128,0.06)', watch: 'rgba(252,211,77,0.06)', risk: 'rgba(239,68,68,0.06)' };
@@ -306,10 +392,10 @@ export default function DashboardV2({ apiStatus }) {
                             </div>
                         );
                     })()}
-                </div>
+                </div>}
 
                 {/* Layer 3: Business Mix (Expense Categories) */}
-                <div className="card glass" style={{ margin: 0, padding: '30px', display: 'flex', flexDirection: 'column' }}>
+                {widgets.top_expenses !== false && <div className="card glass" style={{ margin: 0, padding: '30px', display: 'flex', flexDirection: 'column' }}>
                     <div style={{ marginBottom: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '15px' }}>
                         <div>
                             <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900 }}>Top Expense Drivers</h2>
@@ -332,7 +418,12 @@ export default function DashboardV2({ apiStatus }) {
                             if (topCatFilter === 'month') list = metrics?.analytics?.topCategoriesMonth;
                             
                             if (!list || list.length === 0) {
-                                return !loading ? <div className="muted" style={{ fontSize: '12px', textAlign: 'center', marginTop: '20px' }}>No categories mapped.</div> : null;
+                                return !loading ? (
+                                    <div style={{ textAlign: 'center', marginTop: '20px' }}>
+                                        <div className="muted" style={{ fontSize: '12px', marginBottom: 8 }}>No expense data yet.</div>
+                                        <button onClick={() => navigate('/import')} style={{ fontSize: 12, fontWeight: 800, color: '#f97316', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>Import transactions →</button>
+                                    </div>
+                                ) : null;
                             }
 
                             const maxSpend = list[0]?.cents || 1;
@@ -370,11 +461,13 @@ export default function DashboardV2({ apiStatus }) {
                             });
                         })()}
                     </div>
-                </div>
+                </div>}
             </div>
 
             {/* Layer 4: Operational Intelligence (Recurring Subscriptions & Bills) */}
-            <OperationalIntelligenceSection data={metrics?.analytics?.recurringVendors} />
+            {widgets.operational_intelligence !== false && (
+                <OperationalIntelligenceSection data={metrics?.analytics?.recurringVendors} />
+            )}
 
 
 

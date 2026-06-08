@@ -1,6 +1,12 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.9.1', date: 'JUN 8, 2026', color: '#38bdf8', items: [
+        '<strong>Dashboard Customization:</strong> Your dashboard is now personalized to you. New users are asked to pick their business type during onboarding (Photographer/Videographer, Freelancer, Small Business, or Personal/Side Hustle) — your choice sets the default sections that appear.',
+        '<strong>Widget Toggles:</strong> A new ⚙️ gear icon in the dashboard header lets you show or hide any section: Invoice & Receivables, Year-End Forecast, Monthly Performance, Financial Insights, Top Expense Drivers, and Operational Intelligence. Changes save instantly.',
+        '<strong>Control Center → Dashboard Tab:</strong> A new Dashboard tab in the Ledger Control Center lets you change your business type and adjust widget visibility from one place.',
+        '<strong>Smart Empty States:</strong> Sections with no data now show a helpful prompt instead of empty tiles — guiding you to send your first invoice, import transactions, or add data to see insights.',
+    ]},
     { version: '7.8.99', date: 'JUN 8, 2026', color: '#f97316', items: [
         '<strong>Flag for Review:</strong> Any transaction can now be manually flagged for follow-up. Open the drawer and check "🚩 Review" — the transaction lights up orange and appears under the existing "Needs Review" filter on the Transaction Ledger. Useful for flagging Plaid transactions that haven\'t posted to your card yet, or anything else you want to circle back on.',
     ]},

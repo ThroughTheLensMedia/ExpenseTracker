@@ -5,6 +5,17 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.9.1] — 2026-06-08
+
+### Feature: Dashboard Customization — Role Selector, Widget Toggles, Smart Empty States
+
+- **`web-react/src/components/OnboardingChecklist.jsx`** — Added role selector as Page 1 (Step 1 of 3) in the onboarding wizard. 4 roles: Photographer (includes Videographers), Freelancer, Small Business, Personal/Side Hustle. Clicking a role saves a `dashboard_config` preset to settings and advances the wizard. Added `apiPost` import.
+- **`web-react/src/pages/DashboardV2.jsx`** — Settings fetched in parallel with metrics on mount. Widget flags control visibility of 6 sections: Invoice & Receivables, Year-End Forecast, Monthly Performance Chart, Financial Insights, Top Expense Drivers, Operational Intelligence. Gear icon ⚙️ in header opens inline toggle panel with per-section checkboxes, saved immediately to settings. Smart empty states added: zero-invoice prompt, no-transactions prompt for expense drivers, no-data note for performance chart.
+- **`web-react/src/components/control-center/DashboardTab.jsx`** — New control center tab. Role selector with change confirmation, per-widget toggles with ON/OFF indicators, auto-save on toggle.
+- **`web-react/src/pages/Backup.jsx`** — Added Dashboard tab import, pill nav button, render condition, and `'dashboard'` to URL param allowlist.
+
+---
+
 ## [v7.8.99] — 2026-06-08
 
 ### Feature: Flag for Review Toggle in Transaction Drawer
