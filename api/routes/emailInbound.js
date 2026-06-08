@@ -1,6 +1,7 @@
 const { createClient } = require('@supabase/supabase-js');
 const { parseReceiptFromEmailBody, parseReceiptFromFile } = require('../utils/receiptEmailParser');
 const { sendReceiptConfirmationEmail } = require('../utils/mailer');
+const log = require('../utils/logger');
 
 // Phase 1: single user. "jd" maps to Joshua's user ID.
 const TOKEN_MAP = {
@@ -10,13 +11,8 @@ const TOKEN_MAP = {
 /**
  * POST /api/receipts/email-inbound
  * Postmark inbound webhook. No JWT auth — protected by POSTMARK_INBOUND_TOKEN query param.
- * Exported as a plain async handler (not an Express Router) so it can be mounted directly
- * on app.post() without sub-router path-stripping complications.
  */
-// res.sendStatus(200) is now handled unconditionally in server.js before this function is called.
-// This function receives only req — it processes and logs, never touches res.
 const handler = async (req) => {
-    // Fresh client per invocation — avoids stale HTTP connections from module-level singleton
     const supabase = createClient(
         process.env.SUPABASE_URL,
         process.env.SUPABASE_SERVICE_ROLE_KEY,
@@ -24,44 +20,48 @@ const handler = async (req) => {
     );
 
     try {
-        // Verify token passed as query param in webhook URL
-        // Postmark webhook URL format: /api/receipts/email-inbound?token=<POSTMARK_INBOUND_TOKEN>
         const inboundToken = process.env.POSTMARK_INBOUND_TOKEN;
         const provided = req.query.token;
-        console.log('[EmailInbound] Token check — provided:', provided, '| env:', inboundToken ? inboundToken.slice(0, 8) + '...' : 'NOT SET');
         if (inboundToken && provided !== inboundToken) {
-            console.warn('[EmailInbound] Invalid token — ignoring');
+            log.warn('email-inbound', 'Invalid token — request ignored', { provided: provided?.slice(0, 8) });
             return;
         }
 
         const payload = req.body;
         if (!payload || !payload.To) {
-            console.warn('[EmailInbound] Missing payload or To field');
+            log.warn('email-inbound', 'Missing payload or To field');
             return;
         }
 
-        // Parse token from To address (e.g. receipts+jd@lumiereledger.com → "jd")
         const toAddress = Array.isArray(payload.ToFull)
             ? payload.ToFull[0]?.Email || payload.To
             : payload.To;
 
         const tokenMatch = toAddress.match(/receipts\+([^@]+)@/i);
         const token = tokenMatch ? tokenMatch[1].toLowerCase() : null;
-        // Phase 1: fall back to Joshua's user ID if no token found (direct Postmark address forwarding)
         const FALLBACK_USER_ID = TOKEN_MAP['jd'];
         const userId = (token ? TOKEN_MAP[token] : null) || FALLBACK_USER_ID;
 
         if (!userId) {
-            console.warn('[EmailInbound] No user resolved — ignoring');
+            log.warn('email-inbound', 'No user resolved — ignoring', { to: toAddress });
             return;
         }
 
         const senderEmail = payload.From || '';
         const senderDomain = senderEmail.includes('@') ? senderEmail.split('@')[1].toLowerCase() : '';
         const subject = payload.Subject || '';
+        const attachments = payload.Attachments || [];
+
+        log.info('email-inbound', 'Email received', {
+            from: senderEmail,
+            subject,
+            attachmentCount: attachments.length,
+            attachmentNames: attachments.map(a => a.Name),
+            hasTextBody: !!(payload.TextBody),
+            hasHtmlBody: !!(payload.HtmlBody),
+        }, userId);
 
         // Build plain text body — prefer TextBody, fall back to HTML stripped of tags
-        // Most retailer receipts (Google Play, Amazon, Lowe's) are HTML-only with no TextBody
         let plainBody = payload.TextBody || payload.StrippedTextReply || '';
         if (!plainBody && payload.HtmlBody) {
             plainBody = payload.HtmlBody
@@ -74,13 +74,13 @@ const handler = async (req) => {
                 .replace(/&gt;/g, '>')
                 .replace(/\s{2,}/g, ' ')
                 .trim();
-            console.log('[EmailInbound] Using stripped HtmlBody as fallback — length:', plainBody.length);
+            log.info('email-inbound', 'Using stripped HtmlBody as text fallback', { bodyLength: plainBody.length }, userId);
         }
 
-        // Instant acknowledgment — fires before Gemini so user gets feedback within ~2s
+        // Instant ack — fires before Gemini
         sendReceiptConfirmationEmail({ to: senderEmail, outcome: 'received', subject })
-            .then(r => console.log('[EmailInbound] Ack email sent:', JSON.stringify(r)))
-            .catch(e => console.error('[EmailInbound] Ack email failed:', e.message));
+            .then(() => log.info('email-inbound', 'Ack email sent', { to: senderEmail }, userId))
+            .catch(e => log.error('email-inbound', 'Ack email failed', { error: e.message }, userId));
 
         // Load user's Gemini API key
         const { data: settings, error: settingsErr } = await supabase
@@ -89,111 +89,94 @@ const handler = async (req) => {
             .eq('user_id', userId)
             .maybeSingle();
 
-        console.log('[EmailInbound] Settings query — userId:', userId, '| data:', settings ? 'ROW RETURNED' : 'NULL', '| error:', settingsErr?.message || 'none');
-
-        const apiKey = settings?.gemini_api_key;
-        if (!apiKey) {
-            console.error('[EmailInbound] No Gemini API key for user', userId, '| settingsErr:', settingsErr?.message);
+        if (settingsErr || !settings?.gemini_api_key) {
+            log.error('email-inbound', 'No Gemini API key found', { userId, error: settingsErr?.message }, userId);
             return;
         }
+        const apiKey = settings.gemini_api_key;
 
-        // --- Step 1: Determine what to parse ---
+        // --- Step 1: Parse receipt ---
         let extracted = null;
         let fileBuffer = null;
         let fileMime = null;
-        let fileExt = 'pdf';
+        let fileExt = 'jpg';
 
-        const attachments = payload.Attachments || [];
-
-        // Priority 1: Receipt PDF (prefer "Receipt*" over "Invoice*")
-        const receiptPdf = attachments.find(a =>
-            /^receipt/i.test(a.Name) && a.ContentType === 'application/pdf'
-        );
-        const invoicePdf = attachments.find(a =>
-            /^invoice/i.test(a.Name) && a.ContentType === 'application/pdf'
-        );
-        const imagePdf = attachments.find(a =>
-            a.ContentType === 'application/pdf'
-        );
-        const imageAttach = attachments.find(a =>
-            ['image/jpeg', 'image/png'].includes(a.ContentType)
-        );
-
-        const chosenAttachment = receiptPdf || invoicePdf || imagePdf || imageAttach;
+        const receiptPdf  = attachments.find(a => /^receipt/i.test(a.Name) && a.ContentType === 'application/pdf');
+        const invoicePdf  = attachments.find(a => /^invoice/i.test(a.Name) && a.ContentType === 'application/pdf');
+        const anyPdf      = attachments.find(a => a.ContentType === 'application/pdf');
+        const imageAttach = attachments.find(a => ['image/jpeg', 'image/png'].includes(a.ContentType));
+        const chosenAttachment = receiptPdf || invoicePdf || anyPdf || imageAttach;
 
         if (chosenAttachment) {
-            console.log('[EmailInbound] Parsing attachment:', chosenAttachment.Name, '|', chosenAttachment.ContentType, '| size:', chosenAttachment.Content?.length);
+            log.info('email-inbound', 'Parsing attachment via Gemini Vision', {
+                name: chosenAttachment.Name,
+                type: chosenAttachment.ContentType,
+                sizeB64: chosenAttachment.Content?.length,
+            }, userId);
             fileBuffer = Buffer.from(chosenAttachment.Content, 'base64');
             fileMime = chosenAttachment.ContentType;
-            fileExt = chosenAttachment.Name?.split('.').pop()?.toLowerCase() || 'pdf';
+            fileExt = chosenAttachment.Name?.split('.').pop()?.toLowerCase() || 'jpg';
             extracted = await parseReceiptFromFile(apiKey, fileBuffer, fileMime);
-            console.log('[EmailInbound] Attachment parse result:', JSON.stringify(extracted));
+            log.info('email-inbound', 'Attachment parse result', { extracted }, userId);
         }
 
-        // Priority 2: Email body (fallback)
         if (!extracted || extracted.amount_cents == null) {
-            console.log('[EmailInbound] Falling back to body parse — plainBody length:', plainBody.length);
+            log.info('email-inbound', 'Falling back to body parse', { bodyLength: plainBody.length }, userId);
             const bodyResult = await parseReceiptFromEmailBody(apiKey, plainBody, senderDomain, subject);
-            console.log('[EmailInbound] Body parse result:', JSON.stringify(bodyResult));
+            log.info('email-inbound', 'Body parse result', { extracted: bodyResult }, userId);
             if (bodyResult) extracted = bodyResult;
         }
 
-        // If we still have no amount, bail
         if (!extracted || extracted.amount_cents == null) {
-            console.log('[EmailInbound] No amount found in email from', senderEmail, '| subject:', subject);
-            const failResult = await sendReceiptConfirmationEmail({
-                to: senderEmail,
-                outcome: 'failed',
-                subject,
-            }).catch(e => ({ success: false, error: e.message }));
-            console.log('[EmailInbound] Failed confirmation email result:', JSON.stringify(failResult));
+            log.warn('email-inbound', 'No amount extracted — sending failed email', { from: senderEmail, subject, extracted }, userId);
+            sendReceiptConfirmationEmail({ to: senderEmail, outcome: 'failed', subject })
+                .catch(e => log.error('email-inbound', 'Failed confirmation email error', { error: e.message }, userId));
             return;
         }
 
-        // Upload file to Supabase Storage if we have one
+        // Upload file to Supabase Storage
         let storedFilePath = null;
         if (fileBuffer) {
             const d = new Date();
             const datePath = `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
-            const filename = `email_${Date.now()}.${fileExt}`;
-            storedFilePath = `${datePath}/${filename}`;
-
+            storedFilePath = `${datePath}/email_${Date.now()}.${fileExt}`;
             const { error: uploadErr } = await supabase.storage
                 .from('receipts')
                 .upload(storedFilePath, fileBuffer, { contentType: fileMime });
-
             if (uploadErr) {
-                console.error('[EmailInbound] Storage upload failed:', uploadErr.message);
+                log.error('email-inbound', 'Storage upload failed', { error: uploadErr.message, path: storedFilePath }, userId);
                 storedFilePath = null;
             }
         }
 
-        // --- Step 2: Pass 1 — match existing expense ---
+        // --- Step 2: Match existing expense ---
         const receiptDate = extracted.date;
         const amountCents = extracted.amount_cents;
-
-        // Build date range ±7 days — covers billing date vs bank posting date lag
-        // (e.g. invoice dated June 1 but AmEx posts June 7 = 6-day gap)
         const baseDate = new Date(receiptDate + 'T12:00:00Z');
         const dateMinus7 = new Date(baseDate); dateMinus7.setDate(baseDate.getDate() - 7);
         const datePlus7  = new Date(baseDate); datePlus7.setDate(baseDate.getDate() + 7);
-        const from = dateMinus7.toISOString().slice(0, 10);
-        const to   = datePlus7.toISOString().slice(0, 10);
 
         const { data: matches } = await supabase
             .from('expenses')
             .select('id, vendor, expense_date, amount_cents, receipt_link')
             .eq('user_id', userId)
             .eq('amount_cents', amountCents)
-            .gte('expense_date', from)
-            .lte('expense_date', to);
+            .gte('expense_date', dateMinus7.toISOString().slice(0, 10))
+            .lte('expense_date', datePlus7.toISOString().slice(0, 10));
 
-        // Separate matches into unlinked (no receipt) and already-linked (has receipt)
-        const unlinked = (matches || []).filter(e => !e.receipt_link);
+        const unlinked     = (matches || []).filter(e => !e.receipt_link);
         const alreadyLinked = (matches || []).filter(e => e.receipt_link);
 
+        log.info('email-inbound', 'Match query result', {
+            amountCents,
+            receiptDate,
+            dateWindow: `${dateMinus7.toISOString().slice(0,10)} → ${datePlus7.toISOString().slice(0,10)}`,
+            totalMatches: (matches || []).length,
+            unlinked: unlinked.length,
+            alreadyLinked: alreadyLinked.length,
+        }, userId);
+
         if (unlinked.length === 1) {
-            // Perfect match — attach receipt
             const match = unlinked[0];
             await supabase
                 .from('expenses')
@@ -201,60 +184,46 @@ const handler = async (req) => {
                 .eq('id', match.id)
                 .eq('user_id', userId);
 
-            console.log(`[EmailInbound] Matched receipt to expense ${match.id} (${match.vendor} $${(amountCents / 100).toFixed(2)})`);
+            log.info('email-inbound', 'Receipt matched and attached', {
+                expenseId: match.id, vendor: match.vendor, amountCents,
+            }, userId);
 
             sendReceiptConfirmationEmail({
-                to: senderEmail,
-                outcome: 'matched',
+                to: senderEmail, outcome: 'matched',
                 vendor: match.vendor || extracted.vendor,
-                amountCents,
-                expenseDate: match.expense_date,
-                expenseId: match.id,
-            }).then(r => console.log('[EmailInbound] Matched confirmation sent:', JSON.stringify(r)))
-              .catch(e => console.error('[EmailInbound] Matched confirmation failed:', e.message));
+                amountCents, expenseDate: match.expense_date, expenseId: match.id,
+            }).catch(e => log.error('email-inbound', 'Matched confirmation email failed', { error: e.message }, userId));
 
         } else if (unlinked.length === 0 && alreadyLinked.length > 0) {
-            // Transaction exists but already has a receipt attached
             const match = alreadyLinked[0];
-            console.log(`[EmailInbound] Transaction ${match.id} already has receipt — notifying sender`);
+            log.info('email-inbound', 'Transaction already has receipt', { expenseId: match.id }, userId);
             sendReceiptConfirmationEmail({
-                to: senderEmail,
-                outcome: 'already_linked',
+                to: senderEmail, outcome: 'already_linked',
                 vendor: match.vendor || extracted.vendor,
-                amountCents,
-                expenseDate: match.expense_date,
-                expenseId: match.id,
-            }).then(r => console.log('[EmailInbound] Already-linked confirmation sent:', JSON.stringify(r)))
-              .catch(e => console.error('[EmailInbound] Already-linked confirmation failed:', e.message));
+                amountCents, expenseDate: match.expense_date, expenseId: match.id,
+            }).catch(e => log.error('email-inbound', 'Already-linked confirmation email failed', { error: e.message }, userId));
 
         } else {
-            // No match or ambiguous — store as pending
             const needsReview = unlinked.length > 1;
-
             await supabase.from('pending_receipts').insert({
-                user_id:      userId,
-                vendor:       extracted.vendor,
-                receipt_date: receiptDate,
-                amount_cents: amountCents,
-                file_path:    storedFilePath,
-                raw_subject:  subject,
-                raw_sender:   senderEmail,
-                needs_review: needsReview,
+                user_id: userId, vendor: extracted.vendor,
+                receipt_date: receiptDate, amount_cents: amountCents,
+                file_path: storedFilePath, raw_subject: subject,
+                raw_sender: senderEmail, needs_review: needsReview,
             });
 
-            console.log(`[EmailInbound] No match — stored pending receipt for $${(amountCents / 100).toFixed(2)} from ${extracted.vendor}`);
+            log.info('email-inbound', 'No match — stored as pending receipt', {
+                vendor: extracted.vendor, amountCents, needsReview,
+            }, userId);
 
             sendReceiptConfirmationEmail({
-                to: senderEmail,
-                outcome: 'pending',
-                vendor: extracted.vendor,
-                amountCents,
-            }).then(r => console.log('[EmailInbound] Pending confirmation sent:', JSON.stringify(r)))
-              .catch(e => console.error('[EmailInbound] Pending confirmation failed:', e.message));
+                to: senderEmail, outcome: 'pending',
+                vendor: extracted.vendor, amountCents,
+            }).catch(e => log.error('email-inbound', 'Pending confirmation email failed', { error: e.message }, userId));
         }
 
     } catch (err) {
-        console.error('[EmailInbound] Unhandled error:', err.message, err.stack);
+        log.error('email-inbound', 'Unhandled error', { error: err.message, stack: err.stack });
     }
 };
 

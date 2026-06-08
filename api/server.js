@@ -2,8 +2,14 @@
 try { require("dotenv").config(); } catch (e) { /* env vars come from Vercel dashboard */ }
 
 // Catch silent crashes that would otherwise produce a 500 with no log
-process.on('uncaughtException',  (err) => console.error('[FATAL] uncaughtException',  err?.message, err?.stack));
-process.on('unhandledRejection', (reason) => console.error('[FATAL] unhandledRejection', reason?.message || reason));
+process.on('uncaughtException',  (err) => {
+    console.error('[FATAL] uncaughtException', err?.message, err?.stack);
+    try { require('./utils/logger').error('server', 'uncaughtException', { error: err?.message, stack: err?.stack }); } catch (_) {}
+});
+process.on('unhandledRejection', (reason) => {
+    console.error('[FATAL] unhandledRejection', reason?.message || reason);
+    try { require('./utils/logger').error('server', 'unhandledRejection', { error: reason?.message || String(reason) }); } catch (_) {}
+});
 
 const express = require("express");
 const cors = require("cors");
