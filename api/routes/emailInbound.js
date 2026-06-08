@@ -59,7 +59,23 @@ const handler = async (req) => {
         const senderEmail = payload.From || '';
         const senderDomain = senderEmail.includes('@') ? senderEmail.split('@')[1].toLowerCase() : '';
         const subject = payload.Subject || '';
-        const plainBody = payload.TextBody || payload.StrippedTextReply || '';
+
+        // Build plain text body — prefer TextBody, fall back to HTML stripped of tags
+        // Most retailer receipts (Google Play, Amazon, Lowe's) are HTML-only with no TextBody
+        let plainBody = payload.TextBody || payload.StrippedTextReply || '';
+        if (!plainBody && payload.HtmlBody) {
+            plainBody = payload.HtmlBody
+                .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+                .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+                .replace(/<[^>]+>/g, ' ')
+                .replace(/&nbsp;/g, ' ')
+                .replace(/&amp;/g, '&')
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/\s{2,}/g, ' ')
+                .trim();
+            console.log('[EmailInbound] Using stripped HtmlBody as fallback — length:', plainBody.length);
+        }
 
         // Instant acknowledgment — fires before Gemini so user gets feedback within ~2s
         sendReceiptConfirmationEmail({ to: senderEmail, outcome: 'received', subject })
@@ -106,15 +122,19 @@ const handler = async (req) => {
         const chosenAttachment = receiptPdf || invoicePdf || imagePdf || imageAttach;
 
         if (chosenAttachment) {
+            console.log('[EmailInbound] Parsing attachment:', chosenAttachment.Name, '|', chosenAttachment.ContentType, '| size:', chosenAttachment.Content?.length);
             fileBuffer = Buffer.from(chosenAttachment.Content, 'base64');
             fileMime = chosenAttachment.ContentType;
             fileExt = chosenAttachment.Name?.split('.').pop()?.toLowerCase() || 'pdf';
             extracted = await parseReceiptFromFile(apiKey, fileBuffer, fileMime);
+            console.log('[EmailInbound] Attachment parse result:', JSON.stringify(extracted));
         }
 
         // Priority 2: Email body (fallback)
         if (!extracted || extracted.amount_cents == null) {
+            console.log('[EmailInbound] Falling back to body parse — plainBody length:', plainBody.length);
             const bodyResult = await parseReceiptFromEmailBody(apiKey, plainBody, senderDomain, subject);
+            console.log('[EmailInbound] Body parse result:', JSON.stringify(bodyResult));
             if (bodyResult) extracted = bodyResult;
         }
 
