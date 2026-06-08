@@ -1,4 +1,5 @@
 const { getGeminiModel } = require('./gemini');
+const log = require('./logger');
 
 const RECEIPT_PROMPT_TEMPLATE = (today, senderDomain, subject) => `You are a receipt parser for an expense tracker.
 Extract transaction details from this forwarded receipt email.
@@ -10,7 +11,7 @@ Today's date: ${today}
 Extract these fields:
 - vendor: business name (use sender domain as fallback if not found in body — e.g. "venmo.com" → "Venmo", "rei.com" → "REI Co-op")
 - date: transaction date in YYYY-MM-DD format (use "${today}" if not found)
-- amount_cents: total amount charged as integer cents (e.g. $21.95 → 2195). Use the FINAL total, not subtotal. null if no dollar amount found.
+- amount_cents: total amount charged as integer cents (e.g. $21.95 → 2195). Look for labels like "Total", "Total Paid", "Total Charged", "Amount Due", "Amount Charged", "Grand Total", "You Paid", "Order Total", "Charge". Use the FINAL total, not subtotal or line items. null only if no dollar amount exists anywhere in the text.
 - tax_cents: tax amount as integer cents, null if not found
 - category: best match from — Advertising, Auto & Transport, Bills & Utilities, Camera & Equipment, Clothing, Dining & Drinks, Education, Entertainment, Gas & Fuel, Groceries, Health & Medical, Home & Garden, Insurance (Business), Insurance (Personal), Office Supplies, Parking & Tolls, Personal Care, Pets, Photography, Professional Services, Rent / Lease, Repairs & Maintenance, Shopping, Software & Tech, Subscriptions, Supplies, Taxes & Licenses, Travel & Vacation, Personal Expense
 - notes: one short phrase about what was purchased (10 words max)
@@ -45,14 +46,14 @@ async function parseReceiptFromEmailBody(apiKey, body, senderDomain, subject) {
         const result = await model.generateContent(prompt);
         raw = result.response.text().trim().replace(/```json|```/g, '').trim();
     } catch (err) {
-        console.error('[EmailParser] Gemini call failed:', err.message);
+        log.error('email-inbound', 'Body parse — Gemini call failed', { error: err.message });
         return null;
     }
 
     try {
         return JSON.parse(raw);
     } catch (_) {
-        console.error('[EmailParser] JSON parse failed. Raw:', raw.slice(0, 200));
+        log.error('email-inbound', 'Body parse — JSON parse failed', { rawSnippet: raw?.slice(0, 300) });
         return null;
     }
 }

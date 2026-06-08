@@ -48,6 +48,7 @@ export default function SecurityReviewTab() {
     const [reviews, setReviews]         = useState([]);
     const [history, setHistory]         = useState([]);
     const [loading, setLoading]         = useState(true);
+    const [error, setError]             = useState(null);
     const [completing, setCompleting]   = useState(null);
     const [expandedType, setExpandedType] = useState(null);
     const [showHistory, setShowHistory] = useState(false);
@@ -56,6 +57,7 @@ export default function SecurityReviewTab() {
     const [lastRefresh, setLastRefresh] = useState(null);
 
     const load = useCallback(async () => {
+        setError(null);
         try {
             const d = await apiGet('/admin/security-reviews');
             setReviews(d.reviews || []);
@@ -63,6 +65,7 @@ export default function SecurityReviewTab() {
             setLastRefresh(new Date());
         } catch (e) {
             console.error('[SecurityReview] load error:', e.message);
+            setError('Could not load security reviews. Ensure the security_reviews migration has been run in Supabase.');
         } finally {
             setLoading(false);
         }
@@ -85,6 +88,18 @@ export default function SecurityReviewTab() {
     };
 
     if (loading) return <div style={{ padding: '40px', textAlign: 'center', color: 'rgba(255,255,255,0.4)' }}>Loading security reviews…</div>;
+
+    if (error) return (
+        <div style={{ padding: '40px', color: '#f87171', fontSize: '14px', lineHeight: 1.6 }}>
+            ⚠️ {error}
+        </div>
+    );
+
+    if (reviews.length === 0) return (
+        <div style={{ padding: '40px', color: 'rgba(255,255,255,0.4)', fontSize: '14px', textAlign: 'center' }}>
+            No review data found. Run the <code>security_reviews</code> migration in Supabase to initialize this tab.
+        </div>
+    );
 
     const overdueCount = reviews.filter(r => statusBadge(r.nextDue).label !== 'OK').length;
 

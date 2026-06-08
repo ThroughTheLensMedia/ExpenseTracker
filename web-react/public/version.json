@@ -1,1 +1,1 @@
-{"version":"7.8.95","release_date":"2026-06-08","codename":"Lumière Ledger","notes":"v7.8.95: Bull removed, Sentry user context, per-user receipt addresses, pending cleanup, encryption runbook, security review tab"}
+{"version":"7.8.96","release_date":"2026-06-08","codename":"Lumière Ledger","notes":"v7.8.96: Receipt body parse hardening, security tab URL fix, onboarding receipt step"}

@@ -5,6 +5,18 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.96] — 2026-06-08
+
+### Fix: Receipt Body Parse Hardening + Security Tab + Onboarding Receipt Step
+
+- **`api/routes/emailInbound.js`** — Added explicit `apiKey` guard before body parse fallback. Wrapped `parseReceiptFromEmailBody` in try/catch so a thrown error logs to System Logs instead of swallowing silently.
+- **`api/utils/receiptEmailParser.js`** — Improved prompt: `amount_cents` instruction now explicitly calls out "Total Paid", "Total Charged", "Amount Due", "Amount Charged", "Grand Total", "You Paid", "Order Total", "Charge" labels. Added `log` import — Gemini call failures and JSON parse failures now write to System Logs (visible in the Admin Log Viewer) instead of console-only.
+- **`web-react/src/pages/Backup.jsx`** — Added `'documents'` and `'security'` to URL param tab allowlist. Navigating to `?tab=security` now correctly activates the Security tab.
+- **`web-react/src/components/control-center/SecurityReviewTab.jsx`** — Added `error` state: if the API call fails, shows a visible error message with migration hint. Added empty-state render when `reviews.length === 0`. Both prevent blank-tab silent failures.
+- **`web-react/src/components/OnboardingChecklist.jsx`** — Added Receipt Forwarding step between Import and AI steps. Links to `?tab=integration` in Control Center.
+
+---
+
 ## [v7.8.95] — 2026-06-08
 
 ### Feature: Security Review Cadence Tab

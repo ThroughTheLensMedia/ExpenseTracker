@@ -143,10 +143,18 @@ const handler = async (req) => {
         }
 
         if (!extracted || extracted.amount_cents == null) {
-            log.info('email-inbound', 'Falling back to body parse', { bodyLength: plainBody.length }, userId);
-            const bodyResult = await parseReceiptFromEmailBody(apiKey, plainBody, senderDomain, subject);
-            log.info('email-inbound', 'Body parse result', { extracted: bodyResult }, userId);
-            if (bodyResult) extracted = bodyResult;
+            if (!apiKey) {
+                log.warn('email-inbound', 'No Gemini API key — body parse skipped', {}, userId);
+            } else {
+                log.info('email-inbound', 'Falling back to body parse', { bodyLength: plainBody.length }, userId);
+                try {
+                    const bodyResult = await parseReceiptFromEmailBody(apiKey, plainBody, senderDomain, subject);
+                    log.info('email-inbound', 'Body parse result', { extracted: bodyResult }, userId);
+                    if (bodyResult) extracted = bodyResult;
+                } catch (parseErr) {
+                    log.error('email-inbound', 'Body parse threw an error', { error: parseErr.message }, userId);
+                }
+            }
         }
 
         if (!extracted || extracted.amount_cents == null) {

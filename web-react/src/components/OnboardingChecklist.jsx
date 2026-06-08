@@ -32,6 +32,14 @@ const STEPS = [
         required: true,
     },
     {
+        id: 'receipts',
+        icon: '📧',
+        title: 'Set Up Receipt Forwarding',
+        desc: 'Get your unique email address. Forward any receipt email to it and Lumière automatically parses and attaches it to the right transaction.',
+        action: { label: 'Set Up in Integrations', path: '/StudioControlCenter?tab=integration' },
+        required: false,
+    },
+    {
         id: 'ai',
         icon: '🤖',
         title: 'Add Your Gemini API Key',

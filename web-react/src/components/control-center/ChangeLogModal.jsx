@@ -1,6 +1,12 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.96', date: 'JUN 8, 2026', color: '#4ade80', items: [
+        '<strong>Receipt Email — Better Parsing:</strong> The AI now recognizes more label formats when extracting totals from forwarded emails — including "Total Paid", "Amount Due", "Grand Total", "Order Total", and "You Paid". Fixes cases where a valid total was present but returned as not found.',
+        '<strong>Receipt Email — Error Visibility:</strong> When the AI fails to parse a forwarded email, the exact failure reason now appears in System Logs instead of a silent null. Easier to diagnose forwarding issues.',
+        '<strong>Security Tab — Fixed:</strong> The Security Review tab was showing blank after navigating to it directly. Fixed — the tab now loads correctly from a direct link or page reload.',
+        '<strong>Onboarding — Receipt Forwarding Step:</strong> A new "Set Up Receipt Forwarding" step now appears in the setup checklist. Links to the Integrations tab where your unique forwarding address is shown.',
+    ]},
     { version: '7.8.95', date: 'JUN 8, 2026', color: '#a78bfa', items: [
         '<strong>Security Review Tab:</strong> A new "Security" tab in the Ledger Control Center (admin-only) tracks your security review cadence. See which reviews are overdue, expand checklists for each tier, mark reviews complete with optional notes, and browse completion history.',
         '<strong>Per-User Receipt Addresses:</strong> Each user now has their own unique email forwarding address for receipt capture. Your personal address is shown in the Integrations tab — copy it and save it as a contact.',
