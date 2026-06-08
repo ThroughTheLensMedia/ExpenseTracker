@@ -8,6 +8,7 @@ process.on('unhandledRejection', (reason) => console.error('[FATAL] unhandledRej
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+const { waitUntil } = require("@vercel/functions");
 const fs = require("fs");
 const { initDb, supabase } = require("./db");
 const authMiddleware = require("./middleware/auth");
@@ -174,10 +175,12 @@ if (documentsRouter)    apiRouter.use("/documents",      documentsRouter);
 // so Postmark always gets 200 even if the module failed to load at startup.
 let _emailInboundProcessor = null;
 try { _emailInboundProcessor = require("./routes/emailInbound"); } catch(e) { console.error('[STARTUP] FAIL emailInbound:', e.message, e.stack); }
-app.post("/api/receipts/email-inbound", async (req, res) => {
+app.post("/api/receipts/email-inbound", (req, res) => {
     res.sendStatus(200);
     if (!_emailInboundProcessor) { console.error('[EmailInbound] Handler not loaded — check startup errors'); return; }
-    try { await _emailInboundProcessor(req); } catch (e) { console.error('[EmailInbound] Error:', e.message, e.stack); }
+    // waitUntil tells Vercel to keep the Lambda alive until the promise resolves.
+    // Without this, Vercel freezes the Lambda after res.send() and Gemini never completes.
+    waitUntil(_emailInboundProcessor(req).catch(e => console.error('[EmailInbound] Error:', e.message, e.stack)));
 });
 
 // Mount all API routes under /api
