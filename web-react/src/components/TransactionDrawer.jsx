@@ -69,7 +69,7 @@ async function imageToPdf(file) {
 const initialState = {
     date: new Date().toISOString().slice(0, 10),
     amount: '', vendor: '', category: '', taxBucket: '',
-    bizPct: 100, deduct: false, isSub: false, notes: '', receiptLink: '',
+    bizPct: 100, deduct: false, isSub: false, flagged: false, notes: '', receiptLink: '',
     receiptFile: null, source: 'manual', msg: '', savedId: null, saving: false,
     scanning: false, scanMsg: '',
     tipBreakdown: null,   // { subtotal, tip, tax, total } when tip detected on receipt
@@ -92,6 +92,7 @@ function reducer(state, action) {
                 bizPct: action.tx.business_use_pct == null ? 100 : action.tx.business_use_pct,
                 deduct: !!action.tx.tax_deductible,
                 isSub: !!action.tx.is_subscription,
+                flagged: !!action.tx.needs_review,
                 notes: action.tx.notes || '',
                 receiptLink: action.tx.receipt_link || '',
                 source: action.tx.source || 'manual',
@@ -130,7 +131,7 @@ function formatSourceKey(key) {
 export default function TransactionDrawer({ transaction, onClose, onSave, onDelete, accounts = [] }) {
     const modal = useModal();
     const [state, dispatch] = useReducer(reducer, initialState);
-    const { date, amount, vendor, category, taxBucket, bizPct, deduct, isSub, notes,
+    const { date, amount, vendor, category, taxBucket, bizPct, deduct, isSub, flagged, notes,
             receiptLink, receiptFile, source, msg, savedId, scanning, scanMsg,
             tipBreakdown, tipSplitPair } = state;
 
@@ -224,6 +225,7 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
                 amount_cents: Math.round(Number(amount || 0) * 100),
                 tax_deductible: deduct,
                 is_subscription: isSub,
+                needs_review: flagged,
                 tax_bucket: taxBucket,
                 business_use_pct: Number(bizPct),
                 notes, source,
@@ -569,6 +571,10 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
                         <label className="tag" style={{ display: 'flex', gap: '8px', alignItems: 'center', flex: 1, minWidth: 0, background: 'rgba(56, 189, 248, 0.05)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.2)' }}>
                             <input type="checkbox" checked={isSub} onChange={e => field('isSub', e.target.checked)} style={{ width: 'auto', margin: 0, flexShrink: 0 }} />
                             <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Recurring</span>
+                        </label>
+                        <label className="tag" style={{ display: 'flex', gap: '8px', alignItems: 'center', flex: 1, minWidth: 0, background: flagged ? 'rgba(249,115,22,0.1)' : 'transparent', color: flagged ? '#f97316' : 'rgba(255,255,255,0.5)', border: `1px solid ${flagged ? 'rgba(249,115,22,0.4)' : 'rgba(255,255,255,0.1)'}`, transition: 'all 0.15s' }}>
+                            <input type="checkbox" checked={flagged} onChange={e => field('flagged', e.target.checked)} style={{ width: 'auto', margin: 0, flexShrink: 0, accentColor: '#f97316' }} />
+                            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>🚩 Review</span>
                         </label>
                     </div>
 

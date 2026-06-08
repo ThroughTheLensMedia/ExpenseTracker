@@ -5,6 +5,14 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.99] — 2026-06-08
+
+### Feature: Flag for Review Toggle in Transaction Drawer
+
+- **`web-react/src/components/TransactionDrawer.jsx`** — Added "🚩 Review" checkbox to the drawer alongside Tax Deductible and Recurring. Toggling it sets `needs_review` on the expense. Loads correctly when reopening a flagged transaction. No DB migration — `needs_review` column already existed. Flagged transactions surface via the existing 🚩 Needs Review filter on the Transaction Ledger.
+
+---
+
 ## [v7.8.98] — 2026-06-08
 
 ### Enhancement: Security Checklist — Commands + Links

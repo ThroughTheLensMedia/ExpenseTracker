@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.99', date: 'JUN 8, 2026', color: '#f97316', items: [
+        '<strong>Flag for Review:</strong> Any transaction can now be manually flagged for follow-up. Open the drawer and check "🚩 Review" — the transaction lights up orange and appears under the existing "Needs Review" filter on the Transaction Ledger. Useful for flagging Plaid transactions that haven\'t posted to your card yet, or anything else you want to circle back on.',
+    ]},
     { version: '7.8.98', date: 'JUN 8, 2026', color: '#a78bfa', items: [
         '<strong>Security Checklist Upgraded:</strong> Every checklist item now has sub-bullets. Terminal commands appear as copyable code blocks — click Copy and paste straight into your terminal. Dashboard links (Vercel, Supabase, UptimeRobot, Stripe, etc.) open directly in a new tab. Covers all 5 review tiers.',
     ]},
