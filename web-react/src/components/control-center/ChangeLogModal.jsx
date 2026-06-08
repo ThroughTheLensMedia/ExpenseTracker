@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.88', date: 'JUN 8, 2026', color: '#38bdf8', items: [
+        '<strong>Receipt Email Sessions:</strong> System Logs now opens on a grouped "Receipt Email Sessions" view. Every forwarded email gets one card showing subject, vendor, amount, date, category, AI confidence, match result, and outcome — matched, pending, failed, or error. Click to expand and see the full breakdown and raw log events. No more hunting through individual rows.',
+    ]},
     { version: '7.8.87', date: 'JUN 8, 2026', color: '#38bdf8', items: [
         '<strong>System Logs Viewer:</strong> A new "System Logs" tab in the Ledger Control Center lets you see all backend events in real time — receipt email processing, Plaid sync, errors, and more. Filter by source, level (error/warn/info), and time window. Click any row to expand its full detail data. Auto-refreshes every 30 seconds.',
     ]},

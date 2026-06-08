@@ -5,6 +5,14 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.88] — 2026-06-08
+
+### Feature: Receipt Email Sessions view in System Logs
+
+- **`SystemLogsTab.jsx`** — Added grouped Receipt Email Sessions view as the default tab. Clusters email-inbound log rows by 90-second proximity into one card per email: shows subject, from, vendor, amount, date, category, AI confidence, match result, outcome badge, and any errors. Raw events expandable inside each card. Second tab keeps the full raw log table. Time window + live refresh controls shared across both views.
+
+---
+
 ## [v7.8.87] — 2026-06-08
 
 ### Feature: System Logs tab in Ledger Control Center
