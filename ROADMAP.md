@@ -1,6 +1,6 @@
 # Lumière Ledger — Master Roadmap
 
-**Version:** v7.8.54 | **Last reviewed:** 2026-06-02  
+**Version:** v7.8.88 | **Last reviewed:** 2026-06-08  
 Source of truth for all sprint work, security status, and product phases.
 
 ---
@@ -100,13 +100,14 @@ Source of truth for all sprint work, security status, and product phases.
 | Brain — Invoice creation tool (Step 5) | `create_invoice_draft` write tool with confirmation card |
 | REDIS_URL in Vercel | Required to activate email queueing (currently using direct Resend fallback — works fine) |
 | Rate limiting on `/subscription/redeem` | Backlog |
-| Backend structured logging (Logtail/pino) | Attempted v7.8.59 — crashed API due to dynamic require + missing bundle. Needs proper implementation with static requires and committed package-lock. Do NOT use safeRequire() wrapper. |
+| Backend structured logging (Logtail/pino) | ✅ Superseded — `system_logs` table + `logger.js` shipped v7.8.84. Admin viewer in Control Center v7.8.87. |
 | Sentry backend DSN + user context | Sentry frontend SDK installed (v7.8.59) but DSN was never configured. Need to set `VITE_SENTRY_DSN` in Vercel and wire `Sentry.setUser()` in AuthContext. Check `web-react/src/main.jsx` for current init. |
+| **Clean Up: pending_receipts stale row on manual upload** | When a receipt is uploaded via the transaction drawer (`PUT /api/receipts/:table/:id`), check `pending_receipts` for a matching row (same `user_id` + `amount_cents` ± small window) and delete it. Prevents stale pending rows accumulating after manual uploads. |
 | Apple Card CSV via email | Apple Card can't connect via Plaid. Detect `.csv` attachment in `emailInbound.js`, parse Apple Card CSV format (Transaction Date/Clearing Date/Description/Merchant/Category/Type/Amount/Purchased By), bulk-insert with existing dedup logic. Workaround for now: manual CSV import on Ledger page. Build after email ingestion is stable. |
 
 ---
 
-## ✅ Completed This Sprint (v7.7.0 → v7.8.4)
+## ✅ Completed This Sprint (v7.7.0 → v7.8.88)
 
 | Version | What shipped |
 |---------|-------------|
@@ -148,6 +149,11 @@ Source of truth for all sprint work, security status, and product phases.
 | v7.8.30 | Account merging — linked_source in account_aliases; Merge button on CSV cards; absorbed accounts hidden; target shows Includes badge; unmerge available |
 | v7.8.31 | Account dropdown driven by live account aliases — TransactionDrawer + filter dropdown use /accounts/summary display_name; emoji stripped from SOURCE_LABELS |
 | v7.8.32 | Bulk reassign account — PATCH /expenses/bulk-source; multi-select floating bar; fix route ordering (bulk-source before /:id); fix toast auto-dismiss |
+| v7.8.84 | System logs — `system_logs` table + `logger.js`; 7-day retention, structured JSONB metadata, non-blocking writes |
+| v7.8.85 | Pending Receipts UI — `pending_receipts` table; amber banner in Transactions; link picker (±14 day, exact-amount highlight); dismiss flow |
+| v7.8.86 | Receipt email result emails now `await`ed — Costco fuel result email delivered; all 4 outcome sends (matched/pending/failed/already_linked) no longer fire-and-forget |
+| v7.8.87 | System Logs viewer in Control Center (admin-only) — `GET /api/admin/logs`; source/level/time filters; Receipt Email Sessions grouped view |
+| v7.8.88 | System Logs — Receipt Email Sessions rewrite; 3-column session cards; outcome badges; expandable raw events; 30s live mode |
 
 ---
 
@@ -205,6 +211,7 @@ Source of truth for all sprint work, security status, and product phases.
 ## 🚩 Clean Up / Technical Debt
 
 - **⚠️ Dependency Hygiene Protocol** — Any `api/package.json` change must regenerate `api/package-lock.json` in the same commit. Stale lock file = Vercel silent-skip = Lambda crash. Root cause of v7.6.7 outage. See Rule 10 in CLAUDE.md.
+- **`file-type` moderate vuln (GHSA-5v7r-6r5c-r473)** — Infinite loop on malformed ASF audio file header. Impact: near-zero (receipts.js only handles JPEG/PNG/PDF). Fix requires `file-type@22` which is ESM-only — needs `receipts.js` refactor to dynamic `import()` before upgrading. Not blocking. Address in a future cleanup sprint.
 - **Invoice PDF formatting** — Known issues, not blocking. Good to Have.
 - **`plaid_account_id` backfill** — Existing Plaid transactions have NULL until next sync after migration 001 runs.
 
