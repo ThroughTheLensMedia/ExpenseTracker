@@ -635,4 +635,76 @@ router.all("*", (req, res) => {
     });
 });
 
+// ── Security Review Cadence ───────────────────────────────────────────────────
+
+const REVIEW_CADENCE = {
+    weekly:     { label: 'Weekly Check',        days: 7   },
+    monthly:    { label: 'Monthly Audit',        days: 30  },
+    quarterly:  { label: 'Quarterly Deep Review',days: 90  },
+    annual:     { label: 'Annual Audit',         days: 365 },
+    dependency: { label: 'npm audit',            days: 7   },
+};
+
+/**
+ * GET /admin/security-reviews
+ * Returns last completion per type + computed next-due date.
+ */
+router.get("/security-reviews", requireRole('admin'), async (req, res) => {
+    try {
+        // Get the most recent completion for each review type
+        const types = Object.keys(REVIEW_CADENCE);
+        const results = await Promise.all(types.map(async (type) => {
+            const { data } = await supabase
+                .from('security_reviews')
+                .select('id, completed_at, notes')
+                .eq('review_type', type)
+                .order('completed_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+            const cadence = REVIEW_CADENCE[type];
+            const lastCompleted = data?.completed_at || null;
+            const nextDue = lastCompleted
+                ? new Date(new Date(lastCompleted).getTime() + cadence.days * 86400000).toISOString()
+                : null;
+            return { type, label: cadence.label, days: cadence.days, lastCompleted, nextDue };
+        }));
+
+        // Also fetch recent history (last 20)
+        const { data: history } = await supabase
+            .from('security_reviews')
+            .select('id, review_type, completed_at, notes')
+            .order('completed_at', { ascending: false })
+            .limit(20);
+
+        res.json({ reviews: results, history: history || [] });
+    } catch (e) {
+        console.error('[Admin] security-reviews GET error:', e.message);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+/**
+ * POST /admin/security-reviews/complete
+ * Body: { review_type, notes? }
+ * Logs a completion for the given review type.
+ */
+router.post("/security-reviews/complete", requireRole('admin'), async (req, res) => {
+    try {
+        const { review_type, notes } = req.body;
+        if (!REVIEW_CADENCE[review_type]) {
+            return res.status(400).json({ error: `Invalid review_type. Must be one of: ${Object.keys(REVIEW_CADENCE).join(', ')}` });
+        }
+        const { data, error } = await supabase
+            .from('security_reviews')
+            .insert({ review_type, notes: notes || null, completed_by: req.user.id })
+            .select()
+            .single();
+        if (error) throw error;
+        res.json(data);
+    } catch (e) {
+        console.error('[Admin] security-reviews POST error:', e.message);
+        res.status(500).json({ error: e.message });
+    }
+});
+
 module.exports = router;

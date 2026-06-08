@@ -5,6 +5,65 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.95] — 2026-06-08
+
+### Feature: Security Review Cadence Tab
+
+- **`api/routes/admin.js`** — `GET /admin/security-reviews` + `POST /admin/security-reviews/complete`. Returns last completion per type, computed next-due date, and recent history.
+- **`api/tests/security-reviews-migration.sql`** — `security_reviews` table with review_type check constraint and index.
+- **`web-react/src/components/control-center/SecurityReviewTab.jsx`** — New admin-only tab. Shows 5 review tiers (weekly/monthly/quarterly/annual/npm audit) with status badges (OK / DUE SOON / OVERDUE / NEVER RUN), expandable checklists, "Mark Done" flow with optional notes, and completion history.
+- **`web-react/src/pages/Backup.jsx`** — Added Security tab (admin-only) to Control Center nav.
+
+---
+
+## [v7.8.94] — 2026-06-08
+
+### Feature: ENCRYPTION_KEY Rotation Runbook
+
+- **`api/scripts/rotate-plaid-tokens.js`** — New local-only script that re-encrypts all Plaid access tokens when rotating ENCRYPTION_KEY. Supports `--dry-run` mode. Uses existing `cryptoUtil.js` encrypt/decrypt.
+- **`CLAUDE.md`** — Added "ENCRYPTION_KEY Rotation Runbook" section with step-by-step procedure.
+
+---
+
+## [v7.8.93] — 2026-06-08
+
+### Fix: pending_receipts auto-cleanup on manual receipt upload
+
+- **`api/routes/receipts.js`** — After a successful receipt upload to `expenses`, checks `pending_receipts` for a row with matching `user_id + amount_cents`. If exactly one match found, deletes the pending row and its Storage file. Non-fatal if cleanup fails — upload response is unaffected.
+
+---
+
+## [v7.8.92] — 2026-06-08
+
+### Feature: Email Receipt Phase 2 — Per-User Forwarding Addresses
+
+- **`api/utils/tokenUtils.js`** — New `deriveReceiptToken(userId)` using HMAC-SHA256. Token = first 12 hex chars, deterministic per user.
+- **`api/routes/receipts.js`** — New `GET /receipts/my-address` endpoint. Derives token, upserts to `settings.receipt_token`, returns unique forwarding address.
+- **`api/routes/emailInbound.js`** — Replaced hardcoded `TOKEN_MAP` lookup with DB query on `settings.receipt_token`. Legacy `jd` token preserved as fallback. Unknown tokens fall back to Joshua.
+- **`api/tests/receipt-token-migration.sql`** — `receipt_token TEXT` column + index on `settings` table.
+- **`web-react/src/components/control-center/IntegrationTab.jsx`** — `EmailReceiptCard` now fetches dynamic address from `GET /api/receipts/my-address` instead of showing a hardcoded address. Each user sees their own unique forwarding address.
+- **New env var required:** `RECEIPT_HMAC_SECRET` — set in Vercel before deploying.
+
+---
+
+## [v7.8.91] — 2026-06-08
+
+### Fix: Sentry user context on page reload
+
+- **`web-react/src/components/AuthContext.jsx`** — Added `Sentry.setUser()` in the initial `getSession()` block. Previously, user context was only set on `SIGNED_IN` events (new logins), not on page reload where the event is `INITIAL_SESSION`. Errors on reload now carry user identity.
+
+---
+
+## [v7.8.90] — 2026-06-08
+
+### Fix: Remove Bull — replace with inline retry
+
+- **`api/utils/emailQueue.js`** — Replaced Bull (job queue) with a lightweight `withRetry()` wrapper. Bull required a persistent worker process incompatible with Vercel serverless. The direct Resend fallback was already doing all the work. New implementation: up to 3 attempts with linear backoff on Resend failures. Exported interface unchanged — no callsite changes.
+- **`api/package.json`** — Removed `"bull": "^4.16.5"`.
+- **`api/package-lock.json`** — Regenerated after Bull removal.
+
+---
+
 ## [v7.8.89] — 2026-06-08
 
 ### Fix: Receipt upload 413 — client-side image compression

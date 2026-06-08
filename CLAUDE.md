@@ -302,6 +302,33 @@ Express 4.19 API (api/)
 
 ---
 
+## ENCRYPTION_KEY Rotation Runbook
+
+**When to rotate:** suspected key leak, annual security review, staff offboarding.
+
+**Script:** `api/scripts/rotate-plaid-tokens.js` — re-encrypts all Plaid access tokens locally.
+
+```bash
+# Step 1 — Generate a new key
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+
+# Step 2 — Dry run (no writes)
+OLD_ENCRYPTION_KEY=<current_key> ENCRYPTION_KEY=<new_key> node api/scripts/rotate-plaid-tokens.js --dry-run
+
+# Step 3 — Confirm row count looks right, then run live
+OLD_ENCRYPTION_KEY=<current_key> ENCRYPTION_KEY=<new_key> node api/scripts/rotate-plaid-tokens.js
+
+# Step 4 — Only after script succeeds with 0 failures:
+#   Update ENCRYPTION_KEY in Vercel env panel
+#   git push origin main  (triggers redeploy)
+#   Verify Plaid sync works for one account
+#   Delete OLD_ENCRYPTION_KEY from local .env
+```
+
+⚠️ Do NOT update Vercel's `ENCRYPTION_KEY` until the script reports 0 failures. Updating the key before all tokens are re-encrypted will break Plaid sync for those users.
+
+---
+
 ## PWA / Mobile Requirements
 
 - Minimum tap target: 44×44px on all interactive elements

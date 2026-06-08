@@ -3,6 +3,7 @@ const multer = require("multer");
 const fileType = require("file-type");
 const { supabase } = require("../db");
 const { getGeminiModel } = require("../utils/gemini");
+const { deriveReceiptToken } = require("../utils/tokenUtils");
 
 const router = express.Router();
 
@@ -172,6 +173,29 @@ router.post("/snap", upload.single("file"), async (req, res) => {
     }
 });
 
+/**
+ * GET /receipts/my-address
+ * Returns this user's unique receipt forwarding email address.
+ * Derives token from RECEIPT_HMAC_SECRET + user ID, stores it in settings
+ * for fast inbound lookup, then returns the full address.
+ */
+router.get("/my-address", async (req, res) => {
+    try {
+        if (!process.env.RECEIPT_HMAC_SECRET) {
+            return res.status(503).json({ error: 'Receipt forwarding not configured on this server.' });
+        }
+        const token = deriveReceiptToken(req.user.id);
+        // Upsert token into settings so emailInbound can look it up by token
+        await req.sb
+            .from('settings')
+            .upsert({ user_id: req.user.id, receipt_token: token }, { onConflict: 'user_id' });
+        res.json({ address: `receipts+${token}@lumiereledger.com` });
+    } catch (e) {
+        console.error('[Receipts] my-address error:', e.message);
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // POST /receipts/:table/:id
 router.post("/:table/:id", upload.single("file"), async (req, res) => {
     try {
@@ -215,6 +239,29 @@ router.post("/:table/:id", upload.single("file"), async (req, res) => {
             throw new Error(`Database update failed: ${error.message}`);
         }
         if (!data) return res.status(404).json({ error: "Record not found (Check if RLS permits table updates)" });
+
+        // Auto-clean a matching pending_receipts row (from email forwarding pipeline)
+        // Only fires when uploading to expenses and the amount is unambiguous (exactly one match)
+        if (table === 'expenses' && data.amount_cents) {
+            try {
+                const { data: pending } = await req.sb
+                    .from('pending_receipts')
+                    .select('id, file_path')
+                    .eq('user_id', req.user.id)
+                    .eq('amount_cents', data.amount_cents);
+                if (pending?.length === 1) {
+                    const p = pending[0];
+                    await req.sb.from('pending_receipts').delete().eq('id', p.id);
+                    if (p.file_path) {
+                        await supabase.storage.from('receipts').remove([p.file_path]).catch(() => {});
+                    }
+                    console.log(`[Receipts] Auto-cleaned pending_receipts row ${p.id} for amount ${data.amount_cents}`);
+                }
+            } catch (cleanupErr) {
+                // Non-fatal — upload succeeded, just log the cleanup failure
+                console.warn('[Receipts] pending_receipts cleanup failed:', cleanupErr.message);
+            }
+        }
 
         res.json(data);
     } catch (e) {

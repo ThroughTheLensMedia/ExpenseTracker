@@ -94,6 +94,7 @@ export function AuthProvider({ children }) {
         setSession(session);
         setUser(session.user);
         fetchSubscription(session.user.id);
+        Sentry.setUser({ id: session.user.id, email: session.user.email });
       }
       setLoading(false);
     }).catch(err => {

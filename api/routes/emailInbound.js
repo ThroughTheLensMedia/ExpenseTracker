@@ -3,8 +3,10 @@ const { parseReceiptFromEmailBody, parseReceiptFromFile } = require('../utils/re
 const { sendReceiptConfirmationEmail } = require('../utils/mailer');
 const log = require('../utils/logger');
 
-// Phase 1: single user. "jd" maps to Joshua's user ID.
-const TOKEN_MAP = {
+// Phase 1 fallback: hardcoded token → userId for Joshua while the DB token
+// system ramps up. Once all users have called GET /receipts/my-address at
+// least once (which stores their token in settings), this map is never hit.
+const LEGACY_TOKEN_MAP = {
     'jd': '49e7efcb-6434-4f0c-9563-3151a6d50df9',
 };
 
@@ -39,8 +41,28 @@ const handler = async (req) => {
 
         const tokenMatch = toAddress.match(/receipts\+([^@]+)@/i);
         const token = tokenMatch ? tokenMatch[1].toLowerCase() : null;
-        const FALLBACK_USER_ID = TOKEN_MAP['jd'];
-        const userId = (token ? TOKEN_MAP[token] : null) || FALLBACK_USER_ID;
+
+        // Phase 2: look up user by receipt_token stored in settings table
+        let userId = null;
+        if (token) {
+            // Check DB first (Phase 2 — per-user HMAC tokens stored on first address view)
+            const { data: settingsRow } = await supabase
+                .from('settings')
+                .select('user_id')
+                .eq('receipt_token', token)
+                .maybeSingle();
+            if (settingsRow?.user_id) {
+                userId = settingsRow.user_id;
+            } else {
+                // Phase 1 fallback — legacy short tokens (e.g. "jd")
+                userId = LEGACY_TOKEN_MAP[token] || null;
+            }
+        }
+
+        // Final fallback: no token in To address at all → default to Joshua
+        if (!userId) {
+            userId = LEGACY_TOKEN_MAP['jd'] || null;
+        }
 
         if (!userId) {
             log.warn('email-inbound', 'No user resolved — ignoring', { to: toAddress });

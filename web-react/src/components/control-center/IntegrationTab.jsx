@@ -55,25 +55,39 @@ fetch("https://your-site.com/api/form", {
     );
 }
 
-const RECEIPT_EMAIL = 'b1eedb087c80679a30142ee1f36b7aa4@inbound.postmarkapp.com';
-
 function EmailReceiptCard() {
+    const [address, setAddress] = useState(null);
+    const [addrLoading, setAddrLoading] = useState(true);
+
+    useEffect(() => {
+        apiGet('/receipts/my-address')
+            .then(d => setAddress(d.address))
+            .catch(() => setAddress(null))
+            .finally(() => setAddrLoading(false));
+    }, []);
+
     return (
         <div className="card glass" style={{ margin: 0, padding: '28px', borderTop: '4px solid #f59e0b' }}>
             <div style={{ marginBottom: '16px' }}>
                 <h2 style={{ margin: '0 0 6px', fontSize: '1.4rem', fontWeight: 900 }}>Email Receipt Forwarding</h2>
                 <div className="muted" style={{ fontSize: '13px' }}>
-                    Forward any receipt email to this address and it will be automatically parsed and attached to the matching transaction. Save it as a contact for quick access.
+                    Forward any receipt email to your personal address below and it will be automatically parsed and attached to the matching transaction. Save it as a contact for quick access.
                 </div>
             </div>
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
                 <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '8px', padding: '10px 16px', fontSize: '13px', fontWeight: 700 }}>
-                    <span style={{ color: '#f59e0b', fontFamily: 'monospace' }}>{RECEIPT_EMAIL}</span>
+                    {addrLoading ? (
+                        <span className="muted" style={{ fontFamily: 'monospace' }}>Loading your address…</span>
+                    ) : address ? (
+                        <span style={{ color: '#f59e0b', fontFamily: 'monospace' }}>{address}</span>
+                    ) : (
+                        <span className="muted" style={{ fontFamily: 'monospace' }}>Unavailable — contact support</span>
+                    )}
                 </div>
-                <CopyButton value={RECEIPT_EMAIL} label="Copy Address" />
+                {address && <CopyButton value={address} label="Copy Address" />}
             </div>
             <div className="muted" style={{ fontSize: '12px', marginTop: '12px' }}>
-                Works with PDF attachments and plain-text receipt emails. Receipts that arrive before the bank transaction posts will match automatically when your bank syncs (1–3 days).
+                This address is unique to your account. Works with JPEG/PNG photo attachments and plain-text receipt emails. Receipts that arrive before the bank transaction posts will match automatically when your bank syncs (1–3 days).
             </div>
         </div>
     );

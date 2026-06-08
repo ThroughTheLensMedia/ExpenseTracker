@@ -1,6 +1,12 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.95', date: 'JUN 8, 2026', color: '#a78bfa', items: [
+        '<strong>Security Review Tab:</strong> A new "Security" tab in the Ledger Control Center (admin-only) tracks your security review cadence. See which reviews are overdue, expand checklists for each tier, mark reviews complete with optional notes, and browse completion history.',
+        '<strong>Per-User Receipt Addresses:</strong> Each user now has their own unique email forwarding address for receipt capture. Your personal address is shown in the Integrations tab — copy it and save it as a contact.',
+        '<strong>Receipt Cleanup:</strong> When you manually upload a receipt to a transaction, any matching pending receipt from the email pipeline is now automatically cleared from the Pending Receipts banner.',
+        '<strong>Reliability:</strong> Replaced background email queue (Bull) with a direct retry system — up to 3 attempts per send. Simpler, more reliable, no infrastructure required.',
+    ]},
     { version: '7.8.89', date: 'JUN 8, 2026', color: '#4ade80', items: [
         '<strong>Receipt Upload Fixed:</strong> Large JPEG receipts (phone photos, browser screenshots) now compress automatically in your browser before uploading. Fixes the issue where attaching a receipt appeared to work but disappeared on refresh. Images over 1MB are resized to 1920px and re-encoded — quality stays sharp, file size drops under 1MB.',
     ]},
