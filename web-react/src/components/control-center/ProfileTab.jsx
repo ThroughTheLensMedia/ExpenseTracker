@@ -24,7 +24,7 @@ const VITE_PRICE = {
     studio_annual:  import.meta.env.VITE_STRIPE_PRICE_STUDIO_ANNUAL,
 };
 
-export default function ProfileTab({ settings, setSettings, onReload }) {
+export default function ProfileTab({ settings, setSettings, onReload, billingOnly = false }) {
     const [msg, setMsg] = useState('');
     const { tier, subscription, subscriptionReady } = useAuth();
     const [billingAnnual, setBillingAnnual] = useState(false);
@@ -191,6 +191,15 @@ export default function ProfileTab({ settings, setSettings, onReload }) {
             )}
         </div>
     );
+
+    if (billingOnly) {
+        return (
+            <div className="card glass glow-blue" style={{ border: 'none', padding: 'clamp(20px, 4vw, 40px)', margin: 0 }}>
+                <h2 style={{ fontSize: '1.5rem', margin: '0 0 20px 0' }}>Account Plans</h2>
+                {billingEl}
+            </div>
+        );
+    }
 
     return (
         <div className="card glass glow-blue" style={{ border: 'none', padding: 'clamp(20px, 4vw, 40px)', margin: 0 }}>

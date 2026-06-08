@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.9.2] — 2026-06-08
+
+### Fix: Account Plans Nav + Billing Tab
+
+- **`web-react/src/App.jsx`** — Hamburger "Account Plans" link updated from `?tab=profile` to `?tab=billing`.
+- **`web-react/src/pages/Backup.jsx`** — Added `tab=billing` to URL allowlist + render condition pointing to `<ProfileTab billingOnly />`.
+- **`web-react/src/components/control-center/ProfileTab.jsx`** — Added `billingOnly` prop: when true renders only the subscription/billing section with an "Account Plans" heading, skipping the business profile form.
+
+---
+
 ## [v7.9.1] — 2026-06-08
 
 ### Feature: Dashboard Customization — Role Selector, Widget Toggles, Smart Empty States

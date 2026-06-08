@@ -50,7 +50,7 @@ export default function Backup() {
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const t = params.get('tab');
-        if (t && ['automation', 'profile', 'infrastructure', 'help', 'saas', 'intelligence', 'integration', 'feedback', 'logs', 'documents', 'security', 'dashboard'].includes(t)) {
+        if (t && ['automation', 'profile', 'billing', 'infrastructure', 'help', 'saas', 'intelligence', 'integration', 'feedback', 'logs', 'documents', 'security', 'dashboard'].includes(t)) {
             setActiveTab(t);
         }
     }, [window.location.search]);
@@ -216,6 +216,7 @@ export default function Backup() {
                 </div>
             )}
             {!showSkeleton && activeTab === 'profile' && <ProfileTab settings={settings} setSettings={setSettings} onReload={loadData} />}
+            {!showSkeleton && activeTab === 'billing' && <ProfileTab settings={settings} setSettings={setSettings} onReload={loadData} billingOnly />}
             {!showSkeleton && activeTab === 'dashboard' && <DashboardTab settings={settings} setSettings={setSettings} />}
             {!showSkeleton && activeTab === 'intelligence' && <IntelligenceTab settings={settings} setSettings={setSettings} user={user} loading={loading} setLoading={setLoading} onReload={loadData} />}
             {!showSkeleton && activeTab === 'documents' && <DocumentsTab settings={settings} user={user} />}

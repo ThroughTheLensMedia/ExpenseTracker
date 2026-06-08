@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.9.2', date: 'JUN 8, 2026', color: '#4ade80', items: [
+        '<strong>Account Plans — Fixed Navigation:</strong> The Account Plans link in the menu now opens a clean billing view showing only your subscription, plan tier, and upgrade options — no business form mixed in.',
+    ]},
     { version: '7.9.1', date: 'JUN 8, 2026', color: '#38bdf8', items: [
         '<strong>Dashboard Customization:</strong> Your dashboard is now personalized to you. New users are asked to pick their business type during onboarding (Photographer/Videographer, Freelancer, Small Business, or Personal/Side Hustle) — your choice sets the default sections that appear.',
         '<strong>Widget Toggles:</strong> A new ⚙️ gear icon in the dashboard header lets you show or hide any section: Invoice & Receivables, Year-End Forecast, Monthly Performance, Financial Insights, Top Expense Drivers, and Operational Intelligence. Changes save instantly.',

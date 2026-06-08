@@ -162,7 +162,7 @@ function AppContent() {
   // --- Version Check Hook ---
   // DEPLOY SOP: update CURRENT_VERSION here AND web-react/public/version.json on every release.
   useEffect(() => {
-    const CURRENT_VERSION = "7.9.1";
+    const CURRENT_VERSION = "7.9.2";
 
     // What's New: show button if user hasn't dismissed it for this version
     const seen = localStorage.getItem('ll_whats_new_seen');
@@ -513,9 +513,9 @@ function AppContent() {
               Add-Ons
             </NavLink>
             <NavLink
-                to="/StudioControlCenter?tab=profile"
+                to="/StudioControlCenter?tab=billing"
                 onClick={() => setMobileMenuOpen(false)}
-                className={() => `dropdown-item ${location.pathname === '/StudioControlCenter' && location.search.includes('tab=profile') ? 'active' : ''}`}
+                className={() => `dropdown-item ${location.pathname === '/StudioControlCenter' && location.search.includes('tab=billing') ? 'active' : ''}`}
             >
               Account Plans
             </NavLink>
