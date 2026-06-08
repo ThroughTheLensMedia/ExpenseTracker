@@ -127,7 +127,7 @@ export default function DashboardV2({ apiStatus }) {
                             ⚙️
                         </button>
                         {showGearPanel && (
-                            <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, padding: '16px', width: 240, zIndex: 100, boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
+                            <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, padding: '16px', width: 240, zIndex: 9999, boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
                                 <div style={{ fontSize: 11, fontWeight: 900, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>Show / Hide Sections</div>
                                 {[
                                     { key: 'invoices', label: 'Invoice & Receivables' },
