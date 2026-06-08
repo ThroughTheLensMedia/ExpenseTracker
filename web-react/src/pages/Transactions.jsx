@@ -376,6 +376,97 @@ export default function Transactions() {
         }
     };
 
+    // ─── Pending Receipts ───────────────────────────────────────────────────────
+    const [pendingReceipts, setPendingReceipts]         = useState([]);
+    const [pendingOpen, setPendingOpen]                 = useState(true);
+    const [pendingLoading, setPendingLoading]           = useState(true);
+    const [linkingId, setLinkingId]                     = useState(null); // pending receipt id in link-picker mode
+    const [linkSearch, setLinkSearch]                   = useState('');
+    const [linkWorking, setLinkWorking]                 = useState(false);
+    const [dismissWorking, setDismissWorking]           = useState(null); // pending id being dismissed
+
+    const loadPending = async () => {
+        try {
+            const data = await apiGet('/receipts/pending');
+            setPendingReceipts(data?.pending || []);
+        } catch (e) {
+            console.error('[Pending]', e.message);
+        } finally {
+            setPendingLoading(false);
+        }
+    };
+
+    useEffect(() => { loadPending(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const handleLinkReceipt = async (pendingId, expenseId) => {
+        setLinkWorking(true);
+        try {
+            await apiPost(`/receipts/pending/${pendingId}/link`, { expense_id: expenseId });
+            setPendingReceipts(prev => prev.filter(p => p.id !== pendingId));
+            setLinkingId(null);
+            setLinkSearch('');
+            invalidateExpensesCache();
+            await loadData(true);
+            setToast({ ok: true, msg: 'Receipt linked to transaction.' });
+            setTimeout(() => setToast(null), 4000);
+        } catch (e) {
+            setToast({ ok: false, msg: `Link failed: ${e.message}` });
+            setTimeout(() => setToast(null), 4000);
+        } finally {
+            setLinkWorking(false);
+        }
+    };
+
+    const handleDismissReceipt = async (pendingId) => {
+        const ok = await modal.confirm('Dismiss this receipt? The file will be deleted and cannot be recovered.');
+        if (!ok) return;
+        setDismissWorking(pendingId);
+        try {
+            await apiDelete(`/receipts/pending/${pendingId}`);
+            setPendingReceipts(prev => prev.filter(p => p.id !== pendingId));
+            setToast({ ok: true, msg: 'Receipt dismissed.' });
+            setTimeout(() => setToast(null), 3000);
+        } catch (e) {
+            setToast({ ok: false, msg: `Dismiss failed: ${e.message}` });
+            setTimeout(() => setToast(null), 4000);
+        } finally {
+            setDismissWorking(null);
+        }
+    };
+
+    // Candidates for the link picker: filter loaded expenses by search term
+    const linkCandidates = useMemo(() => {
+        const pending = pendingReceipts.find(p => p.id === linkingId);
+        if (!pending || !expenses.length) return [];
+        const term = linkSearch.toLowerCase();
+        return expenses
+            .filter(e => !e.receipt_link) // unlinked only
+            .filter(e => {
+                if (!term) {
+                    // Default: show transactions within ±14 days of receipt date
+                    if (!pending.receipt_date) return true;
+                    const receiptMs = new Date(pending.receipt_date + 'T12:00:00Z').getTime();
+                    const txMs = new Date(e.expense_date + 'T12:00:00Z').getTime();
+                    return Math.abs(receiptMs - txMs) <= 14 * 24 * 60 * 60 * 1000;
+                }
+                return (
+                    (e.vendor || '').toLowerCase().includes(term) ||
+                    (e.category || '').toLowerCase().includes(term) ||
+                    String(e.amount_cents / 100).includes(term)
+                );
+            })
+            .sort((a, b) => {
+                // Prioritize exact amount match, then closest date
+                const pending = pendingReceipts.find(p => p.id === linkingId);
+                if (!pending) return 0;
+                const aAmtMatch = a.amount_cents === pending.amount_cents ? -1 : 0;
+                const bAmtMatch = b.amount_cents === pending.amount_cents ? -1 : 0;
+                if (aAmtMatch !== bAmtMatch) return aAmtMatch - bAmtMatch;
+                return new Date(b.expense_date) - new Date(a.expense_date);
+            })
+            .slice(0, 50);
+    }, [linkingId, linkSearch, expenses, pendingReceipts]);
+
     return (
         <section style={{ display: 'flex', flexDirection: 'column', gap: '20px', paddingBottom: '100px' }}>
             {/* ─── Header ─── */}
@@ -574,6 +665,154 @@ export default function Transactions() {
                     </div>
                 )}
             </div>
+
+            {/* ─── Pending Receipts ─── */}
+            {!pendingLoading && pendingReceipts.length > 0 && (
+                <div className="card glass" style={{ margin: 0, padding: 0, border: '1px solid rgba(251,191,36,0.3)', overflow: 'hidden' }}>
+                    {/* Header row */}
+                    <button
+                        onClick={() => setPendingOpen(o => !o)}
+                        style={{ width: '100%', background: 'rgba(251,191,36,0.06)', border: 'none', borderBottom: pendingOpen ? '1px solid rgba(251,191,36,0.2)' : 'none', padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', color: 'inherit' }}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span style={{ fontSize: '16px' }}>📬</span>
+                            <span style={{ fontWeight: 900, fontSize: '13px', color: '#fbbf24', letterSpacing: '0.04em' }}>
+                                {pendingReceipts.length} PENDING RECEIPT{pendingReceipts.length > 1 ? 'S' : ''} — WAITING TO BE MATCHED
+                            </span>
+                        </div>
+                        <span style={{ color: '#fbbf24', fontSize: '12px', opacity: 0.7 }}>{pendingOpen ? '▲ Hide' : '▼ Show'}</span>
+                    </button>
+
+                    {pendingOpen && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                            {pendingReceipts.map((p, idx) => (
+                                <div key={p.id} style={{ borderTop: idx > 0 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
+                                    {/* Receipt row */}
+                                    <div style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                                                <span style={{ fontWeight: 900, fontSize: '14px' }}>{p.vendor || 'Unknown Vendor'}</span>
+                                                <span style={{ fontWeight: 800, fontSize: '14px', color: '#fbbf24' }}>
+                                                    {p.amount_cents != null ? `$${(p.amount_cents / 100).toFixed(2)}` : '—'}
+                                                </span>
+                                                <span style={{ fontSize: '12px', opacity: 0.6 }}>{p.receipt_date || '—'}</span>
+                                                {p.needs_review && (
+                                                    <span style={{ fontSize: '10px', padding: '2px 7px', background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.4)', borderRadius: '6px', color: '#f97316', fontWeight: 800 }}>Multiple matches</span>
+                                                )}
+                                            </div>
+                                            <div style={{ fontSize: '11px', opacity: 0.5, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', maxWidth: '500px' }}>
+                                                {p.raw_subject || p.raw_sender || '—'}
+                                            </div>
+                                        </div>
+
+                                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+                                            {/* View receipt file */}
+                                            {p.file_path && (
+                                                <button
+                                                    className="btn secondary"
+                                                    style={{ fontSize: '11px', padding: '6px 12px' }}
+                                                    onClick={async () => {
+                                                        try {
+                                                            const json = await apiGet(`/receipts/signed-url?path=${encodeURIComponent(p.file_path)}`);
+                                                            if (json.url) window.open(json.url, '_blank');
+                                                            else modal.alert('Could not load receipt: ' + (json.error || 'Unknown'));
+                                                        } catch (err) {
+                                                            modal.alert('Receipt load failed: ' + err.message);
+                                                        }
+                                                    }}
+                                                >View Receipt</button>
+                                            )}
+                                            {/* Link to transaction */}
+                                            <button
+                                                className="btn glow-blue"
+                                                style={{ fontSize: '11px', padding: '6px 14px', fontWeight: 900 }}
+                                                onClick={() => {
+                                                    setLinkingId(linkingId === p.id ? null : p.id);
+                                                    setLinkSearch('');
+                                                }}
+                                            >
+                                                {linkingId === p.id ? '✕ Cancel' : '🔗 Link to Transaction'}
+                                            </button>
+                                            {/* Dismiss */}
+                                            <button
+                                                className="btn secondary"
+                                                style={{ fontSize: '11px', padding: '6px 10px', color: 'rgba(255,77,77,0.7)', borderColor: 'rgba(255,77,77,0.3)', opacity: dismissWorking === p.id ? 0.5 : 1 }}
+                                                disabled={dismissWorking === p.id}
+                                                onClick={() => handleDismissReceipt(p.id)}
+                                            >
+                                                {dismissWorking === p.id ? '…' : 'Dismiss'}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Link picker — expands inline below the row */}
+                                    {linkingId === p.id && (
+                                        <div style={{ padding: '0 20px 20px', background: 'rgba(99,102,241,0.04)', borderTop: '1px solid rgba(99,102,241,0.15)' }}>
+                                            <div style={{ paddingTop: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                                <div style={{ fontSize: '12px', fontWeight: 700, color: '#818cf8' }}>
+                                                    SELECT A TRANSACTION TO ATTACH THIS RECEIPT TO
+                                                </div>
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search by vendor, category, or amount…"
+                                                    value={linkSearch}
+                                                    onChange={e => setLinkSearch(e.target.value)}
+                                                    autoFocus
+                                                    style={{ fontSize: '13px', padding: '8px 12px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'inherit', maxWidth: '420px' }}
+                                                />
+                                                {linkCandidates.length === 0 ? (
+                                                    <div style={{ fontSize: '12px', opacity: 0.5, padding: '8px 0' }}>
+                                                        {linkSearch ? 'No transactions match your search.' : 'No unlinked transactions found within ±14 days. Try searching by vendor name.'}
+                                                    </div>
+                                                ) : (
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '260px', overflowY: 'auto' }}>
+                                                        {linkCandidates.map(e => (
+                                                            <button
+                                                                key={e.id}
+                                                                disabled={linkWorking}
+                                                                onClick={() => handleLinkReceipt(p.id, e.id)}
+                                                                style={{
+                                                                    background: e.amount_cents === p.amount_cents ? 'rgba(74,222,128,0.07)' : 'rgba(255,255,255,0.03)',
+                                                                    border: `1px solid ${e.amount_cents === p.amount_cents ? 'rgba(74,222,128,0.25)' : 'rgba(255,255,255,0.07)'}`,
+                                                                    borderRadius: '8px',
+                                                                    padding: '10px 14px',
+                                                                    display: 'flex',
+                                                                    justifyContent: 'space-between',
+                                                                    alignItems: 'center',
+                                                                    gap: '12px',
+                                                                    cursor: linkWorking ? 'wait' : 'pointer',
+                                                                    color: 'inherit',
+                                                                    textAlign: 'left',
+                                                                    opacity: linkWorking ? 0.6 : 1,
+                                                                    transition: 'background 0.15s',
+                                                                }}
+                                                            >
+                                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
+                                                                    <div style={{ fontWeight: 800, fontSize: '13px', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{e.vendor}</div>
+                                                                    <div style={{ fontSize: '11px', opacity: 0.55 }}>{formatDate(e.expense_date)} · {e.category || 'Uncategorized'} · {ACCOUNT_LABELS[e.source] || e.source}</div>
+                                                                </div>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                                                                    <span style={{ fontWeight: 900, fontSize: '14px', color: e.amount_cents === p.amount_cents ? '#4ade80' : '#fff' }}>
+                                                                        {formatMoney(e.amount_cents)}
+                                                                    </span>
+                                                                    {e.amount_cents === p.amount_cents && (
+                                                                        <span style={{ fontSize: '10px', padding: '2px 6px', background: 'rgba(74,222,128,0.15)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: '4px', color: '#4ade80', fontWeight: 800 }}>Match</span>
+                                                                    )}
+                                                                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#818cf8' }}>Attach →</span>
+                                                                </div>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* ─── Mobile View (Cards) ─── */}
             <div className="mobile-only" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>

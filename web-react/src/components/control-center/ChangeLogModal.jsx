@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.85', date: 'JUN 8, 2026', color: '#818cf8', items: [
+        '<strong>Pending Receipts:</strong> Forwarded receipt emails that couldn\'t be auto-matched now appear in a new section at the top of the Transaction Ledger. Each one shows the vendor, amount, and email subject — with buttons to view the receipt file, manually link it to any transaction, or dismiss it.',
+        '<strong>Smart Link Picker:</strong> Clicking "Link to Transaction" expands an inline search panel showing nearby unlinked transactions. Exact amount matches are highlighted in green for quick identification.',
+    ]},
     { version: '7.8.84', date: 'JUN 7, 2026', color: '#4ade80', items: [
         '<strong>Receipt Email — Result Email Fixed:</strong> You were getting the instant "Receipt Received" confirmation but never the follow-up result. Vercel was freezing the server process after sending that first reply, before the AI could finish. Fixed — both emails now always deliver.',
     ]},

@@ -49,6 +49,7 @@ try {
 let metricsRouter;      try { metricsRouter      = require("./routes/metrics");     } catch(e) { console.error('[STARTUP] FAIL metrics:',     e.message); }
 let vendorsRouter;      try { vendorsRouter      = require("./routes/vendors");     } catch(e) { console.error('[STARTUP] FAIL vendors:',     e.message); }
 let feedbackRouter;     try { feedbackRouter     = require("./routes/feedback");    } catch(e) { console.error('[STARTUP] FAIL feedback:',    e.message); }
+let pendingReceiptsRouter; try { pendingReceiptsRouter = require("./routes/pendingReceipts"); } catch(e) { console.error('[STARTUP] FAIL pendingReceipts:', e.message); }
 let accountsRouter;     try { accountsRouter     = require("./routes/accounts");    } catch(e) { console.error('[STARTUP] FAIL accounts:',    e.message); }
 let documentsRouter;    try { documentsRouter    = require("./routes/documents");   } catch(e) { console.error('[STARTUP] FAIL documents:',   e.message); }
 
@@ -147,6 +148,9 @@ apiRouter.use(authMiddleware);
 
 // Feedback — auth required, not license-gated (any user can report issues)
 if (feedbackRouter) apiRouter.use("/feedback", feedbackRouter);
+
+// Pending receipts — auth required, not license-gated
+if (pendingReceiptsRouter) apiRouter.use("/receipts/pending", pendingReceiptsRouter);
 
 // --- ATTACH LICENSING MIDDLEWARE ---
 // Every route below this line is restricted by subscription status

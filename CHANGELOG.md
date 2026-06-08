@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.85] — 2026-06-08
+
+### Feature: Pending Receipts — Transaction Ledger
+
+- **`api/routes/pendingReceipts.js`** — New route file: GET list, POST link-to-transaction, DELETE dismiss
+- **`api/server.js`** — Mounted `/api/receipts/pending` after auth, before licensing
+- **`web-react/src/pages/Transactions.jsx`** — Pending receipts section above the ledger: collapsible amber banner, per-receipt View/Link/Dismiss actions, inline transaction picker with exact-amount highlighting and ±14 day default window
+
+---
+
 ## [v7.8.84] — 2026-06-07
 
 ### Fix: Receipt email — Lambda freeze killing Gemini Vision
