@@ -9,10 +9,10 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.99.1",
-    "@vercel/functions": "^3.6.2",
+    "@vercel/functions": "^3.6.3",
     "archiver": "^7.0.1",
     "cors": "^2.8.5",
-    "csv-parser": "^3.2.0",
+    "csv-parser": "^3.2.1",
     "dotenv": "^16.4.7",
     "express": "^4.19.2",
     "file-type": "16.5.4",
