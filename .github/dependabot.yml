@@ -39,3 +39,11 @@ updates:
         update-types: ["patch"]
       minor-updates:
         update-types: ["minor"]
+    ignore:
+      # eslint ecosystem must be upgraded together — ignore majors to prevent peer dep conflicts
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@eslint/js"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "typescript-eslint"
+        update-types: ["version-update:semver-major"]
