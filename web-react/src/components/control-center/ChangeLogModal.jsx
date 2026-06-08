@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.89', date: 'JUN 8, 2026', color: '#4ade80', items: [
+        '<strong>Receipt Upload Fixed:</strong> Large JPEG receipts (phone photos, browser screenshots) now compress automatically in your browser before uploading. Fixes the issue where attaching a receipt appeared to work but disappeared on refresh. Images over 1MB are resized to 1920px and re-encoded — quality stays sharp, file size drops under 1MB.',
+    ]},
     { version: '7.8.88', date: 'JUN 8, 2026', color: '#38bdf8', items: [
         '<strong>Receipt Email Sessions:</strong> System Logs now opens on a grouped "Receipt Email Sessions" view. Every forwarded email gets one card showing subject, vendor, amount, date, category, AI confidence, match result, and outcome — matched, pending, failed, or error. Click to expand and see the full breakdown and raw log events. No more hunting through individual rows.',
     ]},

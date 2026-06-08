@@ -5,6 +5,14 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.89] — 2026-06-08
+
+### Fix: Receipt upload 413 — client-side image compression
+
+- **`web-react/src/components/TransactionDrawer.jsx`** — Added `compressImage()` helper using browser Canvas API. Resizes to max 1920px wide, re-encodes as JPEG at 0.82 quality. Skips compression if file is already under 1MB or is a PDF. Wired into both upload paths: manual "Upload receipt" button and save+upload together. Fixes 413 Payload Too Large errors caused by high-res phone JPEGs or browser screenshots exceeding Vercel's 4.5MB serverless body limit.
+
+---
+
 ## [v7.8.88] — 2026-06-08
 
 ### Feature: Receipt Email Sessions view in System Logs

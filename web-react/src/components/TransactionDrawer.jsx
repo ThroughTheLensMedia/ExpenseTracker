@@ -5,6 +5,36 @@ import { useModal } from './ModalContext.jsx';
 import CategorySelect from './CategorySelect.jsx';
 import { ALL_CATEGORIES, CATEGORY_TAX_BUCKET_MAP } from '../constants/categories.js';
 
+// ─── Client-side image compression (keeps uploads under Vercel's 4.5MB limit) ─
+// Resizes to max 1920px wide and re-encodes as JPEG at 0.82 quality.
+// Skips compression if the file is already under 1MB or is a PDF.
+async function compressImage(file) {
+    if (file.type === 'application/pdf' || file.size < 1024 * 1024) return file;
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const MAX_W = 1920;
+                const scale = img.width > MAX_W ? MAX_W / img.width : 1;
+                const canvas = document.createElement('canvas');
+                canvas.width  = Math.round(img.width  * scale);
+                canvas.height = Math.round(img.height * scale);
+                canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                canvas.toBlob(
+                    (blob) => resolve(blob ? new File([blob], file.name, { type: 'image/jpeg' }) : file),
+                    'image/jpeg',
+                    0.82
+                );
+            };
+            img.onerror = () => resolve(file); // fall back to original on error
+            img.src = e.target.result;
+        };
+        reader.onerror = () => resolve(file);
+        reader.readAsDataURL(file);
+    });
+}
+
 // ─── Image → PDF conversion (runs client-side, no server round-trip) ─────────
 // Scales the image to fit A4 width (595pt), preserves aspect ratio.
 // Returns a Blob with type application/pdf.
@@ -210,7 +240,7 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
             if (receiptFile && !receiptLink) {
                 dispatch({ type: 'SET_MSG', value: 'Uploading receipt...' });
                 const fd = new FormData();
-                fd.append('file', receiptFile);
+                fd.append('file', await compressImage(receiptFile));
                 try {
                     const withReceipt = await apiUpload(`/receipts/expenses/${updated.id}`, fd);
                     updated = withReceipt;
@@ -267,7 +297,7 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
         dispatch({ type: 'SET_MSG', value: 'Uploading...' });
         try {
             const fd = new FormData();
-            fd.append('file', receiptFile);
+            fd.append('file', await compressImage(receiptFile));
             const updated = await apiUpload(`/receipts/expenses/${effectiveId}`, fd);
             dispatch({ type: 'RECEIPT_UPLOADED', link: updated.receipt_link });
             if (onSave) onSave(updated);

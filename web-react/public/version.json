@@ -1,1 +1,1 @@
-{"version":"7.8.88","release_date":"2026-06-08","codename":"Lumière Ledger","notes":"v7.8.88: Receipt Email Sessions view in System Logs"}
+{"version":"7.8.89","release_date":"2026-06-08","codename":"Lumière Ledger","notes":"v7.8.89: Client-side receipt compression — fixes 413 on large JPEG uploads"}
