@@ -1,6 +1,6 @@
 # Lumière Ledger — Master Roadmap
 
-**Version:** v7.9.1 | **Last reviewed:** 2026-06-08  
+**Version:** v7.9.3 | **Last reviewed:** 2026-06-08  
 Source of truth for all sprint work, security status, and product phases.
 
 ---
@@ -155,6 +155,8 @@ Source of truth for all sprint work, security status, and product phases.
 | v7.8.99 | Flag for Review toggle in TransactionDrawer; npm audit fix (3 high + 4 moderate) |
 | v7.9.0 | GitHub Dependabot — `.github/dependabot.yml`; weekly Monday scans of /api and /web-react; 6 major packages ignored |
 | v7.9.1 | Dashboard customization — role selector in onboarding (4 roles, presets); widget toggles + gear panel on dashboard; DashboardTab in Control Center; smart empty states |
+| v7.9.2 | Account Plans nav fix — dedicated `?tab=billing` tab; `billingOnly` prop on ProfileTab |
+| v7.9.3 | LCC restructure — gear panel clipping fixed; pills alphabetical; Feedback merged into Help; 3 admin tabs → AdminTab w/ sub-nav; License Activation in billing tab; vendor autocomplete in Automation |
 
 ---
 
