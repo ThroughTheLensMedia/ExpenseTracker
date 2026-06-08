@@ -5,6 +5,18 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.86] — 2026-06-08
+
+### Fix: Receipt email — result email never delivered after match/pending/failed
+
+#### Root Cause
+`sendReceiptConfirmationEmail` in the matched, already_linked, pending, and failed branches was called fire-and-forget (`.catch()` only, no `await`). The handler promise resolves immediately after the expense update, `waitUntil` considers the work done, and Vercel freezes the Lambda — killing the in-flight email send before it completes. The ack email worked because it fires at the very start and completes during the 4-second Gemini window.
+
+#### Fixed
+- **`api/routes/emailInbound.js`** — `await` all four result `sendReceiptConfirmationEmail` calls so the Lambda stays alive until Resend confirms delivery.
+
+---
+
 ## [v7.8.85] — 2026-06-08
 
 ### Feature: Pending Receipts — Transaction Ledger

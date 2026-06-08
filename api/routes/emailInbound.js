@@ -129,7 +129,7 @@ const handler = async (req) => {
 
         if (!extracted || extracted.amount_cents == null) {
             log.warn('email-inbound', 'No amount extracted — sending failed email', { from: senderEmail, subject, extracted }, userId);
-            sendReceiptConfirmationEmail({ to: senderEmail, outcome: 'failed', subject })
+            await sendReceiptConfirmationEmail({ to: senderEmail, outcome: 'failed', subject })
                 .catch(e => log.error('email-inbound', 'Failed confirmation email error', { error: e.message }, userId));
             return;
         }
@@ -188,7 +188,7 @@ const handler = async (req) => {
                 expenseId: match.id, vendor: match.vendor, amountCents,
             }, userId);
 
-            sendReceiptConfirmationEmail({
+            await sendReceiptConfirmationEmail({
                 to: senderEmail, outcome: 'matched',
                 vendor: match.vendor || extracted.vendor,
                 amountCents, expenseDate: match.expense_date, expenseId: match.id,
@@ -197,7 +197,7 @@ const handler = async (req) => {
         } else if (unlinked.length === 0 && alreadyLinked.length > 0) {
             const match = alreadyLinked[0];
             log.info('email-inbound', 'Transaction already has receipt', { expenseId: match.id }, userId);
-            sendReceiptConfirmationEmail({
+            await sendReceiptConfirmationEmail({
                 to: senderEmail, outcome: 'already_linked',
                 vendor: match.vendor || extracted.vendor,
                 amountCents, expenseDate: match.expense_date, expenseId: match.id,
@@ -216,7 +216,7 @@ const handler = async (req) => {
                 vendor: extracted.vendor, amountCents, needsReview,
             }, userId);
 
-            sendReceiptConfirmationEmail({
+            await sendReceiptConfirmationEmail({
                 to: senderEmail, outcome: 'pending',
                 vendor: extracted.vendor, amountCents,
             }).catch(e => log.error('email-inbound', 'Pending confirmation email failed', { error: e.message }, userId));

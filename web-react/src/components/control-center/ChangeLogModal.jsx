@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.86', date: 'JUN 8, 2026', color: '#4ade80', items: [
+        '<strong>Receipt Email — Result Email Fixed (Again):</strong> The "Receipt Matched" and "Receipt Saved" follow-up emails were still not delivering. Root cause: the email send was fire-and-forget — the server finished its work and shut down before the email could go out. Fixed. All result emails are now fully awaited before the handler exits.',
+    ]},
     { version: '7.8.85', date: 'JUN 8, 2026', color: '#818cf8', items: [
         '<strong>Pending Receipts:</strong> Forwarded receipt emails that couldn\'t be auto-matched now appear in a new section at the top of the Transaction Ledger. Each one shows the vendor, amount, and email subject — with buttons to view the receipt file, manually link it to any transaction, or dismiss it.',
         '<strong>Smart Link Picker:</strong> Clicking "Link to Transaction" expands an inline search panel showing nearby unlinked transactions. Exact amount matches are highlighted in green for quick identification.',
