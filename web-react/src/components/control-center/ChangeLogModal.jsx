@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.84', date: 'JUN 7, 2026', color: '#4ade80', items: [
+        '<strong>Receipt Email — Result Email Fixed:</strong> You were getting the instant "Receipt Received" confirmation but never the follow-up result. Vercel was freezing the server process after sending that first reply, before the AI could finish. Fixed — both emails now always deliver.',
+    ]},
     { version: '7.8.83', date: 'JUN 7, 2026', color: '#4ade80', items: [
         '<strong>Receipt Email — Better Matching:</strong> Forwarded receipts now match bank transactions up to 7 days apart instead of 3. Fixes cases where an invoice date (e.g. June 1) doesn\'t line up with when the charge actually posts to your card (e.g. June 7).',
     ]},

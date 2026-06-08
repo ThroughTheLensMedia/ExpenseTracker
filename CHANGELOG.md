@@ -5,6 +5,19 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.84] — 2026-06-07
+
+### Fix: Receipt email — Lambda freeze killing Gemini Vision
+
+#### Root Cause
+Vercel freezes the Lambda execution after `res.sendStatus(200)` is called. The instant ack email fires in ~2 seconds (before Gemini) so it gets through. Gemini Vision on a JPEG/PDF takes 10–30 seconds — Vercel kills the Lambda before it completes. Result: ack always delivered, result email never delivered.
+
+#### Fixed
+- **`api/server.js`** — Wrap `_emailInboundProcessor` in `waitUntil()` from `@vercel/functions`. This is Vercel's official API to keep a Lambda alive after a response is sent until the promise resolves.
+- **`api/package.json`** + **`api/package-lock.json`** — Added `@vercel/functions` dependency.
+
+---
+
 ## [v7.8.83] — 2026-06-07
 
 ### Fix: Receipt email matching — widen date window to ±7 days
