@@ -1,0 +1,41 @@
+version: 2
+updates:
+  # Express API dependencies
+  - package-ecosystem: "npm"
+    directory: "/api"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      patch-updates:
+        update-types: ["patch"]
+      minor-updates:
+        update-types: ["minor"]
+    ignore:
+      # Majors require manual evaluation — see MEMORY.md package versions snapshot
+      - dependency-name: "plaid"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "stripe"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "zod"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "express"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "file-type"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "libsodium-wrappers"
+        update-types: ["version-update:semver-major"]
+
+  # React frontend dependencies
+  - package-ecosystem: "npm"
+    directory: "/web-react"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      patch-updates:
+        update-types: ["patch"]
+      minor-updates:
+        update-types: ["minor"]
