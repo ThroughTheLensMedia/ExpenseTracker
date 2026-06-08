@@ -1,1 +1,1 @@
-{"version":"7.8.96","release_date":"2026-06-08","codename":"Lumière Ledger","notes":"v7.8.96: Receipt body parse hardening, security tab URL fix, onboarding receipt step"}
+{"version":"7.8.97","release_date":"2026-06-08","codename":"Lumière Ledger","notes":"v7.8.97: Fix security-reviews 404 — catch-all was blocking route registration"}

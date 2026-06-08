@@ -624,17 +624,6 @@ router.get("/logs", requireRole('admin'), async (req, res) => {
     }
 });
 
-// CATCH-ALL for /admin 404 debugging
-router.all("*", (req, res) => {
-    console.warn(`[ADMIN 404] Unhandled admin route: ${req.method} ${req.originalUrl} (base: ${req.baseUrl})`);
-    res.status(404).json({ 
-        error: "Admin route not found", 
-        path: req.originalUrl, 
-        base: req.baseUrl,
-        method: req.method
-    });
-});
-
 // ── Security Review Cadence ───────────────────────────────────────────────────
 
 const REVIEW_CADENCE = {
@@ -705,6 +694,17 @@ router.post("/security-reviews/complete", requireRole('admin'), async (req, res)
         console.error('[Admin] security-reviews POST error:', e.message);
         res.status(500).json({ error: e.message });
     }
+});
+
+// CATCH-ALL for /admin 404 debugging — must stay at the bottom
+router.all("*", (req, res) => {
+    console.warn(`[ADMIN 404] Unhandled admin route: ${req.method} ${req.originalUrl} (base: ${req.baseUrl})`);
+    res.status(404).json({
+        error: "Admin route not found",
+        path: req.originalUrl,
+        base: req.baseUrl,
+        method: req.method
+    });
 });
 
 module.exports = router;

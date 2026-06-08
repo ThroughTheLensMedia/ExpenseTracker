@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.97', date: 'JUN 8, 2026', color: '#4ade80', items: [
+        '<strong>Security Tab — Fixed:</strong> The Security Review tab was returning a 404 error due to a routing conflict in the backend. Fixed — the tab now loads correctly and shows all 5 review tiers.',
+    ]},
     { version: '7.8.96', date: 'JUN 8, 2026', color: '#4ade80', items: [
         '<strong>Receipt Email — Better Parsing:</strong> The AI now recognizes more label formats when extracting totals from forwarded emails — including "Total Paid", "Amount Due", "Grand Total", "Order Total", and "You Paid". Fixes cases where a valid total was present but returned as not found.',
         '<strong>Receipt Email — Error Visibility:</strong> When the AI fails to parse a forwarded email, the exact failure reason now appears in System Logs instead of a silent null. Easier to diagnose forwarding issues.',

@@ -5,6 +5,14 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.97] — 2026-06-08
+
+### Fix: Security Reviews API 404
+
+- **`api/routes/admin.js`** — Catch-all `router.all("*")` was placed before the security-reviews routes, intercepting every request before they could match. Moved catch-all to the very bottom of the file (after all routes, before `module.exports`).
+
+---
+
 ## [v7.8.96] — 2026-06-08
 
 ### Fix: Receipt Body Parse Hardening + Security Tab + Onboarding Receipt Step
