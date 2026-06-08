@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.98', date: 'JUN 8, 2026', color: '#a78bfa', items: [
+        '<strong>Security Checklist Upgraded:</strong> Every checklist item now has sub-bullets. Terminal commands appear as copyable code blocks — click Copy and paste straight into your terminal. Dashboard links (Vercel, Supabase, UptimeRobot, Stripe, etc.) open directly in a new tab. Covers all 5 review tiers.',
+    ]},
     { version: '7.8.97', date: 'JUN 8, 2026', color: '#4ade80', items: [
         '<strong>Security Tab — Fixed:</strong> The Security Review tab was returning a 404 error due to a routing conflict in the backend. Fixed — the tab now loads correctly and shows all 5 review tiers.',
     ]},

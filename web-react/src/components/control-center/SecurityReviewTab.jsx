@@ -10,12 +10,83 @@ const TYPE_LABELS = {
     dependency: 'npm audit',
 };
 
+// Each checklist item: { text, subs? }
+// Each sub: { cmd? } for terminal commands, { link, label } for clickable links, { note } for plain text
 const TYPE_CHECKLIST = {
-    weekly:     ['Scan Vercel + Supabase dashboards for failed auth spikes or unusual API usage', 'Check UptimeRobot for missed downtime events'],
-    monthly:    ['Run npm audit in /api and /web-react — fix Critical/High', 'Review Supabase changelog for deprecations', 'Review Vercel build logs for new warnings'],
-    quarterly:  ['Run npm outdated in both dirs — update minor/patch, evaluate majors', 'Audit all API routes for unprotected endpoints added this quarter', 'Confirm all new DB tables have RLS policies', 'Rotate POSTMARK_INBOUND_TOKEN and CRON_SECRET', 'Verify Stripe webhook signatures still validating'],
-    annual:     ['Full dependency major version audit (React, Express, Supabase SDK, Plaid SDK)', 'Review Terms of Service for payment processor policy changes', 'Re-audit RLS on all tables — schema drift can miss new tables', 'Verify Google OAuth consent screen re-verification status'],
-    dependency: ['cd api && npm audit --audit-level=high', 'cd web-react && npm audit --audit-level=high', 'Fix Critical immediately, High same day, review Moderate'],
+    weekly: [
+        { text: 'Check for failed auth spikes or unusual API usage', subs: [
+            { link: 'https://vercel.com/through-the-lens-media/expense-tracker/logs', label: 'Vercel Runtime Logs' },
+            { link: 'https://supabase.com/dashboard/projects', label: 'Supabase Auth Logs → Auth → Logs' },
+        ]},
+        { text: 'Check UptimeRobot for missed downtime events', subs: [
+            { link: 'https://dashboard.uptimerobot.com', label: 'UptimeRobot Dashboard' },
+        ]},
+    ],
+    monthly: [
+        { text: 'Run npm audit in /api and /web-react — fix Critical/High', subs: [
+            { cmd: 'cd api && npm audit --audit-level=high' },
+            { cmd: 'cd web-react && npm audit --audit-level=high' },
+        ]},
+        { text: 'Review Supabase changelog for deprecations', subs: [
+            { link: 'https://supabase.com/changelog', label: 'Supabase Changelog' },
+        ]},
+        { text: 'Review Vercel build logs for new warnings', subs: [
+            { link: 'https://vercel.com/through-the-lens-media/expense-tracker/deployments', label: 'Vercel Deployments' },
+        ]},
+    ],
+    quarterly: [
+        { text: 'Run npm outdated in both dirs — update minor/patch, evaluate majors', subs: [
+            { cmd: 'cd api && npm outdated' },
+            { cmd: 'cd web-react && npm outdated' },
+        ]},
+        { text: 'Audit all API routes for unprotected endpoints added this quarter', subs: [
+            { note: 'Review api/routes/ — look for routes missing requireAuth or requireRole middleware' },
+        ]},
+        { text: 'Confirm all new DB tables have RLS policies', subs: [
+            { link: 'https://supabase.com/dashboard/projects', label: 'Supabase → Auth → Policies' },
+        ]},
+        { text: 'Rotate POSTMARK_INBOUND_TOKEN and CRON_SECRET', subs: [
+            { link: 'https://vercel.com/through-the-lens-media/expense-tracker/settings/environment-variables', label: 'Vercel Env Variables' },
+            { link: 'https://account.postmarkapp.com', label: 'Postmark Account' },
+        ]},
+        { text: 'Verify Stripe webhook signatures still validating', subs: [
+            { link: 'https://dashboard.stripe.com/webhooks', label: 'Stripe Webhooks Dashboard' },
+        ]},
+    ],
+    annual: [
+        { text: 'Full dependency major version audit', subs: [
+            { cmd: 'cd api && npm outdated' },
+            { cmd: 'cd web-react && npm outdated' },
+            { note: 'Evaluate: React, Express, Supabase SDK, Plaid SDK — check breaking changes before upgrading' },
+        ]},
+        { text: 'Review Terms of Service for payment processor policy changes', subs: [
+            { link: 'https://stripe.com/legal/ssa', label: 'Stripe Services Agreement' },
+            { link: 'https://plaid.com/legal/', label: 'Plaid Legal' },
+        ]},
+        { text: 'Re-audit RLS on all Supabase tables', subs: [
+            { link: 'https://supabase.com/dashboard/projects', label: 'Supabase → Auth → Policies' },
+            { note: 'Schema drift can leave new tables without RLS — check any table added since last audit' },
+        ]},
+        { text: 'Verify Google OAuth consent screen re-verification status', subs: [
+            { link: 'https://console.cloud.google.com/apis/credentials/consent', label: 'Google Cloud Console → OAuth Consent Screen' },
+        ]},
+    ],
+    dependency: [
+        { text: 'Run npm audit in /api — fix Critical and High immediately', subs: [
+            { cmd: 'cd api && npm audit --audit-level=high' },
+            { cmd: 'cd api && npm audit fix' },
+        ]},
+        { text: 'Run npm audit in /web-react — fix Critical and High immediately', subs: [
+            { cmd: 'cd web-react && npm audit --audit-level=high' },
+            { cmd: 'cd web-react && npm audit fix' },
+        ]},
+        { text: 'Severity guide', subs: [
+            { note: 'Critical → fix immediately' },
+            { note: 'High → fix same day' },
+            { note: 'Moderate → review and schedule' },
+            { note: 'Low → log and monitor' },
+        ]},
+    ],
 };
 
 function statusBadge(nextDue) {
@@ -166,12 +237,42 @@ export default function SecurityReviewTab() {
                             {/* Expandable checklist */}
                             {isExpanded && (
                                 <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-                                    <div style={{ fontSize: '12px', fontWeight: 700, color: 'rgba(255,255,255,0.5)', marginBottom: '10px', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Checklist</div>
-                                    <ul style={{ margin: 0, padding: '0 0 0 18px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <div style={{ fontSize: '12px', fontWeight: 700, color: 'rgba(255,255,255,0.5)', marginBottom: '12px', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Checklist</div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                                         {checklist.map((item, i) => (
-                                            <li key={i} style={{ fontSize: '13px', color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>{item}</li>
+                                            <div key={i}>
+                                                <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.85)', fontWeight: 600, marginBottom: item.subs?.length ? '8px' : 0 }}>
+                                                    {item.text}
+                                                </div>
+                                                {item.subs?.length > 0 && (
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', paddingLeft: '14px', borderLeft: '2px solid rgba(255,255,255,0.08)' }}>
+                                                        {item.subs.map((sub, j) => (
+                                                            <div key={j}>
+                                                                {sub.cmd && (
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                        <code style={{ flex: 1, background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '5px', padding: '5px 10px', fontSize: '12px', color: '#a5f3fc', fontFamily: 'monospace', whiteSpace: 'pre' }}>{sub.cmd}</code>
+                                                                        <button
+                                                                            onClick={() => navigator.clipboard.writeText(sub.cmd)}
+                                                                            style={{ flexShrink: 0, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '5px', color: 'rgba(255,255,255,0.5)', fontSize: '11px', padding: '4px 8px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                                                            title="Copy to clipboard"
+                                                                        >Copy</button>
+                                                                    </div>
+                                                                )}
+                                                                {sub.link && (
+                                                                    <a href={sub.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: '#60a5fa', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                                                        ↗ {sub.label}
+                                                                    </a>
+                                                                )}
+                                                                {sub.note && (
+                                                                    <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', fontStyle: 'italic' }}>— {sub.note}</span>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
                                         ))}
-                                    </ul>
+                                    </div>
                                 </div>
                             )}
 

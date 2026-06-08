@@ -5,6 +5,14 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.98] — 2026-06-08
+
+### Enhancement: Security Checklist — Commands + Links
+
+- **`web-react/src/components/control-center/SecurityReviewTab.jsx`** — Restructured all checklist items with sub-bullets. Terminal commands render as copyable code blocks (monospace, Copy button). Dashboard links render as clickable `↗` links opening in a new tab. Plain notes render as italicized hints. Covers all 5 review tiers (weekly/monthly/quarterly/annual/dependency).
+
+---
+
 ## [v7.8.97] — 2026-06-08
 
 ### Fix: Security Reviews API 404
