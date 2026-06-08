@@ -181,7 +181,9 @@ Express 4.19 API (api/)
   - ✅ `VITE_GOOGLE_MAPS_API_KEY`
   - ✅ `ENCRYPTION_KEY` — set, required for Plaid token encryption
   - ✅ `PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENV=production`
-  - ⚠️ `REDIS_URL` — **NOT YET SET** — required to activate email queueing
+  - ✅ `VITE_SENTRY_DSN` — set, Sentry.io active with Claude API connected
+  - ✅ `RECEIPT_HMAC_SECRET` — set, required for per-user receipt forwarding addresses
+  - ⚠️ `REDIS_URL` — **NOT SET** — Bull was removed v7.8.90; direct Resend fallback is intentional. Set only if re-enabling queue layer.
   - ✅ `POSTMARK_INBOUND_TOKEN` — set. Add `?token=<value>` to Postmark webhook URL: `https://www.lumiereledger.com/api/receipts/email-inbound?token=<POSTMARK_INBOUND_TOKEN>`
   - Optional: `APP_URL`, `LUMIERE_INTAKE_SECRET`
 - **Deploy tokens (local .env only — never commit):**
@@ -194,7 +196,7 @@ Express 4.19 API (api/)
 - **Verified sending domain:** `throughthelens.media` ONLY. `lumiereledger.com` is NOT verified — Resend silently drops all mail from unverified domains (API returns 200, nothing delivers).
 - **Correct `RESEND_FROM`:** `Lumière Ledger <support@throughthelens.media>` — branded display name, verified sending domain.
 - **⚠️ Known gap:** `api/server.js` and `api/utils/mailer.js` have hardcoded fallback `support@lumiereledger.com`. If `RESEND_FROM` env var is ever missing, email silently breaks.
-- **Queueing:** `emailQueue.js` exists with direct fallback. Redis-backed queuing not yet active (`REDIS_URL` missing in Vercel).
+- **Queueing:** `emailQueue.js` uses inline `withRetry()` (3 attempts, linear backoff) — Bull was removed v7.8.90. No Redis dependency. Direct Resend calls with retry.
 
 ### Google Gemini 2.5 Flash
 - **Purpose:** AI financial intelligence — chat, ledger repair, batch categorization
@@ -208,7 +210,7 @@ Express 4.19 API (api/)
 - **Status:** Production — fully wired and gated. `PLAID_ENV=production`, `PLAID_CLIENT_ID`, `PLAID_SECRET`, `ENCRYPTION_KEY` all set in Vercel.
 - **Encryption:** Real `libsodium-wrappers` implementation in `cryptoUtil.js` — async `encrypt()`/`decrypt()`.
 - **Billing gate:** `POST /plaid/create-link-token` checks `PLAID_BILLING_EXEMPT` set, then `stripe_customer_id` in `user_subscriptions`. Non-exempt users without billing method → HTTP 402. Frontend shows fee disclosure modal before Plaid Link opens.
-- **Exempt users:** `PLAID_BILLING_EXEMPT` Set in both `api/routes/plaid.js` and `api/routes/stripe.js`. Joshua pre-populated; Michelle Gornichec UUID pending.
+- **Exempt users:** `PLAID_BILLING_EXEMPT` Set in both `api/routes/plaid.js` and `api/routes/stripe.js`. Joshua + Michelle Gornichec (`fcb92809-70f1-4ae0-b39c-e317378a01a7`) both added v7.8.55.
 - **Cross-source dedup:** Before inserting Plaid transactions, matches existing CSV rows on `date+amount_cents`, stamps `plaid_transaction_id` onto match — preserves all user enrichment.
 - **Accounts page:** Live balances, institution names, sync button, disconnect (Unsync) button, type grouping (Credit/Checking/Manual), synced accounts section at top.
 
@@ -225,12 +227,9 @@ Express 4.19 API (api/)
 
 | Gap | File | Impact |
 |-----|------|--------|
-| `ALLOWED_ORIGINS` missing `https://www.lumiereledger.com` | `api/server.js` | CORS failures on new domain |
-| `APP_URL` fallback still `app.throughthelens.media` | `api/routes/invoices.js` | Pay portal links in emails point to old domain |
-| Mailer fallback from-address `support@lumiereledger.com` | `api/server.js`, `api/utils/mailer.js` | Email silent-fails if `RESEND_FROM` env var missing |
-| `REDIS_URL` not set in Vercel | Vercel env panel | Email queueing inactive — direct Resend fallback used |
-| Michelle Gornichec UUID | `api/routes/plaid.js`, `api/routes/stripe.js` | Her Plaid billing exemption is a placeholder comment |
-| `plaid_account_id` not stored on transactions | `expenses` table, `api/routes/plaid.js` | Sub-account spending breakdown not possible; needs `ALTER TABLE expenses ADD COLUMN plaid_account_id TEXT` + sync code change |
+| `REDIS_URL` not set in Vercel | Vercel env panel | Bull removed v7.8.90 — direct Resend fallback is intentional. Set only if re-enabling queue layer. |
+| `plaid_account_id` backfill | `expenses` table | Pre-v7.8.4 Plaid transactions have NULL `plaid_account_id`. Sub-account breakdown unavailable on historical rows until users re-sync. |
+| `file-type` moderate vuln | `api/routes/receipts.js` | v22 is ESM-only; needs dynamic `import()` refactor. Near-zero real risk (ASF audio only). |
 
 ---
 
@@ -286,7 +285,7 @@ Express 4.19 API (api/)
 | Missing doc | Badge fires when: `amount_cents > 7500` AND `tax_deductible = true` AND `receipt_link` is null |
 | Import clock | `daysSinceImport` ignores `source === 'manual'` — only bank/CSV imports reset the clock |
 | Account aliases | `account_aliases` table: `(user_id, source_key, display_name, visible)`. Upsert via `PUT /api/accounts/alias`. |
-| Plaid billing exempt | `PLAID_BILLING_EXEMPT` Set in `api/routes/plaid.js` and `api/routes/stripe.js`. Joshua pre-populated; Michelle UUID pending. |
+| Plaid billing exempt | `PLAID_BILLING_EXEMPT` Set in `api/routes/plaid.js` and `api/routes/stripe.js`. Joshua + Michelle Gornichec (`fcb92809-70f1-4ae0-b39c-e317378a01a7`) — both added v7.8.55. |
 
 ---
 

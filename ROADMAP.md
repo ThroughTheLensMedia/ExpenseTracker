@@ -1,6 +1,6 @@
 # Lumière Ledger — Master Roadmap
 
-**Version:** v7.8.88 | **Last reviewed:** 2026-06-08  
+**Version:** v7.8.99 | **Last reviewed:** 2026-06-08  
 Source of truth for all sprint work, security status, and product phases.
 
 ---
@@ -10,75 +10,68 @@ Source of truth for all sprint work, security status, and product phases.
 | Area | State |
 |------|-------|
 | Security hardening (Passes 1–11) | ✅ Complete |
-| Email pipeline (Resend + throughthelens.media) | ✅ Fixed — all mailer fallbacks now point to correct domain |
+| Email pipeline (Resend + throughthelens.media) | ✅ Fixed — all mailer fallbacks point to correct domain |
 | Supabase auth emails via Resend SMTP | ✅ Live v7.7.9 — no rate limits, branded sender |
 | Domain + rebrand | ✅ Complete |
 | Google OAuth updated | ✅ Complete |
-| Vercel env vars confirmed | ✅ All set — ENCRYPTION_KEY, PLAID_*, STRIPE_*, VITE_* |
+| Vercel env vars confirmed | ✅ All set — ENCRYPTION_KEY, PLAID_*, STRIPE_*, VITE_*, VITE_SENTRY_DSN |
 | CORS — `https://www.lumiereledger.com` | ✅ Already in ALLOWED_ORIGINS |
 | APP_URL — invoices.js | ✅ Already `https://www.lumiereledger.com` |
 | Mailer fallback addresses | ✅ Fixed v7.8.4 — no more support@lumiereledger.com |
 | AI Brain — Phase 2 Steps 1–4 | ✅ Complete |
 | Stripe billing infrastructure | ✅ Built — routes, webhook, UpgradeGate, tier system |
 | Stripe env vars + price IDs | ✅ Confirmed |
-| Plaid — LIVE with billing gate | ✅ Live v7.7.8 — 402 gate + $0.50/account fee disclosure |
+| Plaid — LIVE with billing gate | ✅ Live v7.7.8 — 402 gate + Sync flat-fee disclosure |
 | Plaid — ENCRYPTION_KEY | ✅ Set in Vercel |
 | Plaid — sync stores plaid_account_id | ✅ v7.8.4 — new transactions tagged per sub-account |
 | Accounts page | ✅ Full build v7.7.0–7.8.4 — cache, dedup fix, savings type, sub-account filtering |
-| Onboarding checklist | ✅ v7.7.8 |
+| Onboarding checklist | ✅ v7.7.8 + receipt forwarding step added v7.8.96 |
 | Landing page | ✅ v7.7.7 — matches marketing page |
 | Terms of Service | ✅ v7.8.0 — 25 sections, TN law, AAA arbitration |
 | RLS multi-tenant audit | ✅ Complete — all 17 tables verified |
 | Post-hardening validation | ✅ Complete — all 11 tests passed |
+| Email Receipt Forwarding (Phase 1 + 2) | ✅ Complete — per-user HMAC tokens, DB lookup, address in Integrations tab, v7.8.92 |
+| Sentry error monitoring | ✅ Live — VITE_SENTRY_DSN set in Vercel, Claude API connected, user context wired v7.8.91 |
+| Security Review Cadence tab | ✅ v7.8.95–7.8.98 — 5 tiers, copyable commands, dashboard links |
+| npm audit (api/) | ✅ Clean — 3 high + 4 moderate fixed; file-type moderate deferred (ESM-only) |
 
 ---
 
-## 🔴 Must Do Before Launch
+## 🔴 Active — Fix Before Continuing
 
-| Item | File | Notes |
-|------|------|-------|
-| ~~**Run DB migration 001**~~ | ~~Supabase SQL Editor~~ | ✅ Done 2026-05-20 — `plaid_account_id` column + index live. |
-| ~~**Stripe webhook fix**~~ | ~~`api/server.js`~~ | ✅ Done v7.8.27 — webhook mounted before `express.json()` on `app` directly. |
-| ~~**Stripe — end-to-end test**~~ | ~~Stripe CLI~~ | ✅ Done 2026-06-02 — checkout → webhook 200 → `plan_type: sync_monthly` + `stripe_customer_id` + `stripe_subscription_id` written to Supabase. Full chain verified. |
-| ~~**Supabase schema migration**~~ | ~~Supabase SQL Editor~~ | ✅ Done 2026-05-20 — `stripe_subscription_id` + `current_period_end` added to `user_subscriptions`. |
-| ~~**Grandfathered users `admin_tier` fix**~~ | ~~Supabase SQL Editor~~ | ✅ Done 2026-05-20 — all beta/lifetime users granted Studio admin_tier. |
-| ~~**Sync tier Stripe price IDs**~~ | ~~Stripe + Vercel~~ | ✅ Done — Sync product created in Stripe. `VITE_STRIPE_PRICE_SYNC_*` and `STRIPE_PRICE_SYNC_*` set in Vercel. |
+| Item | Notes |
+|------|-------|
+| **web-react npm audit** | Only `api/` was audited. Run `cd web-react && npm audit --audit-level=high` and fix Critical/High. |
+| **Receipt email body parse — re-test** | v7.8.96 hardened the prompt and error logging but the "Total Paid: $XX.XX" case was never re-tested with a live email forward. Send a test and verify System Logs show extracted amount. |
+| **Security Review — complete first-run** | Tab is live but all 5 tiers show NEVER RUN / OVERDUE. Weekly and Dependency reviews should be run now (npm audit counts for dependency). |
 
 ---
 
-## 📧 Email Receipt Forwarding — Phase 2 (Per-User Addresses)
+## 🟡 Address Soon — Technical Debt
 
-> Phase 1 shipped v7.8.58 — hardcoded to Joshua only. Phase 2 makes it self-serve for all users.
-
-| Item | Status | Notes |
-|------|--------|-------|
-| **Per-user token derivation** | ⬜ Backlog | `sha256(userId + RECEIPT_HMAC_SECRET).slice(0,8)` — deterministic, no DB column needed |
-| **Wildcard address routing** | ⬜ Backlog | `receipts.<token>@lumiereledger.com` — Postmark inbound domain already set, just update token resolution in `emailInbound.js` |
-| **Auto-show address in Integrations tab** | ⬜ Backlog | Replace hardcoded address with derived token per logged-in user — `IntegrationTab.jsx` reads `user.id`, computes token client-side |
-| **7-day unmatched receipt digest** | ⬜ Backlog | Cron/UptimeRobot endpoint — email user list of `pending_receipts` older than 7 days |
+| Item | Notes |
+|------|-------|
+| **`file-type` moderate vuln** | `receipts.js` uses `require('file-type')`. v22 is ESM-only — needs dynamic `import()` refactor. Near-zero real risk (ASF audio files only). Deferred. |
+| **REDIS_URL — remove or wire up** | Bull was removed v7.8.90. Direct Resend fallback is intentional and working. Either set `REDIS_URL` and re-enable queue layer, or remove dead queue code from `emailQueue.js`. |
+| **`plaid_account_id` backfill** | Pre-v7.8.4 Plaid transactions have NULL `plaid_account_id`. Sub-account spending breakdown won't work on historical data until users re-sync. Document or prompt user to sync. |
+| **Michelle Gornichec UUID** | Added v7.8.55 to `plaid.js` and `stripe.js`. CLAUDE.md still lists as a gap — update. |
 
 ---
 
-## 🟡 Next Sprint — High Value
+## 🟢 Good to Have
 
-| Item | Status | Notes |
-|------|--------|-------|
-| ~~**Stripe — ProfileTab billing section**~~ | ✅ v7.8.28 | Sync users see Core/Studio upgrade cards; emoji removed from Manage Billing. |
-| ~~**Account merging (linked_source)**~~ | ✅ v7.8.30 | CSV accounts can be merged into a target; absorbed accounts hidden; unmerge available. Pending SQL: `ALTER TABLE account_aliases ADD COLUMN IF NOT EXISTS linked_source TEXT;` |
-| ~~**Account display names in ledger/drawer**~~ | ✅ v7.8.31 | TransactionDrawer + filter dropdown driven by /accounts/summary aliases. |
-| ~~**Bulk reassign account**~~ | ✅ v7.8.32 | Multi-select → "Reassign account…" dropdown → Apply. PATCH /expenses/bulk-source. |
-| ~~**Account → Transaction count tile click (Plaid card)**~~ | ✅ Confirmed done | Navigates to `/transactions?source=plaid`. |
-| ~~**Manual vs Plaid duplicate transactions**~~ | ✅ v7.8.52 | Pre-insert Plaid match check in `POST /expenses`; retroactive `link-manual-to-plaid` pass; CSV import no longer overwrites Plaid rows. |
-| ~~**Smart Receipt Scanner — tip detection**~~ | ✅ v7.8.53 | Gemini extracts subtotal/tip/tax/total; tip breakdown badge in drawer; split-charge auto-merge when bank posts meal + tip separately. |
-| ~~**Maps Autopilot**~~ | ✅ Confirmed done | Google Maps A→B→A with waypoint, autocomplete, auto-populated miles. |
-| **Account merging by last-4 digits** | ⬜ Backlog | Auto-match CSV source to Plaid sub-account by institution + last 4 digits. Manual merge covers this for now. |
-| ~~**Michelle Gornichec UUID in PLAID_BILLING_EXEMPT**~~ | ✅ v7.8.55 | `fcb92809-70f1-4ae0-b39c-e317378a01a7` added to both `plaid.js` and `stripe.js`. |
-| **Brain — Chart/Analysis Popup (Phase 2 Step 5)** | ⬜ Post-launch | Chart.js modal when AI requests visual analysis. |
-| **Brain — Invoice creation tool (Step 6)** | ⬜ Post-launch | `create_invoice_draft` write tool with confirmation card. |
+| Item | Notes |
+|------|-------|
+| Invoice PDF formatting | Known formatting issues — not blocking launch |
+| Client invoice history | CRM should consolidate repeat clients — Phase 5 |
+| Bank Import UI cleanup | Remove emojis, demote niche banks, surface Rocket Money as recommended |
+| Apple Card CSV via email | Apple Card can't connect via Plaid. Detect `.csv` attachment in `emailInbound.js`, parse Apple Card format, bulk-insert with dedup. Workaround: manual CSV import. Build after email ingestion is stable. |
+| 7-day unmatched receipt digest | Cron/UptimeRobot endpoint — email user list of `pending_receipts` older than 7 days |
+| Account merging by last-4 digits | Auto-match CSV source to Plaid sub-account by institution + last 4 digits. Manual merge covers this for now. |
 
 ---
 
-## 🎛 Dashboard Customization (Good to Have — High Impact)
+## 🎛 Dashboard Customization (High Impact — Good to Have)
 
 > Users pick which widgets appear on their dashboard. Removes photographer-specific clutter for non-photographers.
 
@@ -90,24 +83,7 @@ Source of truth for all sprint work, security status, and product phases.
 
 ---
 
-## 🟢 Good to Have
-
-| Item | Notes |
-|------|-------|
-| Invoice PDF formatting | Known formatting issues — not blocking launch |
-| Client invoice history | CRM should consolidate repeat clients — Phase 5 |
-| Bank Import UI cleanup | Remove emojis, demote niche banks, surface Rocket Money as recommended |
-| Brain — Invoice creation tool (Step 5) | `create_invoice_draft` write tool with confirmation card |
-| REDIS_URL in Vercel | Required to activate email queueing (currently using direct Resend fallback — works fine) |
-| Rate limiting on `/subscription/redeem` | Backlog |
-| Backend structured logging (Logtail/pino) | ✅ Superseded — `system_logs` table + `logger.js` shipped v7.8.84. Admin viewer in Control Center v7.8.87. |
-| Sentry backend DSN + user context | Sentry frontend SDK installed (v7.8.59) but DSN was never configured. Need to set `VITE_SENTRY_DSN` in Vercel and wire `Sentry.setUser()` in AuthContext. Check `web-react/src/main.jsx` for current init. |
-| **Clean Up: pending_receipts stale row on manual upload** | When a receipt is uploaded via the transaction drawer (`PUT /api/receipts/:table/:id`), check `pending_receipts` for a matching row (same `user_id` + `amount_cents` ± small window) and delete it. Prevents stale pending rows accumulating after manual uploads. |
-| Apple Card CSV via email | Apple Card can't connect via Plaid. Detect `.csv` attachment in `emailInbound.js`, parse Apple Card CSV format (Transaction Date/Clearing Date/Description/Merchant/Category/Type/Amount/Purchased By), bulk-insert with existing dedup logic. Workaround for now: manual CSV import on Ledger page. Build after email ingestion is stable. |
-
----
-
-## ✅ Completed This Sprint (v7.7.0 → v7.8.88)
+## ✅ Completed This Sprint (v7.7.0 → v7.8.99)
 
 | Version | What shipped |
 |---------|-------------|
@@ -121,39 +97,44 @@ Source of truth for all sprint work, security status, and product phases.
 | v7.8.2 | Stale-while-revalidate cache for accounts + Plaid balances — instant page loads |
 | v7.8.3 | Live Sync dedup fix, Plaid Linked back in type groups, Unlink button per CSV account |
 | v7.8.4 | `plaid_account_id` sync + per-sub-account filtering, savings account type + filter, mailer fallback fix |
-| v7.8.5 | Accounts page filter fix — Live Sync section no longer disappears when type filter (Credit/Checking/Savings/Manual) is active |
-| v7.8.6 | Filter pills now filter Plaid sub-account rows in real-time; Account Plans nav fixed to route to profile/billing tab |
-| v7.8.7 | 3-page onboarding wizard (Welcome → Data Import Guide → Setup Checklist); fix trigger bug (subscription null for new users) |
-| v7.8.8 | Fix upgrade plan flash (gate BillingSection on subscriptionReady); fix free_beta label → "Beta Access" vs lifetime → "Lifetime Free" |
-| v7.8.9 | Fix build-breaking syntax error in OnboardingChecklist.jsx (unescaped apostrophe); first successful deploy since v7.8.6 — all v7.8.7–7.8.8 fixes now live |
+| v7.8.5 | Accounts page filter fix — Live Sync section no longer disappears when type filter is active |
+| v7.8.6 | Filter pills now filter Plaid sub-account rows in real-time; Account Plans nav fixed |
+| v7.8.7 | 3-page onboarding wizard (Welcome → Data Import Guide → Setup Checklist) |
+| v7.8.8 | Fix upgrade plan flash; fix free_beta label → "Beta Access" vs lifetime → "Lifetime Free" |
+| v7.8.9 | Fix build-breaking syntax error in OnboardingChecklist.jsx — all v7.8.7–7.8.8 fixes now live |
 | v7.8.10 | Fix onboarding wizard closing on step nav click; show Core/Studio upgrade cards for beta users |
-| v7.8.11 | Onboarding wizard minimizes to floating button on step nav (instead of blocking overlay); beta users see upgrade plans |
-| v7.8.12 | Fix onboarding checklist nav paths — AI Intelligence tab, Invoicing page, rename Help Docs step |
-| v7.8.13 | Business Profile — full-width responsive layout, pair orphaned fields, compact textareas, mobile breakpoint |
-| v7.8.14 | Stripe setup — onboarding checklist step + in-profile 4-step guidance with direct Stripe dashboard link |
-| v7.8.15 | Connect Bank auto-triggers Plaid popup via ?connect=true param; better billing error message |
-| v7.8.16 | Beta/lifetime users bypass Plaid billing gate (full feature access during beta); fix error banner wrapping |
-| v7.8.17 | Revert beta bypass — all users pay for Plaid; inline billing gate UI with Core/Studio plan cards on 402 |
-| v7.8.18 | Sync tier ($4.99/mo) — Plaid-only flat plan; updated billing gate (Sync featured first), upgrade cards (3-col), marketing pricing (4-tier + MOST POPULAR badge), CTA copy fix |
-| v7.8.19 | Remove redundant hero pill badges from Home.jsx |
-| v7.8.20 | Fix stale billing gate copy (remove "$0.50/account" language); annual Sync shows $49.99/yr total instead of per-month breakdown |
-| v7.8.21 | Fix "Invalid price_id" checkout error — stripe.js PRICES map was missing Sync tier; add Sync to deriveTier() |
-| v7.8.22 | Add keep-alive cron to vercel.json (reverted in v7.8.23 — Hobby plan blocks sub-daily crons) |
-| v7.8.23 | Remove sub-daily cron — Vercel Hobby plan blocks `0 */6 * * *`; UptimeRobot covers keep-alive at 5-min intervals |
-| v7.8.24 | Plaid transactions use real account name (e.g. "USAA Checking") instead of generic "plaid" source; auto-repair on sync |
-| v7.8.25 | Fix Plaid account repair for NULL plaid_account_id rows (pass 2 fallback to institution name); date column nowrap; strip icons from ACCOUNT_LABELS |
-| v7.8.26 | Plaid billing copy — remove $0.50/account language from 4 locations; Sync plan flat-fee messaging |
-| v7.8.27 | Fix Stripe webhook 400 — mount before express.json(); remove duplicate apiRouter mount; manual SQL fix for deweyspath@gmail.com subscription |
-| v7.8.28 | Billing section: Sync users see Core/Studio upgrade path; 2-col grid for Sync; remove emoji from Manage Billing button |
-| v7.8.29 | Bank Import page emoji cleanup — headers, tips, nav buttons, Pro Tip label |
-| v7.8.30 | Account merging — linked_source in account_aliases; Merge button on CSV cards; absorbed accounts hidden; target shows Includes badge; unmerge available |
-| v7.8.31 | Account dropdown driven by live account aliases — TransactionDrawer + filter dropdown use /accounts/summary display_name; emoji stripped from SOURCE_LABELS |
-| v7.8.32 | Bulk reassign account — PATCH /expenses/bulk-source; multi-select floating bar; fix route ordering (bulk-source before /:id); fix toast auto-dismiss |
-| v7.8.84 | System logs — `system_logs` table + `logger.js`; 7-day retention, structured JSONB metadata, non-blocking writes |
-| v7.8.85 | Pending Receipts UI — `pending_receipts` table; amber banner in Transactions; link picker (±14 day, exact-amount highlight); dismiss flow |
-| v7.8.86 | Receipt email result emails now `await`ed — Costco fuel result email delivered; all 4 outcome sends (matched/pending/failed/already_linked) no longer fire-and-forget |
-| v7.8.87 | System Logs viewer in Control Center (admin-only) — `GET /api/admin/logs`; source/level/time filters; Receipt Email Sessions grouped view |
-| v7.8.88 | System Logs — Receipt Email Sessions rewrite; 3-column session cards; outcome badges; expandable raw events; 30s live mode |
+| v7.8.11 | Onboarding wizard minimizes to floating button on step nav |
+| v7.8.12 | Fix onboarding checklist nav paths — AI Intelligence tab, Invoicing page |
+| v7.8.13 | Business Profile — full-width responsive layout, pair orphaned fields, mobile breakpoint |
+| v7.8.14 | Stripe setup — onboarding checklist step + in-profile 4-step guidance |
+| v7.8.15 | Connect Bank auto-triggers Plaid popup via ?connect=true param |
+| v7.8.16 | Beta/lifetime users bypass Plaid billing gate (full feature access during beta) |
+| v7.8.17 | Revert beta bypass — all users pay for Plaid; inline billing gate UI |
+| v7.8.18 | Sync tier ($4.99/mo) — Plaid-only flat plan; billing gate + upgrade cards + marketing pricing |
+| v7.8.19–26 | Billing copy fixes, annual Sync pricing, filter + dedup improvements |
+| v7.8.27 | Fix Stripe webhook 400 — mount before express.json(); subscription chain verified end-to-end |
+| v7.8.28 | Billing section: Sync users see Core/Studio upgrade path |
+| v7.8.29 | Bank Import page emoji cleanup |
+| v7.8.30 | Account merging — linked_source in account_aliases; Merge/Unmerge UI |
+| v7.8.31 | Account dropdown driven by live aliases — TransactionDrawer + filter |
+| v7.8.32 | Bulk reassign account — PATCH /expenses/bulk-source; multi-select floating bar |
+| v7.8.52 | Smart dedup — pre-insert Plaid match check; retroactive manual-to-plaid link; CSV no longer overwrites Plaid |
+| v7.8.53 | Smart Receipt Scanner — tip detection + split-charge auto-merge |
+| v7.8.55 | Michelle Gornichec UUID added to PLAID_BILLING_EXEMPT in plaid.js + stripe.js |
+| v7.8.58 | Email Receipt Forwarding Phase 1 — hardcoded to Joshua |
+| v7.8.59 | Sentry frontend SDK installed |
+| v7.8.80–88 | Email receipt pipeline stability — retry, ack/result emails, pending receipts, system logs |
+| v7.8.89 | Receipt upload 413 fix — client-side Canvas compression (max 1920px, JPEG 0.82) |
+| v7.8.90 | Bull removed — replaced with inline withRetry() (3 attempts, linear backoff) |
+| v7.8.91 | Sentry user context on page reload — getSession() block calls Sentry.setUser() |
+| v7.8.92 | Email Receipt Phase 2 — per-user HMAC tokens; DB lookup; IntegrationTab unique address |
+| v7.8.93 | pending_receipts auto-cleanup on manual receipt upload |
+| v7.8.94 | ENCRYPTION_KEY rotation runbook — rotate-plaid-tokens.js script + CLAUDE.md docs |
+| v7.8.95 | Security Review Cadence tab (admin) — 5 tiers, checklists, Mark Done, history |
+| v7.8.96 | Receipt body parse hardening; security tab URL allowlist fix; onboarding receipt step |
+| v7.8.97 | Fix security-reviews 404 — catch-all router.all("*") was before routes in admin.js |
+| v7.8.98 | Security checklist — copyable terminal commands + clickable dashboard links |
+| v7.8.99 | Flag for Review toggle in TransactionDrawer; npm audit fix (3 high + 4 moderate) |
 
 ---
 
@@ -170,8 +151,8 @@ Source of truth for all sprint work, security status, and product phases.
 ## 📷 Phase 3: Computer Vision & RAG
 
 - [x] **Fast Receipt Processing** ✅ shipped v7.5.9
-- [x] **Smart Receipt Scanner — tip detection + split-charge merge** ✅ v7.8.53 — Gemini extracts subtotal/tip/tax/total; auto-merges split bank charges; tip breakdown badge in drawer
-- [ ] **RAG — PDF indexing + semantic retrieval** — Enable pgvector in Supabase; embed uploaded PDFs (contracts, warranties, insurance policies); Brain answers questions like "when does my equipment warranty expire?" or "what's my van loan rate?". Requires: `vector` extension migration, `embeddings` table, chunking pipeline on upload, cosine similarity query in Brain.
+- [x] **Smart Receipt Scanner — tip detection + split-charge merge** ✅ v7.8.53
+- [ ] **RAG — PDF indexing + semantic retrieval** — Enable pgvector in Supabase; embed uploaded PDFs; Brain answers questions about contracts, warranties, insurance. Requires: `vector` extension migration, `embeddings` table, chunking pipeline, cosine similarity query in Brain.
 
 ---
 
@@ -185,8 +166,8 @@ Source of truth for all sprint work, security status, and product phases.
 ## 🏦 Phase 5: Enterprise Integrations & Account Management
 
 - [x] **Plaid Live Bank Sync** ✅ Live v7.6.8 — billing gate, encryption, per-sub-account tagging
+- [x] **Stripe Billing end-to-end** ✅ Live v7.8.27 — checkout, webhooks, subscription lifecycle, Customer Portal
 - [ ] **User-Defined Accounts** — named accounts with type, institution, last 4
-- [ ] **Stripe Billing end-to-end** — checkout, webhooks, subscription lifecycle, Customer Portal
 
 ---
 
@@ -202,20 +183,19 @@ Source of truth for all sprint work, security status, and product phases.
 ## 🔭 Backlog
 
 - Rate limiting on `/subscription/redeem`
-- Error tracking (Sentry / Logtail)
 - Automated test suite (unit + integration)
 - `mailer.js` — stream large attachments instead of buffering
+- Account merging by last-4 digits (auto-match CSV → Plaid sub-account)
 
 ---
 
 ## 🚩 Clean Up / Technical Debt
 
 - **⚠️ Dependency Hygiene Protocol** — Any `api/package.json` change must regenerate `api/package-lock.json` in the same commit. Stale lock file = Vercel silent-skip = Lambda crash. Root cause of v7.6.7 outage. See Rule 10 in CLAUDE.md.
-- **`file-type` moderate vuln (GHSA-5v7r-6r5c-r473)** — Infinite loop on malformed ASF audio file header. Impact: near-zero (receipts.js only handles JPEG/PNG/PDF). Fix requires `file-type@22` which is ESM-only — needs `receipts.js` refactor to dynamic `import()` before upgrading. Not blocking. Address in a future cleanup sprint.
-- **Invoice PDF formatting** — Known issues, not blocking. Good to Have.
-- **`plaid_account_id` backfill** — Existing Plaid transactions have NULL until next sync after migration 001 runs.
+- **`file-type` moderate vuln (GHSA-5v7r-6r5c-r473)** — Infinite loop on malformed ASF audio file header. Impact: near-zero (receipts.js only handles JPEG/PNG/PDF). Fix requires `file-type@22` which is ESM-only — needs `receipts.js` refactor to dynamic `import()`. Not blocking.
+- **`plaid_account_id` backfill** — Existing pre-v7.8.4 Plaid transactions have NULL `plaid_account_id`. Historical sub-account breakdown unavailable until users re-sync.
 
 ---
 
-> All AI features use **Gemini exclusively** (BYOB model). No OpenAI or other providers.
+> All AI features use **Gemini exclusively** (BYOB model). No OpenAI or other providers.  
 > All commits are Joshua Deuermeyer / Through The Lens Media only. No Co-Authored-By trailers.
