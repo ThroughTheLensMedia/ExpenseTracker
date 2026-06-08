@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.8.87', date: 'JUN 8, 2026', color: '#38bdf8', items: [
+        '<strong>System Logs Viewer:</strong> A new "System Logs" tab in the Ledger Control Center lets you see all backend events in real time — receipt email processing, Plaid sync, errors, and more. Filter by source, level (error/warn/info), and time window. Click any row to expand its full detail data. Auto-refreshes every 30 seconds.',
+    ]},
     { version: '7.8.86', date: 'JUN 8, 2026', color: '#4ade80', items: [
         '<strong>Receipt Email — Result Email Fixed (Again):</strong> The "Receipt Matched" and "Receipt Saved" follow-up emails were still not delivering. Root cause: the email send was fire-and-forget — the server finished its work and shut down before the email could go out. Fixed. All result emails are now fully awaited before the handler exits.',
     ]},

@@ -567,6 +567,63 @@ router.post("/subscriptions/:userId/suspend", async (req, res) => {
     }
 });
 
+/**
+ * GET /admin/logs
+ * Returns system_logs entries for the admin log viewer.
+ * Query params:
+ *   ?source=email-inbound   — filter by source (omit for all)
+ *   ?level=error            — filter by level: info | warn | error (omit for all)
+ *   ?since=24h              — lookback window: 1h | 6h | 24h | 7d (default: 24h)
+ *   ?limit=200              — max rows (default 200, max 500)
+ */
+router.get("/logs", requireRole('admin'), async (req, res) => {
+    const userEmail = req.user?.email?.toLowerCase();
+    if (userEmail !== 'joshua.deuermeyer@gmail.com' && userEmail !== 'info@throughthelens.media') {
+        return res.status(403).json({ error: "Unauthorized" });
+    }
+
+    try {
+        const { source, level, since = '24h', limit = '200' } = req.query;
+
+        // Compute cutoff timestamp
+        const cutoffMs = {
+            '1h':  1 * 60 * 60 * 1000,
+            '6h':  6 * 60 * 60 * 1000,
+            '24h': 24 * 60 * 60 * 1000,
+            '7d':  7 * 24 * 60 * 60 * 1000,
+        }[since] ?? (24 * 60 * 60 * 1000);
+        const cutoff = new Date(Date.now() - cutoffMs).toISOString();
+
+        const maxRows = Math.min(parseInt(limit, 10) || 200, 500);
+
+        let query = supabase
+            .from('system_logs')
+            .select('id, created_at, level, source, message, metadata, user_id')
+            .gte('created_at', cutoff)
+            .order('created_at', { ascending: false })
+            .limit(maxRows);
+
+        if (source) query = query.eq('source', source);
+        if (level)  query = query.eq('level', level);
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        // Collect unique sources for the filter dropdown
+        const { data: sourcesData } = await supabase
+            .from('system_logs')
+            .select('source')
+            .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
+
+        const sources = [...new Set((sourcesData || []).map(r => r.source))].sort();
+
+        res.json({ logs: data || [], sources, total: (data || []).length });
+    } catch (err) {
+        console.error('[ADMIN] Logs fetch error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // CATCH-ALL for /admin 404 debugging
 router.all("*", (req, res) => {
     console.warn(`[ADMIN 404] Unhandled admin route: ${req.method} ${req.originalUrl} (base: ${req.baseUrl})`);

@@ -12,6 +12,7 @@ import SaasTab from '../components/control-center/SaasTab.jsx';
 import IntegrationTab from '../components/control-center/IntegrationTab.jsx';
 import FeedbackTab from '../components/control-center/FeedbackTab.jsx';
 import DocumentsTab from '../components/control-center/DocumentsTab.jsx';
+import SystemLogsTab from '../components/control-center/SystemLogsTab.jsx';
 
 const DEFAULT_SETTINGS = {
     business_name: '', contact_name: '', website: '', email: '', phone: '', address: '',
@@ -47,7 +48,7 @@ export default function Backup() {
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const t = params.get('tab');
-        if (t && ['automation', 'profile', 'infrastructure', 'help', 'saas', 'intelligence', 'integration', 'feedback'].includes(t)) {
+        if (t && ['automation', 'profile', 'infrastructure', 'help', 'saas', 'intelligence', 'integration', 'feedback', 'logs'].includes(t)) {
             setActiveTab(t);
         }
     }, [window.location.search]);
@@ -162,6 +163,7 @@ export default function Backup() {
                     <button className={`pill ${activeTab === 'help' ? 'active' : ''}`} onClick={() => setActiveTab('help')}>Help Center</button>
                     <button className={`pill ${activeTab === 'feedback' ? 'active' : ''}`} onClick={() => setActiveTab('feedback')}>Feedback</button>
                     {isAdmin && <button className={`pill ${activeTab === 'saas' ? 'active' : ''}`} onClick={() => setActiveTab('saas')}>SaaS Management</button>}
+                    {isAdmin && <button className={`pill ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => setActiveTab('logs')}>System Logs</button>}
                 </nav>
             </div>
 
@@ -218,6 +220,7 @@ export default function Backup() {
             {!showSkeleton && activeTab === 'help' && <HelpTab />}
             {!showSkeleton && activeTab === 'feedback' && <FeedbackTab />}
             {!showSkeleton && activeTab === 'saas' && <SaasTab user={user} allSubscriptions={allSubscriptions} betaCodes={betaCodes} dailyStats={dailyStats} statusMsg={statusMsg} onReload={loadData} />}
+            {activeTab === 'logs' && isAdmin && <SystemLogsTab />}
         </section>
     );
 }

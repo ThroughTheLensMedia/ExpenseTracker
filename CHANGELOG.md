@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.8.87] — 2026-06-08
+
+### Feature: System Logs tab in Ledger Control Center
+
+- **`api/routes/admin.js`** — New `GET /admin/logs` endpoint: queries `system_logs` with filters for source, level, time window (1h/6h/24h/7d), max 500 rows. Also returns distinct source list for the dropdown.
+- **`web-react/src/components/control-center/SystemLogsTab.jsx`** — New admin-only tab: filterable log viewer with level badges, source chips, inline metadata preview, expandable detail rows, live 30-second auto-refresh toggle, summary counts.
+- **`web-react/src/pages/Backup.jsx`** — Import + mount SystemLogsTab; add "System Logs" pill to admin nav; add `logs` to URL param allowlist.
+
+---
+
 ## [v7.8.86] — 2026-06-08
 
 ### Fix: Receipt email — result email never delivered after match/pending/failed
