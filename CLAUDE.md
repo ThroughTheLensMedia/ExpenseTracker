@@ -19,6 +19,20 @@
 
 ---
 
+## Debug Protocol — No Exceptions
+
+When something is broken or behaving unexpectedly, follow this order. Do not skip steps.
+
+1. **Pull the actual logs first** — Vercel MCP (`get_runtime_logs`), Supabase, browser console, whatever applies to the failure.
+2. **Read what they say** — do not theorize before reading the evidence.
+3. **State the confirmed root cause** — one sentence, based on what the logs actually show. If logs are unavailable or unclear, say so explicitly and ask how to get them before writing any code.
+4. **Propose the fix** — one targeted change, minimum footprint.
+5. **Wait for yes** — do not deploy a guess.
+
+**Never write code based on a hypothesis.** Assumptions waste deploys and Joshua's time.
+
+---
+
 ## Non-Negotiable Rules
 
 1. **Read `ROADMAP.md` before every session** — understand what's in scope, what's blocked, and what's next before writing a single line of code.
