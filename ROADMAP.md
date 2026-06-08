@@ -1,6 +1,6 @@
 # Lumière Ledger — Master Roadmap
 
-**Version:** v7.8.99 | **Last reviewed:** 2026-06-08  
+**Version:** v7.9.1 | **Last reviewed:** 2026-06-08  
 Source of truth for all sprint work, security status, and product phases.
 
 ---
@@ -25,7 +25,7 @@ Source of truth for all sprint work, security status, and product phases.
 | Plaid — ENCRYPTION_KEY | ✅ Set in Vercel |
 | Plaid — sync stores plaid_account_id | ✅ v7.8.4 — new transactions tagged per sub-account |
 | Accounts page | ✅ Full build v7.7.0–7.8.4 — cache, dedup fix, savings type, sub-account filtering |
-| Onboarding checklist | ✅ v7.7.8 + receipt forwarding step added v7.8.96 |
+| Onboarding checklist | ✅ v7.7.8 + receipt forwarding step v7.8.96 + role selector v7.9.1 |
 | Landing page | ✅ v7.7.7 — matches marketing page |
 | Terms of Service | ✅ v7.8.0 — 25 sections, TN law, AAA arbitration |
 | RLS multi-tenant audit | ✅ Complete — all 17 tables verified |
@@ -33,7 +33,9 @@ Source of truth for all sprint work, security status, and product phases.
 | Email Receipt Forwarding (Phase 1 + 2) | ✅ Complete — per-user HMAC tokens, DB lookup, address in Integrations tab, v7.8.92 |
 | Sentry error monitoring | ✅ Live — VITE_SENTRY_DSN set in Vercel, Claude API connected, user context wired v7.8.91 |
 | Security Review Cadence tab | ✅ v7.8.95–7.8.98 — 5 tiers, copyable commands, dashboard links |
-| npm audit (api/) | ✅ Clean — 3 high + 4 moderate fixed; file-type moderate deferred (ESM-only) |
+| npm audit (api/ + web-react/) | ✅ Both clean — api/ 3 high + 4 moderate fixed; web-react/ react-router high fixed; file-type moderate deferred (ESM-only) |
+| Dashboard customization | ✅ v7.9.1 — role selector in onboarding, widget toggles, gear panel, smart empty states, Dashboard tab in Control Center |
+| Dependabot | ✅ v7.9.0 — `.github/dependabot.yml` live; weekly Monday scans; majors ignored for 6 risky packages |
 
 ---
 
@@ -41,9 +43,8 @@ Source of truth for all sprint work, security status, and product phases.
 
 | Item | Notes |
 |------|-------|
-| **web-react npm audit** | Only `api/` was audited. Run `cd web-react && npm audit --audit-level=high` and fix Critical/High. |
 | **Receipt email body parse — re-test** | v7.8.96 hardened the prompt and error logging but the "Total Paid: $XX.XX" case was never re-tested with a live email forward. Send a test and verify System Logs show extracted amount. |
-| **Security Review — complete first-run** | Tab is live but all 5 tiers show NEVER RUN / OVERDUE. Weekly and Dependency reviews should be run now (npm audit counts for dependency). |
+| **Security Review — complete first-run** | Tab is live but all 5 tiers show NEVER RUN / OVERDUE. Weekly check done; Dependency check done (npm audit ran). Mark those done in the Security tab. |
 
 ---
 
@@ -55,6 +56,23 @@ Source of truth for all sprint work, security status, and product phases.
 | **REDIS_URL — remove or wire up** | Bull was removed v7.8.90. Direct Resend fallback is intentional and working. Either set `REDIS_URL` and re-enable queue layer, or remove dead queue code from `emailQueue.js`. |
 | **`plaid_account_id` backfill** | Pre-v7.8.4 Plaid transactions have NULL `plaid_account_id`. Sub-account spending breakdown won't work on historical data until users re-sync. Document or prompt user to sync. |
 | **Michelle Gornichec UUID** | Added v7.8.55 to `plaid.js` and `stripe.js`. CLAUDE.md still lists as a gap — update. |
+
+---
+
+## 🟢 Good to Have — Dashboard Charts (Post v7.9.1)
+
+> Recommended next 2: Income by Client + Deductible vs Non-Deductible Split — both use existing DB data, no new tables.
+
+| Chart | What it shows |
+|-------|--------------|
+| **Income by Client** | Pie/bar of revenue per client from invoices |
+| **Deductible vs Non-Deductible Split** | Donut of tax_deductible expenses — actionable for tax prep |
+| **Invoice Aging Buckets** | Current / 30 / 60 / 90+ days overdue |
+| **Tax Liability Estimate** | Running YTD estimate based on net profit + entity type |
+| **Expense Trend Line** | Rolling 3-month avg vs current month |
+| **Income Seasonality** | Month-by-month heatmap across 2–3 years |
+| **Mileage YTD** | Total miles + estimated IRS deduction |
+| **Category Budget vs Actual** | Requires `budgets` table — bigger build |
 
 ---
 
@@ -135,6 +153,8 @@ Source of truth for all sprint work, security status, and product phases.
 | v7.8.97 | Fix security-reviews 404 — catch-all router.all("*") was before routes in admin.js |
 | v7.8.98 | Security checklist — copyable terminal commands + clickable dashboard links |
 | v7.8.99 | Flag for Review toggle in TransactionDrawer; npm audit fix (3 high + 4 moderate) |
+| v7.9.0 | GitHub Dependabot — `.github/dependabot.yml`; weekly Monday scans of /api and /web-react; 6 major packages ignored |
+| v7.9.1 | Dashboard customization — role selector in onboarding (4 roles, presets); widget toggles + gear panel on dashboard; DashboardTab in Control Center; smart empty states |
 
 ---
 

@@ -261,13 +261,14 @@ Express 4.19 API (api/)
 | File | Purpose |
 |------|---------|
 | `web-react/src/components/AuthContext.jsx` | Global auth + session persistence. Exports `supabase` client. |
-| `web-react/src/pages/DashboardV2.jsx` | Business analytics — KPIs, charts, forecasts |
+| `web-react/src/pages/DashboardV2.jsx` | Business analytics — KPIs, charts, forecasts. Widget flags via `dashboard_config`. Gear panel (⚙️) for inline toggles. |
 | `web-react/src/pages/Transactions.jsx` | Full ledger — filtering, sorting, audit, near-duplicate review. Supports `?search=` and `?source=` URL params. |
 | `web-react/src/pages/Accounts.jsx` | Accounts overview — type groups, live Plaid balances, sync, disconnect, alias, hide |
-| `web-react/src/components/TransactionDrawer.jsx` | Transaction form — CRUD, receipt upload, dynamic source dropdown |
-| `web-react/src/pages/Backup.jsx` | Ledger Control Center — SaaS, feedback, integrations, profile tabs |
-| `web-react/src/components/OnboardingChecklist.jsx` | 4-step new-user setup guide — shown once on first login |
+| `web-react/src/components/TransactionDrawer.jsx` | Transaction form — CRUD, receipt upload, dynamic source dropdown, 🚩 Flag for Review toggle |
+| `web-react/src/pages/Backup.jsx` | Ledger Control Center — 12-tab: SaaS, feedback, integrations, profile, dashboard, etc. |
+| `web-react/src/components/OnboardingChecklist.jsx` | 3-step new-user setup guide: role selector → data import → checklist. Shown once on first login. |
 | `web-react/src/components/PlaidLink.jsx` | Plaid Link SDK — fee confirmation modal, account connection, sync, disconnect |
+| `web-react/src/components/control-center/DashboardTab.jsx` | Dashboard customization — role cards (4 types) + widget toggles. Saves to `settings.dashboard_config`. |
 
 ---
 
@@ -286,6 +287,7 @@ Express 4.19 API (api/)
 | Import clock | `daysSinceImport` ignores `source === 'manual'` — only bank/CSV imports reset the clock |
 | Account aliases | `account_aliases` table: `(user_id, source_key, display_name, visible)`. Upsert via `PUT /api/accounts/alias`. |
 | Plaid billing exempt | `PLAID_BILLING_EXEMPT` Set in `api/routes/plaid.js` and `api/routes/stripe.js`. Joshua + Michelle Gornichec (`fcb92809-70f1-4ae0-b39c-e317378a01a7`) — both added v7.8.55. |
+| Dashboard config | `dashboard_config JSONB` on `settings` table. Shape: `{ role, widgets: { invoices, forecast, performance_chart, top_expenses, insights, operational_intelligence } }`. Defaults all-on if null. Widget flag: `!== false`. |
 
 ---
 

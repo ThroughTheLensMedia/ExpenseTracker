@@ -2,8 +2,8 @@
 
 > ✅ **REBRAND COMPLETE**: This product has been transitioned to **Lumière Ledger** (`lumiereledger.com`) as of May 2026.
 
-**Current version:** v7.6.7c
-**Last updated:** 2026-05-15
+**Current version:** v7.9.1
+**Last updated:** 2026-06-08
 
 ---
 
@@ -147,7 +147,7 @@ This is a shared-database, shared-schema SaaS. Every table that contains user da
 
 | File | Purpose |
 |------|---------|
-| `DashboardV2.jsx` | Business Analytics — executive KPIs, charts, forecasts, operational intelligence |
+| `DashboardV2.jsx` | Business Analytics — executive KPIs, charts, forecasts, operational intelligence. Loads `dashboard_config` from settings on mount; 6 widget flags; ⚙️ gear panel; smart empty states. |
 | `Transactions.jsx` | Full ledger — filtering, sorting, audit mode, import clock badge (non-manual only), receipt view via signed URL, MISSING DOC badge for $75+ deductible transactions |
 | `Tax.jsx` | Tax workbench — Schedule C mapping, deduction totals, PDF export |
 | `Import.jsx` | Bank import wizard — drag-drop CSV, auto-detect bank format, retroactive dedup scanner |
@@ -156,7 +156,7 @@ This is a shared-database, shared-schema SaaS. Every table that contains user da
 | `Mileage.jsx` | Mileage tracker — log by date, Google Maps automation, IRS rate lookup |
 | `Rules.jsx` | Classification rules editor — vendor matching with retroactive apply |
 | `CRM.jsx` | Lead pipeline — kanban board (New Lead, Quoted, Booked), archive |
-| `Backup.jsx` | Studio Control Center — 7-tab settings hub |
+| `Backup.jsx` | Studio Control Center — 12-tab settings hub (Profile, Dashboard, Automation, AI Intelligence, Documents, Infrastructure, Integrations, Help Center, Feedback, SaaS Management, System Logs, Security) |
 | `AddOns.jsx` | Add-On Marketplace — lists available and coming-soon platform extensions |
 | `Login.jsx` | Auth — email/password, Google OAuth, beta code signup |
 | `Home.jsx` | Public landing page — hero section, feature grid, CTA |
@@ -168,6 +168,8 @@ This is a shared-database, shared-schema SaaS. Every table that contains user da
 | File | Purpose |
 |------|---------|
 | `AuthContext.jsx` | Global auth provider — session, subscription, settings. Supabase client initialized with `autoRefreshToken: true`, `persistSession: true`, `storageKey: 'lumiere-ledger-auth'`. `visibilitychange` listener refreshes token on PWA foreground. |
+| `OnboardingChecklist.jsx` | 3-page new-user setup wizard: Welcome → Role Selector (saves `dashboard_config` preset) → Data Import Guide → Setup Checklist. Role step saves to settings API. Completion state in localStorage. |
+| `control-center/DashboardTab.jsx` | Dashboard customization tab — role selector (4 types, change confirmation) + widget visibility toggles. Auto-saves to `dashboard_config` in settings. |
 | `TransactionDrawer.jsx` | Transaction form — create/edit/delete + receipt upload. New transactions open empty (no pre-filled 0.00). Account source dropdown built dynamically from `userSources` prop (user's own imported data). `SOURCE_LABELS` map + `formatSourceKey()` for display. Double-tap guard. Auto-closes on save. |
 | `AssistantSidebar.jsx` | AI chat panel — floating sidebar for financial Q&A |
 | `CategorySelect.jsx` | Shared category dropdown — optgroups (Expense/Income/Misc), custom entry |
@@ -202,7 +204,7 @@ This is a shared-database, shared-schema SaaS. Every table that contains user da
 |------|---------|
 | `supabase_schema.sql` | Core tables: expenses, classification_rules, mileage_logs, mileage_rates |
 | `supabase_schema_rls.sql` | Row-Level Security policies for multi-tenant isolation |
-| `supabase_schema_settings.sql` | User settings table (profile, API keys, preferences) |
+| `supabase_schema_settings.sql` | User settings table (profile, API keys, preferences, `dashboard_config` JSONB added v7.9.1) |
 | `supabase_schema_activity.sql` | Daily user activity tracking |
 | `supabase_schema_leads.sql` | CRM leads & clients with relationships |
 | `supabase_schema_plaid.sql` | Plaid integration tables (items, accounts, sync cursors) |
