@@ -1,8 +1,54 @@
 import React, { useState } from 'react';
+import { useAuth } from '../AuthContext';
+import { apiPost } from '../../api';
 import ChangeLogModal from './ChangeLogModal.jsx';
 
+const FB_TYPES = ['Bug', 'Idea', 'Question', 'General'];
+const FB_META = {
+    Bug:      { emoji: '🐛', desc: 'Something is broken or behaving unexpectedly.' },
+    Idea:     { emoji: '💡', desc: 'A feature request or improvement suggestion.' },
+    Question: { emoji: '❓', desc: 'Need help understanding how something works.' },
+    General:  { emoji: '💬', desc: 'Anything else on your mind.' },
+};
+
 export default function HelpTab() {
+    const { user } = useAuth();
     const [showChangeLog, setShowChangeLog] = useState(false);
+
+    // Feedback form state
+    const [fbType, setFbType] = useState('General');
+    const [fbMessage, setFbMessage] = useState('');
+    const [fbDiag, setFbDiag] = useState(true);
+    const [fbStatus, setFbStatus] = useState(null); // null | 'sending' | 'ok' | 'error'
+    const [fbError, setFbError] = useState('');
+
+    const handleFeedbackSubmit = async (e) => {
+        e.preventDefault();
+        if (!fbMessage.trim()) return;
+        setFbStatus('sending');
+        try {
+            await apiPost('/feedback', {
+                type: fbType,
+                message: fbMessage.trim(),
+                name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Lumière User',
+                email: user?.email || 'unknown',
+                diagnostics: fbDiag ? {
+                    userId: user?.id || 'unknown',
+                    email: user?.email || 'unknown',
+                    userAgent: navigator.userAgent,
+                    href: window.location.href,
+                    timestamp: new Date().toISOString(),
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    online: navigator.onLine,
+                } : undefined,
+            });
+            setFbStatus('ok');
+            setFbMessage('');
+        } catch (err) {
+            setFbStatus('error');
+            setFbError(err.message || 'Unknown error');
+        }
+    };
 
     const steps = [
         { num: 1, title: 'Claim Your Identity', text: 'Navigate to the Business Profile tab. Upload your logo and fill out your business details. This information is used to professionally brand your invoices and set your tax jurisdiction.' },
@@ -182,6 +228,77 @@ export default function HelpTab() {
             </div>
 
             {showChangeLog && <ChangeLogModal onClose={() => setShowChangeLog(false)} />}
+
+            {/* Feedback Section */}
+            <div className="card glass" style={{ margin: 0, padding: '30px' }}>
+                <h2 style={{ margin: '0 0 6px', fontSize: '1.2rem', fontWeight: 950 }}>💬 Send Feedback</h2>
+                <p className="muted" style={{ margin: '0 0 24px', fontSize: '13px' }}>
+                    Bugs, ideas, or questions — sent directly to Joshua with your context attached.
+                </p>
+
+                {fbStatus === 'ok' ? (
+                    <div style={{ textAlign: 'center', padding: '24px 0' }}>
+                        <div style={{ fontSize: '32px', marginBottom: '10px' }}>✅</div>
+                        <div style={{ fontWeight: 900, fontSize: '15px', marginBottom: '6px' }}>Feedback sent.</div>
+                        <p className="muted" style={{ margin: '0 0 16px', fontSize: '13px' }}>It went straight to Joshua's inbox.</p>
+                        <button className="btn secondary" style={{ fontSize: '13px', padding: '8px 20px' }} onClick={() => setFbStatus(null)}>Send Another</button>
+                    </div>
+                ) : (
+                    <form onSubmit={handleFeedbackSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px', maxWidth: '600px' }}>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                            {FB_TYPES.map(t => (
+                                <button
+                                    key={t}
+                                    type="button"
+                                    onClick={() => setFbType(t)}
+                                    style={{
+                                        padding: '7px 14px', borderRadius: '20px', fontSize: '13px', cursor: 'pointer', fontWeight: fbType === t ? 900 : 600,
+                                        border: `1px solid ${fbType === t ? 'rgba(99,102,241,0.7)' : 'var(--line)'}`,
+                                        background: fbType === t ? 'rgba(99,102,241,0.15)' : 'transparent',
+                                        color: fbType === t ? '#818cf8' : 'var(--muted)',
+                                    }}
+                                >{FB_META[t].emoji} {t}</button>
+                            ))}
+                        </div>
+                        <div>
+                            <textarea
+                                value={fbMessage}
+                                onChange={e => setFbMessage(e.target.value)}
+                                placeholder={
+                                    fbType === 'Bug'      ? "Describe what happened vs. what you expected…" :
+                                    fbType === 'Idea'     ? "Describe your idea and the problem it solves…" :
+                                    fbType === 'Question' ? "What do you need help understanding?" :
+                                    "What's on your mind?"
+                                }
+                                required
+                                rows={5}
+                                style={{ width: '100%', resize: 'vertical', fontSize: '14px', lineHeight: 1.6, boxSizing: 'border-box' }}
+                            />
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+                                <span className="muted" style={{ fontSize: '11px' }}>{FB_META[fbType].desc}</span>
+                                <span className="muted" style={{ fontSize: '11px' }}>{fbMessage.length} chars</span>
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>
+                                <input type="checkbox" checked={fbDiag} onChange={e => setFbDiag(e.target.checked)} style={{ width: 'auto' }} />
+                                Include diagnostics
+                            </label>
+                            {fbStatus === 'error' && (
+                                <span style={{ fontSize: '12px', color: '#ff4d4d' }}>❌ {fbError}</span>
+                            )}
+                            <button
+                                type="submit"
+                                className="btn glow-blue"
+                                disabled={fbStatus === 'sending' || !fbMessage.trim()}
+                                style={{ fontWeight: 900, fontSize: '13px', padding: '10px 24px', opacity: (!fbMessage.trim() || fbStatus === 'sending') ? 0.6 : 1 }}
+                            >
+                                {fbStatus === 'sending' ? 'Sending…' : '📤 Send Feedback'}
+                            </button>
+                        </div>
+                    </form>
+                )}
+            </div>
         </div>
     );
 }

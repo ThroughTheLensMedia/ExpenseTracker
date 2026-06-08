@@ -29,6 +29,23 @@ export default function ProfileTab({ settings, setSettings, onReload, billingOnl
     const { tier, subscription, subscriptionReady } = useAuth();
     const [billingAnnual, setBillingAnnual] = useState(false);
     const [billingLoading, setBillingLoading] = useState(null);
+    const [redeemCode, setRedeemCode] = useState('');
+    const [redeeming, setRedeeming] = useState(false);
+
+    const handleRedeemCode = async () => {
+        if (!redeemCode) return;
+        setRedeeming(true);
+        try {
+            const res = await apiPost('/subscription/redeem', { code: redeemCode });
+            setMsg(res.message || 'Key activated.');
+            setRedeemCode('');
+            if (onReload) onReload(true);
+        } catch (err) {
+            setMsg(err.message || 'Invalid key.');
+        } finally {
+            setRedeeming(false);
+        }
+    };
 
     const handleLogoUpload = (e) => {
         const file = e.target.files[0];
@@ -194,9 +211,27 @@ export default function ProfileTab({ settings, setSettings, onReload, billingOnl
 
     if (billingOnly) {
         return (
-            <div className="card glass glow-blue" style={{ border: 'none', padding: 'clamp(20px, 4vw, 40px)', margin: 0 }}>
-                <h2 style={{ fontSize: '1.5rem', margin: '0 0 20px 0' }}>Account Plans</h2>
+            <div className="card glass glow-blue" style={{ border: 'none', padding: 'clamp(20px, 4vw, 40px)', margin: 0, display: 'flex', flexDirection: 'column', gap: '30px' }}>
+                <h2 style={{ fontSize: '1.5rem', margin: 0 }}>Account Plans</h2>
                 {billingEl}
+
+                {/* License Activation — accessible to all users */}
+                <div style={{ padding: '24px 28px', background: 'rgba(255,255,255,0.03)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.07)' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 900, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.4)', marginBottom: '8px' }}>LICENSE ACTIVATION</div>
+                    <p className="muted" style={{ margin: '0 0 16px', fontSize: '13px' }}>Enter your activation key to extend or upgrade your access.</p>
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                        <input
+                            value={redeemCode}
+                            onChange={e => setRedeemCode(e.target.value.toUpperCase())}
+                            placeholder="XXXX-XXXX-XXXX"
+                            style={{ padding: '12px', flex: 1, minWidth: '200px' }}
+                        />
+                        <button className="btn primary" onClick={handleRedeemCode} disabled={redeeming || !redeemCode}>
+                            {redeeming ? 'Activating…' : 'Redeem Key'}
+                        </button>
+                    </div>
+                    {msg && <div style={{ marginTop: '10px', fontSize: '13px', color: '#10b981' }}>{msg}</div>}
+                </div>
             </div>
         );
     }

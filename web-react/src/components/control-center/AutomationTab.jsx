@@ -80,7 +80,12 @@ export default function AutomationTab({ rules, allExpenses, onReload }) {
             <div className="card glass glow-blue" style={{ border: 'none', padding: '30px', margin: 0, display: 'flex', alignItems: 'flex-end', gap: '20px', flexWrap: 'wrap' }}>
                 <div style={{ flex: 1, minWidth: '200px' }}>
                     <small className="muted" style={{ fontWeight: 900, marginBottom: '8px', display: 'block' }}>VENDOR KEYWORD</small>
-                    <input value={matchValue} onChange={e => setMatchValue(e.target.value)} placeholder="e.g. Adobe, Starlink..." style={{ padding: '12px' }} />
+                    <datalist id="vendor-suggestions">
+                        {[...new Set(allExpenses.map(e => e.vendor).filter(Boolean))].sort().map(v => (
+                            <option key={v} value={v} />
+                        ))}
+                    </datalist>
+                    <input value={matchValue} onChange={e => setMatchValue(e.target.value)} placeholder="e.g. Adobe, Starlink..." style={{ padding: '12px' }} list="vendor-suggestions" />
                 </div>
                 <div style={{ flex: 1, minWidth: '200px' }}>
                     <small className="muted" style={{ fontWeight: 900, marginBottom: '8px', display: 'block' }}>ASSIGN CATEGORY</small>

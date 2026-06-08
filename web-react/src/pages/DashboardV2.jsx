@@ -109,7 +109,7 @@ export default function DashboardV2({ apiStatus }) {
     return (
         <section style={{ display: 'flex', flexDirection: 'column', gap: '30px', maxWidth: '1400px', margin: '0 auto', animation: 'fadeIn 0.3s ease-out' }}>
             {/* Header Area */}
-            <div className="card glass glow-blue" style={{ border: 'none', margin: 0, padding: '40px', position: 'relative', overflow: 'hidden' }}>
+            <div className="card glass glow-blue" style={{ border: 'none', margin: 0, padding: '40px', position: 'relative', overflow: 'visible' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px', position: 'relative', zIndex: 1 }}>
                     <div>
                         <h1 style={{ margin: 0, fontSize: '2.4rem', fontWeight: 950, letterSpacing: '-0.03em', lineHeight: 1 }}>Business Analytics</h1>

@@ -5,6 +5,19 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.9.3] — 2026-06-08
+
+### LCC Restructure + Dashboard Gear Fix
+
+- **`web-react/src/pages/DashboardV2.jsx`** — Fixed dashboard gear panel clipping. Header card `overflow: hidden` changed to `overflow: visible` — all 6 widget toggles now fully visible.
+- **`web-react/src/pages/Backup.jsx`** — Complete LCC nav restructure: pills reordered alphabetically (Admin, AI Intelligence, Automation, Dashboard, Documents, Help Center, Integrations, Profile); removed Feedback and 3 admin pills (SaaS/Logs/Security); added single Admin pill with orange dot indicator; legacy URLs `?tab=feedback/saas/logs/security` redirect gracefully; removed unused imports.
+- **`web-react/src/components/control-center/AdminTab.jsx`** — New file. Consolidated admin panel with internal sub-nav (SaaS Management / System Logs / Security). Styled sub-nav with orange accent on active section.
+- **`web-react/src/components/control-center/HelpTab.jsx`** — Feedback form merged into bottom of Help Center tab. Full form with type selector, textarea, diagnostics toggle, submit. No separate Feedback tab needed.
+- **`web-react/src/components/control-center/ProfileTab.jsx`** — License Activation card added to `billingOnly` view — all users can now redeem keys from Account Plans without needing admin access.
+- **`web-react/src/components/control-center/AutomationTab.jsx`** — Vendor Keyword input now shows autocomplete from transaction ledger vendor list via native HTML `<datalist>`. Zero new dependencies.
+
+---
+
 ## [v7.9.2] — 2026-06-08
 
 ### Fix: Account Plans Nav + Billing Tab

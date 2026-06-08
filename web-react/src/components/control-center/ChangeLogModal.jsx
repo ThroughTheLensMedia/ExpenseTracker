@@ -1,6 +1,13 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.9.3', date: 'JUN 8, 2026', color: '#f97316', items: [
+        '<strong>Dashboard Widget Panel — Fixed:</strong> The ⚙️ gear panel on the dashboard now shows all 6 widget toggles without being cut off.',
+        '<strong>Control Center — Reorganized:</strong> Pill buttons are now in alphabetical order. Feedback has moved into Help Center (bottom section). The three admin tabs (SaaS, Logs, Security) are consolidated into a single Admin tab with internal sub-navigation.',
+        '<strong>Admin Indicator:</strong> The Admin pill has an orange dot to clearly mark it as admin-only.',
+        '<strong>License Key Activation:</strong> Account Plans page now includes a "Redeem Key" field — no admin access needed.',
+        '<strong>Vendor Autocomplete:</strong> The Vendor Keyword field in Automation now suggests vendors from your transaction ledger as you type.',
+    ]},
     { version: '7.9.2', date: 'JUN 8, 2026', color: '#4ade80', items: [
         '<strong>Account Plans — Fixed Navigation:</strong> The Account Plans link in the menu now opens a clean billing view showing only your subscription, plan tier, and upgrade options — no business form mixed in.',
     ]},

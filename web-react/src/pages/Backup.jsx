@@ -8,13 +8,10 @@ import IntelligenceTab from '../components/control-center/IntelligenceTab.jsx';
 import AutomationTab from '../components/control-center/AutomationTab.jsx';
 import InfrastructureTab from '../components/control-center/InfrastructureTab.jsx';
 import HelpTab from '../components/control-center/HelpTab.jsx';
-import SaasTab from '../components/control-center/SaasTab.jsx';
 import IntegrationTab from '../components/control-center/IntegrationTab.jsx';
-import FeedbackTab from '../components/control-center/FeedbackTab.jsx';
 import DocumentsTab from '../components/control-center/DocumentsTab.jsx';
-import SystemLogsTab from '../components/control-center/SystemLogsTab.jsx';
-import SecurityReviewTab from '../components/control-center/SecurityReviewTab.jsx';
 import DashboardTab from '../components/control-center/DashboardTab.jsx';
+import AdminTab from '../components/control-center/AdminTab.jsx';
 
 const DEFAULT_SETTINGS = {
     business_name: '', contact_name: '', website: '', email: '', phone: '', address: '',
@@ -28,7 +25,7 @@ export default function Backup() {
 
     // Base state (loaded immediately — lightweight)
     const [settings, setSettings] = useState(DEFAULT_SETTINGS);
-    const [isHealthy, setIsHealthy] = useState(null);   // null = not yet checked
+    const [isHealthy, setIsHealthy] = useState(null);
     const [isMailerReady, setIsMailerReady] = useState(null);
     const [healthCheckedAt, setHealthCheckedAt] = useState(null);
     const [baseLoaded, setBaseLoaded] = useState(false);
@@ -50,7 +47,17 @@ export default function Backup() {
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const t = params.get('tab');
-        if (t && ['automation', 'profile', 'billing', 'infrastructure', 'help', 'saas', 'intelligence', 'integration', 'feedback', 'logs', 'documents', 'security', 'dashboard'].includes(t)) {
+        // Legacy aliases for old admin tab URLs — redirect to admin tab
+        if (t && ['saas', 'logs', 'security'].includes(t)) {
+            setActiveTab('admin');
+            return;
+        }
+        // Legacy feedback URL — redirect to help
+        if (t === 'feedback') {
+            setActiveTab('help');
+            return;
+        }
+        if (t && ['automation', 'profile', 'billing', 'infrastructure', 'help', 'intelligence', 'integration', 'documents', 'dashboard', 'admin'].includes(t)) {
             setActiveTab(t);
         }
     }, [window.location.search]);
@@ -86,7 +93,7 @@ export default function Backup() {
                     ]);
                     setAllExpenses(exps);
                     setRules(rls.rules || []);
-                } else if (tab === 'saas' && isAdmin) {
+                } else if (tab === 'admin' && isAdmin) {
                     const [subs, codes, adminStatus, dStats] = await Promise.all([
                         apiGet('/admin/subscriptions').catch(() => []),
                         apiGet('/admin/beta-codes').catch(() => []),
@@ -100,14 +107,13 @@ export default function Backup() {
                     else if (adminStatus.diagnostics?.service_key_degraded) setStatusMsg({ type: 'bad', text: 'Admin service key degraded.' });
                     else setStatusMsg(null);
                 }
-                // profile, intelligence, infrastructure, integration, help, feedback: no heavy fetch needed
             } finally {
                 clearTimeout(skeletonTimer);
                 setLoading(false);
                 setShowSkeleton(false);
             }
         } else {
-            // Silent refresh — same logic, no loading state
+            // Silent refresh
             if (tab === 'automation') {
                 const [exps, rls] = await Promise.all([
                     fetchAllExpenses().catch(() => []),
@@ -115,7 +121,7 @@ export default function Backup() {
                 ]);
                 setAllExpenses(exps);
                 setRules(rls.rules || []);
-            } else if (tab === 'saas' && isAdmin) {
+            } else if (tab === 'admin' && isAdmin) {
                 const [subs, codes, dStats] = await Promise.all([
                     apiGet('/admin/subscriptions').catch(() => []),
                     apiGet('/admin/beta-codes').catch(() => []),
@@ -155,19 +161,29 @@ export default function Backup() {
                     </div>
                 </div>
 
+                {/* Pills — alphabetical order */}
                 <nav style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                    <button className={`pill ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>Business Profile</button>
-                    <button className={`pill ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>Dashboard</button>
-                    <button className={`pill ${activeTab === 'automation' ? 'active' : ''}`} onClick={() => setActiveTab('automation')}>Automation</button>
+                    {isAdmin && (
+                        <button
+                            className={`pill ${activeTab === 'admin' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('admin')}
+                            style={{ position: 'relative' }}
+                        >
+                            Admin
+                            <span style={{ position: 'absolute', top: 3, right: 4, width: 7, height: 7, borderRadius: '50%', background: '#f97316', display: 'inline-block', pointerEvents: 'none' }} />
+                        </button>
+                    )}
                     <button className={`pill ${activeTab === 'intelligence' ? 'active' : ''}`} onClick={() => setActiveTab('intelligence')}>AI Intelligence</button>
+                    <button className={`pill ${activeTab === 'automation' ? 'active' : ''}`} onClick={() => setActiveTab('automation')}>Automation</button>
+                    <button className={`pill ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>Dashboard</button>
                     <button className={`pill ${activeTab === 'documents' ? 'active' : ''}`} onClick={() => setActiveTab('documents')}>Documents</button>
-                    {isAdmin && <button className={`pill ${activeTab === 'infrastructure' ? 'active' : ''}`} onClick={() => setActiveTab('infrastructure')}>Infrastructure</button>}
-                    <button className={`pill ${activeTab === 'integration' ? 'active' : ''}`} onClick={() => setActiveTab('integration')}>Integrations</button>
                     <button className={`pill ${activeTab === 'help' ? 'active' : ''}`} onClick={() => setActiveTab('help')}>Help Center</button>
-                    <button className={`pill ${activeTab === 'feedback' ? 'active' : ''}`} onClick={() => setActiveTab('feedback')}>Feedback</button>
-                    {isAdmin && <button className={`pill ${activeTab === 'saas' ? 'active' : ''}`} onClick={() => setActiveTab('saas')}>SaaS Management</button>}
-                    {isAdmin && <button className={`pill ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => setActiveTab('logs')}>System Logs</button>}
-                    {isAdmin && <button className={`pill ${activeTab === 'security' ? 'active' : ''}`} onClick={() => setActiveTab('security')}>Security</button>}
+                    <button className={`pill ${activeTab === 'integration' ? 'active' : ''}`} onClick={() => setActiveTab('integration')}>Integrations</button>
+                    <button className={`pill ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>Profile</button>
+                    {isAdmin && <button className={`pill ${activeTab === 'infrastructure' ? 'active' : ''}`} onClick={() => setActiveTab('infrastructure')} style={{ position: 'relative' }}>
+                        Infrastructure
+                        <span style={{ position: 'absolute', top: 3, right: 4, width: 7, height: 7, borderRadius: '50%', background: '#f97316', display: 'inline-block', pointerEvents: 'none' }} />
+                    </button>}
                 </nav>
             </div>
 
@@ -221,13 +237,19 @@ export default function Backup() {
             {!showSkeleton && activeTab === 'intelligence' && <IntelligenceTab settings={settings} setSettings={setSettings} user={user} loading={loading} setLoading={setLoading} onReload={loadData} />}
             {!showSkeleton && activeTab === 'documents' && <DocumentsTab settings={settings} user={user} />}
             {!showSkeleton && activeTab === 'automation' && <AutomationTab rules={rules} allExpenses={allExpenses} onReload={loadData} />}
-            {!showSkeleton && activeTab === 'infrastructure' && <InfrastructureTab subscription={subscription} onReload={loadData} />}
+            {!showSkeleton && activeTab === 'infrastructure' && isAdmin && <InfrastructureTab subscription={subscription} onReload={loadData} />}
             {!showSkeleton && activeTab === 'integration' && <IntegrationTab />}
-            {!showSkeleton && activeTab === 'help' && <HelpTab />}
-            {!showSkeleton && activeTab === 'feedback' && <FeedbackTab />}
-            {!showSkeleton && activeTab === 'saas' && <SaasTab user={user} allSubscriptions={allSubscriptions} betaCodes={betaCodes} dailyStats={dailyStats} statusMsg={statusMsg} onReload={loadData} />}
-            {activeTab === 'logs' && isAdmin && <SystemLogsTab />}
-            {activeTab === 'security' && isAdmin && <SecurityReviewTab />}
+            {!showSkeleton && activeTab === 'help' && <HelpTab user={user} />}
+            {!showSkeleton && activeTab === 'admin' && isAdmin && (
+                <AdminTab
+                    user={user}
+                    allSubscriptions={allSubscriptions}
+                    betaCodes={betaCodes}
+                    dailyStats={dailyStats}
+                    statusMsg={statusMsg}
+                    onReload={loadData}
+                />
+            )}
         </section>
     );
 }

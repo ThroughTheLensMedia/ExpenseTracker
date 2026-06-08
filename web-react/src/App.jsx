@@ -162,7 +162,7 @@ function AppContent() {
   // --- Version Check Hook ---
   // DEPLOY SOP: update CURRENT_VERSION here AND web-react/public/version.json on every release.
   useEffect(() => {
-    const CURRENT_VERSION = "7.9.2";
+    const CURRENT_VERSION = "7.9.3";
 
     // What's New: show button if user hasn't dismissed it for this version
     const seen = localStorage.getItem('ll_whats_new_seen');
