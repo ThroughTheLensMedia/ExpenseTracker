@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.9.6] — 2026-06-09
+
+### Plaid Sync Plan Account Cap + Icon Fix
+
+- **`api/routes/plaid.js`** — `create-link-token` now enforces a 5-account limit for Sync plan users (`sync_monthly`, `sync_annual`). Returns HTTP 403 `plaid_account_limit` when limit is reached. Core/Studio/exempt users bypass the check.
+- **`web-react/src/components/PlaidLink.jsx`** — Detects `plaid_account_limit` 403 response; renders upgrade UI with Core and Studio CTAs and a note to disconnect existing accounts.
+- **`web-react/src/pages/Home.jsx`** — Gear Depreciation feature card icon changed from 📷 to 🔧; pricing table Sync "Live Bank Sync" row updated to show "Up to 5 accounts" badge.
+
+---
+
 ## [v7.9.5] — 2026-06-09
 
 ### Open Signup + SaaS Admin Enrichment

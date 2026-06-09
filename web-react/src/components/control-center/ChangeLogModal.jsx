@@ -1,6 +1,11 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.9.6', date: 'JUN 9, 2026', color: '#4ade80', items: [
+        '<strong>Sync Plan Account Limit:</strong> The Sync plan ($4.99/mo) now allows up to 5 connected bank or credit card accounts. If you hit the limit, a clear upgrade prompt appears with Core and Studio options. Core and Studio plans have unlimited connections.',
+        '<strong>Gear Depreciation Icon:</strong> The Gear Depreciation feature card on the landing page now uses a wrench icon instead of a camera — better reflects the tool\'s purpose for all equipment types.',
+        '<strong>Pricing Table Updated:</strong> The Live Bank Sync row now shows "Up to 5 accounts" for the Sync plan, so the limit is visible before you subscribe.',
+    ]},
     { version: '7.9.5', date: 'JUN 9, 2026', color: '#38bdf8', items: [
         '<strong>Open Signup:</strong> New users can now create a free account directly from the login page — no invite code required. Two paths: "Create a Free Account" for open signup, or "Have an invite code? Sign Up" for users with a code.',
         '<strong>Invite Code Auto-Activation:</strong> If you sign up with an invite code, your plan is automatically applied after you confirm your email and log in — no manual redemption step.',

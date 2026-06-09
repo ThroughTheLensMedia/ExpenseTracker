@@ -66,7 +66,7 @@ router.post("/create-link-token", async (req, res) => {
         if (!PLAID_BILLING_EXEMPT.has(req.user.id)) {
             const { data: sub } = await req.sb
                 .from('user_subscriptions')
-                .select('stripe_customer_id')
+                .select('stripe_customer_id, plan_type')
                 .eq('user_id', req.user.id)
                 .maybeSingle();
 
@@ -75,6 +75,22 @@ router.post("/create-link-token", async (req, res) => {
                     error: 'plaid_payment_required',
                     message: 'A billing method is required to use Live Bank Sync. Please set up your subscription first.',
                 });
+            }
+
+            // Sync plan: max 5 connected institutions
+            const SYNC_PLANS = new Set(['sync_monthly', 'sync_annual']);
+            if (SYNC_PLANS.has(sub?.plan_type)) {
+                const { count } = await req.sb
+                    .from('plaid_connections')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('user_id', req.user.id)
+                    .eq('status', 'active');
+                if ((count || 0) >= 5) {
+                    return res.status(403).json({
+                        error: 'plaid_account_limit',
+                        message: 'Sync plan allows up to 5 connected accounts. Upgrade to Core or Studio for unlimited connections.',
+                    });
+                }
             }
         }
 

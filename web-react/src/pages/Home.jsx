@@ -27,7 +27,7 @@ const FEATURES = [
     badge: 'Bookings Pipeline',
   },
   {
-    icon: '📷',
+    icon: '🔧',
     title: 'Gear Depreciation',
     desc: 'Section 179 and Straight-Line depreciation calculated automatically.',
     badge: null,
@@ -70,7 +70,7 @@ const FEATURE_ROWS = [
   { label: 'Invoicing',                  values: ['5/mo', '5/mo',    '20/mo',    'Unlimited'] },
   { label: 'Gear depreciation',          values: ['5 items', '5 items', 'Unlimited', 'Unlimited'] },
   { label: 'Executive dashboard',        values: [null,   null,       true,       true]   },
-  { label: 'Live bank sync (Plaid)',      values: [null,   true,       true,       true]   },
+  { label: 'Live bank sync (Plaid)',      values: [null,   'Up to 5 accounts', true, true] },
   { label: 'AI Financial Assistant',     values: [null,   null,       true,       true]   },
   { label: 'Receipt scanner (OCR)',      values: [null,   null,       true,       true]   },
   { label: 'Batch AI categorization',    values: [null,   null,       null,       true]   },

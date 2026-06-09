@@ -23,6 +23,7 @@ export default function PlaidLink({ onSync, autoConnect = false }) {
     const [connecting, setConnecting] = useState(false);
     const [msg, setMsg] = useState(null);
     const [billingGate, setBillingGate] = useState(false);
+    const [accountLimitGate, setAccountLimitGate] = useState(false);
     const [billingLoading, setBillingLoading] = useState(null);
     const [billingAnnual, setBillingAnnual] = useState(false);
 
@@ -58,6 +59,7 @@ export default function PlaidLink({ onSync, autoConnect = false }) {
         setConnecting(true);
         setMsg(null);
         setBillingGate(false);
+        setAccountLimitGate(false);
         try {
             const { link_token } = await apiPost('/plaid/create-link-token');
 
@@ -93,7 +95,9 @@ export default function PlaidLink({ onSync, autoConnect = false }) {
             handler.open();
         } catch (e) {
             if (e.message?.includes('plaid_payment_required') || e.status === 402) {
-                setBillingGate(true); // show inline billing setup UI
+                setBillingGate(true);
+            } else if (e.message?.includes('plaid_account_limit') || e.status === 403) {
+                setAccountLimitGate(true);
             } else {
                 setMsg({ ok: false, text: `Failed to start Plaid: ${e.message}` });
             }
@@ -240,6 +244,37 @@ export default function PlaidLink({ onSync, autoConnect = false }) {
                     </div>
                     <div style={{ marginTop: '12px', fontSize: '11px', color: 'rgba(255,255,255,0.25)', textAlign: 'center' }}>
                         Already subscribed? Refresh the page and try connecting again.
+                    </div>
+                </div>
+            )}
+
+            {/* Account limit gate — Sync plan at 5 connections */}
+            {accountLimitGate && (
+                <div style={{ padding: '24px 28px', background: 'rgba(56,189,248,0.05)', borderRadius: '16px', border: '1px solid rgba(56,189,248,0.25)' }}>
+                    <div style={{ fontWeight: 950, fontSize: '13px', color: '#38bdf8', marginBottom: '10px', letterSpacing: '0.05em' }}>🔒 SYNC PLAN ACCOUNT LIMIT REACHED</div>
+                    <p style={{ margin: '0 0 6px', fontSize: '13px', color: 'rgba(255,255,255,0.7)', lineHeight: 1.6 }}>
+                        Your <strong>Sync plan</strong> allows up to <strong>5 connected accounts</strong>. You've hit that limit. Upgrade to Core or Studio for unlimited bank connections.
+                    </p>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '16px' }}>
+                        <div style={{ padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(249,115,22,0.25)', background: 'rgba(249,115,22,0.04)' }}>
+                            <div style={{ fontWeight: 700, color: '#f97316', marginBottom: '3px' }}>Core</div>
+                            <div style={{ fontSize: '18px', fontWeight: 800, color: '#fff', marginBottom: '5px' }}>$9<span style={{ fontSize: '11px', fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>/mo</span></div>
+                            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', marginBottom: '12px', lineHeight: 1.4 }}>Unlimited banks · AI Brain · Receipt scanner</div>
+                            <button onClick={() => handleUpgrade('core_monthly')} disabled={!!billingLoading} className="btn primary" style={{ width: '100%', padding: '9px', fontSize: '12px', opacity: billingLoading ? 0.6 : 1 }}>
+                                {billingLoading === 'core_monthly' ? 'Loading...' : 'Upgrade to Core'}
+                            </button>
+                        </div>
+                        <div style={{ padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(167,139,250,0.25)', background: 'rgba(167,139,250,0.04)' }}>
+                            <div style={{ fontWeight: 700, color: '#a78bfa', marginBottom: '3px' }}>Studio</div>
+                            <div style={{ fontSize: '18px', fontWeight: 800, color: '#fff', marginBottom: '5px' }}>$19<span style={{ fontSize: '11px', fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>/mo</span></div>
+                            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', marginBottom: '12px', lineHeight: 1.4 }}>Everything in Core · Unlimited · Mileage autopilot</div>
+                            <button onClick={() => handleUpgrade('studio_monthly')} disabled={!!billingLoading} className="btn primary" style={{ width: '100%', padding: '9px', fontSize: '12px', opacity: billingLoading ? 0.6 : 1 }}>
+                                {billingLoading === 'studio_monthly' ? 'Loading...' : 'Upgrade to Studio'}
+                            </button>
+                        </div>
+                    </div>
+                    <div style={{ marginTop: '12px', fontSize: '11px', color: 'rgba(255,255,255,0.25)', textAlign: 'center' }}>
+                        Or disconnect an existing account to make room.
                     </div>
                 </div>
             )}
