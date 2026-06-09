@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.10.2', date: 'JUN 9, 2026', color: '#f97316', items: [
+        '<strong>Billing Reliability:</strong> Stripe webhook handlers now verify that subscription changes actually saved to the database. If a save fails, Stripe automatically retries — preventing rare cases where a payment succeeded but the plan didn\'t activate, or a cancellation didn\'t downgrade.',
+    ]},
     { version: '7.10.1', date: 'JUN 9, 2026', color: '#a78bfa', items: [
         '<strong>Display Name Save — Fixed:</strong> Editing a member\'s display name in Active Ledger Members now correctly saves to the database. The v7.10.0 fix surfaced the real error — the code was writing to a table that doesn\'t exist. Now correctly updates the right table.',
     ]},

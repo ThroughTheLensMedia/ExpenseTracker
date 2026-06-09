@@ -5,6 +5,14 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.10.2] — 2026-06-09
+
+### Stripe Webhook — Error Checking on Subscription Writes
+
+- **`api/routes/stripe.js`** — `checkout.session.completed`, `customer.subscription.updated`, and `customer.subscription.deleted` handlers now destructure `{ error }` from the `user_subscriptions` write and throw on failure. Previously a failed write returned 200 to Stripe (no retry, silent billing state corruption). Now a failed write returns 500 → Stripe retries the event for up to 3 days.
+
+---
+
 ## [v7.10.1] — 2026-06-09
 
 ### SaaS Admin — Display Name Save Fix

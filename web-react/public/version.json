@@ -1,1 +1,1 @@
-{"version":"7.10.1","release_date":"2026-06-09","codename":"Lumière Ledger","notes":"v7.10.1: Display name save fix — writes to user_subscriptions, not profiles"}
+{"version":"7.10.2","release_date":"2026-06-09","codename":"Lumière Ledger","notes":"v7.10.2: Stripe webhook error checking — failed subscription writes now trigger Stripe retry"}

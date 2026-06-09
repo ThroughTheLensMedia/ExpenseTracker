@@ -60,7 +60,6 @@ Source of truth for all sprint work, security status, and product phases.
 | **`file-type` moderate vuln** | `receipts.js` uses `require('file-type')`. v22 is ESM-only — needs dynamic `import()` refactor. Near-zero real risk (ASF audio files only). Deferred. |
 | **Silent DB failures in `expenses.js`** | Lines ~391–399, 534–535, 687–692: `.update()` and `.delete()` calls never destructure `{ error }` — route returns `{ ok: true }` regardless. Lower risk (user-scoped RLS), but wrong pattern. |
 | **Silent DB failures in `plaid.js`** | Lines ~457, 517: loop updates and `pending_receipts` delete return values unchecked. |
-| **Stripe webhook — unchecked errors (HIGH)** | `stripe.js` lines ~175, 197, 214: subscription upsert/update in webhook handler never checks `{ error }`. Silent billing state corruption is possible. Fix before Stripe goes live for paying users. |
 | **Stale `profiles` references in `cron.js`** | Lines ~41, 128, 132, 310: all query `profiles` table that doesn't exist in public schema. Silently return empty; code falls back to email. Low impact but messy. |
 | **REDIS_URL — remove or wire up** | Bull was removed v7.8.90. Direct Resend fallback is intentional and working. Either set `REDIS_URL` and re-enable queue layer, or remove dead queue code from `emailQueue.js`. |
 | **`plaid_account_id` backfill** | Pre-v7.8.4 Plaid transactions have NULL `plaid_account_id`. Sub-account spending breakdown won't work on historical data until users re-sync. Document or prompt user to sync. |

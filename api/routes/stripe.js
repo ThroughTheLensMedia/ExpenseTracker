@@ -172,7 +172,7 @@ async function stripeWebhook(req, res) {
           plan_type = await resolvePlanTypeFromSubscription(session.subscription);
         }
 
-        await supabase.from('user_subscriptions').upsert({
+        const { error: upsertErr } = await supabase.from('user_subscriptions').upsert({
           user_id:                userId,
           plan_type:              plan_type || 'studio_monthly',
           stripe_customer_id:     session.customer,
@@ -181,6 +181,7 @@ async function stripeWebhook(req, res) {
           expires_at:             null,
           updated_at:             new Date().toISOString(),
         }, { onConflict: 'user_id' });
+        if (upsertErr) throw upsertErr; // non-2xx → Stripe retries the event
 
         console.log(`[stripe] checkout.session.completed — user ${userId} → ${plan_type}`);
         break;
@@ -194,13 +195,14 @@ async function stripeWebhook(req, res) {
         const priceId   = sub.items?.data?.[0]?.price?.id;
         const plan_type = planTypeFromPriceId(priceId);
 
-        await supabase.from('user_subscriptions').update({
+        const { error: updateErr } = await supabase.from('user_subscriptions').update({
           plan_type:          plan_type || 'studio_monthly',
           stripe_price_id:    priceId || null,
           stripe_customer_id: sub.customer,
           expires_at:         null,
           updated_at:         new Date().toISOString(),
         }).eq('user_id', userId);
+        if (updateErr) throw updateErr; // non-2xx → Stripe retries the event
 
         console.log(`[stripe] subscription.updated — user ${userId} → ${plan_type}`);
         break;
@@ -211,13 +213,14 @@ async function stripeWebhook(req, res) {
         const userId = sub.metadata?.user_id;
         if (!userId) break;
 
-        await supabase.from('user_subscriptions').update({
+        const { error: deleteErr } = await supabase.from('user_subscriptions').update({
           plan_type:              'free',
           stripe_subscription_id: null,
           stripe_price_id:        null,
           expires_at:             null,
           updated_at:             new Date().toISOString(),
         }).eq('user_id', userId);
+        if (deleteErr) throw deleteErr; // non-2xx → Stripe retries the event
 
         console.log(`[stripe] subscription.deleted — user ${userId} → free`);
         break;
