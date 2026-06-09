@@ -29,37 +29,61 @@ export default function Login() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
+  // Industry-standard password strength check
+  const validatePassword = (pw) => {
+    if (pw.length < 8) return 'Password must be at least 8 characters.';
+    if (!/[A-Z]/.test(pw)) return 'Password must include at least one uppercase letter.';
+    if (!/[a-z]/.test(pw)) return 'Password must include at least one lowercase letter.';
+    if (!/[0-9]/.test(pw)) return 'Password must include at least one number.';
+    if (!/[^A-Za-z0-9]/.test(pw)) return 'Password must include at least one special character (e.g. !, @, #, $).';
+    return null;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
     setSuccess(null);
-    try {
-      if (isLogin) {
+
+    if (isLogin) {
+      setLoading(true);
+      try {
         await login(email, password);
         navigate('/');
-      } else {
-        if (!confirmPassword) throw new Error("Please confirm your password.");
-        if (password !== confirmPassword) throw new Error("Passwords do not match.");
-
-        // If user entered an invite code, validate it server-side before creating account
-        if (useInviteCode) {
-          if (!betaCode) throw new Error("Please enter your invite code, or sign up free without one.");
-          const vRes = await fetch(`/api/subscription/validate-code/${betaCode.trim().toUpperCase()}`);
-          const vData = await vRes.json();
-          if (!vData.valid) throw new Error(`Invite code: ${vData.reason}`);
-          // Store for auto-redeem after email confirmation + login
-          localStorage.setItem('lumiere_pending_code', JSON.stringify({ code: betaCode.trim().toUpperCase(), email: email.trim() }));
-        }
-
-        await signup(email, password);
-        setSuccess("Account created! A confirmation email is on its way from support@throughthelens.media — check your inbox and spam folder. Click the confirmation link, then return here to log in.");
-        setIsLogin(true);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
       }
+      return;
+    }
+
+    // Signup — validate before touching loading state
+    if (!password) { setError('Please enter a password.'); return; }
+    const pwErr = validatePassword(password);
+    if (pwErr) { setError(pwErr); return; }
+    if (!confirmPassword) { setError('Please confirm your password.'); return; }
+    if (password !== confirmPassword) { setError('Passwords do not match.'); return; }
+
+    if (useInviteCode && !betaCode) {
+      setError('Please enter your invite code, or sign up free without one.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      if (useInviteCode) {
+        const vRes = await fetch(`/api/subscription/validate-code/${betaCode.trim().toUpperCase()}`);
+        const vData = await vRes.json();
+        if (!vData.valid) throw new Error(`Invite code: ${vData.reason || 'invalid or expired'}`);
+        localStorage.setItem('lumiere_pending_code', JSON.stringify({ code: betaCode.trim().toUpperCase(), email: email.trim() }));
+      }
+
+      await signup(email, password);
+      setSuccess("Account created! A confirmation email is on its way from support@throughthelens.media — check your inbox and spam folder. Click the confirmation link, then return here to log in.");
+      setIsLogin(true);
     } catch (err) {
-      // If signup failed after we stashed the code, remove the stash
-      if (!isLogin) localStorage.removeItem('lumiere_pending_code');
-      setError(err.message);
+      localStorage.removeItem('lumiere_pending_code');
+      setError(err.message || 'Signup failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -161,8 +185,36 @@ export default function Login() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder=" •••••••••••"
               style={{ marginTop: '8px', width: '100%' }}
+              autoComplete={isLogin ? 'current-password' : 'new-password'}
               required
             />
+            {!isLogin && password && (() => {
+              const checks = [
+                { label: '8+ chars', ok: password.length >= 8 },
+                { label: 'Uppercase', ok: /[A-Z]/.test(password) },
+                { label: 'Lowercase', ok: /[a-z]/.test(password) },
+                { label: 'Number', ok: /[0-9]/.test(password) },
+                { label: 'Special (!@#$…)', ok: /[^A-Za-z0-9]/.test(password) },
+              ];
+              const passed = checks.filter(c => c.ok).length;
+              const color = passed <= 2 ? '#ef4444' : passed <= 3 ? '#f97316' : passed === 4 ? '#facc15' : '#4ade80';
+              return (
+                <div style={{ marginTop: '8px' }}>
+                  <div style={{ display: 'flex', gap: '4px', marginBottom: '6px' }}>
+                    {checks.map((_, i) => (
+                      <div key={i} style={{ flex: 1, height: '3px', borderRadius: '99px', background: i < passed ? color : 'rgba(255,255,255,0.1)', transition: 'background 0.2s' }} />
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                    {checks.map(c => (
+                      <span key={c.label} style={{ fontSize: '10px', fontWeight: 700, padding: '2px 7px', borderRadius: '20px', background: c.ok ? 'rgba(74,222,128,0.1)' : 'rgba(255,255,255,0.05)', color: c.ok ? '#4ade80' : 'rgba(255,255,255,0.3)', border: `1px solid ${c.ok ? 'rgba(74,222,128,0.2)' : 'rgba(255,255,255,0.07)'}` }}>
+                        {c.ok ? '✓' : '·'} {c.label}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           {!isLogin && (
@@ -173,6 +225,7 @@ export default function Login() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder=" •••••••••••"
+                autoComplete="new-password"
                 style={{
                   marginTop: '8px', width: '100%',
                   borderColor: confirmPassword && password !== confirmPassword ? '#ef4444' : undefined
