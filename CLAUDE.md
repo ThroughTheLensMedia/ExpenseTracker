@@ -10,8 +10,8 @@
 
 | Property | Value |
 |----------|-------|
-| **Version** | v7.7.8 |
-| **Status** | Active Development — Post-Beta Launch |
+| **Version** | v7.9.5 |
+| **Status** | Active Development — Open Public Launch |
 | **Deploy target** | `www.lumiereledger.com` (primary) — `app.throughthelens.media` 301 redirects to it |
 | **Deployment** | Vercel (auto-deploy on `git push origin main`) |
 | **Database** | Supabase (PostgreSQL + Auth + Storage + Realtime) |

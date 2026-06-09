@@ -2,8 +2,8 @@
 
 > ✅ **REBRAND COMPLETE**: This product has been transitioned to **Lumière Ledger** (`lumiereledger.com`) as of May 2026.
 
-**Current version:** v7.9.1
-**Last updated:** 2026-06-08
+**Current version:** v7.9.5
+**Last updated:** 2026-06-09
 
 ---
 
@@ -54,7 +54,7 @@ v7.2.0 — Short title describing the change
 ---
 
 ## Objective
-The world's most elite, AI-driven financial command center for professional photographers and creative freelancers. Enables automated expense forensics, retroactive ledger repair, tax-aligned reporting, invoicing, asset depreciation, mileage tracking, and strategic business advice — all powered by a private "Bring Your Own Brain" (BYOB) architecture.
+The world's most elite, AI-driven financial command center for creative professionals and self-employed freelancers — purpose-built for photographers, but designed to serve any independent operator running their business solo. Enables automated expense forensics, retroactive ledger repair, tax-aligned reporting, invoicing, asset depreciation, mileage tracking, and strategic business advice — all powered by a private "Bring Your Own Brain" (BYOB) architecture.
 
 Multi-tenant SaaS: every user's data is fully isolated via Supabase Row-Level Security. Each user sees only their own transactions, leads, settings, and receipts.
 
@@ -67,7 +67,7 @@ Multi-tenant SaaS: every user's data is fully isolated via Supabase Row-Level Se
 4. **Design System**: Vanilla CSS with Glassmorphism, deep dark mode, and micro-animations. No component library.
 5. **Hosting**: Vercel (auto-deploy on push to `main`). Migrating from `app.throughthelens.media` → `lumiereledger.com`.
 6. **Security**: Row-Level Security active on all user tables. `requireRole()` middleware uses service role client to bypass RLS on `user_roles` lookup. Admin UUID: `49e7efcb-6434-4f0c-9563-3151a6d50df9`.
-7. **Payments**: Beta code gating during testing phase. Stripe subscription billing planned for SaaS launch.
+7. **Payments**: Open public signup — free tier, no code required. Invite codes grant elevated plan access (beta_tester, core, studio) and auto-redeem after email confirmation. Stripe subscription billing live for Core ($9/mo) and Studio ($19/mo) upgrades.
 8. **Mobile / PWA**: The app is installable as a PWA. Mobile layouts use `.mobile-only` / `.desktop-only` CSS classes. All interactive targets must be ≥ 44px tap area. Session persistence is handled via Supabase `autoRefreshToken` + `visibilitychange` listener.
 
 ---
@@ -129,7 +129,7 @@ This is a shared-database, shared-schema SaaS. Every table that contains user da
 | `routes/plaid.js` | Plaid link tokens, account sync, transaction pull |
 | `routes/admin.js` | Admin dashboard — beta codes, subscriptions, daily reports, data exports |
 | `routes/settings.js` | User config persistence (API keys, studio defaults, profile) |
-| `routes/subscription.js` | Beta code redemption, subscription status tracking |
+| `routes/subscription.js` | Subscription status, beta code redemption (`POST /redeem`), public code validation (`GET /validate-code/:code`) |
 | `routes/activity.js` | Engagement pulse — daily active minutes tracking |
 | `routes/leads.js` | CRM lead/client management |
 | `routes/intake.js` | **Public** server-to-server endpoint — receives leads from external websites. Validates `x-intake-secret`, resolves owning user via `intake_keys` table (falls back to legacy env var), deduplicates clients by email, inserts lead. No auth required. |

@@ -1,6 +1,6 @@
 # Lumière Ledger — Master Roadmap
 
-**Version:** v7.9.3 | **Last reviewed:** 2026-06-08  
+**Version:** v7.9.5 | **Last reviewed:** 2026-06-09  
 Source of truth for all sprint work, security status, and product phases.
 
 ---
@@ -36,6 +36,8 @@ Source of truth for all sprint work, security status, and product phases.
 | npm audit (api/ + web-react/) | ✅ Both clean — api/ 3 high + 4 moderate fixed; web-react/ react-router high fixed; file-type moderate deferred (ESM-only) |
 | Dashboard customization | ✅ v7.9.1 — role selector in onboarding, widget toggles, gear panel, smart empty states, Dashboard tab in Control Center |
 | Dependabot | ✅ v7.9.0 — `.github/dependabot.yml` live; weekly Monday scans; majors ignored for 6 risky packages |
+| Open public signup | ✅ v7.9.5 — free-tier open signup (no code required); invite-code path validates + auto-redeems after email confirmation; `GET /api/subscription/validate-code/:code` public endpoint |
+| SaaS Admin — member enrichment | ✅ v7.9.5 — Active Ledger Members now shows tier badge, estimated monthly revenue, Plaid account count, join date |
 
 ---
 
