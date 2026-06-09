@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.10.3', date: 'JUN 9, 2026', color: '#f97316', items: [
+        '<strong>Code Drift Audit:</strong> The Quarterly Deep Review in the Security tab now includes a 3-step code drift checklist with copyable commands — catches phantom database tables, silent save failures, and stale plan-type lists before they become production bugs.',
+    ]},
     { version: '7.10.2', date: 'JUN 9, 2026', color: '#f97316', items: [
         '<strong>Billing Reliability:</strong> Stripe webhook handlers now verify that subscription changes actually saved to the database. If a save fails, Stripe automatically retries — preventing rare cases where a payment succeeded but the plan didn\'t activate, or a cancellation didn\'t downgrade.',
     ]},

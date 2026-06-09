@@ -1,1 +1,1 @@
-{"version":"7.10.2","release_date":"2026-06-09","codename":"Lumière Ledger","notes":"v7.10.2: Stripe webhook error checking — failed subscription writes now trigger Stripe retry"}
+{"version":"7.10.3","release_date":"2026-06-09","codename":"Lumière Ledger","notes":"v7.10.3: Code Drift Audit added to Quarterly Security Review checklist"}

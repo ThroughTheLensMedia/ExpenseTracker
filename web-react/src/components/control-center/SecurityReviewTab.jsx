@@ -52,6 +52,18 @@ const TYPE_CHECKLIST = {
         { text: 'Verify Stripe webhook signatures still validating', subs: [
             { link: 'https://dashboard.stripe.com/webhooks', label: 'Stripe Webhooks Dashboard' },
         ]},
+        { text: 'Code Drift Audit — phantom tables: every .from(\'table\') in api/ must exist in Supabase', subs: [
+            { cmd: "grep -rhoE \"\\.from\\('[a-z_]+'\\)\" api/routes api/utils | sort -u" },
+            { note: 'Compare list against live schema (Supabase → Table Editor). A table queried in code but missing from the schema fails silently — root cause of the v7.10.1 profiles bug.' },
+        ]},
+        { text: 'Code Drift Audit — silent DB failures: writes that never check { error }', subs: [
+            { cmd: "grep -rnE \"^\\s*await (supabase|serviceClient|adminClient|req\\.sb)\\.from\\(\" api/routes api/utils" },
+            { note: 'Any await .from().update/delete/upsert/insert NOT assigned to a variable is silent — Supabase returns { error }, never throws. Root cause of the v7.10.2 Stripe webhook fix.' },
+        ]},
+        { text: 'Code Drift Audit — stale hardcoded value lists (plan types, statuses)', subs: [
+            { cmd: "grep -rn \"core_monthly\\|beta_tester\\|lifetime\" api/routes web-react/src | grep -v node_modules | grep -v \".test.\"" },
+            { note: 'Every hardcoded plan_type/status list must include legacy values (annual, monthly, pro, elite, free_beta) — root cause of the v7.10.0 tier badge bug.' },
+        ]},
     ],
     annual: [
         { text: 'Full dependency major version audit', subs: [

@@ -5,6 +5,14 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.10.3] — 2026-06-09
+
+### Security Review — Code Drift Audit Added to Quarterly Tier
+
+- **`web-react/src/components/control-center/SecurityReviewTab.jsx`** — Quarterly Deep Review checklist now includes 3 Code Drift Audit items with copyable grep commands: phantom table detection (`.from()` vs live schema), silent DB failure detection (unchecked `{ error }` on writes), and stale hardcoded value lists (legacy plan types). Each item notes the production bug class it would have caught (v7.10.0–v7.10.2).
+
+---
+
 ## [v7.10.2] — 2026-06-09
 
 ### Stripe Webhook — Error Checking on Subscription Writes
