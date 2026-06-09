@@ -172,6 +172,9 @@ Source of truth for all sprint work, security status, and product phases.
 | v7.9.8 | Receipt email — Gemini 503 retry (3 attempts, backoff) on body parse; new ai_unavailable failure email with high-demand explanation |
 | v7.9.9 | Receipt email — generate HTML receipt card for body-parse-only emails (no attachment); receipt_link now populated on matched expense |
 | v7.10.0 | SaaS admin — tier badge fix (legacy annual/monthly → core); display name save fixed (upsert→update + error check); notes in edit modal (pre-filled, saveable) |
+| v7.10.1 | Display name save root-cause fix — writes to `user_subscriptions` (the `profiles` table never existed); stale profiles join removed from GET /subscriptions |
+| v7.10.2 | Stripe webhook error checking — failed subscription writes now return 500 so Stripe retries; no more silent billing state corruption |
+| v7.10.3 | Code Drift Audit added to Quarterly Security Review — 3 grep checks: phantom tables, silent DB failures, stale plan-type lists |
 
 ---
 
