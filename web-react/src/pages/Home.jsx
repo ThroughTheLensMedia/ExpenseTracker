@@ -52,75 +52,31 @@ const FEATURES = [
   },
 ];
 
-const PRICING = [
-  {
-    name: 'Free',
-    price: 'Free',
-    note: 'No credit card required',
-    color: '#94a3b8',
-    cta: 'Get Started Free',
-    features: [
-      'Full transaction ledger',
-      'Schedule C & tax mapping',
-      'Gear depreciation tracking',
-      'Mileage log',
-      'Receipt storage',
-      'Executive dashboard',
-      'CRM pipeline',
-      'Invoicing (5/mo)',
-      'PWA — works offline',
-    ],
-  },
-  {
-    name: 'Sync',
-    price: '$4.99',
-    per: '/mo',
-    note: 'Live bank sync — unlimited accounts',
-    color: '#38bdf8',
-    cta: 'Start Sync',
-    features: [
-      'Everything in Free',
-      '🏦 Live bank sync via Plaid',
-      'Transactions auto-import daily',
-      'All connected accounts included',
-      'No per-account fees',
-    ],
-  },
-  {
-    name: 'Core',
-    price: '$9',
-    per: '/mo',
-    note: 'Most popular',
-    color: '#f97316',
-    badge: 'MOST POPULAR',
-    cta: 'Upgrade to Core',
-    features: [
-      'Everything in Sync',
-      '🤖 AI Financial Assistant',
-      'Ledger repair & batch categorize',
-      'Receipt scanner (OCR)',
-      '2,000 transactions/mo',
-      '20 invoices/mo',
-      'Priority support',
-    ],
-  },
-  {
-    name: 'Studio',
-    price: '$19',
-    per: '/mo',
-    note: 'For full-time creators',
-    color: '#a78bfa',
-    cta: 'Upgrade to Studio',
-    features: [
-      'Everything in Core',
-      'Unlimited transactions',
-      'Unlimited invoices',
-      '🚗 Mileage autopilot (A→B→A)',
-      'Advanced analytics',
-      'Client portal',
-      'Contract templates',
-    ],
-  },
+const PLANS = [
+  { name: 'Free',   price: 'Free',  per: '',    note: 'No credit card required',            color: '#94a3b8', cta: 'Get Started Free'   },
+  { name: 'Sync',   price: '$4.99', per: '/mo', note: 'Live bank sync',                      color: '#38bdf8', cta: 'Start Sync',  badge: null },
+  { name: 'Core',   price: '$9',    per: '/mo', note: 'Most popular',                        color: '#f97316', cta: 'Upgrade to Core',  badge: 'MOST POPULAR' },
+  { name: 'Studio', price: '$19',   per: '/mo', note: 'For full-time creators',              color: '#a78bfa', cta: 'Upgrade to Studio' },
+];
+
+// null = not available, true = included, string = limit/detail
+const FEATURE_ROWS = [
+  { label: 'Transaction ledger',         values: [true,   true,       true,       true]   },
+  { label: 'Schedule C tax mapping',     values: [true,   true,       true,       true]   },
+  { label: 'CSV bank import',            values: [true,   true,       true,       true]   },
+  { label: 'Receipt storage',            values: [true,   true,       true,       true]   },
+  { label: 'Mileage log',                values: [true,   true,       true,       true]   },
+  { label: 'CRM pipeline',               values: ['10 leads', '10 leads', 'Unlimited', 'Unlimited'] },
+  { label: 'Invoicing',                  values: ['5/mo', '5/mo',    '20/mo',    'Unlimited'] },
+  { label: 'Gear depreciation',          values: ['5 items', '5 items', 'Unlimited', 'Unlimited'] },
+  { label: 'Executive dashboard',        values: [null,   null,       true,       true]   },
+  { label: 'Live bank sync (Plaid)',      values: [null,   true,       true,       true]   },
+  { label: 'AI Financial Assistant',     values: [null,   null,       true,       true]   },
+  { label: 'Receipt scanner (OCR)',      values: [null,   null,       true,       true]   },
+  { label: 'Batch AI categorization',    values: [null,   null,       null,       true]   },
+  { label: 'Mileage autopilot (A→B→A)',  values: [null,   null,       null,       true]   },
+  { label: 'Unlimited transactions',     values: [null,   null,       null,       true]   },
+  { label: 'Priority support',           values: [null,   null,       true,       true]   },
 ];
 
 export default function Home() {
@@ -151,7 +107,7 @@ export default function Home() {
         </h1>
 
         <p style={{ fontSize: '18px', lineHeight: 1.65, maxWidth: '640px', margin: '0 auto 32px', color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>
-          Financial intelligence, CRM pipeline, AI-powered tax automation, professional invoicing, and gear management — purpose-built for photographers and creative professionals.
+          Financial intelligence, CRM pipeline, AI-powered tax automation, professional invoicing, and gear management — built for freelancers and creative professionals. Photographers are why we built it. Everyone else is welcome too.
         </p>
 
         <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 0 }}>
@@ -271,53 +227,85 @@ export default function Home() {
       </div>
 
       {/* ── Pricing ─────────────────────────────────────────────────────── */}
-      <div style={{ width: '100%', maxWidth: 1060, marginTop: 80 }}>
-        <div style={{ textAlign: 'center', marginBottom: 36 }}>
-          <div style={{ fontSize: 11, fontWeight: 900, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 10 }}>Plans</div>
-          <h2 style={{ fontSize: 'clamp(1.8rem, 4vw, 2.6rem)', fontWeight: 950, letterSpacing: '-0.03em', margin: 0 }}>Pricing</h2>
+      <div style={{ width: '100%', maxWidth: 1100, marginTop: 80 }}>
+        <div style={{ textAlign: 'center', marginBottom: 40 }}>
+          <div style={{ fontSize: 11, fontWeight: 900, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 10 }}>Plans &amp; Pricing</div>
+          <h2 style={{ fontSize: 'clamp(1.8rem, 4vw, 2.6rem)', fontWeight: 950, letterSpacing: '-0.03em', margin: '0 0 12px' }}>Simple, Transparent Pricing</h2>
+          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', fontWeight: 600, margin: 0 }}>Start free — no credit card required. Upgrade anytime.</p>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20 }}>
-          {PRICING.map(p => (
-            <div key={p.name} className="card glass" style={{ padding: '30px', border: `1px solid ${p.color}30`, borderTop: `3px solid ${p.color}`, display: 'flex', flexDirection: 'column', gap: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
-                <div>
-                  <div style={{ fontSize: 16, fontWeight: 900, color: 'white' }}>{p.name}</div>
-                  {p.badge && (
-                    <span style={{ fontSize: 9, fontWeight: 900, letterSpacing: '0.08em', color: p.color, background: `${p.color}18`, border: `1px solid ${p.color}40`, borderRadius: 20, padding: '2px 8px', display: 'inline-block', marginTop: 4 }}>
-                      {p.badge}
-                    </span>
-                  )}
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <span style={{ fontSize: 26, fontWeight: 950, color: p.color }}>{p.price}</span>
-                  {p.per && <span style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.4)' }}>{p.per}</span>}
-                </div>
-              </div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.35)', marginBottom: 20 }}>{p.note}</div>
-              <ul style={{ listStyle: 'none', margin: '0 0 24px', padding: 0, display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
-                {p.features.map(f => (
-                  <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                    <span style={{ color: p.color, fontWeight: 900, flexShrink: 0, fontSize: 12 }}>✓</span>
-                    <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: 600, lineHeight: 1.4 }}>{f}</span>
-                  </li>
+
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', minWidth: 700, borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                {/* Feature label column */}
+                <th style={{ width: '28%', padding: '0 0 24px 0', textAlign: 'left', verticalAlign: 'bottom' }}>
+                  <span style={{ fontSize: 11, fontWeight: 900, color: 'rgba(255,255,255,0.2)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Features</span>
+                </th>
+                {PLANS.map(p => (
+                  <th key={p.name} style={{ width: '18%', padding: '0 8px 24px', textAlign: 'center', verticalAlign: 'bottom', borderTop: `3px solid ${p.color}`, background: `${p.color}08`, borderRadius: '8px 8px 0 0' }}>
+                    {p.badge && (
+                      <div style={{ fontSize: 9, fontWeight: 900, letterSpacing: '0.08em', color: p.color, background: `${p.color}20`, border: `1px solid ${p.color}40`, borderRadius: 20, padding: '3px 10px', display: 'inline-block', marginBottom: 8 }}>
+                        {p.badge}
+                      </div>
+                    )}
+                    <div style={{ fontSize: 15, fontWeight: 900, color: 'white', marginBottom: 4 }}>{p.name}</div>
+                    <div style={{ marginBottom: 4 }}>
+                      <span style={{ fontSize: 24, fontWeight: 950, color: p.color }}>{p.price}</span>
+                      {p.per && <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.35)' }}>{p.per}</span>}
+                    </div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.3)', marginBottom: 16 }}>{p.note}</div>
+                    <NavLink
+                      to="/login"
+                      style={{
+                        display: 'block', textAlign: 'center', padding: '10px 12px',
+                        borderRadius: 10, fontWeight: 900, fontSize: 12, textDecoration: 'none',
+                        background: p.color, color: '#0f172a',
+                      }}
+                    >
+                      {p.cta}
+                    </NavLink>
+                  </th>
                 ))}
-              </ul>
-              <NavLink
-                to="/login"
-                style={{
-                  display: 'block', textAlign: 'center', padding: '13px 20px',
-                  borderRadius: 12, fontWeight: 900, fontSize: 13, textDecoration: 'none',
-                  background: p.disabled ? 'rgba(255,255,255,0.05)' : p.color,
-                  color: p.disabled ? 'rgba(255,255,255,0.3)' : '#0f172a',
-                  border: `1px solid ${p.disabled ? 'rgba(255,255,255,0.08)' : p.color}`,
-                  cursor: p.disabled ? 'default' : 'pointer',
-                  pointerEvents: p.disabled ? 'none' : 'auto',
-                }}
-              >
-                {p.cta}
-              </NavLink>
-            </div>
-          ))}
+              </tr>
+            </thead>
+            <tbody>
+              {FEATURE_ROWS.map((row, i) => (
+                <tr key={row.label} style={{ borderTop: '1px solid rgba(255,255,255,0.05)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)' }}>
+                  <td style={{ padding: '13px 0', fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.6)' }}>{row.label}</td>
+                  {row.values.map((val, pi) => (
+                    <td key={pi} style={{ padding: '13px 8px', textAlign: 'center', background: `${PLANS[pi].color}06` }}>
+                      {val === null ? (
+                        <span style={{ color: 'rgba(255,255,255,0.12)', fontSize: 16 }}>—</span>
+                      ) : val === true ? (
+                        <span style={{ color: PLANS[pi].color, fontSize: 15, fontWeight: 900 }}>✓</span>
+                      ) : (
+                        <span style={{ fontSize: 11, fontWeight: 800, color: PLANS[pi].color, background: `${PLANS[pi].color}15`, borderRadius: 20, padding: '3px 9px', display: 'inline-block' }}>{val}</span>
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+              {/* Bottom CTA row */}
+              <tr style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                <td style={{ padding: '24px 0' }} />
+                {PLANS.map(p => (
+                  <td key={p.name} style={{ padding: '24px 8px', textAlign: 'center', background: `${p.color}06` }}>
+                    <NavLink
+                      to="/login"
+                      style={{
+                        display: 'block', textAlign: 'center', padding: '12px 14px',
+                        borderRadius: 10, fontWeight: 900, fontSize: 12, textDecoration: 'none',
+                        background: p.color, color: '#0f172a',
+                      }}
+                    >
+                      {p.cta}
+                    </NavLink>
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 

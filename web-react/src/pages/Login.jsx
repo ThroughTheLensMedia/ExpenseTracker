@@ -121,7 +121,7 @@ export default function Login() {
             letterSpacing: '0.05em',
             textTransform: 'uppercase'
           }}>Lumière Ledger</h1>
-          <p className="muted" style={{ marginTop: '8px', fontWeight: 600 }}>Financial Intelligence for Today's Photographer</p>
+          <p className="muted" style={{ marginTop: '8px', fontWeight: 600 }}>Financial Intelligence for Freelancers &amp; Creatives</p>
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
