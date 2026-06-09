@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.9.8] — 2026-06-09
+
+### Receipt Email — Gemini Retry + AI Unavailable Failure Email
+
+- **`api/utils/receiptEmailParser.js`** — `parseReceiptFromEmailBody` now retries up to 3 times (2s, 4s backoff) on transient 503/502/500 errors, matching the existing retry logic in `parseReceiptFromFile`. Re-throws with `isTransient: true` after all retries exhausted so caller can send the right email.
+- **`api/routes/emailInbound.js`** — Catches `isTransient` throws from body parse; routes to `ai_unavailable` outcome instead of generic `failed`.
+- **`api/utils/mailer.js`** — New `ai_unavailable` outcome: orange heading, explains high demand, prompts user to forward again later.
+
+---
+
 ## [v7.9.7] — 2026-06-09
 
 ### SaaS Admin — Invite Plan Fix, Notes, Engagement Pulse Tier Badges

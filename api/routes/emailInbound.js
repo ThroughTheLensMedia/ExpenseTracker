@@ -152,6 +152,12 @@ const handler = async (req) => {
                     log.info('email-inbound', 'Body parse result', { extracted: bodyResult }, userId);
                     if (bodyResult) extracted = bodyResult;
                 } catch (parseErr) {
+                    if (parseErr.isTransient) {
+                        log.warn('email-inbound', 'Body parse failed — Gemini unavailable (transient)', { error: parseErr.message }, userId);
+                        await sendReceiptConfirmationEmail({ to: senderEmail, outcome: 'ai_unavailable', subject })
+                            .catch(e => log.error('email-inbound', 'AI unavailable email error', { error: e.message }, userId));
+                        return;
+                    }
                     log.error('email-inbound', 'Body parse threw an error', { error: parseErr.message }, userId);
                 }
             }

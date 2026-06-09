@@ -750,7 +750,7 @@ async function sendHealthAlertEmail({ to, issues }) {
 /**
  * sendReceiptConfirmationEmail
  * Sent back to the forwarder after email receipt ingestion.
- * outcome: 'received' | 'matched' | 'pending' | 'failed' | 'already_linked'
+ * outcome: 'received' | 'matched' | 'pending' | 'failed' | 'already_linked' | 'ai_unavailable'
  */
 async function sendReceiptConfirmationEmail({ to, outcome, vendor, amountCents, expenseDate, expenseId, subject }) {
     console.log(`[MAILER] Sending receipt confirmation (${outcome}) to ${to}`);
@@ -802,6 +802,16 @@ async function sendReceiptConfirmationEmail({ to, outcome, vendor, amountCents, 
                 <p>Your transaction for <strong>${vendor || 'unknown vendor'} ${amount}</strong> already has a receipt attached.</p>
                 <p style="color:#94a3b8;">No changes were made. If you meant to replace the existing receipt, open the transaction and upload manually.</p>
                 <a href="${txUrl}" style="display:inline-block;background:#f59e0b;color:#0f172a;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">View Transaction</a>
+            </div>`;
+    } else if (outcome === 'ai_unavailable') {
+        emailSubject = `Receipt not processed — AI temporarily unavailable`;
+        bodyHtml = `
+            <div style="background:#0f172a;color:#f8fafc;padding:40px;font-family:sans-serif;border-radius:12px;max-width:600px;">
+                <h2 style="color:#f97316;margin-top:0;">AI Service Temporarily Unavailable</h2>
+                <p>We received your forwarded email but the AI model is currently experiencing high demand and couldn't process it.</p>
+                <p style="color:#94a3b8;">Original subject: <em>${subject || '(none)'}</em></p>
+                <p>Please forward the email again later. This is a temporary issue — your receipt data is intact and will process normally once demand drops.</p>
+                <a href="${appUrl}" style="display:inline-block;background:#f59e0b;color:#0f172a;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Upload Manually Instead</a>
             </div>`;
     } else {
         emailSubject = `Receipt not processed`;

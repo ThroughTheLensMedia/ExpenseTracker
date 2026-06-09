@@ -42,13 +42,27 @@ async function parseReceiptFromEmailBody(apiKey, body, senderDomain, subject) {
     const prompt = RECEIPT_PROMPT_TEMPLATE(today, senderDomain, subject) + cleanBody.slice(0, 4000);
 
     let raw;
-    try {
-        const result = await model.generateContent(prompt);
-        raw = result.response.text().trim().replace(/```json|```/g, '').trim();
-    } catch (err) {
-        log.error('email-inbound', 'Body parse — Gemini call failed', { error: err.message });
-        return null;
+    // Retry up to 3 times on transient 503/502/500 errors
+    for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+            const result = await model.generateContent(prompt);
+            raw = result.response.text().trim().replace(/```json|```/g, '').trim();
+            break; // success
+        } catch (err) {
+            const isTransient = /503|502|500|unavailable|overloaded/i.test(err.message);
+            if (isTransient && attempt < 3) {
+                log.warn('email-inbound', `Body parse — Gemini transient error, retrying (attempt ${attempt})`, { error: err.message });
+                await new Promise(r => setTimeout(r, attempt * 2000));
+                continue;
+            }
+            log.error('email-inbound', 'Body parse — Gemini call failed', { error: err.message, attempts: attempt });
+            // Re-throw transient errors so caller can send the right failure email
+            if (isTransient) throw Object.assign(err, { isTransient: true });
+            return null;
+        }
     }
+
+    if (raw == null) return null;
 
     try {
         return JSON.parse(raw);

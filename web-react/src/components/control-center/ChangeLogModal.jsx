@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.9.8', date: 'JUN 9, 2026', color: '#4ade80', items: [
+        '<strong>Receipt Email — Gemini Retry:</strong> If the AI model is temporarily unavailable (503 high demand), the system now retries up to 3 times with backoff before giving up. Fixes cases where a valid receipt email failed due to a momentary Gemini outage.',
+        '<strong>Receipt Email — Better Failure Message:</strong> When the AI is unavailable after all retries, you now get a clear email explaining the issue — "AI service was temporarily unavailable due to high demand" — with a prompt to forward again later instead of a generic failure message.',
+    ]},
     { version: '7.9.7', date: 'JUN 9, 2026', color: '#a78bfa', items: [
         '<strong>Invite Plan Fix:</strong> When an admin assigns a plan (Lifetime, Core, Sync, etc.) to an invite code, the recipient now gets exactly that plan activated on signup — previously everyone defaulted to 90-Day Beta Access.',
         '<strong>Invite Notes:</strong> Admin can now attach an internal note to each invite code (who they are, why they got access) — never sent to the recipient, visible in the Access Inventory table.',
