@@ -170,6 +170,38 @@ const handler = async (req) => {
             return;
         }
 
+        // If body-parse succeeded but no attachment exists, generate an HTML receipt card as the stored file
+        if (!fileBuffer && extracted) {
+            const amount = extracted.amount_cents != null ? `$${(extracted.amount_cents / 100).toFixed(2)}` : '—';
+            const cleanSubject = (subject || '').replace(/^(fwd?:\s*)+/i, '').trim();
+            const htmlReceipt = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<style>
+  body { margin: 0; padding: 32px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f8fafc; }
+  .card { background: #fff; border-radius: 12px; padding: 32px; max-width: 520px; margin: 0 auto; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .vendor { font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 4px; }
+  .amount { font-size: 32px; font-weight: 800; color: #f59e0b; margin: 0 0 20px; }
+  .row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+  .row:last-of-type { border-bottom: none; }
+  .label { color: #94a3b8; }
+  .value { color: #1e293b; font-weight: 500; text-align: right; max-width: 65%; }
+  .footer { margin-top: 24px; font-size: 11px; color: #cbd5e1; text-align: center; }
+</style></head>
+<body><div class="card">
+  <p class="vendor">${(extracted.vendor || senderDomain || 'Unknown Vendor').replace(/</g, '&lt;')}</p>
+  <p class="amount">${amount}</p>
+  <div class="row"><span class="label">Date</span><span class="value">${extracted.date || '—'}</span></div>
+  ${cleanSubject ? `<div class="row"><span class="label">Order</span><span class="value">${cleanSubject.replace(/</g, '&lt;')}</span></div>` : ''}
+  ${extracted.category ? `<div class="row"><span class="label">Category</span><span class="value">${extracted.category}</span></div>` : ''}
+  ${extracted.notes ? `<div class="row"><span class="label">Notes</span><span class="value">${extracted.notes.replace(/</g, '&lt;')}</span></div>` : ''}
+  <p class="footer">Receipt captured via email forwarding — Lumière Ledger</p>
+</div></body></html>`;
+            fileBuffer = Buffer.from(htmlReceipt, 'utf8');
+            fileMime = 'text/html';
+            fileExt = 'html';
+            log.info('email-inbound', 'Generated HTML receipt card (no attachment)', { vendor: extracted.vendor, amount }, userId);
+        }
+
         // Upload file to Supabase Storage
         let storedFilePath = null;
         if (fileBuffer) {

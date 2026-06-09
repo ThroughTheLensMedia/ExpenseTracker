@@ -5,6 +5,14 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.9.9] — 2026-06-09
+
+### Receipt Email — Generate HTML Receipt Card for Body-Parse-Only Emails
+
+- **`api/routes/emailInbound.js`** — After successful body parse with no attachment, generates a self-contained HTML receipt card (vendor, amount, date, order ref, category, notes) and uploads it as the stored file. `storedFilePath` is now populated on the body-parse path, so `receipt_link` is set correctly on the matched expense row. Previously the match was logged but `receipt_link` stayed null.
+
+---
+
 ## [v7.9.8] — 2026-06-09
 
 ### Receipt Email — Gemini Retry + AI Unavailable Failure Email
