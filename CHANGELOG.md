@@ -5,6 +5,14 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.9.4] — 2026-06-08
+
+### Fix: Gear Panel Stacking Context Over KPI Tiles
+
+- **`web-react/src/pages/DashboardV2.jsx`** — Added `zIndex: 10` to the dashboard header card. Root cause: `.glass` CSS class uses `backdrop-filter: blur()` which creates a new stacking context on every element. KPI tiles (later in DOM) were painting over the gear panel despite its `zIndex: 9999`, because that z-index was scoped to the header's stacking context. Elevating the header's context resolves the overlap.
+
+---
+
 ## [v7.9.3] — 2026-06-08
 
 ### LCC Restructure + Dashboard Gear Fix

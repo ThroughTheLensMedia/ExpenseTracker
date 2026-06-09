@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.9.4', date: 'JUN 8, 2026', color: '#4ade80', items: [
+        '<strong>Dashboard Gear Panel — Fixed:</strong> The ⚙️ Show/Hide settings panel now floats correctly above the KPI tiles instead of rendering behind them.',
+    ]},
     { version: '7.9.3', date: 'JUN 8, 2026', color: '#f97316', items: [
         '<strong>Dashboard Widget Panel — Fixed:</strong> The ⚙️ gear panel on the dashboard now shows all 6 widget toggles without being cut off.',
         '<strong>Control Center — Reorganized:</strong> Pill buttons are now in alphabetical order. Feedback has moved into Help Center (bottom section). The three admin tabs (SaaS, Logs, Security) are consolidated into a single Admin tab with internal sub-navigation.',
