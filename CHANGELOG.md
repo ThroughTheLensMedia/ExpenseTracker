@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.10.1] — 2026-06-09
+
+### SaaS Admin — Display Name Save Fix
+
+- **`api/routes/admin.js`** — PATCH /subscriptions: fixed display name save; was writing to non-existent `profiles` table, now correctly writes `display_name` to `user_subscriptions`. GET /subscriptions: removed stale `profiles` join that always returned empty; `display_name` now read directly from `user_subscriptions` row.
+- **`ROADMAP.md`** — Added 4 code audit findings as Clean Up items: silent DB failures in expenses.js and plaid.js, unchecked Stripe webhook errors (high risk), stale profiles references in cron.js.
+
+---
+
 ## [v7.10.0] — 2026-06-09
 
 ### SaaS Admin — Tier Badge Fix, Display Name Save Fix, Notes in Edit Modal

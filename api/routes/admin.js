@@ -287,11 +287,6 @@ router.get("/subscriptions", requireRole('admin'), async (req, res) => {
 
         const userIds = (data || []).map(d => d.user_id);
 
-        // Enrich with profile names and signup dates
-        const { data: profiles } = await serviceClient.from('profiles').select('id, display_name, created_at').in('id', userIds);
-        const profMap = {};
-        if (profiles) profiles.forEach(p => { profMap[p.id] = p; });
-
         // Plaid account counts per user
         const { data: plaidRows } = await serviceClient
             .from('plaid_connections')
@@ -312,8 +307,8 @@ router.get("/subscriptions", requireRole('admin'), async (req, res) => {
 
         const enriched = data.map(d => ({
             ...d,
-            display_name: profMap[d.user_id]?.display_name || (d.email ? d.email.split('@')[0] : 'Unknown'),
-            joined_at: profMap[d.user_id]?.created_at || d.created_at || null,
+            display_name: d.display_name || (d.email ? d.email.split('@')[0] : 'Unknown'),
+            joined_at: d.created_at || null,
             plaid_account_count: plaidCountMap[d.user_id] || 0,
             notes: notesMap[d.email] || null,
         }));
@@ -352,13 +347,13 @@ router.patch("/subscriptions/:userId", requireRole('admin'), async (req, res) =>
         if (expires_at !== undefined) update.expires_at = expires_at;
         if (status !== undefined) update.status = status;
 
-        // 1. Update display_name in profiles
+        // 1. Update display_name in user_subscriptions
         if (display_name !== undefined) {
-            const { error: profileErr } = await serviceClient.from('profiles').update({
-                display_name,
-                updated_at: new Date().toISOString()
-            }).eq('id', req.params.userId);
-            if (profileErr) throw profileErr;
+            const { error: nameErr } = await serviceClient
+                .from('user_subscriptions')
+                .update({ display_name })
+                .eq('user_id', req.params.userId);
+            if (nameErr) throw nameErr;
         }
 
         // 2. Update notes in beta_codes (by user email)

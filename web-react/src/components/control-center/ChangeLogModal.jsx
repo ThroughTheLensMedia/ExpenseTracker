@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.10.1', date: 'JUN 9, 2026', color: '#a78bfa', items: [
+        '<strong>Display Name Save — Fixed:</strong> Editing a member\'s display name in Active Ledger Members now correctly saves to the database. The v7.10.0 fix surfaced the real error — the code was writing to a table that doesn\'t exist. Now correctly updates the right table.',
+    ]},
     { version: '7.10.0', date: 'JUN 9, 2026', color: '#a78bfa', items: [
         '<strong>Tier Badge Fix:</strong> Users on legacy "annual" or "monthly" plan types now show the correct CORE tier badge instead of FREE.',
         '<strong>Display Name Save Fixed:</strong> Editing a member\'s display name in Active Ledger Members now correctly saves. Previously the save was silently failing due to an unchecked database error.',
