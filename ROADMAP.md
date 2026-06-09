@@ -1,6 +1,6 @@
 # Lumière Ledger — Master Roadmap
 
-**Version:** v7.9.5 | **Last reviewed:** 2026-06-09  
+**Version:** v7.9.6 | **Last reviewed:** 2026-06-09  
 Source of truth for all sprint work, security status, and product phases.
 
 ---
@@ -38,6 +38,9 @@ Source of truth for all sprint work, security status, and product phases.
 | Dependabot | ✅ v7.9.0 — `.github/dependabot.yml` live; weekly Monday scans; majors ignored for 6 risky packages |
 | Open public signup | ✅ v7.9.5 — free-tier open signup (no code required); invite-code path validates + auto-redeems after email confirmation; `GET /api/subscription/validate-code/:code` public endpoint |
 | SaaS Admin — member enrichment | ✅ v7.9.5 — Active Ledger Members now shows tier badge, estimated monthly revenue, Plaid account count, join date |
+| Plaid — Sync plan 5-account cap | ✅ v7.9.6 — `create-link-token` enforces limit; 403 `plaid_account_limit` error; upgrade UI in PlaidLink |
+| Signup — password strength enforcement | ✅ v7.9.6 — 5-rule client-side validation + live strength meter; PROCESSING freeze fixed |
+| Landing page — broader audience + SEO | ✅ v7.9.5/7.9.6 — hero copy, pricing comparison table, gear icon fix, OG/Twitter/canonical tags |
 
 ---
 
@@ -159,6 +162,9 @@ Source of truth for all sprint work, security status, and product phases.
 | v7.9.1 | Dashboard customization — role selector in onboarding (4 roles, presets); widget toggles + gear panel on dashboard; DashboardTab in Control Center; smart empty states |
 | v7.9.2 | Account Plans nav fix — dedicated `?tab=billing` tab; `billingOnly` prop on ProfileTab |
 | v7.9.3 | LCC restructure — gear panel clipping fixed; pills alphabetical; Feedback merged into Help; 3 admin tabs → AdminTab w/ sub-nav; License Activation in billing tab; vendor autocomplete in Automation |
+| v7.9.4 | Gear panel stacking context fix — header card zIndex outranks KPI tile grid |
+| v7.9.5 | Open public signup; invite code auto-redeem; SaaS admin member enrichment (tier, cost, Plaid count, join date); landing page hero broadened; pricing comparison table; SEO overhaul |
+| v7.9.6 | Sync plan 5-account Plaid cap + upgrade UI; password strength enforcement + PROCESSING freeze fix; gear depreciation icon fix; Sync pricing table badge |
 
 ---
 
