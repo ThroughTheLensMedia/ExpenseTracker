@@ -12,7 +12,7 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
     const [editingInvite, setEditingInvite] = useState(null);
     const [editInviteData, setEditInviteData] = useState({ name: '', email: '', plan: '' });
     const [editingSession, setEditingSession] = useState(null);
-    const [editSessionData, setEditSessionData] = useState({ name: '', plan: '' });
+    const [editSessionData, setEditSessionData] = useState({ name: '', plan: '', notes: '' });
 
     const isAdmin = user?.email?.toLowerCase() === 'joshua.deuermeyer@gmail.com';
 
@@ -36,7 +36,7 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
 
     const handleUpdateSession = async (userId) => {
         try {
-            await apiPatch(`/admin/subscriptions/${userId}`, { display_name: editSessionData.name, plan_type: editSessionData.plan });
+            await apiPatch(`/admin/subscriptions/${userId}`, { display_name: editSessionData.name, plan_type: editSessionData.plan, notes: editSessionData.notes || null });
             setEditingSession(null); onReload(true);
         } catch (err) { modal.alert(err.message); }
     };
@@ -97,7 +97,7 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
         if (admin_tier === 'studio') return 'studio';
         if (admin_tier === 'core') return 'core';
         if (['studio_monthly', 'studio_annual'].includes(plan_type)) return 'studio';
-        if (['core_monthly', 'core_annual'].includes(plan_type)) return 'core';
+        if (['core_monthly', 'core_annual', 'monthly', 'annual'].includes(plan_type)) return 'core';
         return 'free';
     }
     const TIER_COLORS = { free: 'secondary', core: 'warn', studio: 'ok' };
@@ -238,7 +238,7 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
                                         </td>
                                         <td style={{ textAlign: 'right' }}>
                                             <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                                                <button onClick={() => { setEditingSession(s.user_id); setEditSessionData({ name: s.display_name || '', plan: s.plan_type || 'free' }); }} className="btn sm secondary" style={{ fontSize: '11px', padding: '8px 16px' }}>EDIT</button>
+                                                <button onClick={() => { setEditingSession(s.user_id); setEditSessionData({ name: s.display_name || '', plan: s.plan_type || 'free', notes: s.notes || '' }); }} className="btn sm secondary" style={{ fontSize: '11px', padding: '8px 16px' }}>EDIT</button>
                                                 <button onClick={() => handleExtendSubscription(s.user_id, s.email)} className="btn sm primary" style={{ fontSize: '11px', padding: '8px 16px' }}>+90D</button>
                                                 <button onClick={() => handleRevokeSubscription(s.user_id, s.email)} className="btn sm danger" style={{ fontSize: '11px', padding: '8px 16px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}>BLOCK</button>
                                             </div>
@@ -319,6 +319,10 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
                                 <select value={editSessionData.plan} onChange={e => setEditSessionData({ ...editSessionData, plan: e.target.value })} style={{ padding: '12px', background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', width: '100%' }}>
                                     {PLAN_OPTIONS.map(p => <option key={p} value={p}>{p.toUpperCase().replace('_', ' ')}</option>)}
                                 </select>
+                            </div>
+                            <div>
+                                <small className="muted" style={{ fontWeight: 900, marginBottom: '5px', display: 'block' }}>NOTES (internal only)</small>
+                                <textarea value={editSessionData.notes} onChange={e => setEditSessionData({ ...editSessionData, notes: e.target.value })} style={{ padding: '12px', width: '100%', minHeight: '72px', background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit', fontSize: '13px' }} placeholder="Who is this person, why did they get access..." />
                             </div>
                             <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
                                 <button className="btn primary" onClick={() => handleUpdateSession(editingSession)} style={{ flex: 1 }}>UPDATE MEMBER</button>

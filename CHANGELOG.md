@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.10.0] — 2026-06-09
+
+### SaaS Admin — Tier Badge Fix, Display Name Save Fix, Notes in Edit Modal
+
+- **`web-react/src/components/control-center/SaasTab.jsx`** — `deriveTier()`: added `'annual'` and `'monthly'` to core tier mapping; EDIT button pre-populates `notes`; edit modal has notes textarea; `handleUpdateSession` sends `notes` in PATCH.
+- **`api/routes/admin.js`** — GET /subscriptions: joins `beta_codes` by `assigned_to_email` to return `notes` per member. PATCH /subscriptions: changed `upsert` → `update` on profiles with error check; accepts `notes` and updates `beta_codes` by user email.
+
+---
+
 ## [v7.9.9] — 2026-06-09
 
 ### Receipt Email — Generate HTML Receipt Card for Body-Parse-Only Emails

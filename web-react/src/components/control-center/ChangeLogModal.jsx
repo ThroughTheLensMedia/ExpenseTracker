@@ -1,6 +1,11 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.10.0', date: 'JUN 9, 2026', color: '#a78bfa', items: [
+        '<strong>Tier Badge Fix:</strong> Users on legacy "annual" or "monthly" plan types now show the correct CORE tier badge instead of FREE.',
+        '<strong>Display Name Save Fixed:</strong> Editing a member\'s display name in Active Ledger Members now correctly saves. Previously the save was silently failing due to an unchecked database error.',
+        '<strong>Notes in Edit Modal:</strong> The Edit Member modal now shows the member\'s existing note pre-filled. You can update it and save — changes reflect immediately in the Access Inventory table.',
+    ]},
     { version: '7.9.9', date: 'JUN 9, 2026', color: '#4ade80', items: [
         '<strong>Receipt Email — HTML Receipts for Attachment-Free Emails:</strong> When you forward an order confirmation email with no image or PDF attached (common with Shopify, Etsy, and other retailers), the system now generates and saves a clean HTML receipt card as the document. The transaction drawer will show the attached receipt instead of prompting you to upload manually.',
     ]},

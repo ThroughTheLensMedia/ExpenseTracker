@@ -302,11 +302,20 @@ router.get("/subscriptions", requireRole('admin'), async (req, res) => {
             plaidCountMap[r.user_id] = (plaidCountMap[r.user_id] || 0) + 1;
         });
 
+        // Notes from beta_codes — join by assigned_to_email, take most recent
+        const emails = (data || []).map(d => d.email).filter(Boolean);
+        const { data: codeRows } = emails.length
+            ? await serviceClient.from('beta_codes').select('assigned_to_email, notes').in('assigned_to_email', emails)
+            : { data: [] };
+        const notesMap = {};
+        if (codeRows) codeRows.forEach(c => { if (c.notes && !notesMap[c.assigned_to_email]) notesMap[c.assigned_to_email] = c.notes; });
+
         const enriched = data.map(d => ({
             ...d,
             display_name: profMap[d.user_id]?.display_name || (d.email ? d.email.split('@')[0] : 'Unknown'),
             joined_at: profMap[d.user_id]?.created_at || d.created_at || null,
             plaid_account_count: plaidCountMap[d.user_id] || 0,
+            notes: notesMap[d.email] || null,
         }));
 
         res.json(enriched);
@@ -321,7 +330,7 @@ router.patch("/subscriptions/:userId", requireRole('admin'), async (req, res) =>
         const { supabase: serviceClient } = require("../db");
         if (!serviceClient) throw new Error("Service client required");
 
-        const { display_name, plan_type, expires_at, status } = req.body;
+        const { display_name, plan_type, expires_at, status, notes } = req.body;
         const update = { updated_at: new Date().toISOString() };
         
         if (plan_type !== undefined) {
@@ -343,16 +352,24 @@ router.patch("/subscriptions/:userId", requireRole('admin'), async (req, res) =>
         if (expires_at !== undefined) update.expires_at = expires_at;
         if (status !== undefined) update.status = status;
 
-        // 1. Update Profiles (Upsert logic to ensure it exists)
+        // 1. Update display_name in profiles
         if (display_name !== undefined) {
-            await serviceClient.from('profiles').upsert({ 
-                id: req.params.userId, 
+            const { error: profileErr } = await serviceClient.from('profiles').update({
                 display_name,
                 updated_at: new Date().toISOString()
-            });
+            }).eq('id', req.params.userId);
+            if (profileErr) throw profileErr;
         }
 
-        // 2. Update Subscription
+        // 2. Update notes in beta_codes (by user email)
+        if (notes !== undefined) {
+            const { data: subRow } = await serviceClient.from('user_subscriptions').select('email').eq('user_id', req.params.userId).maybeSingle();
+            if (subRow?.email) {
+                await serviceClient.from('beta_codes').update({ notes }).eq('assigned_to_email', subRow.email);
+            }
+        }
+
+        // 3. Update Subscription
         const { error } = await serviceClient
             .from('user_subscriptions')
             .update(update)

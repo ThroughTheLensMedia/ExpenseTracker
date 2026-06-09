@@ -1,6 +1,6 @@
 # Lumière Ledger — Master Roadmap
 
-**Version:** v7.9.9 | **Last reviewed:** 2026-06-09  
+**Version:** v7.10.0 | **Last reviewed:** 2026-06-09  
 Source of truth for all sprint work, security status, and product phases.
 
 ---
@@ -168,6 +168,7 @@ Source of truth for all sprint work, security status, and product phases.
 | v7.9.7 | SaaS admin — invite plan fix (plan_type now stored + redeemed correctly); invite notes field; Engagement Pulse tier badges; invite email shows assigned plan |
 | v7.9.8 | Receipt email — Gemini 503 retry (3 attempts, backoff) on body parse; new ai_unavailable failure email with high-demand explanation |
 | v7.9.9 | Receipt email — generate HTML receipt card for body-parse-only emails (no attachment); receipt_link now populated on matched expense |
+| v7.10.0 | SaaS admin — tier badge fix (legacy annual/monthly → core); display name save fixed (upsert→update + error check); notes in edit modal (pre-filled, saveable) |
 
 ---
 
