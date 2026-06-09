@@ -142,6 +142,29 @@ apiRouter.post("/account-request", async (req, res) => {
   }
 });
 
+// Validate beta code — public, read-only, no auth required
+apiRouter.get("/subscription/validate-code/:code", async (req, res) => {
+  const { supabase: serviceClient } = require("./db");
+  if (!serviceClient) return res.status(500).json({ valid: false, reason: "Server error" });
+  try {
+    const code = (req.params.code || '').toUpperCase().trim();
+    if (!code) return res.status(400).json({ valid: false, reason: "Code required" });
+    const { data, error } = await serviceClient
+      .from('beta_codes')
+      .select('code, plan_type, valid_until, is_used')
+      .eq('code', code)
+      .single();
+    if (error || !data) return res.json({ valid: false, reason: "Invalid code" });
+    if (data.is_used) return res.json({ valid: false, reason: "Code has already been redeemed" });
+    if (data.valid_until && new Date(data.valid_until) < new Date()) {
+      return res.json({ valid: false, reason: "Code has expired" });
+    }
+    res.json({ valid: true, plan_type: data.plan_type || 'beta_tester' });
+  } catch (e) {
+    res.status(500).json({ valid: false, reason: "Server error" });
+  }
+});
+
 // --- ATTACH LOCKDOWN MIDDLEWARE ---
 // Every route below this line is protected by Supabase Auth
 apiRouter.use(authMiddleware);

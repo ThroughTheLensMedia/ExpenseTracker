@@ -29,6 +29,36 @@ router.get("/status", async (req, res) => {
 });
 
 /**
+ * GET /subscription/validate-code/:code
+ * Public — no auth required. Checks if a beta code is valid without redeeming it.
+ */
+router.get("/validate-code/:code", async (req, res) => {
+    const { supabase: serviceClient } = require("../db");
+    if (!serviceClient) return res.status(500).json({ valid: false, reason: "Server error" });
+
+    try {
+        const code = (req.params.code || '').toUpperCase().trim();
+        if (!code) return res.status(400).json({ valid: false, reason: "Code required" });
+
+        const { data, error } = await serviceClient
+            .from('beta_codes')
+            .select('code, plan_type, valid_until, is_used')
+            .eq('code', code)
+            .single();
+
+        if (error || !data) return res.json({ valid: false, reason: "Invalid code" });
+        if (data.is_used) return res.json({ valid: false, reason: "Code has already been redeemed" });
+        if (data.valid_until && new Date(data.valid_until) < new Date()) {
+            return res.json({ valid: false, reason: "Code has expired" });
+        }
+
+        res.json({ valid: true, plan_type: data.plan_type || 'beta_tester' });
+    } catch (e) {
+        res.status(500).json({ valid: false, reason: "Server error" });
+    }
+});
+
+/**
  * POST /subscription/redeem
  * Redeems a beta code to extend access
  * Body: { code }

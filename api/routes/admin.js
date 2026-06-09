@@ -284,17 +284,30 @@ router.get("/subscriptions", requireRole('admin'), async (req, res) => {
         }
         console.log(`[Admin] user_subscriptions returned ${(data || []).length} rows`);
 
-        // Enrich with profile names
         const userIds = (data || []).map(d => d.user_id);
-        const { data: profiles } = await serviceClient.from('profiles').select('id, display_name').in('id', userIds);
+
+        // Enrich with profile names and signup dates
+        const { data: profiles } = await serviceClient.from('profiles').select('id, display_name, created_at').in('id', userIds);
         const profMap = {};
-        if (profiles) profiles.forEach(p => { if (p.display_name) profMap[p.id] = p.display_name; });
-        
-        const enriched = data.map(d => ({ 
-            ...d, 
-            display_name: profMap[d.user_id] || (d.email ? d.email.split('@')[0] : 'Unknown') 
+        if (profiles) profiles.forEach(p => { profMap[p.id] = p; });
+
+        // Plaid account counts per user
+        const { data: plaidRows } = await serviceClient
+            .from('plaid_connections')
+            .select('user_id')
+            .in('user_id', userIds);
+        const plaidCountMap = {};
+        if (plaidRows) plaidRows.forEach(r => {
+            plaidCountMap[r.user_id] = (plaidCountMap[r.user_id] || 0) + 1;
+        });
+
+        const enriched = data.map(d => ({
+            ...d,
+            display_name: profMap[d.user_id]?.display_name || (d.email ? d.email.split('@')[0] : 'Unknown'),
+            joined_at: profMap[d.user_id]?.created_at || d.created_at || null,
+            plaid_account_count: plaidCountMap[d.user_id] || 0,
         }));
-        
+
         res.json(enriched);
     } catch (e) {
         res.status(500).json({ error: e.message });
@@ -312,13 +325,18 @@ router.patch("/subscriptions/:userId", requireRole('admin'), async (req, res) =>
         
         if (plan_type !== undefined) {
             update.plan_type = plan_type;
-            // AUTO-CALCULATE EXPIRATION BASED ON PLAN
-            const now = new Date();
-            if (plan_type === 'annual') now.setDate(now.getDate() + 365);
-            else if (plan_type === 'pro' || plan_type === 'lifetime' || plan_type === 'elite') now.setDate(now.getDate() + 999);
-            else if (plan_type === 'monthly') now.setDate(now.getDate() + 31);
-            else if (plan_type === 'beta_tester') now.setDate(now.getDate() + 90);
-            update.expires_at = now.toISOString();
+            // Stripe-managed plans: clear expires_at so Stripe is source of truth
+            if (['core_monthly', 'core_annual', 'studio_monthly', 'studio_annual'].includes(plan_type)) {
+                update.expires_at = null;
+            } else {
+                const now = new Date();
+                if (plan_type === 'annual') now.setDate(now.getDate() + 365);
+                else if (['pro', 'lifetime', 'elite', 'free_beta'].includes(plan_type)) now.setDate(now.getDate() + 999);
+                else if (plan_type === 'monthly') now.setDate(now.getDate() + 31);
+                else if (plan_type === 'beta_tester') now.setDate(now.getDate() + 90);
+                else now.setDate(now.getDate() + 999); // free / unknown — far future
+                update.expires_at = now.toISOString();
+            }
         }
 
         if (expires_at !== undefined) update.expires_at = expires_at;

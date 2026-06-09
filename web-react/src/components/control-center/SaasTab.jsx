@@ -82,7 +82,24 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
         return [d > 0 ? `${d}d` : '', h > 0 ? `${h}h` : '', `${m}m`].filter(Boolean).join(' ');
     };
 
-    const PLAN_OPTIONS = ['beta_tester', 'monthly', 'annual', 'lifetime'];
+    const PLAN_OPTIONS = ['free', 'free_beta', 'beta_tester', 'lifetime', 'core_monthly', 'core_annual', 'studio_monthly', 'studio_annual'];
+
+    // Joshua + Michelle Gornichec are Plaid-billing-exempt (mirrored from stripe.js)
+    const PLAID_EXEMPT_IDS = ['49e7efcb-6434-4f0c-9563-3151a6d50df9', 'fcb92809-70f1-4ae0-b39c-e317378a01a7'];
+    const PLAN_COST = {
+        free: 0, free_beta: 0, beta_tester: 0, lifetime: 0,
+        monthly: 9, annual: 7.17,
+        core_monthly: 9, core_annual: 7.17,
+        studio_monthly: 19, studio_annual: 15.17,
+    };
+    function deriveTier(plan_type, admin_tier) {
+        if (admin_tier === 'studio') return 'studio';
+        if (admin_tier === 'core') return 'core';
+        if (['studio_monthly', 'studio_annual'].includes(plan_type)) return 'studio';
+        if (['core_monthly', 'core_annual'].includes(plan_type)) return 'core';
+        return 'free';
+    }
+    const TIER_COLORS = { free: 'secondary', core: 'warn', studio: 'ok' };
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', maxWidth: '100%', boxSizing: 'border-box' }}>
@@ -163,33 +180,60 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
             <div className="card glass" style={{ padding: '30px' }}>
                 <h3 style={{ fontSize: '1.2rem', marginBottom: '15px' }}>Active Ledger Members</h3>
                 <div className="tableWrap" style={{ border: 'none', maxHeight: '500px', overflowY: 'auto' }}>
-                    <table style={{ width: '100%', minWidth: '1000px' }}>
+                    <table style={{ width: '100%', minWidth: '1100px' }}>
                         <thead>
                             <tr style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', textAlign: 'left' }}>
                                 <th>IDENTITY</th>
-                                <th>LICENSE TYPE</th>
-                                <th>ACCESS EXPIRATION</th>
-                                <th style={{ textAlign: 'right' }}>MANAGEMENT CONTROL</th>
+                                <th>TIER</th>
+                                <th>PLAN</th>
+                                <th>MONTHLY EST.</th>
+                                <th>PLAID</th>
+                                <th>JOINED</th>
+                                <th>EXPIRATION</th>
+                                <th style={{ textAlign: 'right' }}>ACTIONS</th>
                             </tr>
                         </thead>
                         <tbody style={{ fontSize: '13px' }}>
                             {allSubscriptions.map(s => {
-                                const daysUntilExpiry = Math.ceil((new Date(s.expires_at) - new Date()) / (1000 * 60 * 60 * 24));
-                                const isExpired = daysUntilExpiry <= 0;
-                                const expiryColor = (isExpired || s.status === 'suspended') ? 'bad' : (daysUntilExpiry <= 3 ? 'bad glow-red' : (daysUntilExpiry <= 7 ? 'warn glow-yellow' : 'ok'));
+                                const daysUntilExpiry = s.expires_at ? Math.ceil((new Date(s.expires_at) - new Date()) / (1000 * 60 * 60 * 24)) : null;
+                                const isExpired = daysUntilExpiry !== null && daysUntilExpiry <= 0;
+                                const expiryColor = s.status === 'suspended' ? 'bad' : (isExpired ? 'bad' : (daysUntilExpiry !== null && daysUntilExpiry <= 3 ? 'bad glow-red' : (daysUntilExpiry !== null && daysUntilExpiry <= 7 ? 'warn glow-yellow' : 'ok')));
+                                const tier = deriveTier(s.plan_type, s.admin_tier);
+                                const baseCost = PLAN_COST[s.plan_type] || 0;
+                                const plaidFee = PLAID_EXEMPT_IDS.includes(s.user_id) ? 0 : (s.plaid_account_count || 0) * 0.50;
+                                const monthlyCost = baseCost + plaidFee;
+                                const joinedDate = s.joined_at ? new Date(s.joined_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
                                 return (
                                     <tr key={s.user_id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
                                         <td style={{ padding: '15px 0' }}>
                                             <div style={{ fontWeight: 800, color: 'white', fontSize: '14px' }}>{s.display_name || s.email.split('@')[0]}</div>
                                             <div className="muted" style={{ fontSize: '11px', marginTop: '2px' }}>{s.email}</div>
                                         </td>
-                                        <td><span className="tag secondary" style={{ fontSize: '11px', fontWeight: 800 }}>{s.plan_type.toUpperCase()}</span></td>
-                                        <td><span className={`tag ${expiryColor}`} style={{ fontSize: '11px', fontWeight: 900, padding: '6px 12px' }}>{isExpired ? 'EXPIRED' : `${daysUntilExpiry}D REMAINING`}</span></td>
+                                        <td><span className={`tag ${TIER_COLORS[tier]}`} style={{ fontSize: '10px', fontWeight: 900 }}>{tier.toUpperCase()}</span></td>
+                                        <td><span className="tag secondary" style={{ fontSize: '10px', fontWeight: 800 }}>{(s.plan_type || 'free').toUpperCase().replace(/_/g, ' ')}</span></td>
+                                        <td style={{ fontWeight: 900, fontSize: '13px', color: monthlyCost > 0 ? '#4ade80' : 'rgba(255,255,255,0.35)' }}>
+                                            {monthlyCost > 0 ? (
+                                                <span title={plaidFee > 0 ? `$${baseCost.toFixed(2)} plan + $${plaidFee.toFixed(2)} Plaid` : undefined}>
+                                                    ${monthlyCost.toFixed(2)}
+                                                </span>
+                                            ) : '—'}
+                                        </td>
+                                        <td className="muted" style={{ fontSize: '12px' }}>{s.plaid_account_count > 0 ? `${s.plaid_account_count} acct${s.plaid_account_count !== 1 ? 's' : ''}` : '—'}</td>
+                                        <td className="muted" style={{ fontSize: '11px' }}>{joinedDate}</td>
+                                        <td>
+                                            {s.status === 'suspended' ? (
+                                                <span className="tag bad" style={{ fontSize: '10px', fontWeight: 900 }}>SUSPENDED</span>
+                                            ) : daysUntilExpiry === null ? (
+                                                <span className="tag ok" style={{ fontSize: '10px', fontWeight: 900 }}>STRIPE</span>
+                                            ) : (
+                                                <span className={`tag ${expiryColor}`} style={{ fontSize: '10px', fontWeight: 900, padding: '4px 10px' }}>{isExpired ? 'EXPIRED' : `${daysUntilExpiry}D`}</span>
+                                            )}
+                                        </td>
                                         <td style={{ textAlign: 'right' }}>
                                             <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                                                <button onClick={() => { setEditingSession(s.user_id); setEditSessionData({ name: s.display_name || '', plan: s.plan_type || 'beta_tester' }); }} className="btn sm secondary" style={{ fontSize: '11px', padding: '8px 16px' }}>EDIT</button>
-                                                <button onClick={() => handleExtendSubscription(s.user_id, s.email)} className="btn sm primary" style={{ fontSize: '11px', padding: '8px 16px' }}>+90D EXTEND</button>
-                                                <button onClick={() => handleRevokeSubscription(s.user_id, s.email)} className="btn sm danger" style={{ fontSize: '11px', padding: '8px 16px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}>BLOCK ACCESS</button>
+                                                <button onClick={() => { setEditingSession(s.user_id); setEditSessionData({ name: s.display_name || '', plan: s.plan_type || 'free' }); }} className="btn sm secondary" style={{ fontSize: '11px', padding: '8px 16px' }}>EDIT</button>
+                                                <button onClick={() => handleExtendSubscription(s.user_id, s.email)} className="btn sm primary" style={{ fontSize: '11px', padding: '8px 16px' }}>+90D</button>
+                                                <button onClick={() => handleRevokeSubscription(s.user_id, s.email)} className="btn sm danger" style={{ fontSize: '11px', padding: '8px 16px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}>BLOCK</button>
                                             </div>
                                         </td>
                                     </tr>

@@ -1,6 +1,12 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.9.5', date: 'JUN 9, 2026', color: '#38bdf8', items: [
+        '<strong>Open Signup:</strong> New users can now create a free account directly from the login page — no invite code required. Two paths: "Create a Free Account" for open signup, or "Have an invite code? Sign Up" for users with a code.',
+        '<strong>Invite Code Auto-Activation:</strong> If you sign up with an invite code, your plan is automatically applied after you confirm your email and log in — no manual redemption step.',
+        '<strong>Code Validation:</strong> Invite codes are verified server-side before your account is created, so invalid or expired codes are caught immediately.',
+        '<strong>SaaS Admin — Member Details:</strong> Active Ledger Members now shows each user\'s effective tier (FREE/CORE/STUDIO), estimated monthly revenue (plan + Plaid fees), number of Plaid accounts, and join date.',
+    ]},
     { version: '7.9.4', date: 'JUN 8, 2026', color: '#4ade80', items: [
         '<strong>Dashboard Gear Panel — Fixed:</strong> The ⚙️ Show/Hide settings panel now floats correctly above the KPI tiles instead of rendering behind them.',
     ]},

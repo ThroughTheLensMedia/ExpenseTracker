@@ -119,6 +119,36 @@ export function AuthProvider({ children }) {
       if (session?.user) {
         fetchSubscription(session.user.id); // no-op if ref already true
       }
+      // Auto-redeem pending invite code (stored at signup, survives email confirmation round-trip)
+      if (_event === 'SIGNED_IN' && session?.user && session?.access_token) {
+        try {
+          const pending = localStorage.getItem('lumiere_pending_code');
+          if (pending) {
+            const { code, email } = JSON.parse(pending);
+            if (code && email === session.user.email) {
+              localStorage.removeItem('lumiere_pending_code');
+              fetch('/api/subscription/redeem', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${session.access_token}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ code })
+              }).then(r => {
+                if (r.ok) {
+                  subscriptionFetchedRef.current = false;
+                  fetchSubscription(session.user.id);
+                }
+              }).catch(e => console.warn('[AUTH] Pending code redemption failed:', e.message));
+            } else if (email && email !== session.user.email) {
+              // Code was for a different email — clear it to avoid stale state
+              localStorage.removeItem('lumiere_pending_code');
+            }
+          }
+        } catch (e) {
+          localStorage.removeItem('lumiere_pending_code');
+        }
+      }
       // Silent background Plaid sync on each new login (not on session restore)
       if (_event === 'SIGNED_IN' && session?.access_token) {
         fetch('/api/plaid/sync', {

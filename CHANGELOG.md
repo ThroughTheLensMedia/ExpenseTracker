@@ -5,6 +5,18 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.9.5] — 2026-06-09
+
+### Open Signup + SaaS Admin Enrichment
+
+- **`web-react/src/pages/Login.jsx`** — Open public signup with two paths: free account (no code required) and invite-code path. Invite codes are validated server-side before account creation; code stored in localStorage for auto-redemption after email confirmation + login.
+- **`web-react/src/components/AuthContext.jsx`** — `SIGNED_IN` handler auto-redeems `lumiere_pending_code` from localStorage, then refreshes subscription. Clears stale codes for wrong email.
+- **`api/server.js`** — Added `GET /api/subscription/validate-code/:code` as a public route (before authMiddleware) — confirms a code is valid without redeeming it.
+- **`api/routes/admin.js`** — `GET /admin/subscriptions` now returns `plaid_account_count`, `joined_at`, `admin_tier` per member. `PATCH /admin/subscriptions/:userId` handles new plan types correctly (Stripe plans clear `expires_at`).
+- **`web-react/src/components/control-center/SaasTab.jsx`** — Active Ledger Members table adds TIER badge, monthly cost estimate (plan + Plaid fee), Plaid account count, and join date. PLAN_OPTIONS updated to current plan_type values.
+
+---
+
 ## [v7.9.4] — 2026-06-08
 
 ### Fix: Gear Panel Stacking Context Over KPI Tiles
