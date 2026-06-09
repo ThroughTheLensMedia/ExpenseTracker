@@ -64,7 +64,7 @@ router.get("/daily-report", async (req, res) => {
         if (subRes?.data) subRes.data.forEach(u => {
             if (u.user_id) {
                 const fallbackName = userMap[u.user_id]?.name || u.email?.split('@')[0];
-                userMap[u.user_id] = { email: u.email, name: u.display_name || fallbackName };
+                userMap[u.user_id] = { email: u.email, name: u.display_name || fallbackName, plan_type: u.plan_type || 'free' };
             }
         });
 
@@ -83,7 +83,8 @@ router.get("/daily-report", async (req, res) => {
                 email: identityEmail,
                 name: identityName,
                 minutes_today: r.total_minutes_active || 0,
-                last_seen: r.last_pulse_at || new Date().toISOString()
+                last_seen: r.last_pulse_at || new Date().toISOString(),
+                plan_type: identity?.plan_type || 'free',
             };
         });
         
@@ -441,7 +442,7 @@ router.get("/beta-codes", requireRole('admin'), async (req, res) => {
 // Generate a new code: { code, daysValid, assigned_to_name, assigned_to_email, plan_type }
 router.post("/beta-codes", requireRole('admin'), async (req, res) => {
     try {
-        const { code, daysValid = 90, assigned_to_name, assigned_to_email, plan_type = 'beta_tester' } = req.body;
+        const { code, daysValid = 90, assigned_to_name, assigned_to_email, plan_type = 'beta_tester', notes } = req.body;
         const validUntil = new Date();
         validUntil.setDate(validUntil.getDate() + (daysValid || 90));
 
@@ -454,7 +455,9 @@ router.post("/beta-codes", requireRole('admin'), async (req, res) => {
                 code: newCode,
                 valid_until: validUntil.toISOString(),
                 assigned_to_name,
-                assigned_to_email
+                assigned_to_email,
+                plan_type,
+                notes: notes || null,
             })
             .select()
             .single();
@@ -466,7 +469,8 @@ router.post("/beta-codes", requireRole('admin'), async (req, res) => {
             queueInviteEmail({
                 to: assigned_to_email,
                 name: assigned_to_name,
-                code: newCode
+                code: newCode,
+                plan_type,
             }).catch(e => console.error("[INVITE EMAIL QUEUE] Failed:", e));
         }
 
@@ -479,10 +483,12 @@ router.post("/beta-codes", requireRole('admin'), async (req, res) => {
 // PATCH /admin/beta-codes/:code (Edit Invite)
 router.patch("/beta-codes/:code", requireRole('admin'), async (req, res) => {
     try {
-        const { assigned_to_name, assigned_to_email, plan_type } = req.body;
+        const { assigned_to_name, assigned_to_email, plan_type, notes } = req.body;
         const update = {};
         if (assigned_to_name !== undefined) update.assigned_to_name = assigned_to_name;
         if (assigned_to_email !== undefined) update.assigned_to_email = assigned_to_email;
+        if (plan_type !== undefined) update.plan_type = plan_type;
+        if (notes !== undefined) update.notes = notes;
 
         const { error } = await supabase
             .from('beta_codes')

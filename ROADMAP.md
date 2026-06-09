@@ -1,6 +1,6 @@
 # Lumière Ledger — Master Roadmap
 
-**Version:** v7.9.6 | **Last reviewed:** 2026-06-09  
+**Version:** v7.9.7 | **Last reviewed:** 2026-06-09  
 Source of truth for all sprint work, security status, and product phases.
 
 ---
@@ -165,6 +165,7 @@ Source of truth for all sprint work, security status, and product phases.
 | v7.9.4 | Gear panel stacking context fix — header card zIndex outranks KPI tile grid |
 | v7.9.5 | Open public signup; invite code auto-redeem; SaaS admin member enrichment (tier, cost, Plaid count, join date); landing page hero broadened; pricing comparison table; SEO overhaul |
 | v7.9.6 | Sync plan 5-account Plaid cap + upgrade UI; password strength enforcement + PROCESSING freeze fix; gear depreciation icon fix; Sync pricing table badge |
+| v7.9.7 | SaaS admin — invite plan fix (plan_type now stored + redeemed correctly); invite notes field; Engagement Pulse tier badges; invite email shows assigned plan |
 
 ---
 

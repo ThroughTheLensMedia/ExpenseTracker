@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.9.7] — 2026-06-09
+
+### SaaS Admin — Invite Plan Fix, Notes, Engagement Pulse Tier Badges
+
+- **`api/routes/admin.js`** — POST `/beta-codes` now inserts `plan_type` and `notes` correctly; PATCH updates both fields. GET `/daily-report` returns `plan_type` per user row.
+- **`api/utils/mailer.js`** — `sendInviteEmail` accepts `plan_type`; email body now includes "Your Access Level" block with human-readable plan label (Lifetime Free Access, 90-Day Beta Access, Core Plan, etc.). CTA updated to "ACTIVATE & CREATE ACCOUNT".
+- **`web-react/src/components/control-center/SaasTab.jsx`** — Invite creation form: `inviteNotes` state + textarea (internal, never sent). Notes column added to Access Inventory table (truncated 45 chars). Engagement Pulse rows now show plan tier badge (TIER_COLORS + deriveTier) next to each user's name.
+
+---
+
 ## [v7.9.6] — 2026-06-09
 
 ### Plaid Sync Plan Account Cap + Icon Fix

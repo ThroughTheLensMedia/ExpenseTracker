@@ -61,14 +61,28 @@ async function sendInvoiceEmail({ to, subject, body, attachments, fromName, repl
     }
 }
 
-async function sendInviteEmail({ to, name, code }) {
+const PLAN_LABELS = {
+    lifetime:      'Lifetime Free Access',
+    beta_tester:   '90-Day Beta Access',
+    free_beta:     'Free Beta Access',
+    free:          'Free Plan',
+    sync_monthly:  'Sync Plan ($4.99/mo)',
+    sync_annual:   'Sync Plan (Annual)',
+    core_monthly:  'Core Plan ($9/mo)',
+    core_annual:   'Core Plan (Annual)',
+    studio_monthly:'Studio Plan ($19/mo)',
+    studio_annual: 'Studio Plan (Annual)',
+};
+
+async function sendInviteEmail({ to, name, code, plan_type }) {
     console.log(`[MAILER] Sending Invite to ${to}...`);
     const resend = getResend();
     if (!resend) return { success: false, error: "Mailer service not configured" };
 
     try {
         const fromEmail = process.env.RESEND_FROM || 'Lumière Ledger <support@throughthelens.media>';
-        const signupUrl = `${process.env.APP_URL || 'https://lumiereledger.com'}/login?code=${code}&email=${encodeURIComponent(to)}`;
+        const signupUrl = `${process.env.APP_URL || 'https://www.lumiereledger.com'}/login?code=${code}&email=${encodeURIComponent(to)}`;
+        const planLabel = PLAN_LABELS[plan_type] || '90-Day Beta Access';
 
         const html = `
             <div style="background-color: #0f172a; color: white; padding: 40px; font-family: 'Inter', sans-serif; border-radius: 12px; max-width: 600px; margin: 0 auto;">
@@ -76,13 +90,18 @@ async function sendInviteEmail({ to, name, code }) {
                     <h1 style="font-size: 24px; font-weight: 900; letter-spacing: -0.02em; margin: 0;">LUMIÈRE LEDGER</h1>
                     <div style="height: 2px; width: 40px; background: #f97316; margin: 10px auto;"></div>
                 </div>
-                
-                <p style="font-size: 16px; line-height: 1.6; color: #94a3b8;">Hello ${name || 'Photographer'},</p>
-                
+
+                <p style="font-size: 16px; line-height: 1.6; color: #94a3b8;">Hello ${name || 'there'},</p>
+
                 <p style="font-size: 16px; line-height: 1.6; color: #94a3b8;">
-                    You've been invited to join the <strong>Lumière Ledger</strong>. 
-                    Manage your transactions, track gear depreciation, and automate your tax workflow with ease.
+                    You've been personally invited to <strong>Lumière Ledger</strong> — the financial command center for freelancers and creative professionals.
+                    Track expenses, manage invoices, automate taxes, and run your entire business from one place.
                 </p>
+
+                <div style="background: rgba(249,115,22,0.08); border: 1px solid rgba(249,115,22,0.3); padding: 16px 20px; border-radius: 10px; margin: 20px 0;">
+                    <div style="font-size: 11px; font-weight: 900; color: #f97316; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px;">Your Access Level</div>
+                    <div style="font-size: 15px; font-weight: 800; color: white;">${planLabel}</div>
+                </div>
 
                 <div style="background: rgba(255,255,255,0.05); padding: 25px; border-radius: 12px; text-align: center; margin: 30px 0;">
                     <div style="font-size: 12px; font-weight: 900; color: #f97316; margin-bottom: 10px; text-transform: uppercase;">Your Personal Invite Code</div>
@@ -90,7 +109,7 @@ async function sendInviteEmail({ to, name, code }) {
                 </div>
 
                 <div style="text-align: center;">
-                    <a href="${signupUrl}" style="background-color: #f97316; color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: 900; display: inline-block; font-size: 14px;">ENTER LUMIÈRE LEDGER</a>
+                    <a href="${signupUrl}" style="background-color: #f97316; color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: 900; display: inline-block; font-size: 14px;">ACTIVATE & CREATE ACCOUNT</a>
                 </div>
 
                 <p style="font-size: 12px; color: #475569; text-align: center; margin-top: 40px;">
@@ -102,7 +121,7 @@ async function sendInviteEmail({ to, name, code }) {
         const data = await resend.emails.send({
             from: fromEmail,
             to: [to],
-            subject: 'Invite: Welcome to the Lumière Ledger',
+            subject: 'You\'re invited to Lumière Ledger',
             html: html
         });
 

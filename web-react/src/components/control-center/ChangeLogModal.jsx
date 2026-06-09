@@ -1,6 +1,12 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.9.7', date: 'JUN 9, 2026', color: '#a78bfa', items: [
+        '<strong>Invite Plan Fix:</strong> When an admin assigns a plan (Lifetime, Core, Sync, etc.) to an invite code, the recipient now gets exactly that plan activated on signup — previously everyone defaulted to 90-Day Beta Access.',
+        '<strong>Invite Notes:</strong> Admin can now attach an internal note to each invite code (who they are, why they got access) — never sent to the recipient, visible in the Access Inventory table.',
+        '<strong>Engagement Pulse — Tier Badges:</strong> Each user row in Engagement Pulse now shows their plan tier (FREE / CORE / STUDIO / LIFETIME / SYNC) as a colored badge next to their name.',
+        '<strong>Invite Email — Plan Shown:</strong> The invite email now includes the recipient\'s assigned access level so they know what plan they\'re activating.',
+    ]},
     { version: '7.9.6', date: 'JUN 9, 2026', color: '#4ade80', items: [
         '<strong>Sync Plan Account Limit:</strong> The Sync plan ($4.99/mo) now allows up to 5 connected bank or credit card accounts. If you hit the limit, a clear upgrade prompt appears with Core and Studio options. Core and Studio plans have unlimited connections.',
         '<strong>Gear Depreciation Icon:</strong> The Gear Depreciation feature card on the landing page now uses a wrench icon instead of a camera — better reflects the tool\'s purpose for all equipment types.',

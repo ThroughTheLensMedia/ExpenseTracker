@@ -7,6 +7,7 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
     const [inviteName, setInviteName] = useState('');
     const [inviteEmail, setInviteEmail] = useState('');
     const [invitePlan, setInvitePlan] = useState('beta_tester');
+    const [inviteNotes, setInviteNotes] = useState('');
     const [genCodeLoading, setGenCodeLoading] = useState(false);
     const [editingInvite, setEditingInvite] = useState(null);
     const [editInviteData, setEditInviteData] = useState({ name: '', email: '', plan: '' });
@@ -18,9 +19,9 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
     const handleGenerateBetaCode = async () => {
         setGenCodeLoading(true);
         try {
-            await apiPost('/admin/beta-codes', { daysValid: 90, assigned_to_name: inviteName, assigned_to_email: inviteEmail, plan_type: invitePlan });
-            modal.alert(inviteEmail ? `Success! 90-day invite created and emailed to ${inviteEmail}.` : `Success! Invite code ${inviteName ? 'for ' + inviteName : ''} created.`);
-            setInviteName(''); setInviteEmail(''); setInvitePlan('beta_tester');
+            await apiPost('/admin/beta-codes', { daysValid: 90, assigned_to_name: inviteName, assigned_to_email: inviteEmail, plan_type: invitePlan, notes: inviteNotes || undefined });
+            modal.alert(inviteEmail ? `Success! Invite created and emailed to ${inviteEmail}.` : `Success! Invite code ${inviteName ? 'for ' + inviteName : ''} created.`);
+            setInviteName(''); setInviteEmail(''); setInvitePlan('beta_tester'); setInviteNotes('');
             onReload(true);
         } catch (err) { modal.alert(err.message); }
         finally { setGenCodeLoading(false); }
@@ -126,12 +127,16 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
                         <div style={{ flex: 1 }}>
                             <small className="muted" style={{ fontWeight: 900, marginBottom: '6px', display: 'block', fontSize: '10px' }}>PLAN TYPE</small>
                             <select value={invitePlan} onChange={e => setInvitePlan(e.target.value)} style={{ padding: '0 12px', background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', width: '100%', height: '44px', fontSize: '13px' }}>
-                                {PLAN_OPTIONS.map(p => <option key={p} value={p}>{p.toUpperCase().replace('_', ' ')}</option>)}
+                                {PLAN_OPTIONS.map(p => <option key={p} value={p}>{p.toUpperCase().replace(/_/g, ' ')}</option>)}
                             </select>
                         </div>
                         <button className="btn primary" onClick={handleGenerateBetaCode} disabled={genCodeLoading} style={{ height: '44px', padding: '0 25px', fontSize: '13px', fontWeight: 900, borderRadius: '12px' }}>
                             {genCodeLoading ? '...' : 'GENERATE KEY'}
                         </button>
+                    </div>
+                    <div style={{ gridColumn: '1 / -1' }}>
+                        <small className="muted" style={{ fontWeight: 900, marginBottom: '6px', display: 'block', fontSize: '10px' }}>NOTES <span style={{ color: 'rgba(255,255,255,0.25)', fontWeight: 400 }}>(internal only — never sent to recipient)</span></small>
+                        <textarea value={inviteNotes} onChange={e => setInviteNotes(e.target.value)} placeholder="Who is this person? How did you meet them?" rows={2} style={{ padding: '10px 12px', fontSize: '13px', width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', color: 'white', resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box' }} />
                     </div>
                 </div>
             </div>
@@ -146,6 +151,7 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
                                 <th style={{ width: '150px' }}>CODE</th>
                                 <th>RECIPIENT IDENTITY</th>
                                 <th>PLAN</th>
+                                <th>NOTES</th>
                                 <th style={{ textAlign: 'right' }}>ACTIONS</th>
                             </tr>
                         </thead>
@@ -157,7 +163,8 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
                                         <div style={{ fontWeight: 800 }}>{c.assigned_to_name || '—'}</div>
                                         <div className="muted" style={{ fontSize: '11px' }}>{c.assigned_to_email || 'General Invite'}</div>
                                     </td>
-                                    <td><span className="tag secondary" style={{ fontSize: '10px' }}>{c.plan_type?.toUpperCase() || 'BETA'}</span></td>
+                                    <td><span className="tag secondary" style={{ fontSize: '10px' }}>{c.plan_type?.toUpperCase().replace(/_/g, ' ') || 'BETA'}</span></td>
+                                    <td className="muted" style={{ fontSize: '11px', maxWidth: '180px' }}>{c.notes ? <span title={c.notes}>{c.notes.length > 45 ? c.notes.slice(0, 45) + '…' : c.notes}</span> : '—'}</td>
                                     <td style={{ textAlign: 'right' }}>
                                         <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
                                             {!c.is_used ? (
@@ -253,15 +260,21 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
                 <div className="tableWrap" style={{ border: 'none', maxHeight: '300px', overflowY: 'auto' }}>
                     <table style={{ width: '100%' }}>
                         <tbody>
-                            {dailyStats.length > 0 ? dailyStats.map(s => (
+                            {dailyStats.length > 0 ? dailyStats.map(s => {
+                                const pulseTier = deriveTier(s.plan_type);
+                                return (
                                 <tr key={s.email} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
                                     <td style={{ padding: '8px 0' }}>
-                                        <div style={{ fontWeight: 800, fontSize: '14px' }}>{s.name || s.email?.split('@')[0]}</div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <span style={{ fontWeight: 800, fontSize: '14px' }}>{s.name || s.email?.split('@')[0]}</span>
+                                            <span className={`tag ${TIER_COLORS[pulseTier]}`} style={{ fontSize: '9px', padding: '2px 7px', fontWeight: 900 }}>{pulseTier.toUpperCase()}</span>
+                                        </div>
                                         <div className="muted" style={{ fontSize: '10px' }}>{s.email}</div>
                                     </td>
                                     <td style={{ textAlign: 'right', fontWeight: 900, color: '#4ade80', fontSize: '13px' }}>{formatDuration(s.minutes_today)}</td>
                                 </tr>
-                            )) : (
+                                );
+                            }) : (
                                 <tr><td className="muted center" style={{ padding: '20px', fontSize: '12px' }}>No ledger sessions recorded in the last 7 days.</td></tr>
                             )}
                         </tbody>
