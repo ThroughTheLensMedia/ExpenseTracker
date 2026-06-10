@@ -114,7 +114,7 @@ export default function Home() {
           <NavLink to="/login" className="btn primary glow-orange" style={{ padding: '16px 38px', fontSize: '16px', borderRadius: '14px', textDecoration: 'none', fontWeight: 900 }}>
             Open Lumière Ledger →
           </NavLink>
-          <NavLink to="/login" style={{ padding: '16px 30px', fontSize: '14px', borderRadius: '14px', textDecoration: 'none', fontWeight: 800, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.7)' }}>
+          <NavLink to="/login?signup=1" style={{ padding: '16px 30px', fontSize: '14px', borderRadius: '14px', textDecoration: 'none', fontWeight: 800, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.7)' }}>
             Get Started Free
           </NavLink>
         </div>

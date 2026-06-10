@@ -187,8 +187,8 @@ export default function Backup() {
                 </nav>
             </div>
 
-            {/* System Status Panel */}
-            <div className="card glass" style={{ margin: '0 0 32px', padding: '20px 28px', borderTop: '3px solid rgba(56,189,248,0.4)' }}>
+            {/* System Status Panel — admin only */}
+            {isAdmin && <div className="card glass" style={{ margin: '0 0 32px', padding: '20px 28px', borderTop: '3px solid rgba(56,189,248,0.4)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
                     <div style={{ fontSize: '10px', fontWeight: 900, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' }}>System Status</div>
                     <div style={{ display: 'flex', gap: '28px', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -221,7 +221,7 @@ export default function Backup() {
                         REFRESH
                     </button>
                 </div>
-            </div>
+            </div>}
 
             {/* Tab Content */}
             {showSkeleton && (

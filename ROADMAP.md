@@ -94,6 +94,7 @@ Source of truth for all sprint work, security status, and product phases.
 | Apple Card CSV via email | Apple Card can't connect via Plaid. Detect `.csv` attachment in `emailInbound.js`, parse Apple Card format, bulk-insert with dedup. Workaround: manual CSV import. Build after email ingestion is stable. |
 | 7-day unmatched receipt digest | Cron/UptimeRobot endpoint — email user list of `pending_receipts` older than 7 days |
 | Account merging by last-4 digits | Auto-match CSV source to Plaid sub-account by institution + last 4 digits. Manual merge covers this for now. |
+| AI Brain: Combine Similar Transactions | New AI action to detect and merge near-duplicate expense rows (pending+posted Plaid, CSV+Plaid overlap). Requires new action type in `AssistantSidebar.jsx`, backend merge route, and confirm UI before any writes. |
 
 ---
 

@@ -749,8 +749,8 @@ export default function Accounts() {
             const r = await apiPost('/plaid/sync');
             const note = r.linked > 0 ? ` ${r.linked} matched to existing.` : '';
             setSyncMsg({ ok:true, text:`✅ ${r.added} new, ${r.modified} updated, ${r.removed} removed.${note}` });
-            // Clear balance cache so the next page load pulls fresh balances from Plaid
-            try { localStorage.removeItem(BALANCES_CACHE_KEY); } catch {}
+            // Balance cache intentionally NOT cleared here — transaction sync ≠ balance refresh.
+            // Backend enforces a 10-day TTL on balance calls (each costs money).
             await load(true); // silent refresh — don't flash loading state
         } catch(e) {
             setSyncMsg({ ok:false, text:`❌ Sync failed: ${e.message}` });

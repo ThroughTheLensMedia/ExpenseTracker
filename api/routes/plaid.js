@@ -3,6 +3,7 @@ const router = express.Router();
 const { z } = require("zod");
 const { encrypt, decrypt } = require("../utils/cryptoUtil");
 const { loadVendorRules, normalizeVendor } = require("../utils/vendorRules");
+const { supabase: adminClient } = require("../db");
 
 /**
  * Plaid Integration Routes
@@ -235,12 +236,14 @@ router.get("/accounts", async (req, res) => {
 // Returns current + available balances for every sub-account across all active connections.
 // Real-time Plaid API call — keep out of the main summary endpoint so page load stays fast.
 router.get("/balances", async (req, res) => {
+    const BALANCE_TTL_MS = 10 * 24 * 60 * 60 * 1000; // 10 days — each call costs money
+
     try {
         const client = getPlaidClient();
 
         const { data: connections, error } = await req.sb
             .from("plaid_connections")
-            .select("id, institution_name, last_synced_at, access_token")
+            .select("id, institution_name, last_synced_at, access_token, last_balance_sync, cached_balances")
             .eq("user_id", req.user.id)
             .eq("status", "active");
 
@@ -250,25 +253,48 @@ router.get("/balances", async (req, res) => {
         const institutions = [];
 
         for (const conn of connections) {
+            // Serve from DB cache if within 10-day TTL — avoids paid Plaid API call
+            const lastSync = conn.last_balance_sync ? new Date(conn.last_balance_sync).getTime() : 0;
+            const isFresh = lastSync && (Date.now() - lastSync) < BALANCE_TTL_MS;
+
+            if (isFresh && conn.cached_balances?.length) {
+                institutions.push({
+                    id:               conn.id,
+                    institution_name: conn.institution_name,
+                    last_synced_at:   conn.last_synced_at,
+                    accounts:         conn.cached_balances,
+                    balance_cached:   true,
+                });
+                continue;
+            }
+
             try {
                 const access_token = await decrypt(conn.access_token);
                 const resp = await client.accountsBalanceGet({ access_token });
+
+                const accounts = resp.data.accounts.map(a => ({
+                    account_id:    a.account_id,
+                    name:          a.name,
+                    official_name: a.official_name || null,
+                    type:          a.type,
+                    subtype:       a.subtype,
+                    mask:          a.mask || null,
+                    current:       a.balances.current,
+                    available:     a.balances.available,
+                    currency:      a.balances.iso_currency_code || 'USD',
+                }));
+
+                // Persist to DB so all devices/sessions share the same 10-day cache
+                await adminClient
+                    .from("plaid_connections")
+                    .update({ last_balance_sync: new Date().toISOString(), cached_balances: accounts })
+                    .eq("id", conn.id);
 
                 institutions.push({
                     id:               conn.id,
                     institution_name: conn.institution_name,
                     last_synced_at:   conn.last_synced_at,
-                    accounts: resp.data.accounts.map(a => ({
-                        account_id:    a.account_id,
-                        name:          a.name,
-                        official_name: a.official_name || null,
-                        type:          a.type,
-                        subtype:       a.subtype,
-                        mask:          a.mask || null,
-                        current:       a.balances.current,
-                        available:     a.balances.available,
-                        currency:      a.balances.iso_currency_code || 'USD',
-                    })),
+                    accounts,
                 });
             } catch (e) {
                 const errCode = e.response?.data?.error_code || e.response?.data?.error_type || e.message || 'UNKNOWN';

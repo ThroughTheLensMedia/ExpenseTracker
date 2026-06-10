@@ -1,6 +1,16 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.10.5', date: 'JUN 10, 2026', color: '#ef4444', items: [
+        '<strong>Plaid Balance Cost Fix:</strong> Balance data is now cached in the database for 10 days per connected account. Previously the throttle was browser-only, so switching devices or clearing storage triggered a new paid API call. Now the limit is enforced server-side — all devices share the same 10-day window.',
+        '<strong>Sync No Longer Triggers Balance Refresh:</strong> Pressing the Sync button now only pulls new transactions. It no longer resets the balance cache, preventing an unnecessary paid balance call on the next page load.',
+    ]},
+    { version: '7.10.4', date: 'JUN 10, 2026', color: '#f97316', items: [
+        '<strong>PWA AI Fix:</strong> The send button in the AI Brain sidebar is no longer hidden behind the mobile navigation bar. The input area now correctly clears the bottom nav on all devices.',
+        '<strong>Setup Guide in Menu:</strong> The hamburger menu now includes a "Setup Guide" shortcut while onboarding is in progress — tap it anytime to reopen the setup wizard.',
+        '<strong>Branding Cleanup:</strong> "Business Profile" labels renamed to "Profile" throughout the app. "Studio identity" copy updated to neutral wording. Bottom nav "Studio" tab renamed to "Dashboard".',
+        '<strong>System Status — Admin Only:</strong> The System Status panel in the Ledger Control Center is now only visible to admins.',
+    ]},
     { version: '7.10.3', date: 'JUN 9, 2026', color: '#f97316', items: [
         '<strong>Code Drift Audit:</strong> The Quarterly Deep Review in the Security tab now includes a 3-step code drift checklist with copyable commands — catches phantom database tables, silent save failures, and stale plan-type lists before they become production bugs.',
     ]},

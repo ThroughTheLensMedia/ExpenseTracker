@@ -19,7 +19,7 @@ const STEPS = [
     {
         id: 'profile',
         icon: '🏢',
-        title: 'Set Up Business Profile',
+        title: 'Set Up Your Profile',
         desc: 'Add your business name, logo, and tax entity. This populates your invoices and reports.',
         action: { label: 'Open Profile', path: '/StudioControlCenter?tab=profile' },
         required: true,

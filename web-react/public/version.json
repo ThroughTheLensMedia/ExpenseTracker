@@ -1,1 +1,1 @@
-{"version":"7.10.3","release_date":"2026-06-09","codename":"Lumière Ledger","notes":"v7.10.3: Code Drift Audit added to Quarterly Security Review checklist"}
+{"version":"7.10.5","release_date":"2026-06-10","codename":"Lumière Ledger","notes":"v7.10.5: Plaid balance backend throttle — 10-day DB cache, all devices"}

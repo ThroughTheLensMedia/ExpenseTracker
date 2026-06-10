@@ -162,7 +162,7 @@ function AppContent() {
   // --- Version Check Hook ---
   // DEPLOY SOP: update CURRENT_VERSION here AND web-react/public/version.json on every release.
   useEffect(() => {
-    const CURRENT_VERSION = "7.10.3";
+    const CURRENT_VERSION = "7.10.5";
 
     // What's New: show button if user hasn't dismissed it for this version
     const seen = localStorage.getItem('ll_whats_new_seen');
@@ -500,7 +500,7 @@ function AppContent() {
                 onClick={() => setMobileMenuOpen(false)}
                 className={() => `dropdown-item ${location.pathname === '/StudioControlCenter' && location.search.includes('tab=profile') ? 'active' : ''}`}
             >
-              Business Profile
+              Profile
             </NavLink>
             <NavLink
                 to="/StudioControlCenter?tab=help"
@@ -509,6 +509,15 @@ function AppContent() {
             >
               Help Center
             </NavLink>
+            {!localStorage.getItem('ll_onboarding_dismissed_v2') && !settings?.onboarding_dismissed && (
+                <button
+                    className="dropdown-item"
+                    onClick={() => { window.dispatchEvent(new Event('ll:reopen-onboarding')); setMobileMenuOpen(false); }}
+                    style={{ background: 'none', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer' }}
+                >
+                  Setup Guide
+                </button>
+            )}
             <NavLink to="/addons" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
               Add-Ons
             </NavLink>
@@ -580,7 +589,7 @@ function AppContent() {
       <nav className="bottom-nav mobile-only">
         <NavLink to="/" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`} end>
           <span className="bottom-nav-icon">📊</span>
-          <span>Studio</span>
+          <span>Dashboard</span>
         </NavLink>
         <NavLink to="/transactions" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
           <span className="bottom-nav-icon">💸</span>

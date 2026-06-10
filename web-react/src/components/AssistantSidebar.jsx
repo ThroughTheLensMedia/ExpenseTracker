@@ -294,7 +294,7 @@ export default function AssistantSidebar() {
                 </div>}
 
                 {/* Input Area — only when key is configured */}
-                {hasKey && <div style={{ padding: '20px', borderTop: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.2)' }}>
+                {hasKey && <div style={{ padding: '20px', paddingBottom: 'calc(20px + 72px + env(safe-area-inset-bottom, 0px))', borderTop: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.2)' }}>
                     <div style={{ position: 'relative' }}>
                         <textarea
                             value={query}

@@ -5,6 +5,29 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.10.5] — 2026-06-10
+
+### Plaid Balance API — Backend 10-Day Throttle
+
+- **`api/routes/plaid.js`** — `GET /plaid/balances` now checks `last_balance_sync` and `cached_balances` on the `plaid_connections` row before calling Plaid. If within 10 days, the DB cache is returned directly — no paid Plaid call. When Plaid IS called, the result is written back to the DB so all devices and sessions share the same throttle window.
+- **`web-react/src/pages/Accounts.jsx`** — Removed the balance cache clear that fired after every transaction sync. Transaction sync and balance refresh are independent operations.
+- **Supabase migration** — Added `last_balance_sync TIMESTAMPTZ` and `cached_balances JSONB` columns to `plaid_connections` (idempotent `IF NOT EXISTS`).
+
+---
+
+## [v7.10.4] — 2026-06-10
+
+### PWA AI Fix, Onboarding Re-entry, Branding Cleanup
+
+- **`AssistantSidebar.jsx`** — Input area and 🚀 send button now clear the 72px mobile bottom nav bar. Added `paddingBottom: calc(20px + 72px + env(safe-area-inset-bottom, 0px))` to the input wrapper.
+- **`App.jsx`** — "Setup Guide" item added to hamburger menu; dispatches `ll:reopen-onboarding` event. Only visible while onboarding is still in progress. Bottom nav "Studio" label renamed to "Dashboard". "Business Profile" menu item renamed to "Profile".
+- **`OnboardingChecklist.jsx`** — Step title changed from "Set Up Business Profile" to "Set Up Your Profile".
+- **`ProfileTab.jsx`** — Heading changed from "Business Profile Branding" to "Profile Branding". Subtitle "Studio identity" → "Your identity".
+- **`Backup.jsx`** — System Status panel is now admin-only.
+- **`ROADMAP.md`** — AI Brain: Combine Similar Transactions added to Good to Have backlog.
+
+---
+
 ## [v7.10.3] — 2026-06-09
 
 ### Security Review — Code Drift Audit Added to Quarterly Tier

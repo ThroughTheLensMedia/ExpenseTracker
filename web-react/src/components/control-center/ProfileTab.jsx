@@ -252,10 +252,10 @@ export default function ProfileTab({ settings, setSettings, onReload, billingOnl
             {billingEl}
 
             <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '6px' }}>
-                <h2 style={{ fontSize: '1.5rem', margin: 0 }}>Business Profile Branding</h2>
+                <h2 style={{ fontSize: '1.5rem', margin: 0 }}>Profile Branding</h2>
             </div>
             <p className="muted" style={{ fontSize: '13px', marginBottom: '24px' }}>
-                Studio identity used on invoices and reports. Fill out what you have — save and update anytime.
+                Your identity used on invoices and reports. Fill out what you have — save and update anytime.
             </p>
 
             <form onSubmit={handleSaveSettings} className="profile-form">

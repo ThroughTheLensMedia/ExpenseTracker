@@ -7,9 +7,9 @@ export default function Login() {
   const { login, signup, loginWithGoogle, supabase: supabaseClient } = useAuth();
   const params = new URLSearchParams(window.location.search);
 
-  // If a code is in the URL, start in signup/code mode immediately
+  // If a code or ?signup=1 is in the URL, start in signup mode immediately
   const prefillCode = params.get('code') || '';
-  const [isLogin, setIsLogin] = useState(!prefillCode);
+  const [isLogin, setIsLogin] = useState(!prefillCode && !params.get('signup'));
   const [useInviteCode, setUseInviteCode] = useState(!!prefillCode);
 
   const [showForgot, setShowForgot] = useState(false);
