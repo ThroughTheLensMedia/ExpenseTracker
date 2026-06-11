@@ -12,6 +12,7 @@ import IntegrationTab from '../components/control-center/IntegrationTab.jsx';
 import DocumentsTab from '../components/control-center/DocumentsTab.jsx';
 import DashboardTab from '../components/control-center/DashboardTab.jsx';
 import AdminTab from '../components/control-center/AdminTab.jsx';
+import CategoriesTab from '../components/control-center/CategoriesTab.jsx';
 
 const DEFAULT_SETTINGS = {
     business_name: '', contact_name: '', website: '', email: '', phone: '', address: '',
@@ -57,7 +58,7 @@ export default function Backup() {
             setActiveTab('help');
             return;
         }
-        if (t && ['automation', 'profile', 'billing', 'infrastructure', 'help', 'intelligence', 'integration', 'documents', 'dashboard', 'admin'].includes(t)) {
+        if (t && ['automation', 'profile', 'billing', 'infrastructure', 'help', 'intelligence', 'integration', 'documents', 'dashboard', 'admin', 'categories'].includes(t)) {
             setActiveTab(t);
         }
     }, [window.location.search]);
@@ -175,6 +176,7 @@ export default function Backup() {
                     )}
                     <button className={`pill ${activeTab === 'intelligence' ? 'active' : ''}`} onClick={() => setActiveTab('intelligence')}>AI Intelligence</button>
                     <button className={`pill ${activeTab === 'automation' ? 'active' : ''}`} onClick={() => setActiveTab('automation')}>Automation</button>
+                    <button className={`pill ${activeTab === 'categories' ? 'active' : ''}`} onClick={() => setActiveTab('categories')}>Categories</button>
                     <button className={`pill ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>Dashboard</button>
                     <button className={`pill ${activeTab === 'documents' ? 'active' : ''}`} onClick={() => setActiveTab('documents')}>Documents</button>
                     <button className={`pill ${activeTab === 'help' ? 'active' : ''}`} onClick={() => setActiveTab('help')}>Help Center</button>
@@ -237,6 +239,7 @@ export default function Backup() {
             {!showSkeleton && activeTab === 'intelligence' && <IntelligenceTab settings={settings} setSettings={setSettings} user={user} loading={loading} setLoading={setLoading} onReload={loadData} />}
             {!showSkeleton && activeTab === 'documents' && <DocumentsTab settings={settings} user={user} />}
             {!showSkeleton && activeTab === 'automation' && <AutomationTab rules={rules} allExpenses={allExpenses} onReload={loadData} />}
+            {!showSkeleton && activeTab === 'categories' && <CategoriesTab />}
             {!showSkeleton && activeTab === 'infrastructure' && isAdmin && <InfrastructureTab subscription={subscription} onReload={loadData} />}
             {!showSkeleton && activeTab === 'integration' && <IntegrationTab />}
             {!showSkeleton && activeTab === 'help' && <HelpTab user={user} />}

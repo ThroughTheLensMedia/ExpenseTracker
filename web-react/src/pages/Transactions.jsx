@@ -38,6 +38,7 @@ export default function Transactions() {
     const [plaidSourceKey,   setPlaidSourceKey]   = useState(''); // source fallback for pre-plaid_account_id txns
     const [institutionFilter, setInstitutionFilter] = useState(''); // prefix filter from Plaid Live Sync card click
     const [needsCategoryFilter, setNeedsCategoryFilter] = useState(false); // set from monthly insights popup
+    const [customCats, setCustomCats] = useState([]);
     const [sortCol, setSortCol] = useState('expense_date');
     const [sortDir, setSortDir] = useState('desc');
 
@@ -193,6 +194,7 @@ export default function Transactions() {
     // Initial load
     useEffect(() => {
         loadData(false, daysAgoStr(90), todayStr());
+        apiGet('/categories').then(d => setCustomCats(Array.isArray(d) ? d : [])).catch(() => {});
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Re-fetch when date range changes (user picks different window)
@@ -590,7 +592,7 @@ export default function Transactions() {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                 <small className="muted" style={{ fontWeight: 800 }}>CATEGORY</small>
                                 <select
-                                    value={needsCategoryFilter ? '__uncategorized__' : (ALL_CATEGORIES.includes(searchCategory) ? searchCategory : '')}
+                                    value={needsCategoryFilter ? '__uncategorized__' : searchCategory}
                                     onChange={e => {
                                         const v = e.target.value;
                                         if (v === '__uncategorized__') {
@@ -605,13 +607,22 @@ export default function Transactions() {
                                 >
                                     <option value="">All Categories</option>
                                     <option value="__uncategorized__">Uncategorized</option>
-                                    {CATEGORY_GROUPS.map(({ group, label, items }) => (
-                                        <optgroup key={group} label={label}>
-                                            {items.map(item => (
-                                                <option key={item} value={item}>{item}</option>
-                                            ))}
-                                        </optgroup>
-                                    ))}
+                                    {(() => {
+                                        const customByType = { expense: [], income: [], misc_income: [] };
+                                        for (const c of customCats) {
+                                            if (customByType[c.type]) customByType[c.type].push(c.name);
+                                        }
+                                        const typeMap = { Expenses: 'expense', Income: 'income', 'Misc Income': 'misc_income' };
+                                        return CATEGORY_GROUPS.map(({ group, label, items }) => {
+                                            const extra = customByType[typeMap[group]] || [];
+                                            return (
+                                                <optgroup key={group} label={label}>
+                                                    {items.map(item => <option key={item} value={item}>{item}</option>)}
+                                                    {extra.map(name => <option key={`custom:${name}`} value={name}>{name} ✦</option>)}
+                                                </optgroup>
+                                            );
+                                        });
+                                    })()}
                                 </select>
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>

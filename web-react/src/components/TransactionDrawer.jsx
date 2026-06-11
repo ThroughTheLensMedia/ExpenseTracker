@@ -1,6 +1,6 @@
-import React, { useReducer, useEffect } from 'react';
+import React, { useReducer, useEffect, useState, useCallback } from 'react';
 import { jsPDF } from 'jspdf';
-import { apiPatch, apiPost, apiUpload, apiDelete } from '../api';
+import { apiGet, apiPatch, apiPost, apiUpload, apiDelete } from '../api';
 import { useModal } from './ModalContext.jsx';
 import CategorySelect from './CategorySelect.jsx';
 import { ALL_CATEGORIES, CATEGORY_TAX_BUCKET_MAP } from '../constants/categories.js';
@@ -136,6 +136,42 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
             tipBreakdown, tipSplitPair } = state;
 
     const field = (name, value) => dispatch({ type: 'SET_FIELD', field: name, value });
+
+    // Custom categories fetched from /api/categories
+    const [customCats, setCustomCats] = useState([]);
+    const [showNewCat, setShowNewCat] = useState(false);
+    const [newCatName, setNewCatName] = useState('');
+    const [newCatType, setNewCatType] = useState('expense');
+    const [newCatSaving, setNewCatSaving] = useState(false);
+
+    const loadCustomCats = useCallback(async () => {
+        try {
+            const data = await apiGet('/categories');
+            setCustomCats(Array.isArray(data) ? data : []);
+        } catch (_) { /* non-fatal */ }
+    }, []);
+
+    useEffect(() => { loadCustomCats(); }, [loadCustomCats]);
+
+    const allCustomNames = customCats.map(c => c.name);
+    const ALL_KNOWN = [...ALL_CATEGORIES, ...allCustomNames];
+
+    const handleNewCatSave = async () => {
+        if (!newCatName.trim()) return;
+        setNewCatSaving(true);
+        try {
+            const created = await apiPost('/categories', { name: newCatName.trim(), type: newCatType });
+            await loadCustomCats();
+            field('category', created.name);
+            setShowNewCat(false);
+            setNewCatName('');
+            setNewCatType('expense');
+        } catch (err) {
+            alert(err?.message || 'Failed to create category.');
+        } finally {
+            setNewCatSaving(false);
+        }
+    };
 
     useEffect(() => {
         if (transaction) dispatch({ type: 'LOAD_TRANSACTION', tx: transaction });
@@ -474,28 +510,23 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
                         <div style={{ marginTop: '10px' }}>
                             <small className="muted">Category</small>
                             <CategorySelect
-                                value={ALL_CATEGORIES.includes(category) ? category : (category ? '__custom__' : '')}
+                                value={ALL_KNOWN.includes(category) ? category : ''}
                                 onChange={val => {
-                                    if (val === '__custom__') { field('category', ''); return; }
+                                    if (val === '__new_category__') {
+                                        setShowNewCat(true);
+                                        return;
+                                    }
                                     field('category', val);
                                     // Auto-map category → tax bucket + deductible + business_use_pct
                                     const mapping = CATEGORY_TAX_BUCKET_MAP[val];
                                     if (mapping) {
                                         field('taxBucket', mapping.bucket);
-                                        if (mapping.bucket === 'Personal Expense') {
-                                            field('deduct', false);
-                                        } else {
-                                            field('deduct', true);
-                                        }
-                                        if (mapping.pct !== undefined) {
-                                            field('bizPct', mapping.pct);
-                                        }
+                                        field('deduct', mapping.bucket !== 'Personal Expense');
+                                        if (mapping.pct !== undefined) field('bizPct', mapping.pct);
                                     } else {
-                                        // No mapping for this category — clear tax bucket and deductible
                                         field('taxBucket', '');
                                         field('deduct', false);
                                     }
-                                    // Income categories are negative-amount deductible
                                     const INCOME_CATS = ['Photo Income', 'Freelance Income', 'Contract Income', 'Side Income', 'Interest Income', 'Dividend Income'];
                                     if (INCOME_CATS.includes(val) && Number(amount || 0) < 0) {
                                         field('deduct', true);
@@ -503,15 +534,59 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
                                 }}
                                 emptyLabel="Select category…"
                                 showCustom
+                                customCats={customCats}
                                 style={{ padding: '10px' }}
                             />
-                            {!ALL_CATEGORIES.includes(category) && (
-                                <input
-                                    value={category}
-                                    onChange={e => field('category', e.target.value)}
-                                    placeholder="Type custom category…"
-                                    style={{ marginTop: '8px' }}
-                                />
+                            {/* Inline new-category form */}
+                            {showNewCat && (
+                                <div style={{
+                                    marginTop: '8px', padding: '12px', borderRadius: '8px',
+                                    background: 'rgba(56,189,248,0.06)', border: '1px solid rgba(56,189,248,0.2)'
+                                }}>
+                                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#38bdf8', marginBottom: '8px' }}>New Category</div>
+                                    <input
+                                        value={newCatName}
+                                        onChange={e => setNewCatName(e.target.value)}
+                                        placeholder="Category name…"
+                                        style={{ marginBottom: '6px' }}
+                                        autoFocus
+                                        onKeyDown={e => { if (e.key === 'Enter') handleNewCatSave(); if (e.key === 'Escape') setShowNewCat(false); }}
+                                    />
+                                    <select
+                                        value={newCatType}
+                                        onChange={e => setNewCatType(e.target.value)}
+                                        style={{ width: '100%', padding: '8px', marginBottom: '8px' }}
+                                    >
+                                        <option value="expense">Expense</option>
+                                        <option value="income">Income</option>
+                                        <option value="misc_income">Misc Income</option>
+                                    </select>
+                                    <div style={{ display: 'flex', gap: '6px' }}>
+                                        <button className="btn" onClick={handleNewCatSave} disabled={newCatSaving} style={{ fontSize: '12px', padding: '6px 14px', flex: 1 }}>
+                                            {newCatSaving ? 'Saving…' : 'Save'}
+                                        </button>
+                                        <button className="btn secondary" onClick={() => setShowNewCat(false)} style={{ fontSize: '12px', padding: '6px 14px' }}>Cancel</button>
+                                    </div>
+                                </div>
+                            )}
+                            {/* Show current category if it exists but isn't in either list (legacy freeform) */}
+                            {category && !ALL_KNOWN.includes(category) && (
+                                <div style={{ marginTop: '6px', fontSize: '12px', color: '#f59e0b' }}>
+                                    Current: <strong>{category}</strong> — not in category list.{' '}
+                                    <button
+                                        style={{ background: 'none', border: 'none', color: '#38bdf8', cursor: 'pointer', fontSize: '12px', padding: 0, textDecoration: 'underline' }}
+                                        onClick={async () => {
+                                            try {
+                                                const type = category.toLowerCase().includes('income') || category.toLowerCase().includes('refund') ? 'income' : 'expense';
+                                                const created = await apiPost('/categories', { name: category, type });
+                                                await loadCustomCats();
+                                                field('category', created.name);
+                                            } catch (err) {
+                                                alert(err?.message || 'Failed to save category.');
+                                            }
+                                        }}
+                                    >Save it</button>
+                                </div>
                             )}
                         </div>
                     </div>

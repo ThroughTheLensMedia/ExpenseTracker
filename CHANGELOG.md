@@ -5,6 +5,22 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.10.6] — 2026-06-11
+
+### User-Managed Categories
+
+- **`api/migrations/009_user_categories.sql`** — New `user_categories` table with RLS. Stores per-user custom categories with a `type` column (`expense | income | misc_income`). Unique constraint on `(user_id, name)`.
+- **`api/routes/categories.js`** — New route: GET list, POST create, PUT rename (also updates matching expense rows), DELETE (returns 409 with count if transactions use it; `?force=true` to confirm).
+- **`api/routes/expenses.js`** — Added `GET /expenses/distinct-categories` — returns unique non-null category strings for the user (used by the import banner in CategoriesTab).
+- **`api/server.js`** — Mounted `/api/categories` route.
+- **`web-react/src/components/CategorySelect.jsx`** — Now accepts `customCats` prop (array of `{ id, name, type }`) and renders them under the correct optgroup with a ✦ marker. `showCustom` now surfaces a `+ New Category…` option instead of the old `✚ Custom Category…` sentinel.
+- **`web-react/src/components/TransactionDrawer.jsx`** — Fetches custom categories on mount. Replaces freeform text input with an inline new-category form (name + type select). Legacy freeform values show a one-click "Save it" prompt.
+- **`web-react/src/pages/Transactions.jsx`** — Category filter dropdown now merges custom categories under the correct optgroup (with ✦ marker).
+- **`web-react/src/components/control-center/CategoriesTab.jsx`** — New LCC tab: built-in categories listed read-only; custom categories have inline rename + delete (with transaction count warning). `+ Add` form at bottom of each section. Import banner for legacy freeform categories.
+- **`web-react/src/pages/Backup.jsx`** — Added Categories pill and `<CategoriesTab />` render.
+
+---
+
 ## [v7.10.5] — 2026-06-10
 
 ### Plaid Balance API — Backend 10-Day Throttle

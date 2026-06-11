@@ -77,6 +77,24 @@ router.get("/", async (req, res) => {
   }
 });
 
+// GET /expenses/distinct-categories — unique non-null category strings for this user
+router.get("/distinct-categories", async (req, res) => {
+    try {
+        const { data, error } = await req.sb
+            .from('expenses')
+            .select('category')
+            .eq('user_id', req.user.id)
+            .not('category', 'is', null)
+            .neq('category', '')
+            .limit(10000);
+        if (error) throw error;
+        const unique = [...new Set((data || []).map(r => r.category).filter(Boolean))].sort();
+        res.json(unique);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 router.get("/years", async (req, res) => {
   try {
     // We only need the years, so we select just the column. 

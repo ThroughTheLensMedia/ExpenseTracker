@@ -52,6 +52,7 @@ let feedbackRouter;     try { feedbackRouter     = require("./routes/feedback");
 let pendingReceiptsRouter; try { pendingReceiptsRouter = require("./routes/pendingReceipts"); } catch(e) { console.error('[STARTUP] FAIL pendingReceipts:', e.message); }
 let accountsRouter;     try { accountsRouter     = require("./routes/accounts");    } catch(e) { console.error('[STARTUP] FAIL accounts:',    e.message); }
 let documentsRouter;    try { documentsRouter    = require("./routes/documents");   } catch(e) { console.error('[STARTUP] FAIL documents:',   e.message); }
+let categoriesRouter;   try { categoriesRouter   = require("./routes/categories");  } catch(e) { console.error('[STARTUP] FAIL categories:',  e.message); }
 
 // Initialize Database — log clearly if it fails
 if (!initDb()) {
@@ -202,6 +203,7 @@ if (metricsRouter)      apiRouter.use("/metrics",        metricsRouter);
 if (vendorsRouter)      apiRouter.use("/vendors",        vendorsRouter);
 if (accountsRouter)     apiRouter.use("/accounts",       accountsRouter);
 if (documentsRouter)    apiRouter.use("/documents",      documentsRouter);
+if (categoriesRouter)   apiRouter.use("/categories",     categoriesRouter);
 
 // emailInbound — static require (ncc must trace deps at build time — dynamic require breaks bundling).
 // Route registered UNCONDITIONALLY — no if() guard. res.sendStatus(200) fires before any processing

@@ -1,6 +1,13 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.10.6', date: 'JUN 11, 2026', color: '#38bdf8', items: [
+        '<strong>Custom Categories:</strong> You can now create, rename, and delete your own expense and income categories. Head to Ledger Control Center → Categories. Built-in categories are still there, read-only.',
+        '<strong>Categories Tab in LCC:</strong> New tab shows all categories grouped by type. Custom categories have inline rename and delete — if transactions use the category, you\'ll see a count and a confirm prompt before deletion.',
+        '<strong>New Category in Transaction Drawer:</strong> The "Custom Category" text field has been replaced with a proper "+ New Category…" option in the dropdown. Type a name, pick a type, save — it\'s immediately available everywhere.',
+        '<strong>Filter by Custom Categories:</strong> The category filter on the Transactions page now includes your custom categories (marked ✦) under the correct group.',
+        '<strong>Legacy Freeform Import:</strong> If you had freeform custom categories on existing transactions, the Categories tab shows an "Import All" banner so you can register them with one click.',
+    ]},
     { version: '7.10.5', date: 'JUN 10, 2026', color: '#ef4444', items: [
         '<strong>Plaid Balance Cost Fix:</strong> Balance data is now cached in the database for 10 days per connected account. Previously the throttle was browser-only, so switching devices or clearing storage triggered a new paid API call. Now the limit is enforced server-side — all devices share the same 10-day window.',
         '<strong>Sync No Longer Triggers Balance Refresh:</strong> Pressing the Sync button now only pulls new transactions. It no longer resets the balance cache, preventing an unnecessary paid balance call on the next page load.',
