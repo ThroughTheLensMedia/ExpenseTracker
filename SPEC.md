@@ -172,7 +172,7 @@ This is a shared-database, shared-schema SaaS. Every table that contains user da
 | `control-center/DashboardTab.jsx` | Dashboard customization tab — role selector (4 types, change confirmation) + widget visibility toggles. Auto-saves to `dashboard_config` in settings. |
 | `TransactionDrawer.jsx` | Transaction form — create/edit/delete + receipt upload. New transactions open empty (no pre-filled 0.00). Account source dropdown built dynamically from `userSources` prop (user's own imported data). `SOURCE_LABELS` map + `formatSourceKey()` for display. Double-tap guard. Auto-closes on save. |
 | `AssistantSidebar.jsx` | AI chat panel — floating sidebar for financial Q&A |
-| `CategorySelect.jsx` | Shared category dropdown — optgroups (Expense/Income/Misc), custom entry |
+| `CategorySelect.jsx` | Shared category dropdown — optgroups (Expense/Income/Misc) for built-in + user custom categories (✦ marker). Accepts `customCats` prop. |
 | `PlaidLink.jsx` | Plaid Link SDK — account connection, sync, disconnect |
 | `ModalContext.jsx` | Branded modal provider — replaces native browser confirm/alert |
 
@@ -192,6 +192,7 @@ This is a shared-database, shared-schema SaaS. Every table that contains user da
 | `ProfileTab.jsx` | Business profile — company name, tax ID, invoice branding, signature |
 | `IntelligenceTab.jsx` | AI Brain — Gemini key management, repair triggers, feature toggles |
 | `AutomationTab.jsx` | Rule automation — create/manage classification rules |
+| `CategoriesTab.jsx` | User category management — create/rename/delete custom categories; review & import orphan freeform categories from transactions (v7.10.6) |
 | `InfrastructureTab.jsx` | System health — DB checks, mailer readiness, activity logging |
 | `SaasTab.jsx` | SaaS admin — beta codes, subscriptions, engagement pulse. Admin-only. |
 | `HelpTab.jsx` | Help & FAQ — troubleshooting, support links |
@@ -209,6 +210,7 @@ This is a shared-database, shared-schema SaaS. Every table that contains user da
 | `supabase_schema_leads.sql` | CRM leads & clients with relationships |
 | `supabase_schema_plaid.sql` | Plaid integration tables (items, accounts, sync cursors) |
 | `supabase_schema_intake_keys.sql` | `intake_keys` table — per-user API keys for website lead capture |
+| `api/migrations/009_user_categories.sql` | `user_categories` table — per-user custom expense/income categories (v7.10.6) |
 | `supabase_fix_admin_rls.sql` | Adjusts RLS on admin-only tables for server-side service role access |
 
 ---

@@ -147,10 +147,13 @@ export default function CategoriesTab() {
     // Orphan review state
     const [orphanCats, setOrphanCats] = useState([]); // raw strings from DB
     const [showReview, setShowReview] = useState(false);
-    // reviewItems: [{ name, editName, type, skip }]
+    // reviewItems: [{ name, editName, type, include }]  — include=true means import it
     const [reviewItems, setReviewItems] = useState([]);
     const [importing, setImporting] = useState(false);
     const [importResult, setImportResult] = useState(null); // { imported, skipped }
+    // Skipped orphans waiting to be deleted
+    const [skippedOrphans, setSkippedOrphans] = useState([]);
+    const [deletingOrphan, setDeletingOrphan] = useState(null); // name being deleted
 
     const load = useCallback(async () => {
         try {
@@ -169,8 +172,8 @@ export default function CategoriesTab() {
             const allKnown = new Set([...ALL_CATEGORIES, ...customCats.map(c => c.name)]);
             const orphans = data.filter(c => c && !allKnown.has(c));
             setOrphanCats(orphans);
-            // Reset review items whenever the orphan list changes
-            setReviewItems(orphans.map(name => ({ name, editName: name, type: guessType(name), skip: false })));
+            // Reset review items whenever the orphan list changes (include=true by default)
+            setReviewItems(orphans.map(name => ({ name, editName: name, type: guessType(name), include: true })));
         }).catch(() => {});
     }, [customCats]);
 
@@ -179,20 +182,34 @@ export default function CategoriesTab() {
 
     const handleImportSelected = async () => {
         setImporting(true);
-        let imported = 0, skipped = 0;
+        let imported = 0;
+        const nowSkipped = [];
         for (const item of reviewItems) {
-            if (item.skip) { skipped++; continue; }
+            if (!item.include) { nowSkipped.push(item.name); continue; }
             try { await apiPost('/categories', { name: item.editName.trim(), type: item.type }); imported++; }
-            catch (_) { skipped++; }
+            catch (_) { nowSkipped.push(item.name); }
         }
         await load();
         setImporting(false);
         setShowReview(false);
-        setImportResult({ imported, skipped });
+        setSkippedOrphans(prev => [...new Set([...prev, ...nowSkipped])]);
+        setImportResult({ imported, skipped: nowSkipped.length });
         setTimeout(() => setImportResult(null), 5000);
     };
 
-    const toImport = reviewItems.filter(it => !it.skip).length;
+    const handleDeleteOrphan = async (name) => {
+        setDeletingOrphan(name);
+        try {
+            await apiDelete(`/categories/orphan?name=${encodeURIComponent(name)}`);
+            setSkippedOrphans(prev => prev.filter(n => n !== name));
+        } catch (e) {
+            alert(e?.message || 'Failed to clear category.');
+        } finally {
+            setDeletingOrphan(null);
+        }
+    };
+
+    const toImport = reviewItems.filter(it => it.include).length;
 
     const catsByType = { expense: [], income: [], misc_income: [] };
     for (const c of customCats) {
@@ -241,35 +258,31 @@ export default function CategoriesTab() {
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', gap: '12px', flexWrap: 'wrap' }}>
                         <div>
                             <div style={{ fontWeight: 800, color: '#fbbf24', fontSize: '14px', marginBottom: '2px' }}>Review Unrecognized Categories</div>
-                            <div className="muted" style={{ fontSize: '12px' }}>Edit names or types, then uncheck any you want to skip. {toImport} of {reviewItems.length} will be imported.</div>
+                            <div className="muted" style={{ fontSize: '12px' }}>Edit names or types before importing. Uncheck any you want to skip. {toImport} of {reviewItems.length} selected.</div>
                         </div>
                         <button className="btn secondary" onClick={() => setShowReview(false)} style={{ fontSize: '12px' }}>Cancel</button>
                     </div>
 
                     {/* Column headers */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '24px 1fr 140px 60px', gap: '8px', padding: '0 4px 8px', borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: '8px' }}>
-                        <div />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px 80px', gap: '8px', padding: '0 4px 8px', borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: '8px' }}>
                         <div style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Category Name</div>
                         <div style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Type</div>
-                        <div style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Skip</div>
+                        <div style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'center' }}>Import</div>
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '360px', overflowY: 'auto', marginBottom: '16px' }}>
                         {reviewItems.map((item, i) => (
-                            <div key={item.name} style={{ display: 'grid', gridTemplateColumns: '24px 1fr 140px 60px', gap: '8px', alignItems: 'center', opacity: item.skip ? 0.4 : 1, transition: 'opacity 0.15s' }}>
-                                <div style={{ fontSize: '13px', color: item.skip ? 'rgba(255,255,255,0.2)' : '#4ade80' }}>
-                                    {item.skip ? '—' : '✓'}
-                                </div>
+                            <div key={item.name} style={{ display: 'grid', gridTemplateColumns: '1fr 140px 80px', gap: '8px', alignItems: 'center', opacity: item.include ? 1 : 0.4, transition: 'opacity 0.15s' }}>
                                 <input
                                     value={item.editName}
                                     onChange={e => updateItem(i, { editName: e.target.value })}
-                                    disabled={item.skip}
+                                    disabled={!item.include}
                                     style={{ fontSize: '13px', padding: '5px 8px' }}
                                 />
                                 <select
                                     value={item.type}
                                     onChange={e => updateItem(i, { type: e.target.value })}
-                                    disabled={item.skip}
+                                    disabled={!item.include}
                                     style={{ fontSize: '12px', padding: '5px 6px' }}
                                 >
                                     <option value="expense">Expense</option>
@@ -279,8 +292,8 @@ export default function CategoriesTab() {
                                 <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                                     <input
                                         type="checkbox"
-                                        checked={item.skip}
-                                        onChange={e => updateItem(i, { skip: e.target.checked })}
+                                        checked={item.include}
+                                        onChange={e => updateItem(i, { include: e.target.checked })}
                                         style={{ width: 'auto', margin: 0 }}
                                     />
                                 </label>
@@ -289,11 +302,35 @@ export default function CategoriesTab() {
                     </div>
 
                     <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                        <button className="btn secondary" onClick={() => setReviewItems(prev => prev.map(it => ({ ...it, skip: true })))} style={{ fontSize: '12px' }}>Skip All</button>
-                        <button className="btn secondary" onClick={() => setReviewItems(prev => prev.map(it => ({ ...it, skip: false })))} style={{ fontSize: '12px' }}>Select All</button>
+                        <button className="btn secondary" onClick={() => setReviewItems(prev => prev.map(it => ({ ...it, include: false })))} style={{ fontSize: '12px' }}>Deselect All</button>
+                        <button className="btn secondary" onClick={() => setReviewItems(prev => prev.map(it => ({ ...it, include: true })))} style={{ fontSize: '12px' }}>Select All</button>
                         <button className="btn" onClick={handleImportSelected} disabled={importing || toImport === 0} style={{ fontSize: '12px' }}>
                             {importing ? 'Importing…' : `Import ${toImport}`}
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Skipped orphans — delete from transactions */}
+            {skippedOrphans.length > 0 && (
+                <div className="card glass" style={{ padding: '20px 24px', border: '1px solid rgba(248,113,113,0.2)', background: 'rgba(248,113,113,0.04)' }}>
+                    <div style={{ fontWeight: 700, fontSize: '13px', color: '#f87171', marginBottom: '4px' }}>Skipped categories</div>
+                    <div className="muted" style={{ fontSize: '12px', marginBottom: '14px' }}>
+                        These weren't imported. Delete them to clear the category from all matching transactions, or leave them and they'll reappear next time.
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {skippedOrphans.map(name => (
+                            <div key={name} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 10px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)' }}>
+                                <span style={{ flex: 1, fontSize: '13px' }}>{name}</span>
+                                <button
+                                    onClick={() => handleDeleteOrphan(name)}
+                                    disabled={deletingOrphan === name}
+                                    style={{ background: 'none', border: '1px solid rgba(248,113,113,0.35)', borderRadius: '6px', color: '#f87171', fontSize: '11px', padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                >
+                                    {deletingOrphan === name ? 'Clearing…' : 'Delete from transactions'}
+                                </button>
+                            </div>
+                        ))}
                     </div>
                 </div>
             )}

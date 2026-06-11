@@ -149,4 +149,32 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
+// DELETE /api/categories/orphan?name=X
+// Clears the category field from all expenses that use the given freeform string.
+// Used to clean up orphan categories that weren't imported.
+router.delete('/orphan', async (req, res) => {
+    const name = (req.query.name || '').trim();
+    if (!name) return res.status(400).json({ error: 'name query param required.' });
+    try {
+        const { count, error: countErr } = await req.sb
+            .from('expenses')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', req.user.id)
+            .eq('category', name);
+        if (countErr) throw countErr;
+
+        const { error: updateErr } = await req.sb
+            .from('expenses')
+            .update({ category: null })
+            .eq('user_id', req.user.id)
+            .eq('category', name);
+        if (updateErr) throw updateErr;
+
+        res.json({ cleared: true, name, count: count || 0 });
+    } catch (err) {
+        console.error('[categories] DELETE /orphan error', err.message);
+        res.status(500).json({ error: 'Failed to clear category.' });
+    }
+});
+
 module.exports = router;
