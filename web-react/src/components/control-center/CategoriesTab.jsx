@@ -134,13 +134,23 @@ function CustomCategoryRow({ cat, onRenamed, onDeleted }) {
     );
 }
 
+function guessType(name) {
+    const lc = name.toLowerCase();
+    if (lc.includes('income') || lc.includes('refund') || lc.includes('reimburs') || lc.includes('cashback') || lc.includes('reward') || lc.includes('transfer') || lc.includes('deposit')) return 'income';
+    return 'expense';
+}
+
 export default function CategoriesTab() {
     const [customCats, setCustomCats] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // Track which expense categories from transactions are not in any known list
-    const [orphanCats, setOrphanCats] = useState([]);
+    // Orphan review state
+    const [orphanCats, setOrphanCats] = useState([]); // raw strings from DB
+    const [showReview, setShowReview] = useState(false);
+    // reviewItems: [{ name, editName, type, skip }]
+    const [reviewItems, setReviewItems] = useState([]);
     const [importing, setImporting] = useState(false);
+    const [importResult, setImportResult] = useState(null); // { imported, skipped }
 
     const load = useCallback(async () => {
         try {
@@ -152,26 +162,37 @@ export default function CategoriesTab() {
 
     useEffect(() => { load(); }, [load]);
 
-    // Fetch orphan categories (freeform strings in expenses not in any list)
+    // Fetch orphan categories (freeform strings not in any known list)
     useEffect(() => {
         apiGet('/expenses/distinct-categories').then(data => {
             if (!Array.isArray(data)) return;
-            const allKnown = new Set(ALL_CATEGORIES);
-            setOrphanCats(data.filter(c => c && !allKnown.has(c)));
+            const allKnown = new Set([...ALL_CATEGORIES, ...customCats.map(c => c.name)]);
+            const orphans = data.filter(c => c && !allKnown.has(c));
+            setOrphanCats(orphans);
+            // Reset review items whenever the orphan list changes
+            setReviewItems(orphans.map(name => ({ name, editName: name, type: guessType(name), skip: false })));
         }).catch(() => {});
     }, [customCats]);
 
-    const importOrphans = async () => {
+    const updateItem = (i, patch) =>
+        setReviewItems(prev => prev.map((it, idx) => idx === i ? { ...it, ...patch } : it));
+
+    const handleImportSelected = async () => {
         setImporting(true);
-        let count = 0;
-        for (const name of orphanCats) {
-            const type = (name.toLowerCase().includes('income') || name.toLowerCase().includes('refund')) ? 'income' : 'expense';
-            try { await apiPost('/categories', { name, type }); count++; } catch (_) {}
+        let imported = 0, skipped = 0;
+        for (const item of reviewItems) {
+            if (item.skip) { skipped++; continue; }
+            try { await apiPost('/categories', { name: item.editName.trim(), type: item.type }); imported++; }
+            catch (_) { skipped++; }
         }
         await load();
         setImporting(false);
-        if (count) alert(`Imported ${count} categor${count === 1 ? 'y' : 'ies'}.`);
+        setShowReview(false);
+        setImportResult({ imported, skipped });
+        setTimeout(() => setImportResult(null), 5000);
     };
+
+    const toImport = reviewItems.filter(it => !it.skip).length;
 
     const catsByType = { expense: [], income: [], misc_income: [] };
     for (const c of customCats) {
@@ -189,8 +210,15 @@ export default function CategoriesTab() {
                 </p>
             </div>
 
-            {/* Orphan import banner */}
-            {orphanCats.length > 0 && (
+            {/* Import result toast */}
+            {importResult && (
+                <div style={{ padding: '12px 16px', borderRadius: '8px', background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.3)', fontSize: '13px', color: '#4ade80', fontWeight: 600 }}>
+                    ✓ Imported {importResult.imported} categor{importResult.imported === 1 ? 'y' : 'ies'}{importResult.skipped > 0 ? ` · ${importResult.skipped} skipped` : ''}
+                </div>
+            )}
+
+            {/* Orphan review banner */}
+            {orphanCats.length > 0 && !showReview && (
                 <div className="card glass" style={{ padding: '16px 20px', border: '1px solid rgba(251,191,36,0.25)', background: 'rgba(251,191,36,0.06)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                         <div style={{ flex: 1 }}>
@@ -200,8 +228,71 @@ export default function CategoriesTab() {
                                 <em>{orphanCats.slice(0, 5).join(', ')}{orphanCats.length > 5 ? `, +${orphanCats.length - 5} more` : ''}</em>
                             </div>
                         </div>
-                        <button className="btn" onClick={importOrphans} disabled={importing} style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>
-                            {importing ? 'Importing…' : 'Import All'}
+                        <button className="btn" onClick={() => setShowReview(true)} style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>
+                            Review &amp; Import
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Orphan review panel */}
+            {showReview && (
+                <div className="card glass" style={{ padding: '20px 24px', border: '1px solid rgba(251,191,36,0.25)', background: 'rgba(251,191,36,0.04)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', gap: '12px', flexWrap: 'wrap' }}>
+                        <div>
+                            <div style={{ fontWeight: 800, color: '#fbbf24', fontSize: '14px', marginBottom: '2px' }}>Review Unrecognized Categories</div>
+                            <div className="muted" style={{ fontSize: '12px' }}>Edit names or types, then uncheck any you want to skip. {toImport} of {reviewItems.length} will be imported.</div>
+                        </div>
+                        <button className="btn secondary" onClick={() => setShowReview(false)} style={{ fontSize: '12px' }}>Cancel</button>
+                    </div>
+
+                    {/* Column headers */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '24px 1fr 140px 60px', gap: '8px', padding: '0 4px 8px', borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: '8px' }}>
+                        <div />
+                        <div style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Category Name</div>
+                        <div style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Type</div>
+                        <div style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Skip</div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '360px', overflowY: 'auto', marginBottom: '16px' }}>
+                        {reviewItems.map((item, i) => (
+                            <div key={item.name} style={{ display: 'grid', gridTemplateColumns: '24px 1fr 140px 60px', gap: '8px', alignItems: 'center', opacity: item.skip ? 0.4 : 1, transition: 'opacity 0.15s' }}>
+                                <div style={{ fontSize: '13px', color: item.skip ? 'rgba(255,255,255,0.2)' : '#4ade80' }}>
+                                    {item.skip ? '—' : '✓'}
+                                </div>
+                                <input
+                                    value={item.editName}
+                                    onChange={e => updateItem(i, { editName: e.target.value })}
+                                    disabled={item.skip}
+                                    style={{ fontSize: '13px', padding: '5px 8px' }}
+                                />
+                                <select
+                                    value={item.type}
+                                    onChange={e => updateItem(i, { type: e.target.value })}
+                                    disabled={item.skip}
+                                    style={{ fontSize: '12px', padding: '5px 6px' }}
+                                >
+                                    <option value="expense">Expense</option>
+                                    <option value="income">Income</option>
+                                    <option value="misc_income">Misc Income</option>
+                                </select>
+                                <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={item.skip}
+                                        onChange={e => updateItem(i, { skip: e.target.checked })}
+                                        style={{ width: 'auto', margin: 0 }}
+                                    />
+                                </label>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                        <button className="btn secondary" onClick={() => setReviewItems(prev => prev.map(it => ({ ...it, skip: true })))} style={{ fontSize: '12px' }}>Skip All</button>
+                        <button className="btn secondary" onClick={() => setReviewItems(prev => prev.map(it => ({ ...it, skip: false })))} style={{ fontSize: '12px' }}>Select All</button>
+                        <button className="btn" onClick={handleImportSelected} disabled={importing || toImport === 0} style={{ fontSize: '12px' }}>
+                            {importing ? 'Importing…' : `Import ${toImport}`}
                         </button>
                     </div>
                 </div>
