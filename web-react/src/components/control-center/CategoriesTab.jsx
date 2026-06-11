@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { apiGet, apiPost, apiPut, apiDelete } from '../../api';
+import { useModal } from '../ModalContext.jsx';
 import { CATEGORY_GROUPS, ALL_CATEGORIES } from '../../constants/categories.js';
 
 // Map CATEGORY_GROUPS group label → API type key
@@ -45,6 +46,7 @@ function AddCategoryForm({ type, onSaved }) {
 }
 
 function CustomCategoryRow({ cat, onRenamed, onDeleted }) {
+    const modal = useModal();
     const [editing, setEditing] = useState(false);
     const [editName, setEditName] = useState(cat.name);
     const [saving, setSaving] = useState(false);
@@ -59,7 +61,7 @@ function CustomCategoryRow({ cat, onRenamed, onDeleted }) {
             setEditing(false);
             if (onRenamed) onRenamed();
         } catch (e) {
-            alert(e?.message || 'Rename failed.');
+            await modal.alert(e?.message || 'Rename failed.');
         } finally {
             setSaving(false);
         }
@@ -75,7 +77,7 @@ function CustomCategoryRow({ cat, onRenamed, onDeleted }) {
                 const match = e.message.match(/^(\d+)/);
                 setConfirmDelete({ count: match ? parseInt(match[1]) : '?' });
             } else {
-                alert(e?.message || 'Delete failed.');
+                await modal.alert(e?.message || 'Delete failed.');
             }
         } finally {
             setDeleting(false);
@@ -141,6 +143,7 @@ function guessType(name) {
 }
 
 export default function CategoriesTab() {
+    const modal = useModal();
     const [customCats, setCustomCats] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -203,11 +206,33 @@ export default function CategoriesTab() {
             await apiDelete(`/categories/orphan?name=${encodeURIComponent(name)}`);
             setSkippedOrphans(prev => prev.filter(n => n !== name));
         } catch (e) {
-            alert(e?.message || 'Failed to clear category.');
+            await modal.alert(e?.message || 'Failed to clear category.');
         } finally {
             setDeletingOrphan(null);
         }
     };
+
+    // Delete all unchecked (include=false) review items from transactions
+    const handleDeleteUnchecked = async () => {
+        const toDelete = reviewItems.filter(it => !it.include);
+        if (!toDelete.length) return;
+        const ok = await modal.confirm(`Clear the category from all transactions using ${toDelete.length === 1 ? `"${toDelete[0].name}"` : `these ${toDelete.length} categories`}? This cannot be undone.`);
+        if (!ok) return;
+        setDeletingOrphan('__bulk__');
+        let deleted = 0;
+        for (const item of toDelete) {
+            try {
+                await apiDelete(`/categories/orphan?name=${encodeURIComponent(item.name)}`);
+                deleted++;
+            } catch (_) {}
+        }
+        setReviewItems(prev => prev.filter(it => it.include));
+        setOrphanCats(prev => prev.filter(n => !toDelete.find(it => it.name === n)));
+        setDeletingOrphan(null);
+        if (deleted) await modal.alert(`Cleared ${deleted} categor${deleted === 1 ? 'y' : 'ies'} from your transactions.`);
+    };
+
+    const uncheckedCount = reviewItems.filter(it => !it.include).length;
 
     const toImport = reviewItems.filter(it => it.include).length;
 
@@ -264,16 +289,15 @@ export default function CategoriesTab() {
                     </div>
 
                     {/* Column headers */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px 60px 90px', gap: '8px', padding: '0 4px 8px', borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: '8px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px 60px', gap: '8px', padding: '0 4px 8px', borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: '8px' }}>
                         <div style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Category Name</div>
                         <div style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Type</div>
                         <div style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'center' }}>Import</div>
-                        <div />
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '360px', overflowY: 'auto', marginBottom: '16px' }}>
                         {reviewItems.map((item, i) => (
-                            <div key={item.name} style={{ display: 'grid', gridTemplateColumns: '1fr 140px 60px 90px', gap: '8px', alignItems: 'center', opacity: item.include ? 1 : 0.5, transition: 'opacity 0.15s' }}>
+                            <div key={item.name} style={{ display: 'grid', gridTemplateColumns: '1fr 140px 60px', gap: '8px', alignItems: 'center', opacity: item.include ? 1 : 0.5, transition: 'opacity 0.15s' }}>
                                 <input
                                     value={item.editName}
                                     onChange={e => updateItem(i, { editName: e.target.value })}
@@ -298,29 +322,20 @@ export default function CategoriesTab() {
                                         style={{ width: 'auto', margin: 0 }}
                                     />
                                 </label>
-                                <button
-                                    onClick={async () => {
-                                        setDeletingOrphan(item.name);
-                                        try {
-                                            await apiDelete(`/categories/orphan?name=${encodeURIComponent(item.name)}`);
-                                            setReviewItems(prev => prev.filter((_, idx) => idx !== i));
-                                            setOrphanCats(prev => prev.filter(n => n !== item.name));
-                                        } catch (e) {
-                                            alert(e?.message || 'Failed to delete.');
-                                        } finally {
-                                            setDeletingOrphan(null);
-                                        }
-                                    }}
-                                    disabled={deletingOrphan === item.name}
-                                    style={{ background: 'none', border: '1px solid rgba(248,113,113,0.3)', borderRadius: '6px', color: '#f87171', fontSize: '11px', padding: '4px 8px', cursor: 'pointer', whiteSpace: 'nowrap' }}
-                                >
-                                    {deletingOrphan === item.name ? '…' : 'Delete'}
-                                </button>
                             </div>
                         ))}
                     </div>
 
-                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        {/* Delete unchecked — far left */}
+                        <button
+                            className="btn secondary"
+                            onClick={handleDeleteUnchecked}
+                            disabled={deletingOrphan === '__bulk__' || uncheckedCount === 0}
+                            style={{ fontSize: '12px', color: '#f87171', borderColor: 'rgba(248,113,113,0.35)', marginRight: 'auto' }}
+                        >
+                            {deletingOrphan === '__bulk__' ? 'Deleting…' : `Delete Unchecked${uncheckedCount > 0 ? ` (${uncheckedCount})` : ''}`}
+                        </button>
                         <button className="btn secondary" onClick={() => setReviewItems(prev => prev.map(it => ({ ...it, include: false })))} style={{ fontSize: '12px' }}>Deselect All</button>
                         <button className="btn secondary" onClick={() => setReviewItems(prev => prev.map(it => ({ ...it, include: true })))} style={{ fontSize: '12px' }}>Select All</button>
                         <button className="btn" onClick={handleImportSelected} disabled={importing || toImport === 0} style={{ fontSize: '12px' }}>

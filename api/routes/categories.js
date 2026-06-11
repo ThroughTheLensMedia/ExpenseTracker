@@ -104,6 +104,35 @@ router.put('/:id', async (req, res) => {
     }
 });
 
+// DELETE /api/categories/orphan?name=X
+// Clears the category field from all expenses that use the given freeform string.
+// Used to clean up orphan categories that weren't imported.
+// MUST be defined before /:id so Express doesn't treat "orphan" as an id param.
+router.delete('/orphan', async (req, res) => {
+    const name = (req.query.name || '').trim();
+    if (!name) return res.status(400).json({ error: 'name query param required.' });
+    try {
+        const { count, error: countErr } = await req.sb
+            .from('expenses')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', req.user.id)
+            .eq('category', name);
+        if (countErr) throw countErr;
+
+        const { error: updateErr } = await req.sb
+            .from('expenses')
+            .update({ category: null })
+            .eq('user_id', req.user.id)
+            .eq('category', name);
+        if (updateErr) throw updateErr;
+
+        res.json({ cleared: true, name, count: count || 0 });
+    } catch (err) {
+        console.error('[categories] DELETE /orphan error', err.message);
+        res.status(500).json({ error: 'Failed to clear category.' });
+    }
+});
+
 // DELETE /api/categories/:id
 // If transactions still use this category, returns 409 with count unless ?force=true
 router.delete('/:id', async (req, res) => {
@@ -146,34 +175,6 @@ router.delete('/:id', async (req, res) => {
     } catch (err) {
         console.error('[categories] DELETE error', err.message);
         res.status(500).json({ error: 'Failed to delete category.' });
-    }
-});
-
-// DELETE /api/categories/orphan?name=X
-// Clears the category field from all expenses that use the given freeform string.
-// Used to clean up orphan categories that weren't imported.
-router.delete('/orphan', async (req, res) => {
-    const name = (req.query.name || '').trim();
-    if (!name) return res.status(400).json({ error: 'name query param required.' });
-    try {
-        const { count, error: countErr } = await req.sb
-            .from('expenses')
-            .select('id', { count: 'exact', head: true })
-            .eq('user_id', req.user.id)
-            .eq('category', name);
-        if (countErr) throw countErr;
-
-        const { error: updateErr } = await req.sb
-            .from('expenses')
-            .update({ category: null })
-            .eq('user_id', req.user.id)
-            .eq('category', name);
-        if (updateErr) throw updateErr;
-
-        res.json({ cleared: true, name, count: count || 0 });
-    } catch (err) {
-        console.error('[categories] DELETE /orphan error', err.message);
-        res.status(500).json({ error: 'Failed to clear category.' });
     }
 });
 
