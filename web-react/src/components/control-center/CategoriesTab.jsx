@@ -212,6 +212,18 @@ export default function CategoriesTab() {
         }
     };
 
+    // Refresh orphan list from DB and reconcile with current customCats
+    const refreshOrphans = useCallback(async () => {
+        try {
+            const data = await apiGet('/expenses/distinct-categories');
+            if (!Array.isArray(data)) return;
+            const allKnown = new Set([...ALL_CATEGORIES, ...customCats.map(c => c.name)]);
+            const orphans = data.filter(c => c && !allKnown.has(c));
+            setOrphanCats(orphans);
+            setReviewItems(orphans.map(name => ({ name, editName: name, type: guessType(name), include: true })));
+        } catch (_) {}
+    }, [customCats]);
+
     // Delete all unchecked (include=false) review items from transactions
     const handleDeleteUnchecked = async () => {
         const toDelete = reviewItems.filter(it => !it.include);
@@ -220,16 +232,23 @@ export default function CategoriesTab() {
         if (!ok) return;
         setDeletingOrphan('__bulk__');
         let deleted = 0;
+        const failures = [];
         for (const item of toDelete) {
             try {
                 await apiDelete(`/categories/orphan?name=${encodeURIComponent(item.name)}`);
                 deleted++;
-            } catch (_) {}
+            } catch (e) {
+                failures.push(item.name);
+            }
         }
-        setReviewItems(prev => prev.filter(it => it.include));
-        setOrphanCats(prev => prev.filter(n => !toDelete.find(it => it.name === n)));
+        // Re-fetch from DB so state reflects actual DB state (not just optimistic removal)
+        await refreshOrphans();
         setDeletingOrphan(null);
-        if (deleted) await modal.alert(`Cleared ${deleted} categor${deleted === 1 ? 'y' : 'ies'} from your transactions.`);
+        if (failures.length) {
+            await modal.alert(`Failed to clear ${failures.length} categor${failures.length === 1 ? 'y' : 'ies'}: ${failures.join(', ')}`);
+        } else if (deleted) {
+            await modal.alert(`Cleared ${deleted} categor${deleted === 1 ? 'y' : 'ies'} from your transactions.`);
+        }
     };
 
     const uncheckedCount = reviewItems.filter(it => !it.include).length;
