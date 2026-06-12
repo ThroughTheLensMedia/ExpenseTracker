@@ -164,16 +164,6 @@ export default function Backup() {
 
                 {/* Pills — alphabetical order */}
                 <nav style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                    {isAdmin && (
-                        <button
-                            className={`pill ${activeTab === 'admin' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('admin')}
-                            style={{ position: 'relative' }}
-                        >
-                            Admin
-                            <span style={{ position: 'absolute', top: 3, right: 4, width: 7, height: 7, borderRadius: '50%', background: '#f97316', display: 'inline-block', pointerEvents: 'none' }} />
-                        </button>
-                    )}
                     <button className={`pill ${activeTab === 'intelligence' ? 'active' : ''}`} onClick={() => setActiveTab('intelligence')}>AI Intelligence</button>
                     <button className={`pill ${activeTab === 'automation' ? 'active' : ''}`} onClick={() => setActiveTab('automation')}>Automation</button>
                     <button className={`pill ${activeTab === 'categories' ? 'active' : ''}`} onClick={() => setActiveTab('categories')}>Categories</button>
@@ -186,6 +176,16 @@ export default function Backup() {
                         Infrastructure
                         <span style={{ position: 'absolute', top: 3, right: 4, width: 7, height: 7, borderRadius: '50%', background: '#f97316', display: 'inline-block', pointerEvents: 'none' }} />
                     </button>}
+                    {isAdmin && (
+                        <button
+                            className={`pill ${activeTab === 'admin' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('admin')}
+                            style={{ position: 'relative' }}
+                        >
+                            Admin
+                            <span style={{ position: 'absolute', top: 3, right: 4, width: 7, height: 7, borderRadius: '50%', background: '#f97316', display: 'inline-block', pointerEvents: 'none' }} />
+                        </button>
+                    )}
                 </nav>
             </div>
 

@@ -231,16 +231,13 @@ export default function CategoriesTab() {
         const ok = await modal.confirm(`Clear the category from all transactions using ${toDelete.length === 1 ? `"${toDelete[0].name}"` : `these ${toDelete.length} categories`}? This cannot be undone.`);
         if (!ok) return;
         setDeletingOrphan('__bulk__');
-        let deleted = 0;
-        const failures = [];
-        for (const item of toDelete) {
-            try {
-                await apiDelete(`/categories/orphan?name=${encodeURIComponent(item.name)}`);
-                deleted++;
-            } catch (e) {
-                failures.push(item.name);
-            }
-        }
+        const results = await Promise.allSettled(
+            toDelete.map(item => apiDelete(`/categories/orphan?name=${encodeURIComponent(item.name)}`))
+        );
+        const failures = results
+            .map((r, i) => r.status === 'rejected' ? toDelete[i].name : null)
+            .filter(Boolean);
+        const deleted = results.filter(r => r.status === 'fulfilled').length;
         // Re-fetch from DB so state reflects actual DB state (not just optimistic removal)
         await refreshOrphans();
         setDeletingOrphan(null);
