@@ -121,7 +121,7 @@ router.delete('/orphan', async (req, res) => {
 
         const { error: updateErr } = await req.sb
             .from('expenses')
-            .update({ category: null })
+            .update({ category: '' })
             .eq('user_id', req.user.id)
             .eq('category', name);
         if (updateErr) throw updateErr;
