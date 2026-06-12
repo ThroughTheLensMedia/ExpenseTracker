@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.10.7] — 2026-06-12
+
+### Categories — Bug Fixes & UX
+
+- **`api/routes/categories.js`** — Fixed orphan delete: `category = ''` instead of `null` (column is NOT NULL); fixed Express route ordering (`/orphan` before `/:id`).
+- **`web-react/src/components/control-center/CategoriesTab.jsx`** — Parallel delete via `Promise.allSettled`; re-fetches from DB after delete to confirm actual state; surfaces failed deletes by name.
+- **`web-react/src/pages/Backup.jsx`** — Admin pill moved to end of nav, beside Infrastructure.
+
+---
+
 ## [v7.10.6] — 2026-06-11
 
 ### User-Managed Categories

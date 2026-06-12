@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.10.7', date: 'JUN 12, 2026', color: '#4ade80', items: [
+        '<strong>Categories — Delete Fixed:</strong> Deleting unrecognized categories from the Review panel now works correctly. Deletes run in parallel so the whole batch clears in about 1 second instead of 20.',
+        '<strong>Admin Pill Moved:</strong> The Admin tab is now grouped next to Infrastructure at the end of the nav — where it belongs.',
+    ]},
     { version: '7.10.6', date: 'JUN 11, 2026', color: '#38bdf8', items: [
         '<strong>Custom Categories:</strong> You can now create, rename, and delete your own expense and income categories. Head to Ledger Control Center → Categories. Built-in categories are still there, read-only.',
         '<strong>Categories Tab in LCC:</strong> New tab shows all categories grouped by type. Custom categories have inline rename and delete — if transactions use the category, you\'ll see a count and a confirm prompt before deletion.',
