@@ -27,7 +27,6 @@ const Accounts       = lazy(() => import('./pages/Accounts'));
 const AssistantSidebar = lazy(() => import('./components/AssistantSidebar'));
 import ChangeLogModal from './components/control-center/ChangeLogModal.jsx';
 import OnboardingChecklist from './components/OnboardingChecklist.jsx';
-import MonthlyInsightsModal, { shouldShowMonthlyInsights, markMonthlyInsightsSeen } from './components/MonthlyInsightsModal.jsx';
 
 // Shared route-level loading fallback — matches app's existing spinner style
 function PageSpinner() {
@@ -155,14 +154,13 @@ function AppContent() {
   const [showWhatsNew, setShowWhatsNew] = useState(false);
   const [showChangelogModal, setShowChangelogModal] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [showMonthlyInsights, setShowMonthlyInsights] = useState(false);
   const menuRef = useRef(null);
   const reopenOnboarding = useRef(false);
 
   // --- Version Check Hook ---
   // DEPLOY SOP: update CURRENT_VERSION here AND web-react/public/version.json on every release.
   useEffect(() => {
-    const CURRENT_VERSION = "7.10.7";
+    const CURRENT_VERSION = "7.10.8";
 
     // What's New: show button if user hasn't dismissed it for this version
     const seen = localStorage.getItem('ll_whats_new_seen');
@@ -182,14 +180,6 @@ function AppContent() {
     return () => clearInterval(timer);
   }, [user]);
 
-  // ── Monthly Insights Trigger ─────────────────────────────────────────────────
-  // Fires once per calendar month, 3 seconds after login, after auth resolves.
-  useEffect(() => {
-    if (!user || !subscriptionReady) return;
-    if (!shouldShowMonthlyInsights()) return;
-    const t = setTimeout(() => setShowMonthlyInsights(true), 3000);
-    return () => clearTimeout(t);
-  }, [user?.id, subscriptionReady]);
 
   // ── First-Run Onboarding Trigger ───────────────────────────────────────────
   // Fires once auth data is resolved. Uses subscriptionReady (not subscription)
@@ -580,7 +570,6 @@ function AppContent() {
       </main>
 
       {showChangelogModal && <ChangeLogModal onClose={() => setShowChangelogModal(false)} />}
-      {showMonthlyInsights && <MonthlyInsightsModal onClose={() => setShowMonthlyInsights(false)} />}
       {showOnboarding && (
         <OnboardingChecklist onDismiss={handleOnboardingDismiss} initialPage={reopenOnboarding.current ? 2 : 0} />
       )}

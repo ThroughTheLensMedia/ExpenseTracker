@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.10.8] — 2026-06-15
+
+### Cleanup
+
+- **`web-react/src/components/MonthlyInsightsModal.jsx`** — Deleted. Monthly summary modal removed entirely.
+- **`web-react/src/App.jsx`** — Removed import, state, trigger `useEffect`, and render of `MonthlyInsightsModal`.
+
+---
+
 ## [v7.10.7] — 2026-06-12
 
 ### Categories — Bug Fixes & UX

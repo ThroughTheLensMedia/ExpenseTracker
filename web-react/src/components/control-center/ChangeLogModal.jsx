@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.10.8', date: 'JUN 15, 2026', color: '#94a3b8', items: [
+        '<strong>Cleanup:</strong> Removed the monthly spending summary modal that appeared on login. The same data is already visible on your dashboard.',
+    ]},
     { version: '7.10.7', date: 'JUN 12, 2026', color: '#4ade80', items: [
         '<strong>Categories — Delete Fixed:</strong> Deleting unrecognized categories from the Review panel now works correctly. Deletes run in parallel so the whole batch clears in about 1 second instead of 20.',
         '<strong>Admin Pill Moved:</strong> The Admin tab is now grouped next to Infrastructure at the end of the nav — where it belongs.',
