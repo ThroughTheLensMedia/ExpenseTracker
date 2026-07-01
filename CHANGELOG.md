@@ -5,6 +5,14 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.10.15] — 2026-07-01
+
+### Fixed — Broken Vercel dashboard links in Security Review checklist
+
+- **`web-react/src/components/control-center/SecurityReviewTab.jsx`** — 3 links (Runtime Logs, Deployments, Env Variables) used the wrong Vercel org slug (`through-the-lens-media` instead of `throughthelensmedias-projects`), 404ing every time. Found while running the weekly Security Review checklist.
+
+---
+
 ## [v7.10.14] — 2026-07-01
 
 ### Added — Cloudflare Turnstile on signup

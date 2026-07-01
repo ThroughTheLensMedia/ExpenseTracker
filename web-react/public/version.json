@@ -1,1 +1,1 @@
-{"version":"7.10.14","release_date":"2026-07-01","codename":"Lumière Ledger","notes":"v7.10.14: Added Cloudflare Turnstile to signup form, reorganized Admin SaaS panel into tabs"}
+{"version":"7.10.15","release_date":"2026-07-01","codename":"Lumière Ledger","notes":"v7.10.15: Fixed broken Vercel dashboard links in Security Review checklist"}

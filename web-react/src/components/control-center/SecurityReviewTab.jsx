@@ -15,7 +15,7 @@ const TYPE_LABELS = {
 const TYPE_CHECKLIST = {
     weekly: [
         { text: 'Check for failed auth spikes or unusual API usage', subs: [
-            { link: 'https://vercel.com/through-the-lens-media/expense-tracker/logs', label: 'Vercel Runtime Logs' },
+            { link: 'https://vercel.com/throughthelensmedias-projects/expense-tracker/logs', label: 'Vercel Runtime Logs' },
             { link: 'https://supabase.com/dashboard/projects', label: 'Supabase Auth Logs → Auth → Logs' },
         ]},
         { text: 'Check UptimeRobot for missed downtime events', subs: [
@@ -31,7 +31,7 @@ const TYPE_CHECKLIST = {
             { link: 'https://supabase.com/changelog', label: 'Supabase Changelog' },
         ]},
         { text: 'Review Vercel build logs for new warnings', subs: [
-            { link: 'https://vercel.com/through-the-lens-media/expense-tracker/deployments', label: 'Vercel Deployments' },
+            { link: 'https://vercel.com/throughthelensmedias-projects/expense-tracker/deployments', label: 'Vercel Deployments' },
         ]},
     ],
     quarterly: [
@@ -46,7 +46,7 @@ const TYPE_CHECKLIST = {
             { link: 'https://supabase.com/dashboard/projects', label: 'Supabase → Auth → Policies' },
         ]},
         { text: 'Rotate POSTMARK_INBOUND_TOKEN and CRON_SECRET', subs: [
-            { link: 'https://vercel.com/through-the-lens-media/expense-tracker/settings/environment-variables', label: 'Vercel Env Variables' },
+            { link: 'https://vercel.com/throughthelensmedias-projects/expense-tracker/settings/environment-variables', label: 'Vercel Env Variables' },
             { link: 'https://account.postmarkapp.com', label: 'Postmark Account' },
         ]},
         { text: 'Verify Stripe webhook signatures still validating', subs: [

@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.10.15', date: 'JUL 1, 2026', color: '#94a3b8', items: [
+        '<strong>Cleanup:</strong> Fixed broken dashboard links in the admin Security Review panel.',
+    ]},
     { version: '7.10.14', date: 'JUL 1, 2026', color: '#94a3b8', items: [
         '<strong>Cleanup:</strong> Signup security hardening and admin panel improvements.',
     ]},
