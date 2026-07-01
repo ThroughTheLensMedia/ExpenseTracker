@@ -52,6 +52,7 @@ Source of truth for all sprint work, security status, and product phases.
 | Admin SaaS panel reorganized into tabs | ✅ v7.10.14 — Active Members / Invite Codes / Engagement Pulse, matching System Logs' tab pattern |
 | `TURNSTILE_SECRET_KEY` added to Vercel | ✅ Confirmed by Joshua 2026-07-01 — Turnstile bot-challenge is now actually active, not just deployed |
 | Security Review — Vercel links broken | ✅ v7.10.15 — 3 links used wrong org slug (`through-the-lens-media`), 404ing on every weekly check. Fixed. |
+| Stripe checkout → webhook → tier gate | ✅ Confirmed end-to-end 2026-07-01 — Joshua ran a real test transaction + refund. `STRIPE_ROADMAP.md` was frozen at its pre-build planning state since 2026-05-18 despite this being live since v7.6.5/v7.8.27 — fully updated. |
 
 ---
 

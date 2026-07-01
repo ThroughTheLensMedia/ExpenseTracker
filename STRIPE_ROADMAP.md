@@ -1,7 +1,7 @@
 # Lumière Ledger — Stripe & Monetization Roadmap
 
-**Last updated:** 2026-05-18
-**Status:** Ready to build — gate cleared
+**Last updated:** 2026-07-01
+**Status:** ✅ Live in production — full checkout → webhook → tier-gate flow confirmed working end-to-end via a real test transaction + refund (Joshua, 2026-07-01)
 **Reference:** See `ROADMAP.md` for overall sprint context. Plaid billing spec in `PLAID_BILLING_SPEC.md`.
 
 ---
@@ -11,8 +11,9 @@
 | Tier | Monthly | Annual (20% off) | Stripe Price IDs |
 |------|---------|-----------------|-----------------|
 | Free | $0 | — | *(no Stripe product)* |
-| Core | $9 / mo | $86 / yr ($7.17/mo effective) | *(set after product creation)* |
-| Studio | $19 / mo | $182 / yr ($15.17/mo effective) | *(set after product creation)* |
+| Sync | $4.99 / mo | $49.99 / yr | Plaid-only flat plan, added post-launch — see `PLAID_BILLING_SPEC.md` |
+| Core | $9 / mo | $86 / yr ($7.17/mo effective) | `price_1TYZtXCXjNrpxtAHB3ZL5DlF` (monthly) / `price_1TYZvPCXjNrpxtAHaFtBiyno` (annual) |
+| Studio | $19 / mo | $182 / yr ($15.17/mo effective) | `price_1TYZvpCXjNrpxtAHdNTzia9o` (monthly) / `price_1TYZw2CXjNrpxtAHwAiJ3hEy` (annual) |
 
 **Grandfathered members (beta/pro key holders):**
 - `free_beta` → Free tier forever, no charge except Plaid usage fees
@@ -266,8 +267,8 @@ Then build Plaid billing on top (P1–P10 in `PLAID_BILLING_SPEC.md`, ~4 hrs add
 ## Stripe Setup Checklist
 
 ### Stripe Dashboard Actions (Joshua)
-- [ ] Create Stripe account at stripe.com (business email)
-- [ ] Complete business verification (EIN / SSN, bank account for payouts)
+- [x] Create Stripe account at stripe.com (business email) — confirmed live, processing real payments
+- [x] Complete business verification (EIN / SSN, bank account for payouts) — confirmed, real transaction + refund processed 2026-07-01
 - [x] Create Product: "Lumière Core"
   - [x] $9.00 / month → `price_1TYZtXCXjNrpxtAHB3ZL5DlF` → `STRIPE_PRICE_CORE_MONTHLY`
   - [x] $86.00 / year → `price_1TYZvPCXjNrpxtAHaFtBiyno` → `STRIPE_PRICE_CORE_ANNUAL`
@@ -279,25 +280,25 @@ Then build Plaid billing on top (P1–P10 in `PLAID_BILLING_SPEC.md`, ~4 hrs add
 - [x] Publishable key confirmed — 2026-05-18
 - [x] Secret key confirmed — 2026-05-18
 - [x] ✉️ Price IDs confirmed — locked 2026-05-18
-- [ ] **Reveal webhook signing secret** → Stripe Dashboard → Webhooks → click endpoint → eye icon → copy `whsec_...` → add to Vercel as `STRIPE_WEBHOOK_SECRET`
-- [ ] Set invoice finalization window to **3 days** (Stripe Dashboard → Billing → Invoice finalization)
-- [ ] Enable automatic invoice emails (Stripe Settings → Billing → Customer emails → Successful payments + Failed payments + Send finalized invoices)
+- [x] **Reveal webhook signing secret** → confirmed set in Vercel as `STRIPE_WEBHOOK_SECRET` (webhook destination `we_1TYaFNCXjNrpxtAHGhHLMQPo` live, listening to 6 events, signature verification passing — webhook wouldn't function at all otherwise)
+- [ ] Set invoice finalization window to **3 days** (Stripe Dashboard → Billing → Invoice finalization) — not verified, check next Stripe dashboard visit
+- [ ] Enable automatic invoice emails (Stripe Settings → Billing → Customer emails → Successful payments + Failed payments + Send finalized invoices) — not verified, check next Stripe dashboard visit
 
 ### Vercel Env Vars (Joshua)
-- [ ] `STRIPE_SECRET_KEY` = `sk_live_51THoMXCX...`
-- [ ] `STRIPE_WEBHOOK_SECRET` = `whsec_...` (reveal from Stripe first)
-- [ ] `STRIPE_PRICE_CORE_MONTHLY` = `price_1TYZtXCXjNrpxtAHB3ZL5DlF`
-- [ ] `STRIPE_PRICE_CORE_ANNUAL` = `price_1TYZvPCXjNrpxtAHaFtBiyno`
-- [ ] `STRIPE_PRICE_STUDIO_MONTHLY` = `price_1TYZvpCXjNrpxtAHdNTzia9o`
-- [ ] `STRIPE_PRICE_STUDIO_ANNUAL` = `price_1TYZw2CXjNrpxtAHwAiJ3hEy`
-- [ ] `VITE_STRIPE_PUBLISHABLE_KEY` = `pk_live_51THoMXCX...`
-- [ ] `VITE_STRIPE_PRICE_CORE_MONTHLY` = `price_1TYZtXCXjNrpxtAHB3ZL5DlF`
-- [ ] `VITE_STRIPE_PRICE_CORE_ANNUAL` = `price_1TYZvPCXjNrpxtAHaFtBiyno`
-- [ ] `VITE_STRIPE_PRICE_STUDIO_MONTHLY` = `price_1TYZvpCXjNrpxtAHdNTzia9o`
-- [ ] `VITE_STRIPE_PRICE_STUDIO_ANNUAL` = `price_1TYZw2CXjNrpxtAHwAiJ3hEy`
+- [x] `STRIPE_SECRET_KEY` — confirmed set, live checkout works
+- [x] `STRIPE_WEBHOOK_SECRET` — confirmed set, webhook signature verification passing
+- [x] `STRIPE_PRICE_CORE_MONTHLY` = `price_1TYZtXCXjNrpxtAHB3ZL5DlF`
+- [x] `STRIPE_PRICE_CORE_ANNUAL` = `price_1TYZvPCXjNrpxtAHaFtBiyno`
+- [x] `STRIPE_PRICE_STUDIO_MONTHLY` = `price_1TYZvpCXjNrpxtAHdNTzia9o`
+- [x] `STRIPE_PRICE_STUDIO_ANNUAL` = `price_1TYZw2CXjNrpxtAHwAiJ3hEy`
+- [x] `VITE_STRIPE_PUBLISHABLE_KEY` — confirmed set, checkout redirect works
+- [x] `VITE_STRIPE_PRICE_CORE_MONTHLY` = `price_1TYZtXCXjNrpxtAHB3ZL5DlF`
+- [x] `VITE_STRIPE_PRICE_CORE_ANNUAL` = `price_1TYZvPCXjNrpxtAHaFtBiyno`
+- [x] `VITE_STRIPE_PRICE_STUDIO_MONTHLY` = `price_1TYZvpCXjNrpxtAHdNTzia9o`
+- [x] `VITE_STRIPE_PRICE_STUDIO_ANNUAL` = `price_1TYZw2CXjNrpxtAHwAiJ3hEy`
 
 ### Supabase Migration (Joshua — run in SQL Editor)
-- [ ] Run idempotent migration:
+- [x] Confirmed live — `user_subscriptions` has `stripe_customer_id`, `stripe_subscription_id`, `stripe_price_id`, `admin_tier`, `current_period_end`
   ```sql
   ALTER TABLE user_subscriptions
     ADD COLUMN IF NOT EXISTS stripe_customer_id     TEXT,
@@ -316,9 +317,9 @@ Then build Plaid billing on top (P1–P10 in `PLAID_BILLING_SPEC.md`, ~4 hrs add
 - [x] Lazy Stripe init — server no longer crashes when `STRIPE_SECRET_KEY` is absent (v7.6.5a)
 
 ### Code — Remaining
-- [ ] Route-level limit enforcement — `expenses.js`, `invoices.js`, `rules.js`, `leads.js`, `assets.js`
-- [ ] ProfileTab billing section — plan badge, Manage Billing, upgrade CTA for Free
-- [ ] End-to-end test — checkout → webhook fires → `plan_type` updates → gate drops
+- [x] Route-level limit enforcement — confirmed `req.tierLimits` used in `expenses.js`, `invoices.js`, `rules.js`, `leads.js`, `assets.js`
+- [x] ProfileTab billing section — plan badge, "Manage Billing" → `/stripe/portal`, upgrade CTAs for Sync/Core/Studio all present in `ProfileTab.jsx`
+- [x] End-to-end test — checkout → webhook fires → `plan_type` updates → gate drops. Confirmed by Joshua with a real test transaction + refund, 2026-07-01.
 
 ---
 
@@ -326,8 +327,8 @@ Then build Plaid billing on top (P1–P10 in `PLAID_BILLING_SPEC.md`, ~4 hrs add
 
 | Addition | Timing | Notes |
 |----------|--------|-------|
-| Stripe Customer Portal (self-serve cancel/upgrade) | Launch | In build plan |
-| Annual discount banner | Launch | Show $ savings vs monthly |
+| Stripe Customer Portal (self-serve cancel/upgrade) | Launch | ✅ Live — `POST /stripe/portal`, "Manage Billing" button in ProfileTab |
+| Annual discount banner | Launch | Show $ savings vs monthly — not yet confirmed built, check ProfileTab pricing cards |
 | Trial period (7-day free Core) | 30 days post-launch | Drives conversion |
 | Agency tier ($39/mo, 3 seats) | Phase 6 | When user base justifies it |
 | Add-on billing (client portal, e-sign) | Phase 6 | Per-add-on Stripe recurring |
