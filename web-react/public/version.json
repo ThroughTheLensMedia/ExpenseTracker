@@ -1,1 +1,1 @@
-{"version":"7.10.9","release_date":"2026-07-01","codename":"Lumière Ledger","notes":"v7.10.9: Fixed Plaid pending-to-posted duplicate transactions, auto-flag possible duplicates, Plaid reconnect status"}
+{"version":"7.10.10","release_date":"2026-07-01","codename":"Lumière Ledger","notes":"v7.10.10: Fixed What's New badge re-lighting after being read"}

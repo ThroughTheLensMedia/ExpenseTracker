@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.10.10', date: 'JUL 1, 2026', color: '#94a3b8', items: [
+        '<strong>Fixed — "What\'s New" Badge:</strong> Fixed a bug where the "What\'s New" button in the header would stay lit (or re-light) even after you already read the update — it now correctly turns off once you\'ve viewed it and only comes back for an actual new release.',
+    ]},
     { version: '7.10.9', date: 'JUL 1, 2026', color: '#f97316', items: [
         '<strong>Fixed — Amex Duplicate Transactions:</strong> Fixed a bug where bank transactions that start as "pending" and later post could create a duplicate entry instead of updating in place. Found and flagged 25 existing duplicate pairs on your American Express account for review — nothing was deleted, just flagged with the 🚩 review badge so you can merge or dismiss them.',
         '<strong>New — Auto Duplicate Detection:</strong> Every bank sync now automatically scans for possible duplicate transactions and flags them for review, instead of only catching them on CSV import or a manual scan.',

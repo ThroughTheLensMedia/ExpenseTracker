@@ -28,6 +28,12 @@ const AssistantSidebar = lazy(() => import('./components/AssistantSidebar'));
 import ChangeLogModal from './components/control-center/ChangeLogModal.jsx';
 import OnboardingChecklist from './components/OnboardingChecklist.jsx';
 
+// DEPLOY SOP: update here AND web-react/public/version.json on every release.
+// Single source of truth for the "What's New" badge — the check (useEffect below)
+// and the dismiss handler (handleWhatsNewClick) must read the exact same value,
+// or the badge re-lights immediately after being dismissed.
+const CURRENT_VERSION = "7.10.10";
+
 // Shared route-level loading fallback — matches app's existing spinner style
 function PageSpinner() {
   return (
@@ -158,10 +164,7 @@ function AppContent() {
   const reopenOnboarding = useRef(false);
 
   // --- Version Check Hook ---
-  // DEPLOY SOP: update CURRENT_VERSION here AND web-react/public/version.json on every release.
   useEffect(() => {
-    const CURRENT_VERSION = "7.10.9";
-
     // What's New: show button if user hasn't dismissed it for this version
     const seen = localStorage.getItem('ll_whats_new_seen');
     if (seen !== CURRENT_VERSION) setShowWhatsNew(true);
@@ -230,7 +233,6 @@ function AppContent() {
   }, []);
 
   const handleWhatsNewClick = () => {
-    const CURRENT_VERSION = "7.8.56";
     localStorage.setItem('ll_whats_new_seen', CURRENT_VERSION);
     setShowWhatsNew(false);
     setShowChangelogModal(true);

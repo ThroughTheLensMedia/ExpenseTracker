@@ -5,6 +5,14 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.10.10] — 2026-07-01
+
+### Fixed — "What's New" badge re-lighting after being read
+
+- **`web-react/src/App.jsx`** — Root cause: `handleWhatsNewClick()` stamped `localStorage.ll_whats_new_seen` with a stale hardcoded `CURRENT_VERSION = "7.8.56"`, completely disconnected from the real `CURRENT_VERSION` used by the version-check effect to decide whether to show the badge. Every click stored the wrong value, so the next check (`seen !== CURRENT_VERSION`) was always true and the badge lit right back up. Fix: hoisted `CURRENT_VERSION` to a single module-level constant so the check and the dismiss handler always agree.
+
+---
+
 ## [v7.10.9] — 2026-07-01
 
 ### Fixed — Plaid Amex duplicate transactions
