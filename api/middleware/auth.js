@@ -1,5 +1,6 @@
 const { createClient } = require("@supabase/supabase-js");
 const { supabase: adminClient } = require("../db");
+const { ADMIN_UUID } = require("../constants");
 
 async function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -16,9 +17,9 @@ async function authMiddleware(req, res, next) {
 
   // 1. Local Developer Bypass
   if (isLocalDev && token === "mock-session") {
-    req.user = { 
-        id: "49e7efcb-6434-4f0c-9563-3151a6d50df9", 
-        email: "joshua.deuermeyer@gmail.com", 
+    req.user = {
+        id: ADMIN_UUID,
+        email: "joshua.deuermeyer@gmail.com",
         user_metadata: { display_name: "Developer Mode" } 
     };
     req.sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);

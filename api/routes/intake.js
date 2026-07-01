@@ -6,9 +6,10 @@
 const express = require("express");
 const router = express.Router();
 const { supabase } = require("../db");
+const { ADMIN_UUID } = require("../constants");
 
 // Fallback for the original single-owner setup (env var still works for backward compat)
-const LEGACY_resolvedUserId = "49e7efcb-6434-4f0c-9563-3151a6d50df9";
+const LEGACY_resolvedUserId = ADMIN_UUID;
 const LEGACY_INTAKE_SECRET  = process.env.LUMIERE_INTAKE_SECRET || "";
 
 router.post("/", async (req, res) => {

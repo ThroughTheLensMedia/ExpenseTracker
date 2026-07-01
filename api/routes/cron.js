@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { supabase } = require("../db");
 const { queueDailyReportEmail, queueMonthlyReportEmail, queueHealthAlertEmail } = require("../utils/emailQueue");
+const { ADMIN_UUID } = require("../constants");
 
 function isCronAuthorized(req) {
     const cronSecret = (process.env.CRON_SECRET || '').trim();
@@ -103,7 +104,6 @@ router.get("/monthly-report", async (req, res) => {
 
     const isPreview = req.query.preview === '1';
     const ADMIN_EMAIL = 'joshua.deuermeyer@gmail.com';
-    const ADMIN_UUID = '49e7efcb-6434-4f0c-9563-3151a6d50df9';
 
     try {
         if (!supabase) throw new Error("Supabase service client not initialized");

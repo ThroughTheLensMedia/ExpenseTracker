@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import * as Sentry from '@sentry/react';
+import { deriveTier } from '../constants/billing';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -225,16 +226,6 @@ export function AuthProvider({ children }) {
   const refreshSubscription = () => {
     if (user) fetchSubscription(user.id);
   };
-
-  // Derives effective tier from plan_type + admin_tier override.
-  // admin_tier is set on the server for friends/family grants — no billing impact.
-  function deriveTier(plan_type, admin_tier) {
-    if (admin_tier === 'studio') return 'studio';
-    if (admin_tier === 'core')   return 'core';
-    if (['studio_monthly', 'studio_annual'].includes(plan_type)) return 'studio';
-    if (['core_monthly',   'core_annual'  ].includes(plan_type)) return 'core';
-    return 'free';
-  }
 
   const tier = subscription
     ? deriveTier(subscription.plan_type, subscription.admin_tier)

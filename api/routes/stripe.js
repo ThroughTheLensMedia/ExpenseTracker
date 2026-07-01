@@ -7,6 +7,7 @@
 const express = require('express');
 const Stripe = require('stripe');
 const { supabase } = require('../db');
+const { PLAID_BILLING_EXEMPT } = require('../constants');
 
 const router = express.Router();
 
@@ -40,12 +41,15 @@ function planTypeFromPriceId(priceId) {
   return null;
 }
 
-// Derives effective tier — admin_tier overrides billing tier (friends/family grants)
+// Derives effective tier — admin_tier overrides billing tier (friends/family grants).
+// 'monthly'/'annual' are legacy pre-rename plan_type values still present on a
+// small number of old subscription rows — keep mapped to 'core'.
+// Mirrored in web-react/src/constants/billing.js — keep both in sync.
 function deriveTier(plan_type, admin_tier) {
   if (admin_tier === 'studio') return 'studio';
   if (admin_tier === 'core')   return 'core';
   if (['studio_monthly', 'studio_annual'].includes(plan_type)) return 'studio';
-  if (['core_monthly',   'core_annual'  ].includes(plan_type)) return 'core';
+  if (['core_monthly', 'core_annual', 'monthly', 'annual'].includes(plan_type)) return 'core';
   if (['sync_monthly',   'sync_annual'  ].includes(plan_type)) return 'sync';
   return 'free';
 }
@@ -290,12 +294,7 @@ async function resolvePlanTypeFromSubscription(subscriptionId) {
 }
 
 // Plaid usage billing — $0.50/account/month, all accounts, Stripe fee passed through
-// Users in PLAID_BILLING_EXEMPT are never charged — Joshua pays Plaid directly; Michelle is comped.
-const PLAID_BILLING_EXEMPT = new Set([
-  '49e7efcb-6434-4f0c-9563-3151a6d50df9', // Joshua Deuermeyer (admin)
-  'fcb92809-70f1-4ae0-b39c-e317378a01a7', // Michelle Gornichec (gornichecme@gmail.com)
-]);
-
+// Users in PLAID_BILLING_EXEMPT (imported from ../constants) are never charged.
 async function buildPlaidInvoiceItems(userId, stripeCustomerId) {
   if (PLAID_BILLING_EXEMPT.has(userId)) return null;
 

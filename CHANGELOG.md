@@ -5,6 +5,26 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.10.11] — 2026-07-01
+
+### Fixed — Sync-plan users showed as "free" tier in the UI
+
+- **Root cause**: `deriveTier()` existed as 4 independent copies (`api/routes/stripe.js`, `api/middleware/licensing.js`, `web-react/src/components/AuthContext.jsx`, `web-react/src/components/control-center/SaasTab.jsx`). The frontend copies (AuthContext, SaasTab) never recognized `sync_monthly`/`sync_annual` plan types and fell through to `'free'`, while the backend billing logic in stripe.js correctly resolved them to `'sync'` — so Sync-plan subscribers saw wrong upgrade prompts and wrong tier badges in the UI even though billing was correct.
+- **`web-react/src/constants/billing.js`** (new) — single shared `deriveTier()` + `PLAID_EXEMPT_IDS`, imported by `AuthContext.jsx` and `SaasTab.jsx` instead of each keeping its own copy.
+- **`api/routes/stripe.js`** — `deriveTier()` also now maps legacy `monthly`/`annual` plan_type values to `core` (matching SaasTab's prior behavior, preserving the one existing legacy subscriber's display).
+- **`api/middleware/licensing.js`** — left its own separate `deriveTier()` untouched and documented why: it intentionally treats Sync the same as free for SaaS feature quotas (Sync only pays for Plaid access, not expanded limits) — added a comment so it isn't "fixed" into a `TIER_LIMITS` crash by mistake later.
+
+### Added — Shared constants files to prevent hardcoded-value drift
+
+- **`api/constants.js`** (new) — single source of truth for `ADMIN_UUID`, `MICHELLE_UUID`, and `PLAID_BILLING_EXEMPT`. Previously the admin UUID was hardcoded independently in 6 places (`plaid.js`, `stripe.js`, `auth.js`, `intake.js`, `cron.js`, `SaasTab.jsx`) and the Plaid-exempt list in 3 places — all now import from this file. Confirmed exemption policy unchanged: only Joshua and Michelle are exempt from the $0.50/account Plaid fee, everyone else pays.
+- **`web-react/src/constants/billing.js`** (new) — frontend counterpart holding `PLAID_EXEMPT_IDS` (mirrors `api/constants.js` — no shared package across the frontend/backend boundary exists, so these two must be kept in sync by hand).
+
+### Fixed — Feedback emails could silently fail to deliver
+
+- **`api/routes/feedback.js`** — fallback `from` address was `support@lumiereledger.com`, an **unverified** Resend sending domain (Resend returns 200 and silently drops the email). Every other mailer in the app already correctly falls back to `support@throughthelens.media`, the verified domain — feedback.js was the one file still pointing at the wrong one.
+
+---
+
 ## [v7.10.10] — 2026-07-01
 
 ### Fixed — "What's New" badge re-lighting after being read

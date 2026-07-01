@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { apiPost, apiPatch, apiDelete } from '../../api';
 import { useModal } from '../ModalContext.jsx';
+import { PLAID_EXEMPT_IDS, deriveTier } from '../../constants/billing';
 
 export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats, statusMsg, onReload }) {
     const modal = useModal();
@@ -85,22 +86,14 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
 
     const PLAN_OPTIONS = ['free', 'free_beta', 'beta_tester', 'lifetime', 'core_monthly', 'core_annual', 'studio_monthly', 'studio_annual'];
 
-    // Joshua + Michelle Gornichec are Plaid-billing-exempt (mirrored from stripe.js)
-    const PLAID_EXEMPT_IDS = ['49e7efcb-6434-4f0c-9563-3151a6d50df9', 'fcb92809-70f1-4ae0-b39c-e317378a01a7'];
     const PLAN_COST = {
         free: 0, free_beta: 0, beta_tester: 0, lifetime: 0,
         monthly: 9, annual: 7.17,
+        sync_monthly: 4.99, sync_annual: 49.99,
         core_monthly: 9, core_annual: 7.17,
         studio_monthly: 19, studio_annual: 15.17,
     };
-    function deriveTier(plan_type, admin_tier) {
-        if (admin_tier === 'studio') return 'studio';
-        if (admin_tier === 'core') return 'core';
-        if (['studio_monthly', 'studio_annual'].includes(plan_type)) return 'studio';
-        if (['core_monthly', 'core_annual', 'monthly', 'annual'].includes(plan_type)) return 'core';
-        return 'free';
-    }
-    const TIER_COLORS = { free: 'secondary', core: 'warn', studio: 'ok' };
+    const TIER_COLORS = { free: 'secondary', sync: 'secondary', core: 'warn', studio: 'ok' };
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', maxWidth: '100%', boxSizing: 'border-box' }}>

@@ -1,6 +1,11 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.10.11', date: 'JUL 1, 2026', color: '#94a3b8', items: [
+        '<strong>Fixed — Sync Plan Showing as Free:</strong> Fixed a display bug where accounts on the Sync plan (Plaid bank sync only) could show up as "Free" tier in a few places in the app instead of "Sync" — billing was always correct, this was a display-only issue.',
+        '<strong>Fixed — Feedback Email Reliability:</strong> Fixed a fallback address issue that could have caused feedback emails to silently fail to deliver in rare cases.',
+        '<strong>Cleanup:</strong> Consolidated several duplicated internal configuration values into single shared files to prevent future drift bugs like the two above.',
+    ]},
     { version: '7.10.10', date: 'JUL 1, 2026', color: '#94a3b8', items: [
         '<strong>Fixed — "What\'s New" Badge:</strong> Fixed a bug where the "What\'s New" button in the header would stay lit (or re-light) even after you already read the update — it now correctly turns off once you\'ve viewed it and only comes back for an actual new release.',
     ]},

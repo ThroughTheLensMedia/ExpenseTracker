@@ -8,12 +8,20 @@
 // Derives effective tier — admin_tier overrides billing (friends/family grants)
 // admin_tier values: NULL | 'core' | 'studio'
 // Set via: UPDATE user_subscriptions SET admin_tier = 'studio' WHERE user_id = '<uuid>';
+//
+// NOTE: this intentionally does NOT recognize sync_monthly/sync_annual as its own
+// tier — Sync plan only pays for Plaid bank-sync access, not expanded SaaS feature
+// quotas, so it correctly falls through to 'free' here and gets TIER_LIMITS.free.
+// This differs on purpose from the other deriveTier() in api/routes/stripe.js
+// (mirrored in web-react/src/constants/billing.js), which DOES return 'sync' for
+// billing/display purposes. Do not "fix" this one to match — TIER_LIMITS has no
+// 'sync' key, so req.tierLimits would become undefined and crash every gated route.
 function deriveTier(plan_type, admin_tier) {
     if (admin_tier === 'studio') return 'studio';
     if (admin_tier === 'core')   return 'core';
     if (['studio_monthly', 'studio_annual'].includes(plan_type)) return 'studio';
     if (['core_monthly',   'core_annual'  ].includes(plan_type)) return 'core';
-    // free, free_beta, lifetime — all map to free tier
+    // free, free_beta, lifetime, sync_monthly, sync_annual — all map to free tier
     return 'free';
 }
 

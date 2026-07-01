@@ -5,6 +5,7 @@ const { encrypt, decrypt } = require("../utils/cryptoUtil");
 const { loadVendorRules, normalizeVendor } = require("../utils/vendorRules");
 const { supabase: adminClient } = require("../db");
 const { scanForDuplicates } = require("./expenses");
+const { PLAID_BILLING_EXEMPT } = require("../constants");
 
 // Plaid item error codes that mean the connection needs the user to re-authenticate
 // via Plaid Link update mode — not a transient API hiccup.
@@ -60,12 +61,6 @@ function requirePlaidConfig(req, res, next) {
 }
 
 router.use(requirePlaidConfig);
-
-// Users exempt from Plaid billing — Joshua pays Plaid directly; Michelle is comped.
-const PLAID_BILLING_EXEMPT = new Set([
-    '49e7efcb-6434-4f0c-9563-3151a6d50df9', // Joshua Deuermeyer (admin)
-    'fcb92809-70f1-4ae0-b39c-e317378a01a7', // Michelle Gornichec (gornichecme@gmail.com)
-]);
 
 // ─── 1. Create Link Token ───
 // Pass { connection_id } to open Plaid Link in UPDATE MODE for an existing item
