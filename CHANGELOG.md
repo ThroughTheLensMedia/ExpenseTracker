@@ -5,6 +5,17 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.10.13] — 2026-07-01
+
+### Fixed — Spam/bot signups getting full active accounts with no verification
+
+- **Root cause**: `user_subscriptions` has column defaults `plan_type = 'free_beta'`, `status = 'active'`. The `handle_new_user()` trigger fired unconditionally on every `auth.users` insert — meaning any signup, confirmed or not, got a fully working 30-day trial account instantly. Confirmed via direct DB query: 4 scripted signups (`shunt_<timestamp>_<hex>@gptmail.ca` pattern) all had `email_confirmed_at = null` yet all showed `status: active` on `free_beta`.
+- **`api/migrations/010_gate_trial_on_email_confirmation.sql`** — `handle_new_user()` now only grants the trial when `email_confirmed_at IS NOT NULL`. A second trigger (`on_auth_user_confirmed`, `AFTER UPDATE OF email_confirmed_at`) catches email/password signups, which have `email_confirmed_at = NULL` at insert time and only get it set later when the user clicks the confirmation link. OAuth signups (Google) already arrive pre-confirmed, so they're unaffected. Idempotent via `ON CONFLICT (user_id) DO NOTHING`.
+- **`api/routes/subscription.js`** — `/subscription/redeem` switched from `.update()` to `.upsert()` so redeeming a beta code still works even if a user redeems before their email confirmation has landed (no subscription row would otherwise exist yet to update).
+- Confirmed with Joshua: self-serve Stripe checkout (no invite code) remains untouched by this — real confirmed users still get the same automatic trial as before, this only blocks unconfirmed/bot signups.
+
+---
+
 ## [v7.10.12] — 2026-07-01
 
 ### Fixed — Monthly/weekly reports and watchdog were querying a table that doesn't exist

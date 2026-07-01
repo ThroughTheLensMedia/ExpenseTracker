@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.10.13', date: 'JUL 1, 2026', color: '#94a3b8', items: [
+        '<strong>Cleanup:</strong> Backend account security hardening.',
+    ]},
     { version: '7.10.12', date: 'JUL 1, 2026', color: '#94a3b8', items: [
         '<strong>Fixed — Automated Reports:</strong> Fixed a backend bug that was silently breaking the monthly summary email report. Weekly and daily admin reports also fixed.',
         '<strong>Fixed — Activity Tracking:</strong> Fixed an error that could occur when using the app in multiple browser tabs at the same time.',

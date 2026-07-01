@@ -1,1 +1,1 @@
-{"version":"7.10.12","release_date":"2026-07-01","codename":"Lumière Ledger","notes":"v7.10.12: Fixed broken monthly/weekly reports and watchdog (missing profiles table), fixed activity pulse race condition"}
+{"version":"7.10.13","release_date":"2026-07-01","codename":"Lumière Ledger","notes":"v7.10.13: Gated free trial signup on email confirmation to stop spam/bot accounts from getting active access"}

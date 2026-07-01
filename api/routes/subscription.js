@@ -106,9 +106,13 @@ router.post("/redeem", async (req, res) => {
         const newExpiry = new Date();
         newExpiry.setDate(newExpiry.getDate() + 90); // 90 days for beta testers
 
+        // Upsert, not update — a fresh signup may not have a user_subscriptions
+        // row yet if they redeem their code before confirming their email
+        // (the trial-grant trigger now only fires on confirmation).
         const { data: updatedSub, error: subError } = await req.sb
             .from('user_subscriptions')
-            .update({
+            .upsert({
+                user_id: req.user.id,
                 plan_type: betaCode.plan_type || 'beta_tester',
                 status: 'active',
                 email: req.user.email,
@@ -116,8 +120,7 @@ router.post("/redeem", async (req, res) => {
                 expires_at: newExpiry.toISOString(),
                 beta_code_used: betaCode.code,
                 updated_at: new Date().toISOString()
-            })
-            .eq('user_id', req.user.id)
+            }, { onConflict: 'user_id' })
             .select()
             .single();
 
