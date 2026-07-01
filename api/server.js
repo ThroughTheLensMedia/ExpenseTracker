@@ -166,6 +166,33 @@ apiRouter.get("/subscription/validate-code/:code", async (req, res) => {
   }
 });
 
+// Verify Cloudflare Turnstile token — public, no auth required, called from the
+// signup form before supabase.auth.signUp() fires. Fails OPEN (allows signup
+// through) if TURNSTILE_SECRET_KEY isn't set yet, so a missing env var can
+// never break real signups — it just means the check is inactive until set.
+apiRouter.post("/verify-turnstile", async (req, res) => {
+  try {
+    const { token } = req.body;
+    if (!token) return res.status(400).json({ success: false, error: "Token required" });
+
+    if (!process.env.TURNSTILE_SECRET_KEY) {
+      console.warn("[Turnstile] TURNSTILE_SECRET_KEY not set — check is inactive, allowing through");
+      return res.json({ success: true });
+    }
+
+    const verifyRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ secret: process.env.TURNSTILE_SECRET_KEY, response: token }),
+    });
+    const data = await verifyRes.json();
+    res.json({ success: !!data.success });
+  } catch (e) {
+    console.error("[Turnstile] Verify error:", e.message);
+    res.status(500).json({ success: false, error: "Verification failed" });
+  }
+});
+
 // --- ATTACH LOCKDOWN MIDDLEWARE ---
 // Every route below this line is protected by Supabase Auth
 apiRouter.use(authMiddleware);

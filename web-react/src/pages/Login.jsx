@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../components/AuthContext';
 import { useNavigate, NavLink } from 'react-router-dom';
+
+const TURNSTILE_SITE_KEY = '0x4AAAAAADuHLMVjvZq513jg';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -28,6 +30,49 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+
+  // Cloudflare Turnstile — bot challenge, shown on the signup form only
+  const turnstileRef = useRef(null);
+  const turnstileWidgetId = useRef(null);
+  const [turnstileToken, setTurnstileToken] = useState(null);
+
+  useEffect(() => {
+    if (isLogin) return; // only needed for signup
+    let cancelled = false;
+    let pollTimer = null;
+
+    const renderWidget = () => {
+      if (cancelled || !turnstileRef.current || !window.turnstile) return;
+      if (turnstileWidgetId.current !== null) return; // already rendered
+      turnstileWidgetId.current = window.turnstile.render(turnstileRef.current, {
+        sitekey: TURNSTILE_SITE_KEY,
+        callback: (token) => setTurnstileToken(token),
+        'expired-callback': () => setTurnstileToken(null),
+        'error-callback': () => setTurnstileToken(null),
+      });
+    };
+
+    if (window.turnstile) {
+      renderWidget();
+    } else {
+      // Script has async/defer — poll briefly until it's loaded
+      pollTimer = setInterval(() => {
+        if (window.turnstile) {
+          clearInterval(pollTimer);
+          renderWidget();
+        }
+      }, 200);
+    }
+
+    return () => {
+      cancelled = true;
+      if (pollTimer) clearInterval(pollTimer);
+      if (turnstileWidgetId.current !== null && window.turnstile) {
+        window.turnstile.remove(turnstileWidgetId.current);
+        turnstileWidgetId.current = null;
+      }
+    };
+  }, [isLogin]);
 
   // Industry-standard password strength check
   const validatePassword = (pw) => {
@@ -69,8 +114,21 @@ export default function Login() {
       return;
     }
 
+    if (!turnstileToken) {
+      setError('Please complete the verification challenge below.');
+      return;
+    }
+
     setLoading(true);
     try {
+      const tRes = await fetch('/api/verify-turnstile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: turnstileToken }),
+      });
+      const tData = await tRes.json();
+      if (!tData.success) throw new Error('Verification failed. Please try the challenge again.');
+
       if (useInviteCode) {
         const vRes = await fetch(`/api/subscription/validate-code/${betaCode.trim().toUpperCase()}`);
         const vData = await vRes.json();
@@ -86,6 +144,10 @@ export default function Login() {
       setError(err.message || 'Signup failed. Please try again.');
     } finally {
       setLoading(false);
+      setTurnstileToken(null);
+      if (turnstileWidgetId.current !== null && window.turnstile) {
+        window.turnstile.reset(turnstileWidgetId.current); // token is single-use
+      }
     }
   };
 
@@ -240,6 +302,11 @@ export default function Login() {
             </div>
           )}
 
+          {/* Cloudflare Turnstile — bot challenge, signup only */}
+          {!isLogin && (
+            <div ref={turnstileRef} style={{ display: 'flex', justifyContent: 'center' }} />
+          )}
+
           {error && (
             <div className="tag bad" style={{ padding: '12px', borderRadius: '8px', fontSize: '13px' }}>
               {error}
@@ -256,7 +323,7 @@ export default function Login() {
             type="submit"
             className="btn primary glow-orange"
             style={{ padding: '16px', fontSize: '16px', marginTop: '10px', borderRadius: '12px' }}
-            disabled={loading}
+            disabled={loading || (!isLogin && !turnstileToken)}
           >
             {loading ? 'PROCESSING...' : isLogin ? 'ENTER LUMIÈRE' : useInviteCode ? 'ACTIVATE & CREATE ACCOUNT' : 'CREATE FREE ACCOUNT'}
           </button>

@@ -5,6 +5,22 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.10.14] — 2026-07-01
+
+### Added — Cloudflare Turnstile on signup
+
+- **`web-react/index.html`** — added Turnstile script tag.
+- **`web-react/src/pages/Login.jsx`** — Turnstile widget rendered on the signup form only (imperative `window.turnstile.render()`, polls briefly for the async script to load). Submit is disabled until a token exists; `/api/verify-turnstile` is called before `supabase.auth.signUp()` fires; widget resets after every attempt since tokens are single-use.
+- **`api/server.js`** — new public `POST /api/verify-turnstile` endpoint, verifies against Cloudflare's `siteverify` API using `TURNSTILE_SECRET_KEY`. **Fails open** (allows signup through) if the env var isn't set, so a missing key can never break real signups — it just means the check is inactive until configured.
+- **Requires action**: add `TURNSTILE_SECRET_KEY` to Vercel's env panel (Production scope) for this to actually take effect — the site key is already hardcoded in `Login.jsx` (it's meant to be public).
+- Note: Turnstile only stops bots that load the real signup page — it doesn't stop a script calling Supabase's auth API directly, bypassing the frontend. The email-confirmation gate shipped in v7.10.13 is what actually neutralizes that pattern.
+
+### Added — Admin SaaS panel split into tabs
+
+- **`web-react/src/components/control-center/SaasTab.jsx`** — split the single long-scroll panel into 3 tabs (Active Members / Invite Codes / Engagement Pulse) using the same underline-tab pattern already used by System Logs' Receipt Sessions / All Events toggle, for visual consistency.
+
+---
+
 ## [v7.10.13] — 2026-07-01
 
 ### Fixed — Spam/bot signups getting full active accounts with no verification

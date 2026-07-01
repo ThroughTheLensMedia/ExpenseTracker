@@ -3,8 +3,15 @@ import { apiPost, apiPatch, apiDelete } from '../../api';
 import { useModal } from '../ModalContext.jsx';
 import { PLAID_EXEMPT_IDS, deriveTier } from '../../constants/billing';
 
+const VIEWS = [
+    { key: 'members', label: '👥  Active Members' },
+    { key: 'invites', label: '🔑  Invite Codes' },
+    { key: 'pulse',   label: '📈  Engagement Pulse' },
+];
+
 export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats, statusMsg, onReload }) {
     const modal = useModal();
+    const [view, setView] = useState('members');
     const [inviteName, setInviteName] = useState('');
     const [inviteEmail, setInviteEmail] = useState('');
     const [invitePlan, setInvitePlan] = useState('beta_tester');
@@ -104,7 +111,23 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
                 </div>
             )}
 
+            {/* View Toggle — same pattern as System Logs' Receipt Sessions / All Events tabs */}
+            <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '2px' }}>
+                {VIEWS.map(({ key, label }) => (
+                    <button key={key} onClick={() => setView(key)} style={{
+                        background: 'none', border: 'none', cursor: 'pointer',
+                        padding: '8px 16px', fontSize: '12px', fontWeight: 800,
+                        color: view === key ? '#38bdf8' : 'rgba(255,255,255,0.35)',
+                        borderBottom: view === key ? '2px solid #38bdf8' : '2px solid transparent',
+                        marginBottom: '-2px', transition: 'color 0.15s',
+                    }}>
+                        {label}
+                    </button>
+                ))}
+            </div>
+
             {/* Ledger Access Keys */}
+            {view === 'invites' && (<>
             <div className="card glass" style={{ padding: '30px' }}>
                 <h3 style={{ margin: '0 0 15px 0', fontSize: '1.2rem' }}>Ledger Access Keys</h3>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '15px', alignItems: 'flex-end' }}>
@@ -175,8 +198,10 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
                     </table>
                 </div>
             </div>
+            </>)}
 
             {/* Active Ledger Members */}
+            {view === 'members' && (
             <div className="card glass" style={{ padding: '30px' }}>
                 <h3 style={{ fontSize: '1.2rem', marginBottom: '15px' }}>Active Ledger Members</h3>
                 <div className="tableWrap" style={{ border: 'none', maxHeight: '500px', overflowY: 'auto' }}>
@@ -243,8 +268,10 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
                     </table>
                 </div>
             </div>
+            )}
 
             {/* Engagement Pulse */}
+            {view === 'pulse' && (
             <div className="card glass" style={{ margin: 0, padding: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                     <h3 style={{ margin: 0, fontSize: '1.2rem' }}>Engagement Pulse</h3>
@@ -274,8 +301,7 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
                     </table>
                 </div>
             </div>
-
-
+            )}
 
             {/* Edit Invite Modal */}
             {editingInvite && (
