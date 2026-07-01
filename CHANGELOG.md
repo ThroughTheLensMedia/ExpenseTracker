@@ -5,6 +5,20 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.10.12] — 2026-07-01
+
+### Fixed — Monthly/weekly reports and watchdog were querying a table that doesn't exist
+
+- **Root cause**: confirmed via Vercel runtime errors — `/cron/monthly-report`, `/admin/daily-report`, `/admin/weekly-report`, and `/cron/watchdog` all queried a `profiles` table that was never created in this Supabase project (only `user_roles` exists, and it has no email/display_name columns). The monthly report cron threw a fatal `PGRST205` on every run and never sent; the watchdog health check was failing on every invocation with a false "DATABASE ERROR".
+- **`api/utils/userDirectory.js`** (new) — `listAllUsers()` uses Supabase's own Auth admin API (`supabase.auth.admin.listUsers()`) as the real source of truth for user id/email/display name, instead of a nonexistent table.
+- **`api/routes/cron.js`**, **`api/routes/admin.js`** — all 4 call sites now use `listAllUsers()`. Watchdog's table-reachability ping switched to the real `user_roles` table.
+
+### Fixed — Activity tracking race condition (recurring since March 2026)
+
+- **`api/routes/activity.js`** — `POST /activity/pulse` used a select-then-insert-or-update pattern with no protection against concurrent requests (e.g. multiple open tabs pulsing at once). Two requests could both see "no row yet" and both try to insert, and the second would hit the unique constraint on `(user_id, activity_date)` and fail with a 500. Fixed by catching the specific unique-violation error and falling back to an increment instead of failing the request.
+
+---
+
 ## [v7.10.11] — 2026-07-01
 
 ### Fixed — Sync-plan users showed as "free" tier in the UI

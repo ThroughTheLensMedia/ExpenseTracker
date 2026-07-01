@@ -3,6 +3,7 @@ const router = express.Router();
 const { supabase } = require("../db");
 const { queueDailyReportEmail, queueMonthlyReportEmail, queueHealthAlertEmail } = require("../utils/emailQueue");
 const { ADMIN_UUID } = require("../constants");
+const { listAllUsers } = require("../utils/userDirectory");
 
 function isCronAuthorized(req) {
     const cronSecret = (process.env.CRON_SECRET || '').trim();
@@ -34,21 +35,21 @@ router.get("/daily-report", async (req, res) => {
         }
 
         const userIds = [...new Set(activityRows.map(r => r.user_id))];
-        let subRes = { data: [] }, profRes = { data: [] };
+        let subRes = { data: [] }, allUsers = [];
 
         try {
             const results = await Promise.all([
                 supabase.from('user_subscriptions').select('*').in('user_id', userIds),
-                supabase.from('profiles').select('*').in('id', userIds)
+                listAllUsers(supabase),
             ]);
             subRes = results[0];
-            profRes = results[1];
+            allUsers = results[1].filter(u => userIds.includes(u.id));
         } catch (e) {
             console.warn("[CRON] Identity resolve failed (partial mode):", e);
         }
 
         const userMap = {};
-        if (profRes?.data) profRes.data.forEach(p => { if (p.id) userMap[p.id] = { email: p.email, name: p.display_name }; });
+        allUsers.forEach(p => { if (p.id) userMap[p.id] = { email: p.email, name: p.display_name }; });
         if (subRes?.data) subRes.data.forEach(u => {
             if (u.user_id) {
                 const fallback = userMap[u.user_id]?.name || u.email?.split('@')[0];
@@ -96,7 +97,7 @@ router.get("/daily-report", async (req, res) => {
 
 // GET /cron/monthly-report
 // ?preview=1 → sends only to joshua.deuermeyer@gmail.com using his real data
-// Normal (no preview) → sends to all users in profiles
+// Normal (no preview) → sends to all users in Supabase Auth
 router.get("/monthly-report", async (req, res) => {
     if (!isCronAuthorized(req)) {
         return res.status(403).json({ error: "Unauthorized" });
@@ -125,15 +126,12 @@ router.get("/monthly-report", async (req, res) => {
         // Resolve user list
         let users = [];
         if (isPreview) {
-            const { data: profile } = await supabase.from('profiles').select('id, email, display_name').eq('id', ADMIN_UUID).maybeSingle();
-            users = [{ id: ADMIN_UUID, email: ADMIN_EMAIL, name: (profile?.display_name) || 'Joshua' }];
+            const allUsers = await listAllUsers(supabase);
+            const profile = allUsers.find(u => u.id === ADMIN_UUID);
+            users = [{ id: ADMIN_UUID, email: ADMIN_EMAIL, name: profile?.display_name || 'Joshua' }];
         } else {
-            const { data: profiles, error: profErr } = await supabase
-                .from('profiles')
-                .select('id, email, display_name')
-                .not('email', 'is', null);
-            if (profErr) throw profErr;
-            users = (profiles || []).filter(p => p.email).map(p => ({
+            const allUsers = await listAllUsers(supabase);
+            users = allUsers.filter(p => p.email).map(p => ({
                 id: p.id,
                 email: p.email,
                 name: p.display_name || p.email.split('@')[0]
@@ -307,7 +305,7 @@ router.get("/watchdog", async (req, res) => {
 
     if (supabase) {
         try {
-            const { error } = await supabase.from('profiles').select('id').limit(1);
+            const { error } = await supabase.from('user_roles').select('id').limit(1);
             if (error) throw error;
         } catch (err) {
             issues.push(`DATABASE ERROR: ${err.message}`);

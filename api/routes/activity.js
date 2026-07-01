@@ -44,7 +44,35 @@ router.post("/pulse", async (req, res) => {
                 })
                 .select()
                 .single();
-            if (error) throw error;
+
+            if (error) {
+                // 23505 = unique violation on (user_id, activity_date) — another concurrent
+                // pulse (e.g. multiple open tabs) inserted the row between our SELECT above
+                // and this INSERT. Fall back to incrementing the row that now exists instead
+                // of failing the request.
+                if (error.code === '23505') {
+                    const { data: raceRow, error: raceFetchErr } = await serviceClient
+                        .from('user_daily_activity')
+                        .select('id, total_minutes_active')
+                        .eq('user_id', userId)
+                        .eq('activity_date', today)
+                        .single();
+                    if (raceFetchErr) throw raceFetchErr;
+
+                    const { data: updated, error: raceUpdateErr } = await serviceClient
+                        .from('user_daily_activity')
+                        .update({
+                            total_minutes_active: (raceRow.total_minutes_active || 0) + 1,
+                            last_pulse_at: new Date().toISOString()
+                        })
+                        .eq('id', raceRow.id)
+                        .select()
+                        .single();
+                    if (raceUpdateErr) throw raceUpdateErr;
+                    return res.json({ ok: true, session_minutes: updated.total_minutes_active });
+                }
+                throw error;
+            }
             return res.json({ ok: true, session_minutes: 1 });
         }
     } catch (e) {

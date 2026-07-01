@@ -6,6 +6,7 @@ const { supabase } = require("../db");
 const router = express.Router();
 const { queueInviteEmail, queueDailyReportEmail, queueHealthAlertEmail } = require("../utils/emailQueue");
 const { requireRole } = require("../middleware/auth");
+const { listAllUsers } = require("../utils/userDirectory");
 
 router.get("/", (req, res) => res.json({ ok: true, module: "admin", user: req.user?.email }));
 router.get("/test", (req, res) => res.json({ ok: true, test: "admin-reachable" }));
@@ -44,21 +45,21 @@ router.get("/daily-report", async (req, res) => {
 
         // 2. Fetch User Identities
         const userIds = [...new Set(activityRows.map(r => r.user_id))];
-        let subRes = { data: [] }, profRes = { data: [] };
-        
+        let subRes = { data: [] }, allUsers = [];
+
         try {
             const results = await Promise.all([
                 serviceClient.from('user_subscriptions').select('*').in('user_id', userIds),
-                serviceClient.from('profiles').select('*').in('id', userIds)
+                listAllUsers(serviceClient),
             ]);
             subRes = results[0];
-            profRes = results[1];
+            allUsers = results[1].filter(u => userIds.includes(u.id));
         } catch (identErr) {
             console.warn("[Daily Report] Identity Resolve Failed (Partial Content Mode):", identErr);
         }
-        
+
         const userMap = {};
-        if (profRes?.data) profRes.data.forEach(p => {
+        allUsers.forEach(p => {
             if (p.id) userMap[p.id] = { email: p.email, name: p.display_name };
         });
         if (subRes?.data) subRes.data.forEach(u => {
@@ -392,10 +393,11 @@ router.get("/weekly-report", requireRole('admin'), async (req, res) => {
         
         // Fetch All Users to resolve names
         const userIds = [...new Set(data.map(d => d.user_id))];
-        const [subRes, profRes] = await Promise.all([
+        const [subRes, allUsers] = await Promise.all([
             serviceClient.from('user_subscriptions').select('*').in('user_id', userIds).catch(() => ({ data: [] })),
-            serviceClient.from('profiles').select('*').in('id', userIds).catch(() => ({ data: [] }))
+            listAllUsers(serviceClient).catch(() => [])
         ]);
+        const profRes = { data: allUsers.filter(u => userIds.includes(u.id)) };
 
         const userNames = {};
         if (profRes?.data) profRes.data.forEach(p => userNames[p.id] = p.display_name || p.email?.split('@')[0]);

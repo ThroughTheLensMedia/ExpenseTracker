@@ -1,1 +1,1 @@
-{"version":"7.10.11","release_date":"2026-07-01","codename":"Lumière Ledger","notes":"v7.10.11: Fixed Sync-plan tier showing as free in UI, consolidated hardcoded admin/exempt IDs into shared constants, fixed feedback email fallback domain"}
+{"version":"7.10.12","release_date":"2026-07-01","codename":"Lumière Ledger","notes":"v7.10.12: Fixed broken monthly/weekly reports and watchdog (missing profiles table), fixed activity pulse race condition"}
