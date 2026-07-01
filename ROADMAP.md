@@ -1,6 +1,6 @@
 # Lumière Ledger — Master Roadmap
 
-**Version:** v7.10.14 | **Last reviewed:** 2026-07-01  
+**Version:** v7.10.15 | **Last reviewed:** 2026-07-01  
 Source of truth for all sprint work, security status, and product phases.
 
 ---
@@ -50,6 +50,8 @@ Source of truth for all sprint work, security status, and product phases.
 | Spam/bot signups getting full active accounts | ✅ v7.10.13 — trial only grants after `email_confirmed_at` is set (confirmed: self-serve Stripe checkout without a code stays untouched — real design, not a bug) |
 | Cloudflare Turnstile on signup | ✅ v7.10.14 — needs `TURNSTILE_SECRET_KEY` added to Vercel env panel to activate (fails open, harmless, until set) |
 | Admin SaaS panel reorganized into tabs | ✅ v7.10.14 — Active Members / Invite Codes / Engagement Pulse, matching System Logs' tab pattern |
+| `TURNSTILE_SECRET_KEY` added to Vercel | ✅ Confirmed by Joshua 2026-07-01 — Turnstile bot-challenge is now actually active, not just deployed |
+| Security Review — Vercel links broken | ✅ v7.10.15 — 3 links used wrong org slug (`through-the-lens-media`), 404ing on every weekly check. Fixed. |
 
 ---
 
@@ -57,9 +59,8 @@ Source of truth for all sprint work, security status, and product phases.
 
 | Item | Notes |
 |------|-------|
-| **Add `TURNSTILE_SECRET_KEY` to Vercel env** | Shipped v7.10.14, fails open (harmless) until set — but Turnstile does nothing to actually stop bots until this is added. Site key is already live in `Login.jsx`. |
 | **Receipt email body parse — re-test** | v7.8.96 hardened the prompt and error logging but the "Total Paid: $XX.XX" case was never re-tested with a live email forward. Send a test and verify System Logs show extracted amount. |
-| **Security Review — overdue again** | Confirmed 2026-07-01: weekly last run 2026-06-15 (16 days overdue), monthly last run 2026-06-08 (borderline). Quarterly/annual/dependency have never been run once. |
+| **Security Review — monthly/quarterly/annual/dependency still overdue** | Weekly re-run 2026-07-01 (found + fixed the broken Vercel links, v7.10.15). Monthly last run 2026-06-08 (overdue). Quarterly/annual/dependency have never been run once. |
 
 ---
 
@@ -119,7 +120,7 @@ Source of truth for all sprint work, security status, and product phases.
 
 ---
 
-## ✅ Completed This Sprint (v7.7.0 → v7.10.14)
+## ✅ Completed This Sprint (v7.7.0 → v7.10.15)
 
 | Version | What shipped |
 |---------|-------------|
@@ -196,6 +197,7 @@ Source of truth for all sprint work, security status, and product phases.
 | v7.10.12 | Fixed monthly/weekly/daily admin reports + watchdog — all depended on a `profiles` table that never existed; fixed via `listAllUsers()` (Supabase Auth admin API). Fixed activity-pulse race condition (concurrent-tab duplicate-key error) |
 | v7.10.13 | Gated the automatic 30-day trial signup on email confirmation — stops scripted/bot signups from getting full active accounts with zero verification. `/subscription/redeem` upgraded to upsert |
 | v7.10.14 | Cloudflare Turnstile added to signup form (needs `TURNSTILE_SECRET_KEY` in Vercel to activate); Admin SaaS panel split into tabs (Active Members / Invite Codes / Engagement Pulse) |
+| v7.10.15 | Fixed broken Vercel dashboard links in Security Review checklist — wrong org slug on 3 links, found during weekly review |
 
 ---
 
