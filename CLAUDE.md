@@ -10,7 +10,7 @@
 
 | Property | Value |
 |----------|-------|
-| **Version** | v7.10.3 |
+| **Version** | v7.10.14 |
 | **Status** | Active Development — Open Public Launch |
 | **Deploy target** | `www.lumiereledger.com` (primary) — `app.throughthelens.media` 301 redirects to it |
 | **Deployment** | Vercel (auto-deploy on `git push origin main`) |
@@ -159,7 +159,8 @@ Express 4.19 API (api/)
 - **Plan:** Free
 - **Free plan limits:** 500MB database, 1GB file storage, 50MB max upload, 2 active projects. **Projects pause after 7 days of inactivity** — auth token refresh will fail while paused, causing user logouts. The daily watchdog cron keeps the project active.
 - **Purpose:** PostgreSQL database, Auth (email/password + Google OAuth), Storage (receipts), Realtime (live lead notifications)
-- **Admin UUID:** `49e7efcb-6434-4f0c-9563-3151a6d50df9`
+- **Admin UUID:** `49e7efcb-6434-4f0c-9563-3151a6d50df9` — single source of truth is `api/constants.js` (`ADMIN_UUID`) as of v7.10.11.
+- **Trial signup gate (v7.10.13):** `handle_new_user()` trigger only grants the automatic 30-day `free_beta` trial once `email_confirmed_at` is set — a second trigger (`on_auth_user_confirmed`, `AFTER UPDATE OF email_confirmed_at`) catches email/password signups confirming after the fact. OAuth signups arrive pre-confirmed. Migration: `api/migrations/010_gate_trial_on_email_confirmation.sql`. Root cause this fixed: `user_subscriptions` column defaults (`plan_type='free_beta'`, `status='active'`) meant any signup, confirmed or not, got a working account instantly — exploited by scripted bot signups.
 - **Env vars:** `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (server — bypasses RLS), `SUPABASE_ANON_KEY`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
 - **Key behavior:** `autoRefreshToken: true`, `persistSession: true`, `storageKey: 'lumiere-ledger-auth'`. PWA uses `visibilitychange` listener to refresh token on foreground.
 - **Auth redirect URLs:** `https://www.lumiereledger.com/**` is allowlisted. `app.throughthelens.media` remains active during parallel-run period.
@@ -184,6 +185,7 @@ Express 4.19 API (api/)
   - ✅ `VITE_SENTRY_DSN` — set, Sentry.io active with Claude API connected
   - ✅ `RECEIPT_HMAC_SECRET` — set, required for per-user receipt forwarding addresses
   - ⚠️ `REDIS_URL` — **NOT SET** — Bull was removed v7.8.90; direct Resend fallback is intentional. Set only if re-enabling queue layer.
+  - ⚠️ `TURNSTILE_SECRET_KEY` — **NOT SET as of v7.10.14** — added to Vercel to activate bot-challenge verification on signup. Site key is already live client-side; server verify route fails open until this is set, so it's safe but currently inert.
   - ✅ `POSTMARK_INBOUND_TOKEN` — set. Add `?token=<value>` to Postmark webhook URL: `https://www.lumiereledger.com/api/receipts/email-inbound?token=<POSTMARK_INBOUND_TOKEN>`
   - Optional: `APP_URL`, `LUMIERE_INTAKE_SECRET`
 - **Deploy tokens (local .env only — never commit):**
@@ -195,8 +197,14 @@ Express 4.19 API (api/)
 - **Env vars:** `RESEND_API_KEY`, `RESEND_FROM`
 - **Verified sending domain:** `throughthelens.media` ONLY. `lumiereledger.com` is NOT verified — Resend silently drops all mail from unverified domains (API returns 200, nothing delivers).
 - **Correct `RESEND_FROM`:** `Lumière Ledger <support@throughthelens.media>` — branded display name, verified sending domain.
-- **⚠️ Known gap:** `api/server.js` and `api/utils/mailer.js` have hardcoded fallback `support@lumiereledger.com`. If `RESEND_FROM` env var is ever missing, email silently breaks.
+- **✅ Fixed v7.10.11:** `api/routes/feedback.js` was the one remaining file with a hardcoded fallback pointing at the unverified `support@lumiereledger.com` domain — corrected to `support@throughthelens.media`, matching `server.js` and `mailer.js`.
 - **Queueing:** `emailQueue.js` uses inline `withRetry()` (3 attempts, linear backoff) — Bull was removed v7.8.90. No Redis dependency. Direct Resend calls with retry.
+
+### Cloudflare
+- **Purpose:** DNS + reverse proxy for `lumiereledger.com` (a real active Zone, not just DNS/MX — confirmed via dashboard screenshot 2026-07-01), plus Turnstile bot-challenge widget on signup.
+- **Plan:** Free
+- **Turnstile:** site key hardcoded in `web-react/src/pages/Login.jsx` (public, safe to expose). `TURNSTILE_SECRET_KEY` env var required in Vercel for server-side verification (`POST /api/verify-turnstile` in `server.js`) to actually take effect — fails open (allows signup through) if unset, so a missing key can never break real signups, it just means the check is inactive.
+- **Limitation:** Turnstile only stops bots that load the real signup page through a browser. It does not stop a script calling Supabase's Auth REST API directly, bypassing the frontend entirely. The email-confirmation gate (see Supabase section below) is what actually neutralizes that pattern.
 
 ### Google Gemini 2.5 Flash
 - **Purpose:** AI financial intelligence — chat, ledger repair, batch categorization
@@ -210,7 +218,7 @@ Express 4.19 API (api/)
 - **Status:** Production — fully wired and gated. `PLAID_ENV=production`, `PLAID_CLIENT_ID`, `PLAID_SECRET`, `ENCRYPTION_KEY` all set in Vercel.
 - **Encryption:** Real `libsodium-wrappers` implementation in `cryptoUtil.js` — async `encrypt()`/`decrypt()`.
 - **Billing gate:** `POST /plaid/create-link-token` checks `PLAID_BILLING_EXEMPT` set, then `stripe_customer_id` in `user_subscriptions`. Non-exempt users without billing method → HTTP 402. Frontend shows fee disclosure modal before Plaid Link opens.
-- **Exempt users:** `PLAID_BILLING_EXEMPT` Set in both `api/routes/plaid.js` and `api/routes/stripe.js`. Joshua + Michelle Gornichec (`fcb92809-70f1-4ae0-b39c-e317378a01a7`) both added v7.8.55.
+- **Exempt users:** `PLAID_BILLING_EXEMPT` — single source of truth is `api/constants.js` as of v7.10.11 (previously duplicated independently in `plaid.js` + `stripe.js` + `SaasTab.jsx`, which had drifted risk). Joshua + Michelle Gornichec (`fcb92809-70f1-4ae0-b39c-e317378a01a7`). Confirmed 2026-07-01: this is exactly and only these two — everyone else pays.
 - **Cross-source dedup:** Before inserting Plaid transactions, matches existing CSV rows on `date+amount_cents`, stamps `plaid_transaction_id` onto match — preserves all user enrichment.
 - **Accounts page:** Live balances, institution names, sync button, disconnect (Unsync) button, type grouping (Credit/Checking/Manual), synced accounts section at top.
 
@@ -227,6 +235,8 @@ Express 4.19 API (api/)
 
 | Gap | File | Impact |
 |-----|------|--------|
+| `TURNSTILE_SECRET_KEY` not set in Vercel | Vercel env panel | Shipped v7.10.14, fails open (harmless). Turnstile does nothing to actually stop bots until this is set. |
+| Plaid webhook support missing | `api/routes/plaid.js` | Only detects item-error via polling `itemGet` during sync. Confirmed 2026-07-01 (Venmo): Plaid's internal item state can show "Needs user attention" while `item.error` stays empty — `needs_reauth` doesn't always fire. Real fix is a webhook endpoint for `ITEM_ERROR`/`PENDING_EXPIRATION`/`USER_PERMISSION_REVOKED`. |
 | `REDIS_URL` not set in Vercel | Vercel env panel | Bull removed v7.8.90 — direct Resend fallback is intentional. Set only if re-enabling queue layer. |
 | `plaid_account_id` backfill | `expenses` table | Pre-v7.8.4 Plaid transactions have NULL `plaid_account_id`. Sub-account breakdown unavailable on historical rows until users re-sync. |
 | `file-type` moderate vuln | `api/routes/receipts.js` | v22 is ESM-only; needs dynamic `import()` refactor. Near-zero real risk (ASF audio only). |
@@ -249,10 +259,12 @@ Express 4.19 API (api/)
 ### Backend Entry Points
 | File | Purpose |
 |------|---------|
-| `api/server.js` | Express entry — middleware, route mounting, CORS config |
+| `api/server.js` | Express entry — middleware, route mounting, CORS config, public `/verify-turnstile` |
 | `api/db.js` | Supabase service role client (bypasses RLS — server-side only) |
+| `api/constants.js` | ✅ v7.10.11 — single source of truth for `ADMIN_UUID`, `MICHELLE_UUID`, `PLAID_BILLING_EXEMPT`. Import from here — do not hardcode a new copy. |
+| `api/utils/userDirectory.js` | ✅ v7.10.12 — `listAllUsers()` via Supabase Auth admin API. Use this for "all users with email" — never query a `profiles` table, it doesn't exist. |
 | `api/middleware/auth.js` | JWT auth + `requireRole()` using service role client |
-| `api/middleware/licensing.js` | Subscription gate — fail-closed (503 on DB error, not pass-through) |
+| `api/middleware/licensing.js` | Subscription gate — fail-closed (503 on DB error, not pass-through). Has its own `deriveTier()` that intentionally does NOT recognize `sync` as a tier (Sync plan gets free-tier feature limits) — do not "fix" to match `stripe.js`'s version, `TIER_LIMITS` has no `sync` key and it will crash gated routes. |
 | `api/utils/emailQueue.js` | Email queue with direct Resend fallback |
 | `api/utils/mailer.js` | Resend email bridge — invoices, invites, alerts |
 | `api/utils/cryptoUtil.js` | ✅ Real libsodium implementation — async encrypt/decrypt for Plaid tokens |
@@ -269,6 +281,8 @@ Express 4.19 API (api/)
 | `web-react/src/components/OnboardingChecklist.jsx` | 3-step new-user setup guide: role selector → data import → checklist. Shown once on first login. |
 | `web-react/src/components/PlaidLink.jsx` | Plaid Link SDK — fee confirmation modal, account connection, sync, disconnect |
 | `web-react/src/components/control-center/DashboardTab.jsx` | Dashboard customization — role cards (4 types) + widget toggles. Saves to `settings.dashboard_config`. |
+| `web-react/src/constants/billing.js` | ✅ v7.10.11 — shared `deriveTier()` + `PLAID_EXEMPT_IDS` for the frontend. Import from here (`AuthContext.jsx`, `SaasTab.jsx`) — must be kept in sync by hand with `api/routes/stripe.js`'s copy, no shared package exists across the frontend/backend boundary. |
+| `web-react/src/pages/Login.jsx` | Auth — email/password, Google OAuth, invite-code signup. Cloudflare Turnstile widget (signup only) as of v7.10.14. |
 
 ---
 
@@ -286,8 +300,9 @@ Express 4.19 API (api/)
 | Missing doc | Badge fires when: `amount_cents > 7500` AND `tax_deductible = true` AND `receipt_link` is null |
 | Import clock | `daysSinceImport` ignores `source === 'manual'` — only bank/CSV imports reset the clock |
 | Account aliases | `account_aliases` table: `(user_id, source_key, display_name, visible)`. Upsert via `PUT /api/accounts/alias`. |
-| Plaid billing exempt | `PLAID_BILLING_EXEMPT` Set in `api/routes/plaid.js` and `api/routes/stripe.js`. Joshua + Michelle Gornichec (`fcb92809-70f1-4ae0-b39c-e317378a01a7`) — both added v7.8.55. |
+| Plaid billing exempt | `PLAID_BILLING_EXEMPT` from `api/constants.js` (single source of truth as of v7.10.11). Joshua + Michelle Gornichec (`fcb92809-70f1-4ae0-b39c-e317378a01a7`). Frontend mirror: `web-react/src/constants/billing.js`. |
 | Dashboard config | `dashboard_config JSONB` on `settings` table. Shape: `{ role, widgets: { invoices, forecast, performance_chart, top_expenses, insights, operational_intelligence } }`. Defaults all-on if null. Widget flag: `!== false`. |
+| Trial signup gate | New `auth.users` rows only get an active `user_subscriptions` row once `email_confirmed_at` is set (v7.10.13). No `profiles` table exists anywhere — use `listAllUsers()` from `api/utils/userDirectory.js` for any "all users" lookup. |
 
 ---
 
@@ -300,6 +315,8 @@ Express 4.19 API (api/)
 - Licensing middleware fail-closed: DB error → 503, not pass-through
 - All destructive operations (DELETE) include `.eq('user_id', req.user.id)` as defense-in-depth beyond RLS
 - Plaid billing gate: `create-link-token` blocks non-exempt users without `stripe_customer_id` — HTTP 402
+- **Trial signup gate (v7.10.13):** the automatic 30-day `free_beta` trial only grants once `email_confirmed_at` is set — DB trigger-level, not app-level, so it can't be bypassed by calling the API directly. Self-serve Stripe checkout without a code remains untouched by design (confirmed 2026-07-01).
+- **Cloudflare Turnstile on signup (v7.10.14):** `POST /api/verify-turnstile` is public and fails open if `TURNSTILE_SECRET_KEY` is unset — this is intentional so a missing env var never blocks real signups, but it also means the check is a no-op until the key is set in Vercel.
 
 ---
 

@@ -2,8 +2,8 @@
 
 > ✅ **REBRAND COMPLETE**: This product has been transitioned to **Lumière Ledger** (`lumiereledger.com`) as of May 2026.
 
-**Current version:** v7.9.5
-**Last updated:** 2026-06-09
+**Current version:** v7.10.14
+**Last updated:** 2026-07-01
 
 ---
 
@@ -65,9 +65,9 @@ Multi-tenant SaaS: every user's data is fully isolated via Supabase Row-Level Se
 2. **Database**: Supabase / PostgreSQL with Row-Level Security (RLS) for 100% multi-tenant data isolation.
 3. **AI Engine**: Google Gemini 2.5 Flash. Users supply their own Gemini API keys (privacy + cost control).
 4. **Design System**: Vanilla CSS with Glassmorphism, deep dark mode, and micro-animations. No component library.
-5. **Hosting**: Vercel (auto-deploy on push to `main`). Migrating from `app.throughthelens.media` → `lumiereledger.com`.
-6. **Security**: Row-Level Security active on all user tables. `requireRole()` middleware uses service role client to bypass RLS on `user_roles` lookup. Admin UUID: `49e7efcb-6434-4f0c-9563-3151a6d50df9`.
-7. **Payments**: Open public signup — free tier, no code required. Invite codes grant elevated plan access (beta_tester, core, studio) and auto-redeem after email confirmation. Stripe subscription billing live for Core ($9/mo) and Studio ($19/mo) upgrades.
+5. **Hosting**: Vercel (auto-deploy on push to `main`). `www.lumiereledger.com` is the live primary domain; `app.throughthelens.media` 301-redirects to it — migration complete.
+6. **Security**: Row-Level Security active on all user tables. `requireRole()` middleware uses service role client to bypass RLS on `user_roles` lookup. Admin UUID + Plaid-exempt list live in `api/constants.js` (single source of truth as of v7.10.11). Cloudflare Turnstile on signup form (v7.10.14).
+7. **Payments**: Open public signup — free tier, no code required, but the automatic 30-day trial only activates after email confirmation (v7.10.13, stops bot signups). Invite codes grant elevated plan access (beta_tester, core, studio) and auto-redeem after email confirmation. Stripe subscription billing live for Sync ($4.99/mo, Plaid-only), Core ($9/mo), and Studio ($19/mo) — self-serve checkout without a code is a real, confirmed flow.
 8. **Mobile / PWA**: The app is installable as a PWA. Mobile layouts use `.mobile-only` / `.desktop-only` CSS classes. All interactive targets must be ≥ 44px tap area. Session persistence is handled via Supabase `autoRefreshToken` + `visibilitychange` listener.
 
 ---
@@ -99,11 +99,13 @@ This is a shared-database, shared-schema SaaS. Every table that contains user da
 | Database | Supabase `^2.99.1` (PostgreSQL + Auth + Storage) |
 | AI | Google Gemini 2.5 Flash (`@google/generative-ai ^0.24.1`) |
 | Email | Resend `2.1.0` (transactional invoices, daily reports, invitations) |
-| Banking | Plaid `^29.0.0` (pending production approval), CSV import (11+ bank profiles) |
-| Billing | Stripe `^17.7.0` (Free / Core / Studio subscriptions) |
-| Auth | Supabase Auth (email/password, Google OAuth), JWT (`jsonwebtoken ^9.0.3`) + JWKS (`jwks-rsa ^4.0.1`) |
-| Queue | Bull `^4.16.5` (email queue — Redis-backed, inactive until `REDIS_URL` set) |
+| Banking | Plaid `^29.0.0` — ✅ LIVE in production with billing gate, encryption, sync + reconnect flow. CSV import (11+ bank profiles) |
+| Billing | Stripe `^17.7.0` — ✅ LIVE, Free / Sync / Core / Studio, self-serve checkout confirmed as a real flow |
+| Auth | Supabase Auth (email/password, Google OAuth), JWT (`jsonwebtoken ^9.0.3`) + JWKS (`jwks-rsa ^4.0.1`). Trial signup gated on email confirmation (v7.10.13). |
+| Bot protection | Cloudflare Turnstile on signup (v7.10.14) — needs `TURNSTILE_SECRET_KEY` in Vercel to activate |
 | Utilities | archiver `^7.0.1`, uuid `^9.0.0`, file-type `16.5.4`, dotenv `^16.4.7` |
+
+> **Queue removed:** Bull/Redis was removed v7.8.90. `emailQueue.js` uses inline `withRetry()` (3 attempts, linear backoff) — no Redis dependency.
 
 > **⚠️ Lock File Rule:** `api/package-lock.json` MUST be committed whenever `api/package.json` changes. Vercel caches `node_modules` keyed to the lock file — a stale lock bypasses new package installs silently, causing runtime `Cannot find module` crashes. See CLAUDE.md Rule 10. (Confirmed root cause of v7.6.7 production outage.)
 
@@ -115,10 +117,11 @@ This is a shared-database, shared-schema SaaS. Every table that contains user da
 
 | File | Purpose |
 |------|---------|
-| `server.js` | Express app entry, middleware, route mounting |
+| `server.js` | Express app entry, middleware, route mounting, public `POST /verify-turnstile` |
 | `db.js` | Supabase client init (Service Role Key for admin ops) |
+| `constants.js` | ✅ v7.10.11 — single source of truth for `ADMIN_UUID`, `MICHELLE_UUID`, `PLAID_BILLING_EXEMPT` |
 | `routes/brain.js` | AI intelligence hub — chat, ledger repair, batch categorization |
-| `routes/expenses.js` | Core ledger CRUD — create, read, update, delete transactions. Zod `z.preprocess` normalizes iOS date formats. |
+| `routes/expenses.js` | Core ledger CRUD — create, read, update, delete transactions. Zod `z.preprocess` normalizes iOS date formats. `scanForDuplicates()` also used by Plaid sync. |
 | `routes/import.js` | CSV import engine — 11+ bank parsers, auto-detection, cross-source dedup |
 | `routes/invoices.js` | Invoice CRUD, line items, PDF export, email delivery via Resend |
 | `routes/tax.js` | Schedule C tax mapping, depreciation summaries, deduction exports |
@@ -126,20 +129,22 @@ This is a shared-database, shared-schema SaaS. Every table that contains user da
 | `routes/mileage.js` | Mileage log CRUD, IRS standard rate calculations |
 | `routes/rules.js` | Auto-classification rules — vendor/notes pattern matching |
 | `routes/receipts.js` | Receipt upload to Supabase Storage. Signed URL endpoint for secure access. |
-| `routes/plaid.js` | Plaid link tokens, account sync, transaction pull |
-| `routes/admin.js` | Admin dashboard — beta codes, subscriptions, daily reports, data exports |
+| `routes/plaid.js` | ✅ LIVE — Plaid link tokens (incl. update-mode reconnect), account sync (pending→posted merge-in-place), transaction pull, `needs_reauth` item health check |
+| `routes/admin.js` | Admin dashboard — beta codes, subscriptions, daily/weekly reports, data exports. Uses `listAllUsers()`, not a `profiles` table. |
 | `routes/settings.js` | User config persistence (API keys, studio defaults, profile) |
-| `routes/subscription.js` | Subscription status, beta code redemption (`POST /redeem`), public code validation (`GET /validate-code/:code`) |
-| `routes/activity.js` | Engagement pulse — daily active minutes tracking |
+| `routes/subscription.js` | Subscription status, beta code redemption (`POST /redeem`, upserts), public code validation (`GET /validate-code/:code`) |
+| `routes/activity.js` | Engagement pulse — daily active minutes tracking. Handles concurrent-tab race via conflict fallback. |
 | `routes/leads.js` | CRM lead/client management |
 | `routes/intake.js` | **Public** server-to-server endpoint — receives leads from external websites. Validates `x-intake-secret`, resolves owning user via `intake_keys` table (falls back to legacy env var), deduplicates clients by email, inserts lead. No auth required. |
 | `routes/intake-keys.js` | **Authenticated** CRUD for per-user intake API keys. `GET /intake-keys`, `POST /intake-keys` (generates `ll-` prefixed UUID key), `DELETE /intake-keys/:id`. |
 | `routes/pwa.js` | PWA quick-snap receipt capture endpoint |
+| `routes/cron.js` | Daily/monthly reports + watchdog. Uses `listAllUsers()` (no `profiles` table exists). |
 | `middleware/auth.js` | JWT auth + `requireRole()`. Uses adminClient (service role) for role lookups to bypass RLS. |
-| `middleware/licensing.js` | Subscription gate — blocks expired/suspended users. Fail-closed: 503 on DB error, not pass-through. |
+| `middleware/licensing.js` | Subscription gate — blocks expired/suspended users. Fail-closed: 503 on DB error, not pass-through. Own `deriveTier()` intentionally treats Sync as free-tier limits — do not "fix" to match `stripe.js`. |
 | `utils/gemini.js` | Gemini 2.5 Flash init, `repairLedgerBatch()` with 503 retry logic |
 | `utils/mailer.js` | Resend email bridge with attachment support |
-| `utils/cryptoUtil.js` | ⚠️ Stub — real implementation deferred until Plaid work begins. Do not use in production. |
+| `utils/cryptoUtil.js` | ✅ Real libsodium implementation — async encrypt/decrypt for Plaid tokens |
+| `utils/userDirectory.js` | ✅ v7.10.12 — `listAllUsers()` via Supabase Auth admin API. Use for any "all users" lookup — no `profiles` table exists. |
 
 ### Frontend — `/web-react/src/`
 
@@ -156,9 +161,9 @@ This is a shared-database, shared-schema SaaS. Every table that contains user da
 | `Mileage.jsx` | Mileage tracker — log by date, Google Maps automation, IRS rate lookup |
 | `Rules.jsx` | Classification rules editor — vendor matching with retroactive apply |
 | `CRM.jsx` | Lead pipeline — kanban board (New Lead, Quoted, Booked), archive |
-| `Backup.jsx` | Studio Control Center — 12-tab settings hub (Profile, Dashboard, Automation, AI Intelligence, Documents, Infrastructure, Integrations, Help Center, Feedback, SaaS Management, System Logs, Security) |
+| `Backup.jsx` | Ledger Control Center — pill nav: AI Intelligence, Automation, Categories, Dashboard, Documents, Help Center, Integrations, Profile, Infrastructure (admin-only), Admin (admin-only, consolidates SaaS Mgmt/System Logs/Security — see `AdminTab.jsx`). Legacy `?tab=saas/logs/security` URLs redirect into Admin. |
 | `AddOns.jsx` | Add-On Marketplace — lists available and coming-soon platform extensions |
-| `Login.jsx` | Auth — email/password, Google OAuth, beta code signup |
+| `Login.jsx` | Auth — email/password, Google OAuth, invite-code signup. Cloudflare Turnstile bot challenge on signup form (v7.10.14). |
 | `Home.jsx` | Public landing page — hero section, feature grid, CTA |
 | `Privacy.jsx` | Privacy policy (static) |
 | `Terms.jsx` | Terms of service (static) |
@@ -185,6 +190,13 @@ This is a shared-database, shared-schema SaaS. Every table that contains user da
 | `useActivityPulse.js` | Daily engagement tracking |
 | `useLeadsRealtime.js` | Supabase Realtime subscription for live lead notifications |
 
+**Constants (`/constants/`)**
+
+| File | Purpose |
+|------|---------|
+| `categories.js` | Single source of truth for all built-in category groups |
+| `billing.js` | ✅ v7.10.11 — shared `deriveTier()` + `PLAID_EXEMPT_IDS`. Mirrors `api/routes/stripe.js`'s copy — no shared package exists across the frontend/backend boundary, keep both in sync by hand. |
+
 **Control Center (`/components/control-center/`)**
 
 | File | Purpose |
@@ -194,8 +206,11 @@ This is a shared-database, shared-schema SaaS. Every table that contains user da
 | `AutomationTab.jsx` | Rule automation — create/manage classification rules |
 | `CategoriesTab.jsx` | User category management — create/rename/delete custom categories; review & import orphan freeform categories from transactions (v7.10.6) |
 | `InfrastructureTab.jsx` | System health — DB checks, mailer readiness, activity logging |
-| `SaasTab.jsx` | SaaS admin — beta codes, subscriptions, engagement pulse. Admin-only. |
-| `HelpTab.jsx` | Help & FAQ — troubleshooting, support links |
+| `AdminTab.jsx` | Admin-only consolidated panel — sub-nav between SaaS Management, System Logs, Security. |
+| `SaasTab.jsx` | SaaS admin — split into 3 tabs as of v7.10.14: Active Members, Invite Codes, Engagement Pulse (matches `SystemLogsTab.jsx`'s underline-tab pattern). Admin-only. |
+| `SystemLogsTab.jsx` | Admin log viewer — Receipt Email Sessions / All Events tabs, filters, live 30s auto-refresh. |
+| `SecurityReviewTab.jsx` | Security review cadence — weekly/monthly/quarterly/annual/dependency tiers with checklists and history. |
+| `HelpTab.jsx` | Help & FAQ — troubleshooting, support links, feedback form (merged in v7.9.3) |
 | `IntegrationTab.jsx` | Website Lead Capture management — generate/revoke intake API keys, copy env vars, view integration code snippet. |
 | `ChangeLogModal.jsx` | Version changelog — release notes display |
 
@@ -259,12 +274,13 @@ This is a shared-database, shared-schema SaaS. Every table that contains user da
 | `JWT_SECRET` | Yes | Token signing |
 | `RESEND_API_KEY` | No | Email delivery (invoices, reports). Active key labeled "LumiereLedger" in Resend dashboard. |
 | `RESEND_FROM` | No | Sender address — must use `@throughthelens.media` domain. `lumiereledger.com` is NOT a verified Resend sending domain (costs $20/mo extra). Use: `Lumière Ledger <support@throughthelens.media>` |
-| `PLAID_CLIENT_ID` | No | Plaid banking integration |
-| `PLAID_SECRET` | No | Plaid API secret |
-| `ENCRYPTION_KEY` | No | ⚠️ Required before Plaid goes live — not yet set |
-| `CRON_SECRET` | No | Admin cron job authentication |
+| `PLAID_CLIENT_ID` | Yes | Plaid banking integration — ✅ set, live in production |
+| `PLAID_SECRET` | Yes | Plaid API secret — ✅ set |
+| `ENCRYPTION_KEY` | Yes | Plaid token encryption (libsodium) — ✅ set, live |
+| `CRON_SECRET` | Yes | Admin cron job authentication |
 | `VITE_GOOGLE_MAPS_API_KEY` | No | Google Maps mileage automation |
-| `REDIS_URL` | No | ⚠️ Required to activate email queueing — not yet set in Vercel |
+| `REDIS_URL` | No | Not set — intentional, Bull removed v7.8.90, direct Resend fallback in use |
+| `TURNSTILE_SECRET_KEY` | No | ⚠️ Added v7.10.14, **not yet set in Vercel** — Cloudflare Turnstile bot-challenge verification fails open (harmless) until set |
 | `LUMIERE_INTAKE_SECRET` | No | Legacy single-owner intake secret (env fallback for backward compat) |
 
 ---
@@ -311,10 +327,12 @@ This is a shared-database, shared-schema SaaS. Every table that contains user da
 - [x] **Client Deduplication**: Returning clients link to existing records — no duplicate contacts.
 - [x] **Real-Time Notifications**: Supabase Realtime subscription fires in-app toast + badge on new lead INSERT.
 - [x] **Add-On Marketplace**: `/addons` page surfaces available and coming-soon platform extensions.
-- [ ] **Plaid Sync**: Live bank auto-sync (pending Plaid account approval + `ENCRYPTION_KEY` env var).
-- [ ] **Subscription Billing**: Paid SaaS tier with Stripe integration.
-- [ ] **Rebrand domain**: Full transition to `lumiereledger.com` (in progress — see `REBRAND_ROADMAP.md`).
+- [x] **Plaid Sync**: Live bank auto-sync — billing gate, real libsodium encryption, pending→posted merge-in-place, reconnect flow.
+- [x] **Subscription Billing**: Free / Sync / Core / Studio tiers live via Stripe, self-serve checkout confirmed as a real flow.
+- [x] **Rebrand domain**: `www.lumiereledger.com` is the live primary domain; `app.throughthelens.media` 301-redirects to it.
+- [x] **Bot signup protection**: Trial signup gated on email confirmation (DB trigger level); Cloudflare Turnstile on signup form (needs `TURNSTILE_SECRET_KEY` in Vercel to activate).
 - [ ] **User-Defined Accounts**: Settings page where users name their own accounts. Source dropdown reads from accounts table. (See `ROADMAP.md` Phase 5.)
+- [ ] **Plaid webhook support**: Currently polls `itemGet` during sync only — doesn't catch every Plaid-side failure mode (confirmed via Venmo investigation 2026-07-01). See `ROADMAP.md` Technical Debt.
 
 ---
 

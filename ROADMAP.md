@@ -1,6 +1,6 @@
 # Lumière Ledger — Master Roadmap
 
-**Version:** v7.10.3 | **Last reviewed:** 2026-06-09  
+**Version:** v7.10.14 | **Last reviewed:** 2026-07-01  
 Source of truth for all sprint work, security status, and product phases.
 
 ---
@@ -41,6 +41,15 @@ Source of truth for all sprint work, security status, and product phases.
 | Plaid — Sync plan 5-account cap | ✅ v7.9.6 — `create-link-token` enforces limit; 403 `plaid_account_limit` error; upgrade UI in PlaidLink |
 | Signup — password strength enforcement | ✅ v7.9.6 — 5-rule client-side validation + live strength meter; PROCESSING freeze fixed |
 | Landing page — broader audience + SEO | ✅ v7.9.5/7.9.6 — hero copy, pricing comparison table, gear icon fix, OG/Twitter/canonical tags |
+| Plaid Amex duplicate transactions | ✅ v7.10.9 — pending→posted transactions now merge in place via `pending_transaction_id` instead of insert+unlink; auto-flags remaining possible duplicates after every sync |
+| Plaid connection health visibility | ✅ v7.10.9 — `needs_reauth`/`last_item_error` columns + `itemGet` check on sync; "⚠️ Reconnect" badge + update-mode Link on Accounts page (known gap: doesn't catch every Plaid-side failure mode — see Plaid webhook item below) |
+| `profiles` table (never existed) — reports were broken | ✅ v7.10.12 — `api/utils/userDirectory.js` uses Supabase Auth admin API instead; fixed monthly/weekly/daily reports + watchdog |
+| Activity pulse race condition | ✅ v7.10.12 — concurrent-tab duplicate-key error fixed with conflict fallback |
+| Hardcoded ADMIN_UUID / PLAID_BILLING_EXEMPT (6 + 3 copies) | ✅ v7.10.11 — consolidated into `api/constants.js` (backend) + `web-react/src/constants/billing.js` (frontend) |
+| Sync-plan users showing as "free" tier in UI | ✅ v7.10.11 — `deriveTier()` drift between stripe.js/AuthContext.jsx/SaasTab.jsx fixed |
+| Spam/bot signups getting full active accounts | ✅ v7.10.13 — trial only grants after `email_confirmed_at` is set (confirmed: self-serve Stripe checkout without a code stays untouched — real design, not a bug) |
+| Cloudflare Turnstile on signup | ✅ v7.10.14 — needs `TURNSTILE_SECRET_KEY` added to Vercel env panel to activate (fails open, harmless, until set) |
+| Admin SaaS panel reorganized into tabs | ✅ v7.10.14 — Active Members / Invite Codes / Engagement Pulse, matching System Logs' tab pattern |
 
 ---
 
@@ -48,8 +57,9 @@ Source of truth for all sprint work, security status, and product phases.
 
 | Item | Notes |
 |------|-------|
+| **Add `TURNSTILE_SECRET_KEY` to Vercel env** | Shipped v7.10.14, fails open (harmless) until set — but Turnstile does nothing to actually stop bots until this is added. Site key is already live in `Login.jsx`. |
 | **Receipt email body parse — re-test** | v7.8.96 hardened the prompt and error logging but the "Total Paid: $XX.XX" case was never re-tested with a live email forward. Send a test and verify System Logs show extracted amount. |
-| **Security Review — complete first-run** | Tab is live but all 5 tiers show NEVER RUN / OVERDUE. Weekly check done; Dependency check done (npm audit ran). Mark those done in the Security tab. |
+| **Security Review — overdue again** | Confirmed 2026-07-01: weekly last run 2026-06-15 (16 days overdue), monthly last run 2026-06-08 (borderline). Quarterly/annual/dependency have never been run once. |
 
 ---
 
@@ -59,7 +69,7 @@ Source of truth for all sprint work, security status, and product phases.
 |------|-------|
 | **`file-type` moderate vuln** | `receipts.js` uses `require('file-type')`. v22 is ESM-only — needs dynamic `import()` refactor. Near-zero real risk (ASF audio files only). Deferred. |
 | **Silent DB failures in `expenses.js`** | Lines ~391–399, 534–535, 687–692: `.update()` and `.delete()` calls never destructure `{ error }` — route returns `{ ok: true }` regardless. Lower risk (user-scoped RLS), but wrong pattern. |
-| **Silent DB failures in `plaid.js`** | Lines ~457, 517: loop updates and `pending_receipts` delete return values unchecked. |
+| **Silent DB failures in `plaid.js`** | Source-key-repair loop updates and `pending_receipts` delete return values unchecked. Note: `plaid.js` grew substantially in v7.10.9/v7.10.11 — re-check line references before fixing. |
 | **REDIS_URL — remove or wire up** | Bull was removed v7.8.90. Direct Resend fallback is intentional and working. Either set `REDIS_URL` and re-enable queue layer, or remove dead queue code from `emailQueue.js`. |
 | **`plaid_account_id` backfill** | Pre-v7.8.4 Plaid transactions have NULL `plaid_account_id`. Sub-account spending breakdown won't work on historical data until users re-sync. Document or prompt user to sync. |
 | **Plaid webhook support** | Currently only detect item-error state by polling `itemGet` during sync. Confirmed 2026-07-01 (Venmo): Plaid's internal item state can show "Needs user attention" while `itemGet`'s `item.error` field stays empty, so `needs_reauth` doesn't always fire. A real webhook endpoint (`ITEM_ERROR`, `PENDING_EXPIRATION`, `USER_PERMISSION_REVOKED`) would catch this proactively instead of relying on the next sync's poll. |
@@ -109,7 +119,7 @@ Source of truth for all sprint work, security status, and product phases.
 
 ---
 
-## ✅ Completed This Sprint (v7.7.0 → v7.8.99)
+## ✅ Completed This Sprint (v7.7.0 → v7.10.14)
 
 | Version | What shipped |
 |---------|-------------|
@@ -175,6 +185,17 @@ Source of truth for all sprint work, security status, and product phases.
 | v7.10.1 | Display name save root-cause fix — writes to `user_subscriptions` (the `profiles` table never existed); stale profiles join removed from GET /subscriptions |
 | v7.10.2 | Stripe webhook error checking — failed subscription writes now return 500 so Stripe retries; no more silent billing state corruption |
 | v7.10.3 | Code Drift Audit added to Quarterly Security Review — 3 grep checks: phantom tables, silent DB failures, stale plan-type lists |
+| v7.10.4 | PWA AI sidebar mobile-nav clearance fix; onboarding re-entry from hamburger menu; nav label cleanup (Studio→Dashboard, Business Profile→Profile) |
+| v7.10.5 | Plaid `/balances` backend 10-day DB-cached throttle — shared across devices, avoids per-load paid Plaid calls |
+| v7.10.6 | User-managed categories — `user_categories` table, full CRUD, CategoriesTab, orphan freeform-category import banner |
+| v7.10.7 | Categories bug fixes — orphan delete route ordering + NOT NULL constraint fix; parallel delete in CategoriesTab |
+| v7.10.8 | Removed monthly spending summary modal (redundant with dashboard) |
+| v7.10.9 | Plaid Amex duplicate-transaction fix (`pending_transaction_id` merge-in-place); auto duplicate-flagging after every sync; Plaid connection health (`needs_reauth`) + update-mode reconnect flow |
+| v7.10.10 | Fixed "What's New" badge re-lighting after being read — `CURRENT_VERSION` was hardcoded twice with two different values |
+| v7.10.11 | Consolidated hardcoded `ADMIN_UUID`/`PLAID_BILLING_EXEMPT` into `api/constants.js` + `web-react/src/constants/billing.js`; fixed Sync-plan tier showing as "free" in UI; fixed feedback.js's unverified email fallback domain |
+| v7.10.12 | Fixed monthly/weekly/daily admin reports + watchdog — all depended on a `profiles` table that never existed; fixed via `listAllUsers()` (Supabase Auth admin API). Fixed activity-pulse race condition (concurrent-tab duplicate-key error) |
+| v7.10.13 | Gated the automatic 30-day trial signup on email confirmation — stops scripted/bot signups from getting full active accounts with zero verification. `/subscription/redeem` upgraded to upsert |
+| v7.10.14 | Cloudflare Turnstile added to signup form (needs `TURNSTILE_SECRET_KEY` in Vercel to activate); Admin SaaS panel split into tabs (Active Members / Invite Codes / Engagement Pulse) |
 
 ---
 

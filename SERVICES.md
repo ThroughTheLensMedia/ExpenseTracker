@@ -80,11 +80,20 @@
 ---
 
 ### Stripe
-**Purpose:** User billing — subscription gate for Plaid access
+**Purpose:** User billing — self-serve Core/Studio subscription checkout, subscription gate for Plaid access
 **Plan:** Pay-per-transaction (no monthly fee)
 **Dashboard:** https://dashboard.stripe.com
 **Used for:** `api/routes/stripe.js`, Plaid billing gate in `api/routes/plaid.js`
-**Status:** Wired, in progress — see `STRIPE_ROADMAP.md`
+**Status:** ✅ Live — self-serve checkout confirmed as a real, intentional flow (2026-07-01). See `STRIPE_ROADMAP.md`.
+
+---
+
+### Cloudflare
+**Purpose:** DNS + reverse proxy for `lumiereledger.com` (active Zone, confirmed via dashboard 2026-07-01 — not just DNS/MX); Turnstile bot-challenge widget on the signup form (added v7.10.14)
+**Plan:** Free
+**Dashboard:** https://dash.cloudflare.com
+**Used for:** `web-react/index.html` (Turnstile script), `web-react/src/pages/Login.jsx` (widget), `api/server.js` (`POST /verify-turnstile`)
+**Note:** Turnstile secret key must be set as `TURNSTILE_SECRET_KEY` in Vercel to activate server-side verification — fails open (harmless) until set.
 
 ---
 
@@ -118,3 +127,5 @@
 |------|----------|
 | 2026-06-06 | Removed Logtail/pino from backend. Vercel logs + Sentry covers monitoring needs without new dependencies. |
 | 2026-06-06 | Sentry kept for frontend only — React crashes, stack traces from minified bundles. |
+| 2026-07-01 | Added Cloudflare Turnstile for bot signup protection — reused existing Cloudflare zone already proxying the domain rather than adding a new service. |
+| 2026-07-01 | Confirmed self-serve Stripe checkout (no invite code) is an intentional, real flow — not just an invite-only beta. Informs future access-gate changes: don't lock down `licensing.js` further without checking this first. |
