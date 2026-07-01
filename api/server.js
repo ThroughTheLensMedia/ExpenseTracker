@@ -76,6 +76,15 @@ app.use(cors({
 // Stripe webhook MUST be mounted before express.json() — raw body required for signature verification
 if (stripeWebhook) app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), stripeWebhook);
 
+// Plaid webhook — needs both parsed JSON (to read webhook_type/code) AND the raw
+// bytes (to verify the JWT's request_body_sha256 against). verify() captures the
+// raw buffer while express.json() still parses req.body normally.
+if (plaidRouter?.plaidWebhookHandler) {
+  app.post("/api/plaid/webhook", express.json({
+    verify: (req, res, buf) => { req.rawBody = buf; },
+  }), plaidRouter.plaidWebhookHandler);
+}
+
 app.use(express.json({ limit: "10mb" }));
 
 // Routing

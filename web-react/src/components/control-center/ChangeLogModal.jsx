@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.10.16', date: 'JUL 1, 2026', color: '#38bdf8', items: [
+        '<strong>Improved — Bank Connection Alerts:</strong> If a connected bank account needs your attention (expired login, revoked access), you\'ll now find out right away instead of waiting for the next sync.',
+    ]},
     { version: '7.10.15', date: 'JUL 1, 2026', color: '#94a3b8', items: [
         '<strong>Cleanup:</strong> Fixed broken dashboard links in the admin Security Review panel.',
     ]},

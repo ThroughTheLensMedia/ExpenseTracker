@@ -1,5 +1,7 @@
 const express = require("express");
 const router = express.Router();
+const crypto = require("crypto");
+const jwt = require("jsonwebtoken");
 const { z } = require("zod");
 const { encrypt, decrypt } = require("../utils/cryptoUtil");
 const { loadVendorRules, normalizeVendor } = require("../utils/vendorRules");
@@ -13,6 +15,11 @@ const REAUTH_ERROR_CODES = new Set([
     'ITEM_LOGIN_REQUIRED', 'INVALID_ACCESS_TOKEN', 'ITEM_NOT_FOUND',
     'INVALID_CREDENTIALS', 'INVALID_UPDATED_USERNAME', 'PENDING_EXPIRATION',
 ]);
+
+// Registered on every new/reauthed item so Plaid can push item-health events
+// (ITEM_ERROR, PENDING_EXPIRATION, USER_PERMISSION_REVOKED, LOGIN_REPAIRED)
+// instead of us only finding out the next time a sync happens to poll itemGet.
+const PLAID_WEBHOOK_URL = `${process.env.APP_URL || 'https://www.lumiereledger.com'}/api/plaid/webhook`;
 
 /**
  * Plaid Integration Routes
@@ -87,6 +94,7 @@ router.post("/create-link-token", async (req, res) => {
                 country_codes: ["US"],
                 language: "en",
                 access_token, // update mode — re-auth this exact item, no new item created
+                webhook: PLAID_WEBHOOK_URL,
             });
             return res.json({ link_token: response.data.link_token });
         }
@@ -131,6 +139,7 @@ router.post("/create-link-token", async (req, res) => {
             products: ["transactions"],
             country_codes: ["US"],
             language: "en",
+            webhook: PLAID_WEBHOOK_URL,
         });
         res.json({ link_token: response.data.link_token });
     } catch (e) {
@@ -869,4 +878,90 @@ function mapPlaidCategory(plaidCat) {
     return MAP[primary] || '';
 }
 
+// ─── Plaid Webhook ───────────────────────────────────────────────────────────
+// Public endpoint — Plaid calls this directly, no user session exists. Security
+// comes from JWT signature verification (Plaid-Verification header), not auth
+// middleware. Mounted in server.js BEFORE authMiddleware, same pattern as the
+// Stripe webhook. Docs: https://plaid.com/docs/api/webhooks/webhook-verification/
+//
+// Real fix for the gap found during the Venmo investigation (v7.10.9): itemGet
+// polling during sync doesn't always catch Plaid-side item health changes.
+// This gets pushed to us the moment Plaid knows about it instead.
+const _webhookKeyCache = new Map(); // key_id -> PEM public key (Plaid rotates these rarely)
+
+async function getPlaidWebhookVerificationKey(keyId) {
+    if (_webhookKeyCache.has(keyId)) return _webhookKeyCache.get(keyId);
+    const client = getPlaidClient();
+    const resp = await client.webhookVerificationKeyGet({ key_id: keyId });
+    const jwk = resp.data.key;
+    const keyObject = crypto.createPublicKey({
+        key: { kty: jwk.kty, crv: jwk.crv, x: jwk.x, y: jwk.y },
+        format: 'jwk',
+    });
+    const pem = keyObject.export({ type: 'spki', format: 'pem' });
+    _webhookKeyCache.set(keyId, pem);
+    return pem;
+}
+
+async function verifyPlaidWebhook(req) {
+    const token = req.headers['plaid-verification'];
+    if (!token) throw new Error('Missing Plaid-Verification header');
+
+    const decoded = jwt.decode(token, { complete: true });
+    if (!decoded?.header?.kid) throw new Error('Invalid webhook token');
+
+    const publicKey = await getPlaidWebhookVerificationKey(decoded.header.kid);
+    const payload = jwt.verify(token, publicKey, { algorithms: ['ES256'] });
+
+    // Replay protection — Plaid recommends rejecting tokens older than 5 minutes
+    if (Date.now() / 1000 - payload.iat > 300) throw new Error('Webhook token expired');
+
+    // Body integrity — hash must match the exact raw bytes Plaid signed.
+    // req.rawBody is captured in server.js's express.json({ verify }) for this route only.
+    if (!req.rawBody) throw new Error('Raw body not captured — check server.js mount');
+    const bodyHash = crypto.createHash('sha256').update(req.rawBody).digest('hex');
+    if (bodyHash !== payload.request_body_sha256) throw new Error('Webhook body hash mismatch');
+}
+
+async function plaidWebhookHandler(req, res) {
+    try {
+        await verifyPlaidWebhook(req);
+    } catch (err) {
+        console.error('[Plaid Webhook] Verification failed:', err.message);
+        return res.status(401).json({ error: 'Verification failed' });
+    }
+
+    // Ack immediately — Plaid expects a fast 200; DB work happens after the response.
+    res.sendStatus(200);
+
+    try {
+        const { webhook_type, webhook_code, item_id, error } = req.body || {};
+        if (webhook_type !== 'ITEM' || !item_id) return;
+
+        if (webhook_code === 'ERROR') {
+            const errorCode = error?.error_code || 'UNKNOWN_ERROR';
+            await adminClient.from('plaid_connections').update({
+                needs_reauth: REAUTH_ERROR_CODES.has(errorCode),
+                last_item_error: `${errorCode}: ${error?.error_message || ''}`,
+            }).eq('item_id', item_id);
+            console.log(`[Plaid Webhook] ${item_id} ERROR (${errorCode})`);
+        } else if (webhook_code === 'PENDING_EXPIRATION' || webhook_code === 'USER_PERMISSION_REVOKED') {
+            await adminClient.from('plaid_connections').update({
+                needs_reauth: true,
+                last_item_error: webhook_code,
+            }).eq('item_id', item_id);
+            console.log(`[Plaid Webhook] ${item_id} ${webhook_code} — flagged needs_reauth`);
+        } else if (webhook_code === 'LOGIN_REPAIRED') {
+            await adminClient.from('plaid_connections').update({
+                needs_reauth: false,
+                last_item_error: null,
+            }).eq('item_id', item_id);
+            console.log(`[Plaid Webhook] ${item_id} LOGIN_REPAIRED — cleared needs_reauth`);
+        }
+    } catch (err) {
+        console.error('[Plaid Webhook] Handler error:', err.message);
+    }
+}
+
 module.exports = router;
+module.exports.plaidWebhookHandler = plaidWebhookHandler;

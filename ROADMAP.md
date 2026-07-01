@@ -1,6 +1,6 @@
 # Lumière Ledger — Master Roadmap
 
-**Version:** v7.10.15 | **Last reviewed:** 2026-07-01  
+**Version:** v7.10.16 | **Last reviewed:** 2026-07-01  
 Source of truth for all sprint work, security status, and product phases.
 
 ---
@@ -53,6 +53,7 @@ Source of truth for all sprint work, security status, and product phases.
 | `TURNSTILE_SECRET_KEY` added to Vercel | ✅ Confirmed by Joshua 2026-07-01 — Turnstile bot-challenge is now actually active, not just deployed |
 | Security Review — Vercel links broken | ✅ v7.10.15 — 3 links used wrong org slug (`through-the-lens-media`), 404ing on every weekly check. Fixed. |
 | Stripe checkout → webhook → tier gate | ✅ Confirmed end-to-end 2026-07-01 — Joshua ran a real test transaction + refund. `STRIPE_ROADMAP.md` was frozen at its pre-build planning state since 2026-05-18 despite this being live since v7.6.5/v7.8.27 — fully updated. |
+| Plaid webhook support | ✅ v7.10.16 — real-time `ITEM` webhook (`ERROR`/`PENDING_EXPIRATION`/`USER_PERMISSION_REVOKED`/`LOGIN_REPAIRED`), JWT-verified. New connections register it automatically; existing ones need the one-time backfill script (see Active section). |
 
 ---
 
@@ -60,6 +61,7 @@ Source of truth for all sprint work, security status, and product phases.
 
 | Item | Notes |
 |------|-------|
+| **Run `api/scripts/backfill-plaid-webhooks.js`** | Shipped v7.10.16. Registers the new Plaid webhook on every existing active connection — new connections get it automatically, but existing ones (Amex, Capital One, USAA, Venmo) won't push real-time health events until this runs once. `node api/scripts/backfill-plaid-webhooks.js --dry-run` first, then without the flag. |
 | **Receipt email body parse — re-test** | v7.8.96 hardened the prompt and error logging but the "Total Paid: $XX.XX" case was never re-tested with a live email forward. Send a test and verify System Logs show extracted amount. |
 | **Security Review — monthly/quarterly/annual/dependency still overdue** | Weekly re-run 2026-07-01 (found + fixed the broken Vercel links, v7.10.15). Monthly last run 2026-06-08 (overdue). Quarterly/annual/dependency have never been run once. |
 
@@ -74,7 +76,6 @@ Source of truth for all sprint work, security status, and product phases.
 | **Silent DB failures in `plaid.js`** | Source-key-repair loop updates and `pending_receipts` delete return values unchecked. Note: `plaid.js` grew substantially in v7.10.9/v7.10.11 — re-check line references before fixing. |
 | **REDIS_URL — remove or wire up** | Bull was removed v7.8.90. Direct Resend fallback is intentional and working. Either set `REDIS_URL` and re-enable queue layer, or remove dead queue code from `emailQueue.js`. |
 | **`plaid_account_id` backfill** | Pre-v7.8.4 Plaid transactions have NULL `plaid_account_id`. Sub-account spending breakdown won't work on historical data until users re-sync. Document or prompt user to sync. |
-| **Plaid webhook support** | Currently only detect item-error state by polling `itemGet` during sync. Confirmed 2026-07-01 (Venmo): Plaid's internal item state can show "Needs user attention" while `itemGet`'s `item.error` field stays empty, so `needs_reauth` doesn't always fire. A real webhook endpoint (`ITEM_ERROR`, `PENDING_EXPIRATION`, `USER_PERMISSION_REVOKED`) would catch this proactively instead of relying on the next sync's poll. |
 
 ---
 
@@ -121,7 +122,7 @@ Source of truth for all sprint work, security status, and product phases.
 
 ---
 
-## ✅ Completed This Sprint (v7.7.0 → v7.10.15)
+## ✅ Completed This Sprint (v7.7.0 → v7.10.16)
 
 | Version | What shipped |
 |---------|-------------|
@@ -199,6 +200,7 @@ Source of truth for all sprint work, security status, and product phases.
 | v7.10.13 | Gated the automatic 30-day trial signup on email confirmation — stops scripted/bot signups from getting full active accounts with zero verification. `/subscription/redeem` upgraded to upsert |
 | v7.10.14 | Cloudflare Turnstile added to signup form (needs `TURNSTILE_SECRET_KEY` in Vercel to activate); Admin SaaS panel split into tabs (Active Members / Invite Codes / Engagement Pulse) |
 | v7.10.15 | Fixed broken Vercel dashboard links in Security Review checklist — wrong org slug on 3 links, found during weekly review |
+| v7.10.16 | Plaid webhook for real-time connection health (`ITEM` events, JWT-verified) — replaces poll-only `needs_reauth` detection. Needs one-time backfill script run for existing connections. |
 
 ---
 

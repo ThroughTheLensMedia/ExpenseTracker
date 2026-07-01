@@ -10,7 +10,7 @@
 
 | Property | Value |
 |----------|-------|
-| **Version** | v7.10.14 |
+| **Version** | v7.10.16 |
 | **Status** | Active Development — Open Public Launch |
 | **Deploy target** | `www.lumiereledger.com` (primary) — `app.throughthelens.media` 301 redirects to it |
 | **Deployment** | Vercel (auto-deploy on `git push origin main`) |
@@ -221,6 +221,7 @@ Express 4.19 API (api/)
 - **Exempt users:** `PLAID_BILLING_EXEMPT` — single source of truth is `api/constants.js` as of v7.10.11 (previously duplicated independently in `plaid.js` + `stripe.js` + `SaasTab.jsx`, which had drifted risk). Joshua + Michelle Gornichec (`fcb92809-70f1-4ae0-b39c-e317378a01a7`). Confirmed 2026-07-01: this is exactly and only these two — everyone else pays.
 - **Cross-source dedup:** Before inserting Plaid transactions, matches existing CSV rows on `date+amount_cents`, stamps `plaid_transaction_id` onto match — preserves all user enrichment.
 - **Accounts page:** Live balances, institution names, sync button, disconnect (Unsync) button, type grouping (Credit/Checking/Manual), synced accounts section at top.
+- **Webhook (v7.10.16):** `POST /api/plaid/webhook`, public, mounted before `authMiddleware`, JWT-verified via the `Plaid-Verification` header (not a shared secret like Stripe's). Pushes `ITEM` health events (`ERROR`, `PENDING_EXPIRATION`, `USER_PERMISSION_REVOKED`, `LOGIN_REPAIRED`) in real time instead of relying only on the next sync's `itemGet` poll. New connections register it automatically via `linkTokenCreate`'s `webhook` param; existing connections need `api/scripts/backfill-plaid-webhooks.js` run once.
 
 ### Google Cloud Console (OAuth + Maps)
 - **OAuth:** Google sign-in. `lumiereledger.com` added to authorized domains + redirect URIs (done 2026-05-16).
@@ -235,8 +236,7 @@ Express 4.19 API (api/)
 
 | Gap | File | Impact |
 |-----|------|--------|
-| `TURNSTILE_SECRET_KEY` not set in Vercel | Vercel env panel | Shipped v7.10.14, fails open (harmless). Turnstile does nothing to actually stop bots until this is set. |
-| Plaid webhook support missing | `api/routes/plaid.js` | Only detects item-error via polling `itemGet` during sync. Confirmed 2026-07-01 (Venmo): Plaid's internal item state can show "Needs user attention" while `item.error` stays empty — `needs_reauth` doesn't always fire. Real fix is a webhook endpoint for `ITEM_ERROR`/`PENDING_EXPIRATION`/`USER_PERMISSION_REVOKED`. |
+| Plaid webhook backfill not run | `api/scripts/backfill-plaid-webhooks.js` | Shipped v7.10.16. New connections auto-register the webhook; existing connections (Amex, Capital One, USAA, Venmo) need this one-time script run to get real-time health events. |
 | `REDIS_URL` not set in Vercel | Vercel env panel | Bull removed v7.8.90 — direct Resend fallback is intentional. Set only if re-enabling queue layer. |
 | `plaid_account_id` backfill | `expenses` table | Pre-v7.8.4 Plaid transactions have NULL `plaid_account_id`. Sub-account breakdown unavailable on historical rows until users re-sync. |
 | `file-type` moderate vuln | `api/routes/receipts.js` | v22 is ESM-only; needs dynamic `import()` refactor. Near-zero real risk (ASF audio only). |

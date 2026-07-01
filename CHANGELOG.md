@@ -5,6 +5,18 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.10.16] — 2026-07-01
+
+### Added — Plaid webhook for real-time connection health
+
+- **Root cause this fixes**: `needs_reauth` detection (v7.10.9) only ran during a sync, polling `itemGet`'s `item.error` field — confirmed during the Venmo investigation that Plaid's internal item state can diverge from that field, so failures weren't always caught. This gets pushed the moment Plaid knows about it instead.
+- **`api/routes/plaid.js`** — new `plaidWebhookHandler`, verified via Plaid's JWT signature scheme (`Plaid-Verification` header, ES256, key fetched via `webhookVerificationKeyGet` and cached, replay-protected to 5 minutes, body-hash checked against the raw request bytes). Handles `ITEM` webhook codes: `ERROR` (sets `needs_reauth` only if the error code is reauth-worthy), `PENDING_EXPIRATION`/`USER_PERMISSION_REVOKED` (always reauth-worthy), `LOGIN_REPAIRED` (clears the flag). `webhook: PLAID_WEBHOOK_URL` added to both `linkTokenCreate` calls so all new/reauthed items register it automatically.
+- **`api/server.js`** — `POST /api/plaid/webhook` mounted before `authMiddleware` (public — Plaid calls it directly, no user session). Captures the raw request body alongside the parsed JSON since the JWT verification needs to hash the exact raw bytes.
+- **`api/scripts/backfill-plaid-webhooks.js`** (new) — one-time script to register the webhook on every existing active connection via `itemWebhookUpdate`, since they predate this feature. Supports `--dry-run`. **Needs to be run once** — see runbook note below.
+- No new dependencies — reused `jsonwebtoken` and Node's built-in `crypto` (JWK → PEM import), both already in the project.
+
+---
+
 ## [v7.10.15] — 2026-07-01
 
 ### Fixed — Broken Vercel dashboard links in Security Review checklist
