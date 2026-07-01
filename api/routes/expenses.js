@@ -560,80 +560,86 @@ router.post("/link-manual-to-plaid", async (req, res) => {
   }
 });
 
-// POST /expenses/scan-dupes
-// Scans existing transactions for likely duplicates: same amount_cents, date within
-// ±2 days, AND vendor names must be similar (one contains the other, or word overlap).
-// Optionally scoped to a single account via { source }.
+// Scans transactions for likely duplicates: same amount_cents, date within ±2 days,
+// AND vendor names must be similar (one contains the other, or word overlap).
+// Optionally scoped to a single account via `source`.
 // Marks found pairs with needs_review=true and a shared review_pair_id.
 // Skips pairs that are already flagged or already linked via plaid_transaction_id.
+// Shared by POST /expenses/scan-dupes (manual, user-triggered) and the Plaid sync
+// engine (auto-triggered after every sync, scoped to the synced connection's sources).
+async function scanForDuplicates(sb, userId, source) {
+  let query = sb
+    .from('expenses')
+    .select('id, expense_date, amount_cents, vendor, source, needs_review, review_pair_id, plaid_transaction_id')
+    .eq('user_id', userId)
+    .gt('amount_cents', 0); // expenses only
+
+  if (source) query = query.eq('source', source);
+
+  const { data: rows, error } = await query.order('expense_date', { ascending: true });
+  if (error) throw error;
+  if (!rows?.length) return { found: 0, pairs: [] };
+
+  // Group by amount_cents for fast candidate lookup
+  const byAmount = {};
+  for (const row of rows) {
+    const k = String(row.amount_cents);
+    if (!byAmount[k]) byAmount[k] = [];
+    byAmount[k].push(row);
+  }
+
+  const pairs = [];
+  const flagged = new Set();
+
+  for (const group of Object.values(byAmount)) {
+    if (group.length < 2) continue;
+    for (let i = 0; i < group.length; i++) {
+      for (let j = i + 1; j < group.length; j++) {
+        const a = group[i];
+        const b = group[j];
+        if (flagged.has(a.id) || flagged.has(b.id)) continue;
+        // Skip if already linked as the same Plaid transaction
+        if (a.plaid_transaction_id && a.plaid_transaction_id === b.plaid_transaction_id) continue;
+        // Skip if already flagged for review together
+        if (a.review_pair_id && a.review_pair_id === b.review_pair_id) continue;
+
+        const dayDiff = Math.abs(
+          (new Date(a.expense_date + 'T00:00:00') - new Date(b.expense_date + 'T00:00:00')) / 86400000
+        );
+        if (dayDiff > 2) continue;
+
+        // Require vendor name similarity — prevents false positives on coincidental
+        // same-amount transactions from unrelated vendors on nearby dates
+        if (!vendorsSimilar(a.vendor, b.vendor)) continue;
+
+        pairs.push({ a: a.id, b: b.id, amount_cents: a.amount_cents, vendorA: a.vendor, vendorB: b.vendor, dateA: a.expense_date, dateB: b.expense_date });
+        flagged.add(a.id);
+        flagged.add(b.id);
+      }
+    }
+  }
+
+  if (!pairs.length) return { found: 0, pairs: [] };
+
+  // Assign shared review_pair_id (UUID) and mark needs_review on each pair
+  const { randomUUID } = require('crypto');
+  for (const pair of pairs) {
+    const pairId = randomUUID();
+    await sb.from('expenses')
+      .update({ needs_review: true, review_pair_id: pairId })
+      .in('id', [pair.a, pair.b])
+      .eq('user_id', userId);
+  }
+
+  return { found: pairs.length, pairs };
+}
+
+// POST /expenses/scan-dupes — user-triggered scan from the Transactions page.
 router.post("/scan-dupes", async (req, res) => {
   try {
     const { source } = req.body || {};
-
-    let query = req.sb
-      .from('expenses')
-      .select('id, expense_date, amount_cents, vendor, source, needs_review, review_pair_id, plaid_transaction_id')
-      .eq('user_id', req.user.id)
-      .gt('amount_cents', 0); // expenses only
-
-    if (source) query = query.eq('source', source);
-
-    const { data: rows, error } = await query.order('expense_date', { ascending: true });
-    if (error) throw error;
-    if (!rows?.length) return res.json({ ok: true, found: 0, pairs: [] });
-
-    // Group by amount_cents for fast candidate lookup
-    const byAmount = {};
-    for (const row of rows) {
-      const k = String(row.amount_cents);
-      if (!byAmount[k]) byAmount[k] = [];
-      byAmount[k].push(row);
-    }
-
-    const pairs = [];
-    const flagged = new Set();
-
-    for (const group of Object.values(byAmount)) {
-      if (group.length < 2) continue;
-      for (let i = 0; i < group.length; i++) {
-        for (let j = i + 1; j < group.length; j++) {
-          const a = group[i];
-          const b = group[j];
-          if (flagged.has(a.id) || flagged.has(b.id)) continue;
-          // Skip if already linked as the same Plaid transaction
-          if (a.plaid_transaction_id && a.plaid_transaction_id === b.plaid_transaction_id) continue;
-          // Skip if already flagged for review together
-          if (a.review_pair_id && a.review_pair_id === b.review_pair_id) continue;
-
-          const dayDiff = Math.abs(
-            (new Date(a.expense_date + 'T00:00:00') - new Date(b.expense_date + 'T00:00:00')) / 86400000
-          );
-          if (dayDiff > 2) continue;
-
-          // Require vendor name similarity — prevents false positives on coincidental
-          // same-amount transactions from unrelated vendors on nearby dates
-          if (!vendorsSimilar(a.vendor, b.vendor)) continue;
-
-          pairs.push({ a: a.id, b: b.id, amount_cents: a.amount_cents, vendorA: a.vendor, vendorB: b.vendor, dateA: a.expense_date, dateB: b.expense_date });
-          flagged.add(a.id);
-          flagged.add(b.id);
-        }
-      }
-    }
-
-    if (!pairs.length) return res.json({ ok: true, found: 0, pairs: [] });
-
-    // Assign shared review_pair_id (UUID) and mark needs_review on each pair
-    const { randomUUID } = require('crypto');
-    for (const pair of pairs) {
-      const pairId = randomUUID();
-      await req.sb.from('expenses')
-        .update({ needs_review: true, review_pair_id: pairId })
-        .in('id', [pair.a, pair.b])
-        .eq('user_id', req.user.id);
-    }
-
-    res.json({ ok: true, found: pairs.length, pairs });
+    const result = await scanForDuplicates(req.sb, req.user.id, source);
+    res.json({ ok: true, ...result });
   } catch (e) {
     res.status(500).json({ error: String(e.message || e) });
   }
@@ -714,3 +720,4 @@ router.post("/manual-merge", async (req, res) => {
 });
 
 module.exports = router;
+module.exports.scanForDuplicates = scanForDuplicates;

@@ -5,6 +5,27 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.10.9] — 2026-07-01
+
+### Fixed — Plaid Amex duplicate transactions
+
+- **`api/routes/plaid.js`** — Root cause: on every pending→posted transition, the old "removed" handler decided delete-vs-unlink using `hasUserData` (notes/receipt/tax_deductible), but auto-generated sync notes made that check always true — the old pending row was never deleted, and a new posted row was inserted alongside it, permanently. Fix: when Plaid's `added` transaction includes `pending_transaction_id`, merge it into the existing row in place (new `plaid_transaction_id`/date/amount, vendor upgraded only if still auto-generated) instead of inserting a new row. Nothing with user data is ever deleted.
+- **Backfill** — Ran the new duplicate-detection query against the live Amex connection: found 25 duplicate pairs dating back to 2026-06-01 (all pending→posted duplicates from this bug), flagged via `needs_review`/`review_pair_id` for manual review/merge in the Transactions page. No rows deleted.
+
+### Added — Auto duplicate detection on Plaid sync
+
+- **`api/routes/expenses.js`** — Extracted the `scan-dupes` pairing logic into a shared `scanForDuplicates()` helper.
+- **`api/routes/plaid.js`** — Every sync now auto-runs the duplicate scan on any account with new activity, flagging possible duplicates with the existing 🚩 badge + Near-Duplicate Review Modal in Transactions — no new UI, early-warning safety net on top of the merge fix above.
+
+### Added — Plaid connection health / reconnect flow
+
+- **`api/tests/plaid-item-health-migration.sql`** — Added `needs_reauth` and `last_item_error` columns to `plaid_connections` (idempotent).
+- **`api/routes/plaid.js`** — Every sync now calls Plaid's `itemGet` per connection and stores the real item error state, instead of connections silently sitting broken with no signal (root cause of Venmo going stale with zero visibility — its item was stuck in Plaid's internal "Retrying" state with no error surfaced anywhere). `create-link-token` now supports update mode via `{ connection_id }` to re-auth an existing item without a new connection or re-triggering the billing gate.
+- **`web-react/src/pages/Accounts.jsx`** — Shows a "⚠️ Reconnect" badge on any Plaid account needing re-auth, with a one-click button that reopens Plaid Link in update mode.
+- **`api/routes/accounts.js`** — `/accounts/summary` now returns `needs_reauth`/`last_item_error` per connection.
+
+---
+
 ## [v7.10.8] — 2026-06-15
 
 ### Cleanup

@@ -1,1 +1,1 @@
-{"version":"7.10.8","release_date":"2026-06-15","codename":"Lumière Ledger","notes":"v7.10.8: Removed monthly summary modal"}
+{"version":"7.10.9","release_date":"2026-07-01","codename":"Lumière Ledger","notes":"v7.10.9: Fixed Plaid pending-to-posted duplicate transactions, auto-flag possible duplicates, Plaid reconnect status"}

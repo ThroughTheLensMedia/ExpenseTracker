@@ -398,8 +398,42 @@ function AccountCard({ acct, totalMonth, plaidConnections, connectionId = null, 
     const [unlinking,      setUnlinking]      = useState(false);
     const [mergeSaving,    setMergeSaving]    = useState(false);
     const [showMerge,      setShowMerge]      = useState(false);
+    const [reconnecting,   setReconnecting]   = useState(false);
 
     useEffect(() => { setEditVal(acct.display_name || defaultLabel); }, [acct.display_name, defaultLabel]);
+
+    // Plaid Link "update mode" — re-authenticates the same item without creating a
+    // new connection or re-triggering the billing gate.
+    async function handleReconnect() {
+        const connId = plaidConnections?.[0]?.id;
+        if (!connId) return;
+        setReconnecting(true);
+        try {
+            const { link_token } = await apiPost('/plaid/create-link-token', { connection_id: connId });
+            if (!window.Plaid) throw new Error('Plaid SDK not loaded. Refresh the page and try again.');
+
+            const handler = window.Plaid.create({
+                token: link_token,
+                onSuccess: async (public_token) => {
+                    try {
+                        await apiPost('/plaid/exchange-token', { public_token });
+                        onDisconnect?.(); // reuse the existing "reload accounts" callback
+                    } catch (e) {
+                        console.error('[Plaid] Reconnect exchange failed:', e);
+                    }
+                    setReconnecting(false);
+                },
+                onExit: (err) => {
+                    if (err) console.warn('[Plaid] Reconnect exited with error:', err);
+                    setReconnecting(false);
+                },
+            });
+            handler.open();
+        } catch (e) {
+            console.error('[Plaid] Reconnect failed:', e);
+            setReconnecting(false);
+        }
+    }
 
     async function saveName() {
         if (!editVal.trim()) return;
@@ -517,6 +551,16 @@ function AccountCard({ acct, totalMonth, plaidConnections, connectionId = null, 
                         );
                     })() : (
                         <ConnBadge type={connType} />
+                    )}
+
+                    {/* Needs Reconnect — Plaid's own item.error says this connection is broken,
+                        not just a transient sync hiccup. Update-mode Link fixes it in place. */}
+                    {isPlaid && plaidConnections?.[0]?.needs_reauth && (
+                        <button onClick={handleReconnect} disabled={reconnecting}
+                            title={plaidConnections?.[0]?.last_item_error || 'This connection needs to be re-authenticated with your bank.'}
+                            style={{ background:'rgba(249,115,22,0.15)', border:'1px solid rgba(249,115,22,0.35)', borderRadius:20, color:'#f97316', fontSize:10, fontWeight:800, padding:'3px 10px', cursor:'pointer', whiteSpace:'nowrap' }}>
+                            {reconnecting ? '…' : '⚠️ Reconnect'}
+                        </button>
                     )}
 
                     {(isPlaid || isLinked) && (

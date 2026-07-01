@@ -46,7 +46,7 @@ router.get('/summary', async (req, res) => {
                 .then(r => r).catch(() => ({ data: [] })),
             req.sb
                 .from('plaid_connections')
-                .select('id, institution_name, last_synced_at, status')
+                .select('id, institution_name, last_synced_at, status, needs_reauth, last_item_error')
                 .eq('user_id', req.user.id)
                 .eq('status', 'active')
                 .then(r => r).catch(() => ({ data: [] })),

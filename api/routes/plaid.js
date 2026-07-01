@@ -4,6 +4,14 @@ const { z } = require("zod");
 const { encrypt, decrypt } = require("../utils/cryptoUtil");
 const { loadVendorRules, normalizeVendor } = require("../utils/vendorRules");
 const { supabase: adminClient } = require("../db");
+const { scanForDuplicates } = require("./expenses");
+
+// Plaid item error codes that mean the connection needs the user to re-authenticate
+// via Plaid Link update mode — not a transient API hiccup.
+const REAUTH_ERROR_CODES = new Set([
+    'ITEM_LOGIN_REQUIRED', 'INVALID_ACCESS_TOKEN', 'ITEM_NOT_FOUND',
+    'INVALID_CREDENTIALS', 'INVALID_UPDATED_USERNAME', 'PENDING_EXPIRATION',
+]);
 
 /**
  * Plaid Integration Routes
@@ -60,8 +68,34 @@ const PLAID_BILLING_EXEMPT = new Set([
 ]);
 
 // ─── 1. Create Link Token ───
+// Pass { connection_id } to open Plaid Link in UPDATE MODE for an existing item
+// that needs reconnecting (e.g. needs_reauth = true) instead of creating a new item.
+// Update mode skips the billing/account-limit gates — it's not a new connection.
 router.post("/create-link-token", async (req, res) => {
     try {
+        const { connection_id } = req.body || {};
+
+        if (connection_id) {
+            const { data: conn, error: connErr } = await req.sb
+                .from("plaid_connections")
+                .select("id, access_token")
+                .eq("id", connection_id)
+                .eq("user_id", req.user.id)
+                .single();
+            if (connErr || !conn) return res.status(404).json({ error: "Connection not found." });
+
+            const access_token = await decrypt(conn.access_token);
+            const client = getPlaidClient();
+            const response = await client.linkTokenCreate({
+                user: { client_user_id: req.user.id },
+                client_name: "Lumière Ledger",
+                country_codes: ["US"],
+                language: "en",
+                access_token, // update mode — re-auth this exact item, no new item created
+            });
+            return res.json({ link_token: response.data.link_token });
+        }
+
         // Billing gate: all users must have a Stripe customer record before connecting.
         // Exempt list (PLAID_BILLING_EXEMPT) covers Joshua and Michelle only — no plan-type exceptions.
         if (!PLAID_BILLING_EXEMPT.has(req.user.id)) {
@@ -148,6 +182,8 @@ router.post("/exchange-token", async (req, res) => {
                 institution_id: institution?.institution_id || null,
                 institution_name: institution?.name || "Unknown Bank",
                 status: "active",
+                needs_reauth: false,
+                last_item_error: null,
                 cursor: null,
                 last_synced_at: null,
             }, { onConflict: "item_id" })
@@ -192,6 +228,7 @@ router.post("/sync", async (req, res) => {
         let totalModified = 0;
         let totalRemoved = 0;
         let totalLinked = 0;
+        let totalFlagged = 0;
 
         for (const conn of connections) {
             const result = await syncTransactions(req.sb, client, conn, req.user.id);
@@ -199,6 +236,7 @@ router.post("/sync", async (req, res) => {
             totalModified += result.modified;
             totalRemoved  += result.removed;
             totalLinked   += result.linked;
+            totalFlagged  += result.flagged || 0;
         }
 
         res.json({
@@ -208,6 +246,7 @@ router.post("/sync", async (req, res) => {
             modified:  totalModified,
             removed:   totalRemoved,
             linked:    totalLinked,  // existing CSV rows matched and stamped with Plaid ID
+            flagged:   totalFlagged, // possible-duplicate pairs auto-flagged for review this sync
         });
     } catch (e) {
         console.error("[Plaid] Sync error:", e.response?.data || e.message);
@@ -220,7 +259,7 @@ router.get("/accounts", async (req, res) => {
     try {
         const { data, error } = await req.sb
             .from("plaid_connections")
-            .select("id, institution_name, institution_id, status, last_synced_at, created_at")
+            .select("id, institution_name, institution_id, status, last_synced_at, created_at, needs_reauth, last_item_error")
             .eq("user_id", req.user.id)
             .order("created_at", { ascending: false });
 
@@ -558,9 +597,31 @@ async function syncTransactions(sb, plaidClient, connection, userId) {
     let linked = 0;
     let hasMore = true;
     const accountSourceMap = {}; // plaid account_id → readable source key
+    const touchedSources = new Set(); // source keys touched this sync — scoped input for the post-sync dup scan
 
     // Load user's vendor category rules once — applied to every new transaction
     const vendorRules = await loadVendorRules(sb, userId);
+
+    // Item health check — Plaid's own item.error is the definitive signal for "this
+    // connection is broken and needs the user to relink," as opposed to a transient
+    // sync hiccup. A silently-degraded item (e.g. stuck in Plaid's internal "Retrying"
+    // extraction state) previously gave no signal at all — sync calls kept succeeding
+    // with zero new transactions and last_synced_at kept updating, so nothing ever told
+    // the user to reconnect. This surfaces that state to the Accounts page.
+    try {
+        const healthAccess = await decrypt(connection.access_token);
+        const itemResp = await plaidClient.itemGet({ access_token: healthAccess });
+        const itemError = itemResp.data.item?.error || null;
+        await sb
+            .from('plaid_connections')
+            .update({
+                needs_reauth:     !!itemError && REAUTH_ERROR_CODES.has(itemError.error_code),
+                last_item_error:  itemError ? `${itemError.error_code}: ${itemError.error_message}` : null,
+            })
+            .eq('id', connection.id);
+    } catch (err) {
+        console.warn('[Plaid] Item health check failed:', err.response?.data || err.message);
+    }
 
     // Fetch account names upfront — accountsGet always returns accounts regardless of cursor state
     try {
@@ -593,7 +654,52 @@ async function syncTransactions(sb, plaidClient, connection, userId) {
 
         // Process added transactions
         if (newTxns.length > 0) {
-            const rows = newTxns.map(t => {
+            // Pending→posted transitions: Plaid tells us directly via pending_transaction_id
+            // which old row this new one replaces. Merge into that row in place instead of
+            // inserting a fresh row and separately deciding delete-vs-unlink later — that old
+            // two-step approach is what caused permanent duplicate rows (see PLAID dedup fix notes).
+            // Any receipt/notes/category/tax data already on the row is preserved untouched.
+            const pendingIds = newTxns.filter(t => t.pending_transaction_id).map(t => t.pending_transaction_id);
+            const existingPendingMap = {};
+            if (pendingIds.length > 0) {
+                const { data: existingPending } = await sb
+                    .from('expenses')
+                    .select('id, plaid_transaction_id, vendor')
+                    .eq('user_id', userId)
+                    .in('plaid_transaction_id', pendingIds);
+                for (const row of (existingPending || [])) {
+                    existingPendingMap[row.plaid_transaction_id] = row;
+                }
+            }
+
+            const freshTxns = [];
+            for (const t of newTxns) {
+                const oldRow = t.pending_transaction_id ? existingPendingMap[t.pending_transaction_id] : null;
+                if (!oldRow) { freshTxns.push(t); continue; }
+
+                const vendorName = t.merchant_name || t.name || "Unknown";
+                const update = {
+                    plaid_transaction_id: t.transaction_id,
+                    plaid_account_id:    t.account_id || null,
+                    expense_date:        t.date,
+                    amount_cents:        Math.round((t.amount || 0) * 100),
+                    source:              accountSourceMap[t.account_id] || connection.institution_name,
+                };
+                // Only refresh vendor if it still looks like the auto-Plaid name upgrading to a
+                // fuller official name (e.g. "Crafted" → "Crafted Terminal") — never overwrite a
+                // name the user manually retyped.
+                const oldLower = (oldRow.vendor || '').toLowerCase();
+                const newLower = vendorName.toLowerCase();
+                if (newLower && oldLower && newLower !== oldLower && newLower.includes(oldLower)) {
+                    update.vendor = vendorName;
+                }
+
+                await sb.from('expenses').update(update).eq('id', oldRow.id).eq('user_id', userId);
+                touchedSources.add(update.source);
+                modified++;
+            }
+
+            const rows = freshTxns.map(t => {
                 const vendorName = t.merchant_name || t.name || "Unknown";
                 // Check if user has a saved rule for this vendor
                 const rule = vendorRules[normalizeVendor(vendorName)];
@@ -614,6 +720,7 @@ async function syncTransactions(sb, plaidClient, connection, userId) {
                     plaid_account_id:    t.account_id || null,
                 };
             });
+            rows.forEach(r => touchedSources.add(r.source));
 
             // Cross-source dedup: link existing CSV rows, insert only truly new ones
             const { toInsert, linked: linkCount } = await crossSourceDedup(sb, userId, rows);
@@ -647,6 +754,7 @@ async function syncTransactions(sb, plaidClient, connection, userId) {
                 })
                 .eq("plaid_transaction_id", t.transaction_id)
                 .eq("user_id", userId);
+            touchedSources.add(sourceKey);
             modified++;
         }
 
@@ -715,7 +823,22 @@ async function syncTransactions(sb, plaidClient, connection, userId) {
         .update({ cursor, last_synced_at: new Date().toISOString() })
         .eq("id", connection.id);
 
-    return { added, modified, removed, linked };
+    // Auto-flag possible duplicates on every source this sync touched — early-warning
+    // safety net on top of the pending→posted merge fix above, and the only thing that
+    // catches duplicates that predate this fix (e.g. already sitting in the ledger).
+    // Reuses the same needs_review/review_pair_id flow as the manual "Scan for duplicates"
+    // button, so flagged pairs show up with the existing 🚩 badge + review modal — no new UI.
+    let flagged = 0;
+    for (const source of touchedSources) {
+        try {
+            const result = await scanForDuplicates(sb, userId, source);
+            flagged += result.found;
+        } catch (err) {
+            console.error(`[Plaid] Dup scan failed for source "${source}":`, err.message);
+        }
+    }
+
+    return { added, modified, removed, linked, flagged };
 }
 
 // Map Plaid's personal_finance_category to Lumière Ledger categories
