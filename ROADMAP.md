@@ -76,6 +76,7 @@ Source of truth for all sprint work, security status, and product phases.
 | **Silent DB failures in `plaid.js`** | Source-key-repair loop updates and `pending_receipts` delete return values unchecked. Note: `plaid.js` grew substantially in v7.10.9/v7.10.11 — re-check line references before fixing. |
 | **REDIS_URL — remove or wire up** | Bull was removed v7.8.90. Direct Resend fallback is intentional and working. Either set `REDIS_URL` and re-enable queue layer, or remove dead queue code from `emailQueue.js`. |
 | **`plaid_account_id` backfill** | Pre-v7.8.4 Plaid transactions have NULL `plaid_account_id`. Sub-account spending breakdown won't work on historical data until users re-sync. Document or prompt user to sync. |
+| **`rotate-plaid-tokens.js` references stale schema** | Found 2026-07-01 while building the webhook backfill script: `api/scripts/rotate-plaid-tokens.js` queries a `plaid_items` table with an `encrypted_access_token` column — current schema is `plaid_connections`/`access_token`. Verify and fix before ever actually running an `ENCRYPTION_KEY` rotation. |
 
 ---
 
