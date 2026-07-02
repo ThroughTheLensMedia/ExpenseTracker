@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.10.19] — 2026-07-01
+
+### Fixed — Monthly npm audit (Security Review)
+
+- **`api/`** — fixed 2 high-severity vulnerabilities: `form-data` (CRLF injection via unescaped multipart field/filenames, transitive via `plaid` → `axios`, 4.0.5 → 4.0.6) and `multer` (DoS via deeply nested field names + incomplete aborted-upload cleanup, 2.1.0 → 2.2.0). Both non-breaking — `npm audit fix`, no `package.json` changes needed, only `package-lock.json`. Verified `receipts.js`/`pwa.js`/`plaid.js` still load correctly after the bump. `file-type` moderate vuln remains — known, deferred (ESM-only v22 requires a `receipts.js` refactor, near-zero real risk).
+- **`web-react/`** — all 5 vulnerabilities cleared (`@babel/core`, `dompurify`, `esbuild`, `js-yaml`, `vite`/`launch-editor`) via `npm audit fix`. Verified production build still succeeds.
+
+---
+
 ## [v7.10.18] — 2026-07-01
 
 ### Removed — Temporary Plaid webhook backfill endpoint
