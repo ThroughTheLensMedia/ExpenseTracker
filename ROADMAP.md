@@ -1,6 +1,6 @@
 # Lumière Ledger — Master Roadmap
 
-**Version:** v7.10.19 | **Last reviewed:** 2026-07-01  
+**Version:** v7.10.20 | **Last reviewed:** 2026-07-01  
 Source of truth for all sprint work, security status, and product phases.
 
 ---
@@ -54,6 +54,7 @@ Source of truth for all sprint work, security status, and product phases.
 | Security Review — Vercel links broken | ✅ v7.10.15 — 3 links used wrong org slug (`through-the-lens-media`), 404ing on every weekly check. Fixed. |
 | Stripe checkout → webhook → tier gate | ✅ Confirmed end-to-end 2026-07-01 — Joshua ran a real test transaction + refund. `STRIPE_ROADMAP.md` was frozen at its pre-build planning state since 2026-05-18 despite this being live since v7.6.5/v7.8.27 — fully updated. |
 | Plaid webhook support | ✅ v7.10.16-18 — real-time `ITEM` webhook (`ERROR`/`PENDING_EXPIRATION`/`USER_PERMISSION_REVOKED`/`LOGIN_REPAIRED`), JWT-verified. Backfill confirmed 2026-07-01 — all 8 active connections (Credit One Bank, Capital One ×2, Navy Federal, America First Credit Union, American Express, Venmo, USAA) registered via a temporary admin endpoint (ENCRYPTION_KEY is marked Sensitive in Vercel, couldn't run the standalone script locally). Endpoint removed after confirming. |
+| Quarterly Security Review | ✅ v7.10.20 — first-ever run. Safe dep updates (both dirs), fixed the phantom-tables checklist grep itself (was silently missing double-quoted `.from()` calls), fixed 7 highest-risk silent-DB-failure sites, fixed a real `sync_monthly`/`sync_annual` gap in admin.js's plan-type list. Logged in `security_reviews` table. |
 
 ---
 
@@ -62,7 +63,7 @@ Source of truth for all sprint work, security status, and product phases.
 | Item | Notes |
 |------|-------|
 | **Receipt email body parse — re-test** | v7.8.96 hardened the prompt and error logging but the "Total Paid: $XX.XX" case was never re-tested with a live email forward. Send a test and verify System Logs show extracted amount. |
-| **Security Review — quarterly/annual/dependency still overdue** | Weekly re-run 2026-07-01 (fixed broken Vercel links, v7.10.15). Monthly re-run 2026-07-01 — npm audit fixed 2 high vulns in api/ (form-data, multer, v7.10.19) and cleared all 5 in web-react/. Quarterly/annual/dependency have never been run once. |
+| **Security Review — annual/dependency still overdue** | Weekly, monthly, and quarterly all re-run 2026-07-01 (v7.10.15/19/20 — see Current Status). Annual and dependency tiers have never been run once. |
 
 ---
 
@@ -71,8 +72,7 @@ Source of truth for all sprint work, security status, and product phases.
 | Item | Notes |
 |------|-------|
 | **`file-type` moderate vuln** | `receipts.js` uses `require('file-type')`. v22 is ESM-only — needs dynamic `import()` refactor. Near-zero real risk (ASF audio files only). Deferred. |
-| **Silent DB failures in `expenses.js`** | Lines ~391–399, 534–535, 687–692: `.update()` and `.delete()` calls never destructure `{ error }` — route returns `{ ok: true }` regardless. Lower risk (user-scoped RLS), but wrong pattern. |
-| **Silent DB failures in `plaid.js`** | Source-key-repair loop updates and `pending_receipts` delete return values unchecked. Note: `plaid.js` grew substantially in v7.10.9/v7.10.11 — re-check line references before fixing. |
+| **Silent DB failures — remaining lower-risk sites** | v7.10.20 fixed the 7 highest-risk sites (see CHANGELOG). Still unchecked, all lower stakes (best-effort cleanup or cosmetic): `documents.js` orphan-file delete, `receipts.js`/`import.js` pending-receipt and dedup cleanup deletes, `import.js` auto-vendor-name correction, `tax.js` bulk tax_deductible toggle, `invoices.js` line-item replace-on-edit, `mileage.js` IRS-rate seed upsert, `admin.js` beta-code notes update, `plaid.js` source-key-repair loop. Re-run the silent-DB-failures grep next quarter — it may surface new sites as the codebase grows. |
 | **REDIS_URL — remove or wire up** | Bull was removed v7.8.90. Direct Resend fallback is intentional and working. Either set `REDIS_URL` and re-enable queue layer, or remove dead queue code from `emailQueue.js`. |
 | **`plaid_account_id` backfill** | Pre-v7.8.4 Plaid transactions have NULL `plaid_account_id`. Sub-account spending breakdown won't work on historical data until users re-sync. Document or prompt user to sync. |
 | **`rotate-plaid-tokens.js` references stale schema** | Found 2026-07-01 while building the webhook backfill script: `api/scripts/rotate-plaid-tokens.js` queries a `plaid_items` table with an `encrypted_access_token` column — current schema is `plaid_connections`/`access_token`. Verify and fix before ever actually running an `ENCRYPTION_KEY` rotation. |
@@ -122,7 +122,7 @@ Source of truth for all sprint work, security status, and product phases.
 
 ---
 
-## ✅ Completed This Sprint (v7.7.0 → v7.10.19)
+## ✅ Completed This Sprint (v7.7.0 → v7.10.20)
 
 | Version | What shipped |
 |---------|-------------|
@@ -204,6 +204,7 @@ Source of truth for all sprint work, security status, and product phases.
 | v7.10.17 | Temporary admin endpoint to backfill Plaid webhook registration on existing connections (standalone script blocked by Vercel's Sensitive-flagged `ENCRYPTION_KEY`) |
 | v7.10.18 | Removed temporary Plaid webhook backfill endpoint — all 8 connections confirmed registered |
 | v7.10.19 | Monthly security audit — fixed 2 high vulns in api/ (form-data, multer), cleared all 5 in web-react/ |
+| v7.10.20 | Quarterly security audit — safe dep updates both dirs, fixed the phantom-tables audit grep itself, fixed 7 silent DB-write failure sites, fixed sync_monthly/sync_annual gap in admin.js plan list |
 
 ---
 

@@ -10,7 +10,7 @@
 
 | Property | Value |
 |----------|-------|
-| **Version** | v7.10.19 |
+| **Version** | v7.10.20 |
 | **Status** | Active Development — Open Public Launch |
 | **Deploy target** | `www.lumiereledger.com` (primary) — `app.throughthelens.media` 301 redirects to it |
 | **Deployment** | Vercel (auto-deploy on `git push origin main`) |
