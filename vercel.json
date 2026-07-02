@@ -22,7 +22,7 @@
             "destination": "api/server.js"
         },
         {
-            "source": "/(assets/.*|.*\\.png|.*\\.jpg|.*\\.jpeg|.*\\.svg|.*\\.ico|.*\\.webp|manifest\\.json|version\\.json|robots\\.txt|sitemap\\.xml)",
+            "source": "/(assets/.*|fonts/.*|.*\\.png|.*\\.jpg|.*\\.jpeg|.*\\.svg|.*\\.ico|.*\\.webp|.*\\.woff2|manifest\\.json|version\\.json|robots\\.txt|sitemap\\.xml)",
             "destination": "/web-react/$1"
         },
         {

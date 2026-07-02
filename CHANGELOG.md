@@ -5,6 +5,14 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.11.1] — 2026-07-02
+
+### Fixed — Fraunces font not loading in production
+
+- **`vercel.json`** — the static-asset rewrite whitelist didn't include `fonts/` or `.woff2`, so `/fonts/Fraunces-latin-var.woff2` fell through to the SPA fallback and returned `index.html` (HTTP 200 + HTML). Browsers silently fell back to Georgia serif. Confirmed by curling production: `content-type: text/html` on the font URL. Added `fonts/.*` and `.*\.woff2` to the whitelist. Local dev/preview was unaffected (Vite serves `public/` directly), which is why v7.11.0 verification passed.
+
+---
+
 ## [v7.11.0] — 2026-07-02
 
 ### Added — Brand pass (D1–D4 of the Growth & Polish Initiative)

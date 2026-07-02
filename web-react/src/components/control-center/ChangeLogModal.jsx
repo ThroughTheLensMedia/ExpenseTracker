@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.11.1', date: 'JUL 2, 2026', color: '#94a3b8', items: [
+        '<strong>Fixed:</strong> The new heading typeface now loads correctly in production (it was silently falling back to a default font).',
+    ]},
     { version: '7.11.0', date: 'JUL 2, 2026', color: '#4c7dff', items: [
         '<strong>New Look:</strong> Lumière Ledger has a refreshed brand — an elegant new heading typeface (Fraunces), a refined accent color, and crisp new icons throughout the app replacing the old emoji.',
         '<strong>Improved:</strong> All dollar amounts now use aligned, tabular numbers — easier to scan in tables and reports.',
