@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.10.17] — 2026-07-01
+
+### Added — Temporary admin endpoint for Plaid webhook backfill
+
+- **`api/routes/admin.js`** — `POST /admin/backfill-plaid-webhooks` (admin-only, supports `?dry_run=1`). Runs the same backfill as `api/scripts/backfill-plaid-webhooks.js` but server-side in production, because `ENCRYPTION_KEY` is marked **Sensitive** in Vercel — a write-only flag that means the value can never be copied back out of the dashboard, so the standalone local script couldn't decrypt tokens without it. Running server-side uses the value Vercel already injects at runtime without ever needing to expose it.
+- **Temporary** — remove this route once the backfill is confirmed run. Tracked in `ROADMAP.md`.
+
+---
+
 ## [v7.10.16] — 2026-07-01
 
 ### Added — Plaid webhook for real-time connection health

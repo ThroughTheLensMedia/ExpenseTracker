@@ -1,1 +1,1 @@
-{"version":"7.10.16","release_date":"2026-07-01","codename":"Lumière Ledger","notes":"v7.10.16: Added Plaid webhook for real-time connection health events (needs one-time backfill script run)"}
+{"version":"7.10.17","release_date":"2026-07-01","codename":"Lumière Ledger","notes":"v7.10.17: Temporary admin endpoint to backfill Plaid webhook registration on existing connections"}
