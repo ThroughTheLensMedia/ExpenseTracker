@@ -1,1 +1,1 @@
-{"version":"7.10.20","release_date":"2026-07-01","codename":"Lumière Ledger","notes":"v7.10.20: Quarterly security audit — dependency updates, fixed 7 silent DB-write failure sites, corrected admin panel Sync-plan gap"}
+{"version":"7.10.21","release_date":"2026-07-01","codename":"Lumière Ledger","notes":"v7.10.21: Annual security audit — removed an overly-permissive RLS policy on user_daily_activity"}

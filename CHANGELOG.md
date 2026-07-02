@@ -5,6 +5,17 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.10.21] — 2026-07-01
+
+### Fixed — Annual Security Review: overly-permissive RLS policy
+
+- **`api/tests/user-daily-activity-rls-fix.sql`** — `user_daily_activity` had two RLS policies: the correct one (`auth.uid() = user_id`) and a second named `"Service role full access"` with `qual: true` — unconditionally permissive to any caller, not actually scoped to the service role (RLS policies don't inspect caller role by name; `service_role` already bypasses RLS entirely via `BYPASSRLS`, so the policy was redundant for its own stated purpose). Postgres RLS OR's multiple permissive policies together, so the `true` policy would win over the correct one for any future code path using the anon client here. Current exploitability was zero — every existing call site (`activity.js`, `cron.js`, `admin.js`) already uses the service-role client — but this closes a real latent gap. Dropped the redundant policy; the correct per-user one remains.
+- Full dependency major-version audit re-confirmed: same deferred majors as the quarterly review (`plaid`, `stripe`, `zod`, `express`, others), nothing new to safely bump.
+- Logged as completed annual review in `security_reviews` table.
+- **Still needs Joshua's own review** (not something I can verify from code): Stripe/Plaid Terms of Service for payment-processor policy changes, and Google OAuth consent screen re-verification status in Google Cloud Console.
+
+---
+
 ## [v7.10.20] — 2026-07-01
 
 ### Fixed — Quarterly Security Review (npm outdated + Code Drift Audit)
