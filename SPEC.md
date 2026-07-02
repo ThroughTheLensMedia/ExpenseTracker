@@ -2,7 +2,7 @@
 
 > ✅ **REBRAND COMPLETE**: This product has been transitioned to **Lumière Ledger** (`lumiereledger.com`) as of May 2026.
 
-**Current version:** v7.10.14
+**Current version:** v7.10.21
 **Last updated:** 2026-07-01
 
 ---
@@ -102,7 +102,7 @@ This is a shared-database, shared-schema SaaS. Every table that contains user da
 | Banking | Plaid `^29.0.0` — ✅ LIVE in production with billing gate, encryption, sync + reconnect flow. CSV import (11+ bank profiles) |
 | Billing | Stripe `^17.7.0` — ✅ LIVE, Free / Sync / Core / Studio, self-serve checkout confirmed as a real flow |
 | Auth | Supabase Auth (email/password, Google OAuth), JWT (`jsonwebtoken ^9.0.3`) + JWKS (`jwks-rsa ^4.0.1`). Trial signup gated on email confirmation (v7.10.13). |
-| Bot protection | Cloudflare Turnstile on signup (v7.10.14) — needs `TURNSTILE_SECRET_KEY` in Vercel to activate |
+| Bot protection | Cloudflare Turnstile on signup (v7.10.14), `TURNSTILE_SECRET_KEY` confirmed set in Vercel — active |
 | Utilities | archiver `^7.0.1`, uuid `^9.0.0`, file-type `16.5.4`, dotenv `^16.4.7` |
 
 > **Queue removed:** Bull/Redis was removed v7.8.90. `emailQueue.js` uses inline `withRetry()` (3 attempts, linear backoff) — no Redis dependency.
@@ -129,7 +129,7 @@ This is a shared-database, shared-schema SaaS. Every table that contains user da
 | `routes/mileage.js` | Mileage log CRUD, IRS standard rate calculations |
 | `routes/rules.js` | Auto-classification rules — vendor/notes pattern matching |
 | `routes/receipts.js` | Receipt upload to Supabase Storage. Signed URL endpoint for secure access. |
-| `routes/plaid.js` | ✅ LIVE — Plaid link tokens (incl. update-mode reconnect), account sync (pending→posted merge-in-place), transaction pull, `needs_reauth` item health check |
+| `routes/plaid.js` | ✅ LIVE — Plaid link tokens (incl. update-mode reconnect), account sync (pending→posted merge-in-place), transaction pull, `needs_reauth` item health check. `plaidWebhookHandler` (v7.10.16, exported alongside the router) receives real-time `ITEM` health events (`ERROR`/`PENDING_EXPIRATION`/`USER_PERMISSION_REVOKED`/`LOGIN_REPAIRED`), JWT-verified via the `Plaid-Verification` header — mounted publicly in `server.js` before `authMiddleware`. |
 | `routes/admin.js` | Admin dashboard — beta codes, subscriptions, daily/weekly reports, data exports. Uses `listAllUsers()`, not a `profiles` table. |
 | `routes/settings.js` | User config persistence (API keys, studio defaults, profile) |
 | `routes/subscription.js` | Subscription status, beta code redemption (`POST /redeem`, upserts), public code validation (`GET /validate-code/:code`) |
@@ -280,7 +280,7 @@ This is a shared-database, shared-schema SaaS. Every table that contains user da
 | `CRON_SECRET` | Yes | Admin cron job authentication |
 | `VITE_GOOGLE_MAPS_API_KEY` | No | Google Maps mileage automation |
 | `REDIS_URL` | No | Not set — intentional, Bull removed v7.8.90, direct Resend fallback in use |
-| `TURNSTILE_SECRET_KEY` | No | ⚠️ Added v7.10.14, **not yet set in Vercel** — Cloudflare Turnstile bot-challenge verification fails open (harmless) until set |
+| `TURNSTILE_SECRET_KEY` | No | ✅ Added v7.10.14, confirmed set in Vercel — Cloudflare Turnstile bot-challenge verification is active |
 | `LUMIERE_INTAKE_SECRET` | No | Legacy single-owner intake secret (env fallback for backward compat) |
 
 ---
@@ -330,9 +330,9 @@ This is a shared-database, shared-schema SaaS. Every table that contains user da
 - [x] **Plaid Sync**: Live bank auto-sync — billing gate, real libsodium encryption, pending→posted merge-in-place, reconnect flow.
 - [x] **Subscription Billing**: Free / Sync / Core / Studio tiers live via Stripe, self-serve checkout confirmed as a real flow.
 - [x] **Rebrand domain**: `www.lumiereledger.com` is the live primary domain; `app.throughthelens.media` 301-redirects to it.
-- [x] **Bot signup protection**: Trial signup gated on email confirmation (DB trigger level); Cloudflare Turnstile on signup form (needs `TURNSTILE_SECRET_KEY` in Vercel to activate).
+- [x] **Bot signup protection**: Trial signup gated on email confirmation (DB trigger level); Cloudflare Turnstile on signup form, `TURNSTILE_SECRET_KEY` confirmed set — active.
+- [x] **Plaid webhook support**: Real-time `ITEM` health events (v7.10.16), JWT-verified, all 8 existing connections backfilled (v7.10.18). Replaces poll-only `needs_reauth` detection.
 - [ ] **User-Defined Accounts**: Settings page where users name their own accounts. Source dropdown reads from accounts table. (See `ROADMAP.md` Phase 5.)
-- [ ] **Plaid webhook support**: Currently polls `itemGet` during sync only — doesn't catch every Plaid-side failure mode (confirmed via Venmo investigation 2026-07-01). See `ROADMAP.md` Technical Debt.
 
 ---
 
