@@ -273,21 +273,32 @@ const handler = async (req) => {
 
         } else {
             const needsReview = unlinked.length > 1;
-            await supabase.from('pending_receipts').insert({
+            const { error: pendingErr } = await supabase.from('pending_receipts').insert({
                 user_id: userId, vendor: extracted.vendor,
                 receipt_date: receiptDate, amount_cents: amountCents,
                 file_path: storedFilePath, raw_subject: subject,
                 raw_sender: senderEmail, needs_review: needsReview,
             });
 
-            log.info('email-inbound', 'No match — stored as pending receipt', {
-                vendor: extracted.vendor, amountCents, needsReview,
-            }, userId);
+            if (pendingErr) {
+                // Don't tell the user their receipt is safely pending when the DB write
+                // that makes it findable later actually failed — that's a lost receipt
+                // with no trace, the exact failure mode this pipeline exists to avoid.
+                log.error('email-inbound', 'Failed to store pending receipt', { error: pendingErr.message, vendor: extracted.vendor, amountCents }, userId);
+                await sendReceiptConfirmationEmail({
+                    to: senderEmail, outcome: 'failed',
+                    vendor: extracted.vendor, amountCents,
+                }).catch(e => log.error('email-inbound', 'Failed-outcome confirmation email failed', { error: e.message }, userId));
+            } else {
+                log.info('email-inbound', 'No match — stored as pending receipt', {
+                    vendor: extracted.vendor, amountCents, needsReview,
+                }, userId);
 
-            await sendReceiptConfirmationEmail({
-                to: senderEmail, outcome: 'pending',
-                vendor: extracted.vendor, amountCents,
-            }).catch(e => log.error('email-inbound', 'Pending confirmation email failed', { error: e.message }, userId));
+                await sendReceiptConfirmationEmail({
+                    to: senderEmail, outcome: 'pending',
+                    vendor: extracted.vendor, amountCents,
+                }).catch(e => log.error('email-inbound', 'Pending confirmation email failed', { error: e.message }, userId));
+            }
         }
 
     } catch (err) {

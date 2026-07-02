@@ -728,9 +728,10 @@ router.post("/repair-ledger", async (req, res) => {
 
         let updatedCount = 0;
         for (const item of cleaned) {
-            await req.sb.from("expenses")
+            const { error: updErr } = await req.sb.from("expenses")
                 .update({ vendor: item.vendor, source: item.source, category: item.category })
                 .eq("id", item.id);
+            if (updErr) { console.error(`[Brain] ledger-repair update failed for ${item.id}:`, updErr.message); continue; }
             updatedCount++;
         }
 

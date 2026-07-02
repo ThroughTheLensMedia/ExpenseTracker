@@ -53,8 +53,8 @@ const TYPE_CHECKLIST = {
             { link: 'https://dashboard.stripe.com/webhooks', label: 'Stripe Webhooks Dashboard' },
         ]},
         { text: 'Code Drift Audit — phantom tables: every .from(\'table\') in api/ must exist in Supabase', subs: [
-            { cmd: "grep -rhoE \"\\.from\\('[a-z_]+'\\)\" api/routes api/utils | sort -u" },
-            { note: 'Compare list against live schema (Supabase → Table Editor). A table queried in code but missing from the schema fails silently — root cause of the v7.10.1 profiles bug.' },
+            { cmd: "grep -rhoE \"\\.from\\([\\\"'][a-z_]+[\\\"']\\)\" api/routes api/utils | sort -u" },
+            { note: 'Compare list against live schema (Supabase → Table Editor). Confirmed 2026-07-01: the old single-quote-only version of this grep silently missed every double-quoted .from("table") call (clients, vendor_settings, invoice_items, etc.) — fixed to catch both quote styles. Ignore hits that are actually .storage.from(\'bucket\') Storage refs (documents, receipts buckets), not DB tables — check the line above the match if a hit looks suspicious. A table queried in code but missing from the schema fails silently — root cause of the v7.10.1 profiles bug.' },
         ]},
         { text: 'Code Drift Audit — silent DB failures: writes that never check { error }', subs: [
             { cmd: "grep -rnE \"^\\s*await (supabase|serviceClient|adminClient|req\\.sb)\\.from\\(\" api/routes api/utils" },

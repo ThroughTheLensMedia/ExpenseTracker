@@ -406,15 +406,24 @@ router.patch("/:id/resolve-review", async (req, res) => {
 
     if (action === "keep_both") {
       // Clear flags on both rows — user confirmed they are intentionally different
-      if (pairId) await req.sb.from("expenses").update({ needs_review: false, review_pair_id: null }).eq("review_pair_id", pairId).eq("user_id", req.user.id);
+      if (pairId) {
+        const { error } = await req.sb.from("expenses").update({ needs_review: false, review_pair_id: null }).eq("review_pair_id", pairId).eq("user_id", req.user.id);
+        if (error) throw error;
+      }
     } else if (action === "delete_this") {
-      await req.sb.from("expenses").delete().eq("id", id).eq("user_id", req.user.id);
-      if (pairId) await req.sb.from("expenses").update({ needs_review: false, review_pair_id: null }).eq("review_pair_id", pairId).eq("user_id", req.user.id);
+      const { error: delErr } = await req.sb.from("expenses").delete().eq("id", id).eq("user_id", req.user.id);
+      if (delErr) throw delErr;
+      if (pairId) {
+        const { error } = await req.sb.from("expenses").update({ needs_review: false, review_pair_id: null }).eq("review_pair_id", pairId).eq("user_id", req.user.id);
+        if (error) throw error;
+      }
     } else if (action === "delete_pair") {
       // Delete the other row, keep this one
       if (pairId) {
-        await req.sb.from("expenses").delete().eq("review_pair_id", pairId).neq("id", id).eq("user_id", req.user.id);
-        await req.sb.from("expenses").update({ needs_review: false, review_pair_id: null }).eq("id", id).eq("user_id", req.user.id);
+        const { error: delErr } = await req.sb.from("expenses").delete().eq("review_pair_id", pairId).neq("id", id).eq("user_id", req.user.id);
+        if (delErr) throw delErr;
+        const { error } = await req.sb.from("expenses").update({ needs_review: false, review_pair_id: null }).eq("id", id).eq("user_id", req.user.id);
+        if (error) throw error;
       }
     }
     res.json({ ok: true });
@@ -549,8 +558,10 @@ router.post("/link-manual-to-plaid", async (req, res) => {
         enrichment.notes = target.notes ? `${target.notes} | ${manual.notes}` : manual.notes;
       }
 
-      await req.sb.from('expenses').update(enrichment).eq('id', target.id).eq('user_id', req.user.id);
-      await req.sb.from('expenses').delete().eq('id', manual.id).eq('user_id', req.user.id);
+      const { error: updErr } = await req.sb.from('expenses').update(enrichment).eq('id', target.id).eq('user_id', req.user.id);
+      if (updErr) { console.error('[expenses] retroactive-merge update failed:', updErr.message); continue; }
+      const { error: delErr } = await req.sb.from('expenses').delete().eq('id', manual.id).eq('user_id', req.user.id);
+      if (delErr) { console.error('[expenses] retroactive-merge delete failed:', delErr.message); continue; }
       merged++;
     }
 
@@ -708,10 +719,12 @@ router.post("/manual-merge", async (req, res) => {
       : mergeNote;
     safeOverrides.notes = finalNotes;
 
-    await req.sb.from("expenses")
+    const { error: updErr } = await req.sb.from("expenses")
       .update({ needs_review: false, review_pair_id: null, ...safeOverrides })
       .eq("id", keepId).eq("user_id", req.user.id);
-    await req.sb.from("expenses").delete().eq("id", deleteId).eq("user_id", req.user.id);
+    if (updErr) throw updErr;
+    const { error: delErr } = await req.sb.from("expenses").delete().eq("id", deleteId).eq("user_id", req.user.id);
+    if (delErr) throw delErr;
 
     res.json({ ok: true, kept: { ...keep, ...safeOverrides }, rescued: Object.keys(safeOverrides) });
   } catch (e) {

@@ -5,6 +5,18 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.10.20] — 2026-07-01
+
+### Fixed — Quarterly Security Review (npm outdated + Code Drift Audit)
+
+- **Dependency updates** — `npm update` in both `api/` and `web-react/`: all bumps landed within existing `package.json` semver ranges (only `package-lock.json` changed). Majors intentionally deferred and unchanged (`plaid` 29→43, `stripe` 17→22, `zod` 3→4, `express` 4→5, others) — all high-risk breaking changes on live production surfaces, need dedicated testing passes, not a quarterly-review drive-by.
+- **Code Drift Audit — phantom tables**: no real phantom tables found, but the audit checklist's own grep (`SecurityReviewTab.jsx`) only matched single-quoted `.from('table')` calls — silently missing every double-quoted one (`"clients"`, `"vendor_settings"`, `"invoice_items"`, etc.) every quarter until now. Fixed the grep to catch both quote styles. Also confirmed `documents`/`receipts` hits are `.storage.from()` Storage bucket refs, not DB tables — false positives, documented in the checklist note so future runs aren't confused by them.
+- **Code Drift Audit — silent DB failures**: fixed 7 of the ~20 flagged call sites, prioritized by real risk — the ones where a silent failure would report success to a user/system while nothing actually happened: `expenses.js` (duplicate-review resolve endpoint, retroactive Plaid-link merge, manual merge-duplicates endpoint), `stripe.js` (payment-succeeded renewal — billing-critical), `plaid.js` (the new v7.10.16 webhook handler's own DB updates), `admin.js` (`/admin/import-all`'s wipe-before-restore — a failed delete followed by insert would have silently duplicated every row), `brain.js` (AI ledger-repair batch, was reporting fake success counts), `emailInbound.js` (pending-receipt insert — was telling users their receipt was safely saved even when the DB write failed, the exact failure mode this pipeline exists to prevent). Remaining lower-risk sites (cleanup deletes, cosmetic vendor auto-correction) left as-is, tracked in `ROADMAP.md`.
+- **Code Drift Audit — stale hardcoded value lists**: found and fixed a real gap in `admin.js`'s subscription-edit endpoint — `sync_monthly`/`sync_annual` were missing from the "Stripe-managed plan" list, so admin-editing a Sync-plan user's `plan_type` would have incorrectly set a fake 999-day `expires_at` instead of nulling it (Stripe-managed).
+- Logged as a completed quarterly review in the `security_reviews` table.
+
+---
+
 ## [v7.10.19] — 2026-07-01
 
 ### Fixed — Monthly npm audit (Security Review)

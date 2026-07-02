@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.10.20', date: 'JUL 1, 2026', color: '#94a3b8', items: [
+        '<strong>Cleanup:</strong> Backend reliability hardening — several actions that could silently fail without telling you now report errors correctly.',
+    ]},
     { version: '7.10.19', date: 'JUL 1, 2026', color: '#94a3b8', items: [
         '<strong>Cleanup:</strong> Routine security dependency updates — no visible changes.',
     ]},

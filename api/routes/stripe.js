@@ -260,9 +260,10 @@ async function stripeWebhook(req, res) {
           .single();
 
         if (sub?.user_id) {
-          await supabase.from('user_subscriptions')
+          const { error: renewErr } = await supabase.from('user_subscriptions')
             .update({ expires_at: null, updated_at: new Date().toISOString() })
             .eq('user_id', sub.user_id);
+          if (renewErr) throw renewErr;
           console.log(`[stripe] payment.succeeded — user ${sub.user_id} renewed`);
         }
         break;

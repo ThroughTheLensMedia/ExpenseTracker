@@ -1,1 +1,1 @@
-{"version":"7.10.19","release_date":"2026-07-01","codename":"Lumière Ledger","notes":"v7.10.19: Monthly security audit — fixed 2 high-severity vulns (form-data, multer) in api/, cleared all 5 vulns in web-react"}
+{"version":"7.10.20","release_date":"2026-07-01","codename":"Lumière Ledger","notes":"v7.10.20: Quarterly security audit — dependency updates, fixed 7 silent DB-write failure sites, corrected admin panel Sync-plan gap"}

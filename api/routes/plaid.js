@@ -940,23 +940,26 @@ async function plaidWebhookHandler(req, res) {
 
         if (webhook_code === 'ERROR') {
             const errorCode = error?.error_code || 'UNKNOWN_ERROR';
-            await adminClient.from('plaid_connections').update({
+            const { error: dbErr } = await adminClient.from('plaid_connections').update({
                 needs_reauth: REAUTH_ERROR_CODES.has(errorCode),
                 last_item_error: `${errorCode}: ${error?.error_message || ''}`,
             }).eq('item_id', item_id);
-            console.log(`[Plaid Webhook] ${item_id} ERROR (${errorCode})`);
+            if (dbErr) console.error(`[Plaid Webhook] ${item_id} DB update failed:`, dbErr.message);
+            else console.log(`[Plaid Webhook] ${item_id} ERROR (${errorCode})`);
         } else if (webhook_code === 'PENDING_EXPIRATION' || webhook_code === 'USER_PERMISSION_REVOKED') {
-            await adminClient.from('plaid_connections').update({
+            const { error: dbErr } = await adminClient.from('plaid_connections').update({
                 needs_reauth: true,
                 last_item_error: webhook_code,
             }).eq('item_id', item_id);
-            console.log(`[Plaid Webhook] ${item_id} ${webhook_code} — flagged needs_reauth`);
+            if (dbErr) console.error(`[Plaid Webhook] ${item_id} DB update failed:`, dbErr.message);
+            else console.log(`[Plaid Webhook] ${item_id} ${webhook_code} — flagged needs_reauth`);
         } else if (webhook_code === 'LOGIN_REPAIRED') {
-            await adminClient.from('plaid_connections').update({
+            const { error: dbErr } = await adminClient.from('plaid_connections').update({
                 needs_reauth: false,
                 last_item_error: null,
             }).eq('item_id', item_id);
-            console.log(`[Plaid Webhook] ${item_id} LOGIN_REPAIRED — cleared needs_reauth`);
+            if (dbErr) console.error(`[Plaid Webhook] ${item_id} DB update failed:`, dbErr.message);
+            else console.log(`[Plaid Webhook] ${item_id} LOGIN_REPAIRED — cleared needs_reauth`);
         }
     } catch (err) {
         console.error('[Plaid Webhook] Handler error:', err.message);

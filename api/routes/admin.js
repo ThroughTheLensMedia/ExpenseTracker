@@ -244,8 +244,14 @@ router.post("/import-all", async (req, res) => {
         for (const table of tables) {
             const rows = backup[table];
             if (Array.isArray(rows) && rows.length > 0) {
-                // Delete existing data for this user (RLS filters to current user)
-                await req.sb.from(table).delete();
+                // Delete existing data for this user (RLS filters to current user).
+                // Must succeed before inserting — otherwise a failed delete followed
+                // by the insert below duplicates every row instead of replacing them.
+                const { error: wipeErr } = await req.sb.from(table).delete();
+                if (wipeErr) {
+                    results[table] = { error: `Failed to clear existing ${table} data: ${wipeErr.message}` };
+                    continue;
+                }
 
                 // Chunked insert
                 const CHUNK = 500;
@@ -332,7 +338,7 @@ router.patch("/subscriptions/:userId", requireRole('admin'), async (req, res) =>
         if (plan_type !== undefined) {
             update.plan_type = plan_type;
             // Stripe-managed plans: clear expires_at so Stripe is source of truth
-            if (['core_monthly', 'core_annual', 'studio_monthly', 'studio_annual'].includes(plan_type)) {
+            if (['sync_monthly', 'sync_annual', 'core_monthly', 'core_annual', 'studio_monthly', 'studio_annual'].includes(plan_type)) {
                 update.expires_at = null;
             } else {
                 const now = new Date();
