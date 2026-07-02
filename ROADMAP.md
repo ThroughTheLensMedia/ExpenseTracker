@@ -1,6 +1,6 @@
 # Lumière Ledger — Master Roadmap
 
-**Version:** v7.10.20 | **Last reviewed:** 2026-07-01  
+**Version:** v7.10.21 | **Last reviewed:** 2026-07-01  
 Source of truth for all sprint work, security status, and product phases.
 
 ---
@@ -55,6 +55,7 @@ Source of truth for all sprint work, security status, and product phases.
 | Stripe checkout → webhook → tier gate | ✅ Confirmed end-to-end 2026-07-01 — Joshua ran a real test transaction + refund. `STRIPE_ROADMAP.md` was frozen at its pre-build planning state since 2026-05-18 despite this being live since v7.6.5/v7.8.27 — fully updated. |
 | Plaid webhook support | ✅ v7.10.16-18 — real-time `ITEM` webhook (`ERROR`/`PENDING_EXPIRATION`/`USER_PERMISSION_REVOKED`/`LOGIN_REPAIRED`), JWT-verified. Backfill confirmed 2026-07-01 — all 8 active connections (Credit One Bank, Capital One ×2, Navy Federal, America First Credit Union, American Express, Venmo, USAA) registered via a temporary admin endpoint (ENCRYPTION_KEY is marked Sensitive in Vercel, couldn't run the standalone script locally). Endpoint removed after confirming. |
 | Quarterly Security Review | ✅ v7.10.20 — first-ever run. Safe dep updates (both dirs), fixed the phantom-tables checklist grep itself (was silently missing double-quoted `.from()` calls), fixed 7 highest-risk silent-DB-failure sites, fixed a real `sync_monthly`/`sync_annual` gap in admin.js's plan-type list. Logged in `security_reviews` table. |
+| Annual Security Review | ✅ v7.10.21 — first-ever run. Full RLS re-audit on all 25 public tables found and fixed a real gap: `user_daily_activity` had a redundant, overly-permissive `qual: true` policy alongside the correct per-user one — RLS OR's permissive policies together, so it would have won for any future code path using the anon client. Dropped. Confirmed `system_logs`/`security_reviews` intentionally have zero policies (service-role-only access, safe by design). |
 
 ---
 
@@ -63,7 +64,8 @@ Source of truth for all sprint work, security status, and product phases.
 | Item | Notes |
 |------|-------|
 | **Receipt email body parse — re-test** | v7.8.96 hardened the prompt and error logging but the "Total Paid: $XX.XX" case was never re-tested with a live email forward. Send a test and verify System Logs show extracted amount. |
-| **Security Review — annual/dependency still overdue** | Weekly, monthly, and quarterly all re-run 2026-07-01 (v7.10.15/19/20 — see Current Status). Annual and dependency tiers have never been run once. |
+| **Security Review — dependency tier still overdue** | Weekly, monthly, quarterly, and annual all re-run 2026-07-01 (v7.10.15/19/20/21). Only the dependency tier has never been run once (it's a subset of what quarterly already covers — `npm audit`/`npm audit fix` in both dirs — low urgency). |
+| **Stripe/Plaid ToS review + Google OAuth consent screen check** | Two annual-checklist items that need Joshua's own read, not something verifiable from code: Stripe Services Agreement / Plaid Legal for payment-processor policy changes, and Google Cloud Console → OAuth Consent Screen re-verification status. |
 
 ---
 
@@ -122,7 +124,7 @@ Source of truth for all sprint work, security status, and product phases.
 
 ---
 
-## ✅ Completed This Sprint (v7.7.0 → v7.10.20)
+## ✅ Completed This Sprint (v7.7.0 → v7.10.21)
 
 | Version | What shipped |
 |---------|-------------|
@@ -205,6 +207,7 @@ Source of truth for all sprint work, security status, and product phases.
 | v7.10.18 | Removed temporary Plaid webhook backfill endpoint — all 8 connections confirmed registered |
 | v7.10.19 | Monthly security audit — fixed 2 high vulns in api/ (form-data, multer), cleared all 5 in web-react/ |
 | v7.10.20 | Quarterly security audit — safe dep updates both dirs, fixed the phantom-tables audit grep itself, fixed 7 silent DB-write failure sites, fixed sync_monthly/sync_annual gap in admin.js plan list |
+| v7.10.21 | Annual security audit — removed an overly-permissive `qual: true` RLS policy on `user_daily_activity` that OR'd against the correct per-user policy |
 
 ---
 
