@@ -38,6 +38,7 @@ Source of truth for all sprint work, security status, and product phases.
 | Dependabot | ✅ v7.9.0 — `.github/dependabot.yml` live; weekly Monday scans; majors ignored for 6 risky packages |
 | Open public signup | ✅ v7.9.5 — free-tier open signup (no code required); invite-code path validates + auto-redeems after email confirmation; `GET /api/subscription/validate-code/:code` public endpoint |
 | SaaS Admin — member enrichment | ✅ v7.9.5 — Active Ledger Members now shows tier badge, estimated monthly revenue, Plaid account count, join date |
+| Docs consolidation | ✅ 2026-07-01 — `SPEC.md` merged into `CLAUDE.md` and deleted. Was silently drifting because its update trigger was conditional; CLAUDE.md's update rule is unconditional and read first every session. |
 | Plaid — Sync plan 5-account cap | ✅ v7.9.6 — `create-link-token` enforces limit; 403 `plaid_account_limit` error; upgrade UI in PlaidLink |
 | Signup — password strength enforcement | ✅ v7.9.6 — 5-rule client-side validation + live strength meter; PROCESSING freeze fixed |
 | Landing page — broader audience + SEO | ✅ v7.9.5/7.9.6 — hero copy, pricing comparison table, gear icon fix, OG/Twitter/canonical tags |

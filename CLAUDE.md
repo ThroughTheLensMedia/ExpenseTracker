@@ -1,8 +1,14 @@
 # Lumière Ledger — Claude Operational Brief
 
-**Read this file first. Then read `ROADMAP.md`, `SPEC.md`, and `SERVICES.md` before touching any code.**
+**Read this file first. Then read `ROADMAP.md` and `SERVICES.md` before touching any code.**
 
 > `SERVICES.md` — master list of every connected external service, what it does, its cost model, and dashboard link. Before adding any new service or dependency, check it first. If a service is removed, update it. This is the guardrail against over-engineering.
+
+> **2026-07-01: `SPEC.md` merged into this file and deleted.** It duplicated most of CLAUDE.md's own sections (Tech Stack ≈ Architecture at a Glance, File Map ≈ Key Files Reference, Key Data Patterns ≈ Data Patterns, Mobile/PWA Requirements — verbatim) under a rule that only conditionally required updating it ("if architecture changed"), which is exactly why it silently drifted 7 versions behind. One file, always read first, version bumped on every deploy — no longer possible to update one and forget the other.
+
+## Objective
+
+The world's most elite, AI-driven financial command center for creative professionals and self-employed freelancers — purpose-built for photographers, but designed to serve any independent operator running their business solo. Enables automated expense forensics, retroactive ledger repair, tax-aligned reporting, invoicing, asset depreciation, mileage tracking, and strategic business advice — all powered by a private "Bring Your Own Brain" (BYOB) architecture. Multi-tenant SaaS: every user's data is fully isolated via Supabase Row-Level Security.
 
 ---
 
@@ -38,7 +44,7 @@ When something is broken or behaving unexpectedly, follow this order. Do not ski
 1. **Read `ROADMAP.md` before every session** — understand what's in scope, what's blocked, and what's next before writing a single line of code.
 2. **Update `CHANGELOG.md` AND `ChangeLogModal.jsx` on every change** — `CHANGELOG.md` is the engineering record; `web-react/src/components/control-center/ChangeLogModal.jsx` is the in-app user-facing changelog. Both must be updated together on every version bump. Add a new entry at the top of the `RELEASES` array in `ChangeLogModal.jsx` with version, date, color, and user-friendly bullet points. No exceptions. No silent commits.
 3. **Check off completed roadmap items** — after any change, update `ROADMAP.md` to mark newly completed items and remove them from the active sprint if done.
-4. **Update `SPEC.md`** if architecture, file map, tech stack, data patterns, or acceptance criteria change.
+4. **Keep this file (CLAUDE.md) current** — if a change touches architecture, the file map, tech stack, data patterns, or Acceptance Criteria below, update the relevant section in the same commit. This file is read first every session — nothing else is a substitute.
 5. **Only modify files explicitly in scope** — do not touch unrelated files.
 6. **Never guess** — if something is unclear, ask Joshua before proceeding.
 7. **One file per response, max 500 lines** — if output is truncated, wait for "CONTINUE".
@@ -110,7 +116,7 @@ Add the item under the appropriate category in the relevant phase or backlog sec
        git add api/package-lock.json   ← REQUIRED — must be committed with package.json
        Skipping this step = Vercel cache bypass = missing module crash on first request
 3. Update CHANGELOG.md AND ChangeLogModal.jsx (both required — see Rule 2)
-4. Update SPEC.md (if architecture/stack changed)
+4. Update this file (CLAUDE.md) if architecture/stack/file map changed (Rule 4)
 5. Update version in TWO places (required for user update banner to fire):
    - web-react/public/version.json  → "version": "X.X.X"
    - web-react/src/App.jsx          → CURRENT_VERSION = "X.X.X"  (comment says DEPLOY SOP)
@@ -247,7 +253,6 @@ Express 4.19 API (api/)
 
 | File | Purpose |
 |------|---------|
-| `SPEC.md` | **Master engineering spec — read before every session** |
 | `CHANGELOG.md` | Version history — update on every change |
 | `ROADMAP.md` | **Single source of truth for all roadmap, fixes, and launch gate** |
 | `SERVICES.md` | **All connected external services — read before adding any dependency** |
@@ -283,6 +288,91 @@ Express 4.19 API (api/)
 | `web-react/src/components/control-center/DashboardTab.jsx` | Dashboard customization — role cards (4 types) + widget toggles. Saves to `settings.dashboard_config`. |
 | `web-react/src/constants/billing.js` | ✅ v7.10.11 — shared `deriveTier()` + `PLAID_EXEMPT_IDS` for the frontend. Import from here (`AuthContext.jsx`, `SaasTab.jsx`) — must be kept in sync by hand with `api/routes/stripe.js`'s copy, no shared package exists across the frontend/backend boundary. |
 | `web-react/src/pages/Login.jsx` | Auth — email/password, Google OAuth, invite-code signup. Cloudflare Turnstile widget (signup only) as of v7.10.14. |
+
+### Full Frontend File Map (beyond the curated table above)
+
+**Pages (`web-react/src/pages/`)** — `Tax.jsx` (Schedule C mapping, deduction totals, PDF export), `Import.jsx` (CSV wizard, auto-detect, retroactive dedup), `Invoice.jsx` (line items, client info, tax/discount, PDF, email), `Assets.jsx` (equipment registry, depreciation calc), `Mileage.jsx` (log by date, Google Maps automation, IRS rate), `Rules.jsx` (classification rules editor, retroactive apply), `CRM.jsx` (lead pipeline kanban), `AddOns.jsx` (marketplace), `Home.jsx` / `Privacy.jsx` / `Terms.jsx` (static/public).
+
+**Hooks (`web-react/src/hooks/`)** — `useExpenseFilters.js` (shared filter/sort for Transactions/Dashboard/Tax), `useFilterOptions.js` (unique vendors/accounts/categories, feeds filter dropdowns + drawer source list), `useActivityPulse.js` (daily engagement tracking), `useLeadsRealtime.js` (Supabase Realtime subscription for live lead notifications).
+
+**Constants (`web-react/src/constants/`)** — `categories.js` (single source of truth for built-in category groups), `billing.js` (see Key Files Reference above).
+
+**Control Center tabs (`web-react/src/components/control-center/`)** — `ProfileTab.jsx`, `IntelligenceTab.jsx` (Gemini key mgmt, repair triggers), `AutomationTab.jsx` (rule CRUD), `CategoriesTab.jsx` (custom categories + orphan import), `InfrastructureTab.jsx` (system health, admin-only), `AdminTab.jsx` (SaaS Mgmt/System Logs/Security sub-nav, admin-only), `SaasTab.jsx` (Active Members/Invite Codes/Engagement Pulse), `SystemLogsTab.jsx`, `SecurityReviewTab.jsx`, `HelpTab.jsx` (FAQ + feedback), `IntegrationTab.jsx` (intake keys), `ChangeLogModal.jsx`.
+
+**Other components** — `AssistantSidebar.jsx` (AI chat panel), `CategorySelect.jsx` (shared category dropdown), `ModalContext.jsx` (branded modal, replaces native confirm/alert).
+
+**Backend routes not in the curated table above (`api/routes/`)** — `import.js` (CSV import engine, 11+ bank parsers), `invoices.js`, `tax.js`, `assets.js`, `mileage.js`, `rules.js`, `receipts.js`, `settings.js`, `subscription.js` (beta code redemption), `activity.js`, `leads.js`, `intake.js` (public, server-to-server, validates `x-intake-secret`), `intake-keys.js` (authenticated CRUD for per-user `ll-` prefixed intake keys), `pwa.js` (quick-snap receipt capture), `cron.js` (daily/monthly reports + watchdog).
+
+**Database — SQL Schemas** — `supabase_schema.sql` (expenses, classification_rules, mileage_logs, mileage_rates), `supabase_schema_rls.sql` (RLS policies), `supabase_schema_settings.sql` (settings incl. `dashboard_config`), `supabase_schema_activity.sql`, `supabase_schema_leads.sql`, `supabase_schema_plaid.sql`, `supabase_schema_intake_keys.sql`, `api/migrations/009_user_categories.sql`, `supabase_fix_admin_rls.sql`.
+
+---
+
+## Supported Bank Import Profiles
+
+| Key | Bank |
+|-----|------|
+| `rocketmoney` | Rocket Money |
+| `chase` | Chase |
+| `usbank` | US Bank |
+| `bankofamerica` | Bank of America |
+| `wellsfargo` | Wells Fargo |
+| `applecard` | Apple Card |
+| `capitalone` | Capital One |
+| `usaa` | USAA |
+| `navyfcu` | Navy Federal |
+| `wise` | Wise |
+| `universal` | Generic CSV fallback |
+
+Plaid-connected accounts use `source: 'plaid'` regardless of institution. Known non-import source keys also seen in the wild: `manual`, `delta_amex`, `amex_gold`, `amex_platinum`, `amex_blue`. Unknown keys fall back to `formatSourceKey()` (capitalizes underscored key) — the dropdown is never hardcoded, it's built from the user's own data.
+
+---
+
+## Acceptance Criteria
+
+- [x] **Data Integrity**: Newest transactions processed first. Cross-source dedup on import. Safe auto-pagination prevents row truncation.
+- [x] **Privacy**: RLS enforces tenant isolation. `requireRole()` uses service role for `user_roles` lookup. Admin UUID verified.
+- [x] **Multi-tenant accounts**: Source dropdown in Add Transaction is built from the user's own imported data — not a hardcoded shared list. Each user sees only their accounts.
+- [x] **Mobile UX**: Decimal/numeric keyboards. White calendar icon visible against dark background. Amount field opens empty on new transactions. Tax Deductible and Recurring flags on one line. Receipt upload allows gallery + file picker (not camera-forced). Drawer auto-closes on save. Double-tap guard on Save button.
+- [x] **PWA session**: Users are not logged out when closing and re-opening the app. Token refreshes on foreground via `visibilitychange`.
+- [x] **Missing doc threshold**: MISSING DOC badge appears only on deductible transactions over $75 with no receipt — on both mobile and desktop.
+- [x] **Import clock**: Days-since-import badge reflects actual bank/CSV imports only. Manual entries do not reset the clock.
+- [x] **Resilience**: Gemini 503 errors trigger automatic retries. Receipt signed URL fetched on demand. Licensing middleware fail-closed (503, not pass-through).
+- [x] **Branding**: All AI feedback uses branded persona. No raw JSON in user-facing messages. Styled modal replaces browser alert.
+- [x] **CRUD Complete**: Transactions created, read, updated, deleted. Receipt attached, viewed, and securely fetched.
+- [x] **Tax Alignment**: Categories map to IRS Schedule C. Mileage uses current IRS rates.
+- [x] **Bank Import**: 11+ CSV formats with auto-detection and dedup.
+- [x] **Performance**: Stale-while-revalidate cache shows first 25 rows instantly on cold start.
+- [x] **Admin Access**: `requireRole('admin')` correctly routes the admin user via service role DB lookup.
+- [x] **Website Lead Capture**: Multi-tenant intake key system routes external booking forms into the CRM in real time.
+- [x] **Client Deduplication**: Returning clients link to existing records — no duplicate contacts.
+- [x] **Real-Time Notifications**: Supabase Realtime subscription fires in-app toast + badge on new lead INSERT.
+- [x] **Add-On Marketplace**: `/addons` page surfaces available and coming-soon platform extensions.
+- [x] **Plaid Sync**: Live bank auto-sync — billing gate, real libsodium encryption, pending→posted merge-in-place, reconnect flow.
+- [x] **Subscription Billing**: Free / Sync / Core / Studio tiers live via Stripe, self-serve checkout confirmed as a real flow.
+- [x] **Rebrand domain**: `www.lumiereledger.com` is the live primary domain; `app.throughthelens.media` 301-redirects to it.
+- [x] **Bot signup protection**: Trial signup gated on email confirmation (DB trigger level); Cloudflare Turnstile on signup form, `TURNSTILE_SECRET_KEY` confirmed set — active.
+- [x] **Plaid webhook support**: Real-time `ITEM` health events (v7.10.16), JWT-verified, all 8 existing connections backfilled (v7.10.18). Replaces poll-only `needs_reauth` detection.
+- [ ] **User-Defined Accounts**: Settings page where users name their own accounts. Source dropdown reads from accounts table. (See `ROADMAP.md` Phase 5.)
+
+---
+
+## Non-Goals (Current Phase)
+
+- Global data sharing or anonymous benchmarking.
+- Hosting user-uploaded high-res photo galleries.
+- Real-time stock portfolio tracking.
+- Multi-currency conversion (single-currency per user).
+
+---
+
+## Commands
+
+| Command | Purpose |
+|---------|---------|
+| `cd api && npm start` | Start backend server |
+| `cd web-react && npm run dev` | Start frontend dev server |
+| `cd web-react && npm run build` | Production build |
+| `git push origin main` | Deploy to Vercel (auto-build triggers on push) |
 
 ---
 
