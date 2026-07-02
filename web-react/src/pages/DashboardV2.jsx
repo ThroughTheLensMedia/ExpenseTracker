@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import OperationalIntelligenceSection from '../components/dashboard/OperationalIntelligenceSection.jsx';
+import TaxSetAsideWidget from '../components/dashboard/TaxSetAsideWidget.jsx';
+import SubscriptionsRadarWidget from '../components/dashboard/SubscriptionsRadarWidget.jsx';
 import { fetchDashboardMetrics, getDashboardMetricsCache, apiGet, apiPost } from '../api';
 
 const DEFAULT_WIDGETS = {
@@ -10,6 +12,8 @@ const DEFAULT_WIDGETS = {
     top_expenses: true,
     insights: true,
     operational_intelligence: true,
+    tax_set_aside: true,
+    subscriptions_radar: true,
 };
 
 export default function DashboardV2({ apiStatus }) {
@@ -21,6 +25,7 @@ export default function DashboardV2({ apiStatus }) {
 
     // Widget visibility
     const [widgets, setWidgets] = useState(DEFAULT_WIDGETS);
+    const [taxRate, setTaxRate] = useState(30);
     const [showGearPanel, setShowGearPanel] = useState(false);
     const gearRef = useRef(null);
 
@@ -45,6 +50,7 @@ export default function DashboardV2({ apiStatus }) {
             apiGet('/settings').then(s => {
                 const cfg = s?.dashboard_config?.widgets;
                 if (cfg) setWidgets({ ...DEFAULT_WIDGETS, ...cfg });
+                if (s?.estimated_tax_rate) setTaxRate(Number(s.estimated_tax_rate));
             }).catch(() => {}); // non-blocking — default to all-on on error
 
             // Stale-while-revalidate: if cached data exists, show it instantly
@@ -136,6 +142,8 @@ export default function DashboardV2({ apiStatus }) {
                                     { key: 'insights', label: 'Financial Insights' },
                                     { key: 'top_expenses', label: 'Top Expense Drivers' },
                                     { key: 'operational_intelligence', label: 'Operational Intelligence' },
+                                    { key: 'tax_set_aside', label: 'Quarterly Tax Set-Aside' },
+                                    { key: 'subscriptions_radar', label: 'Subscriptions Radar' },
                                 ].map(({ key, label }) => (
                                     <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                         <input
@@ -208,6 +216,18 @@ export default function DashboardV2({ apiStatus }) {
                     </div>
                 </div>
             </div>
+
+            {/* Retention widgets: tax set-aside + subscriptions radar */}
+            {(widgets.tax_set_aside !== false || widgets.subscriptions_radar !== false) && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+                    {widgets.tax_set_aside !== false && (
+                        <TaxSetAsideWidget ytdNetCents={metrics?.snapshot?.ytdNet} taxRate={taxRate} onEditRate={() => navigate('/StudioControlCenter?tab=profile')} />
+                    )}
+                    {widgets.subscriptions_radar !== false && (
+                        <SubscriptionsRadarWidget recurringVendors={metrics?.analytics?.recurringVendors} />
+                    )}
+                </div>
+            )}
 
             {/* Layer 5: Cash, Receivables, Obligations (Moved up) */}
             {widgets.invoices !== false && <div className="card glass" style={{ margin: 0, padding: '30px' }}>

@@ -3,6 +3,7 @@ import { apiGet, apiPost, apiPatch, apiDelete, formatMoney, invalidateExpensesCa
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { useModal } from '../components/ModalContext.jsx';
+import InvoicePaidCelebration from '../components/InvoicePaidCelebration.jsx';
 
 // Studio Invoice Branding
 const BRAND_ORANGE = '#f97316';
@@ -416,6 +417,7 @@ export default function Invoice() {
     const [editingId, setEditingId] = useState(null);
     const [previewingInvoice, setPreviewingInvoice] = useState(null);
     const [statusMsg, setStatusMsg] = useState(null); // {type: 'ok'|'bad', text: '' }
+    const [firstPaidCelebration, setFirstPaidCelebration] = useState(null); // { clientName, totalCents }
 
     const [formData, setFormData] = useState({
         number: '',
@@ -841,11 +843,17 @@ export default function Invoice() {
         }
     };
 
-    const handleMarkPaid = async (id) => {
+    const handleMarkPaid = async (inv) => {
         try {
-            await apiPatch(`/invoices/${id}`, { status: 'paid' });
+            const result = await apiPatch(`/invoices/${inv.id}`, { status: 'paid' });
             load();
             setStatusMsg({ type: 'ok', text: "Invoice marked as Paid!" });
+            if (result?.firstInvoicePaid) {
+                const subtotal = (inv.invoice_items || []).reduce((s, it) => s + (it.unit_price_cents * it.quantity), 0);
+                const tax = Math.round(subtotal * (inv.tax_percent / 100));
+                const discountAmount = Math.round(subtotal * (((inv.discount_cents || 0) / 100) / 100));
+                setFirstPaidCelebration({ clientName: inv.clients?.name || 'your client', totalCents: subtotal + tax - discountAmount });
+            }
         } catch (err) {
             setStatusMsg({ type: 'bad', text: err.message });
         }
@@ -881,6 +889,14 @@ export default function Invoice() {
 
     return (
         <section style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+            {firstPaidCelebration && (
+                <InvoicePaidCelebration
+                    clientName={firstPaidCelebration.clientName}
+                    totalCents={firstPaidCelebration.totalCents}
+                    onClose={() => setFirstPaidCelebration(null)}
+                />
+            )}
 
             {/* Dashboard Card */}
             <div className="card glass glow-blue" style={{ border: 'none', padding: '30px', margin: 0 }}>
@@ -1048,13 +1064,13 @@ export default function Invoice() {
                                                             >
                                                                 {sendingId === inv.id ? '⏳ Emailing...' : 'Send Email'}
                                                             </button>
-                                                            <button className="btn sm primary" onClick={() => handleMarkPaid(inv.id)}>Mark Paid</button>
+                                                            <button className="btn sm primary" onClick={() => handleMarkPaid(inv)}>Mark Paid</button>
                                                         </>
                                                     )}
                                                     {inv.status === 'sent' && (
                                                         <>
                                                             <button className="btn sm secondary" onClick={() => handlePreview(inv)}>Resend</button>
-                                                            <button className="btn sm primary" onClick={() => handleMarkPaid(inv.id)}>Mark Paid</button>
+                                                            <button className="btn sm primary" onClick={() => handleMarkPaid(inv)}>Mark Paid</button>
                                                         </>
                                                     )}
                                                     {inv.status === 'paid' && (

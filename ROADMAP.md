@@ -1,6 +1,6 @@
 # Lumière Ledger — Master Roadmap
 
-**Version:** v7.12.0 | **Last reviewed:** 2026-07-02  
+**Version:** v7.13.0 | **Last reviewed:** 2026-07-02  
 Source of truth for all sprint work, security status, and product phases.
 
 ---
@@ -82,15 +82,15 @@ Competitive gap analysis vs. QuickBooks Solopreneur / Keeper / Wave / FreshBooks
 | **A2 — "Deductions found ≈ tax savings" dashboard hero stat** | "Lumière found $X in deductions ≈ $Y off your tax bill." Reuses Tax.jsx math; savings = deductions × user-set effective rate (default 25%). New `dashboard_config` widget flag. |
 | **A3 — Home.jsx trust pass** | ✅ v7.12.0 — CSS product mockup (labeled "illustrative data"), founder's note, persona scenario cards (deliberately NOT fake named testimonials — FTC fake-review rule; swap in real quotes when available), security strip with `/security-policy` links. |
 
-### Phase B — Retain (Good to Have)
+### Phase B — Retain (✅ shipped v7.13.0)
 
 | Item | Notes |
 |------|-------|
-| **B1 — Quarterly tax set-aside widget** | "Set aside $X for Q3" — net profit × user-adjustable SE+income rate. The #1 freelancer anxiety competitors headline. |
-| **B2 — Subscriptions radar widget** | "You pay $X/mo across N services" — promotes existing Brain vendor-frequency detection to a visible dashboard widget; links to `Transactions.jsx?search=`. |
-| **B3 — Weekly digest email** | Money in / out / missing receipts / upcoming set-aside via existing Resend + cron report plumbing. Opt-out in ProfileTab. |
-| **B4 — Re-engagement email (14-day inactive)** | Uses `useActivityPulse`/`user_daily_activity` data; gentle "here's what changed" nudge. |
-| **B5 — First-invoice-paid celebration moment** | Small in-app moment when the first client payment lands — retention psychology, cheap to build. |
+| **B1 — Quarterly tax set-aside widget** | ✅ `TaxSetAsideWidget.jsx` — "Set aside $X for Q3" = YTD net profit × `estimated_tax_rate` (user-editable in ProfileTab, default 30%). Deadlines match `brain.js`'s existing quarterly dates. |
+| **B2 — Subscriptions radar widget** | ✅ `SubscriptionsRadarWidget.jsx` — "$X/mo across N subscriptions", top 3 vendors. Reuses `metrics.analytics.recurringVendors` already fetched for Operational Intelligence — no extra API call. |
+| **B3 — Weekly digest email** | ✅ `GET /api/cron/weekly-report` — money in/out, missing receipts, tax set-aside. Self-checks for Monday (`?force=1` to override). Opt-out: `settings.weekly_digest_optout`. **Needs an UptimeRobot monitor added.** |
+| **B4 — Re-engagement email (14-day inactive)** | ✅ `GET /api/cron/reengagement-report` — queries `user_daily_activity` for 14+ day inactive users; 30-day de-dupe via `settings.last_reengagement_sent_at`. Opt-out: `settings.reengagement_email_optout`. **Needs an UptimeRobot monitor added.** |
+| **B5 — First-invoice-paid celebration moment** | ✅ In-app modal only (`InvoicePaidCelebration.jsx`), no email — fires when an invoice PATCH to `status=paid` makes the user's paid-invoice count exactly 1. |
 
 ### Phase C — Compete (Good to Have)
 

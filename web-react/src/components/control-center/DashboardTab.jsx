@@ -8,6 +8,8 @@ const DEFAULT_WIDGETS = {
     top_expenses: true,
     insights: true,
     operational_intelligence: true,
+    tax_set_aside: true,
+    subscriptions_radar: true,
 };
 
 const WIDGET_LABELS = [
@@ -17,6 +19,8 @@ const WIDGET_LABELS = [
     { key: 'insights',                label: 'Financial Insights Strip',      desc: 'Margin quality, burn rate, cash reality, and more' },
     { key: 'top_expenses',            label: 'Top Expense Drivers',           desc: 'Ranked category spend breakdown' },
     { key: 'operational_intelligence',label: 'Operational Intelligence',      desc: 'Recurring subscriptions and vendor patterns' },
+    { key: 'tax_set_aside',           label: 'Quarterly Tax Set-Aside',       desc: 'Estimated tax to set aside based on YTD net profit' },
+    { key: 'subscriptions_radar',     label: 'Subscriptions Radar',          desc: '"$X/mo across N subscriptions" quick summary' },
 ];
 
 const ROLES = [
@@ -27,10 +31,10 @@ const ROLES = [
 ];
 
 const ROLE_PRESETS = {
-    photographer:   { invoices: true,  forecast: true,  performance_chart: true, top_expenses: true, insights: true, operational_intelligence: true },
-    freelancer:     { invoices: true,  forecast: false, performance_chart: true, top_expenses: true, insights: true, operational_intelligence: false },
-    small_business: { invoices: true,  forecast: true,  performance_chart: true, top_expenses: true, insights: true, operational_intelligence: true },
-    personal:       { invoices: false, forecast: false, performance_chart: true, top_expenses: true, insights: true, operational_intelligence: false },
+    photographer:   { invoices: true,  forecast: true,  performance_chart: true, top_expenses: true, insights: true, operational_intelligence: true,  tax_set_aside: true,  subscriptions_radar: true },
+    freelancer:     { invoices: true,  forecast: false, performance_chart: true, top_expenses: true, insights: true, operational_intelligence: false, tax_set_aside: true,  subscriptions_radar: true },
+    small_business: { invoices: true,  forecast: true,  performance_chart: true, top_expenses: true, insights: true, operational_intelligence: true,  tax_set_aside: true,  subscriptions_radar: true },
+    personal:       { invoices: false, forecast: false, performance_chart: true, top_expenses: true, insights: true, operational_intelligence: false, tax_set_aside: false, subscriptions_radar: true },
 };
 
 export default function DashboardTab({ settings, setSettings }) {

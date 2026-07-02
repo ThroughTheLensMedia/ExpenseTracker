@@ -1,6 +1,12 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.13.0', date: 'JUL 2, 2026', color: '#4c7dff', items: [
+        '<strong>New — Quarterly Tax Set-Aside:</strong> Your dashboard now estimates how much to set aside for taxes each quarter, based on your year-to-date profit. Adjust your estimated rate anytime in Profile settings.',
+        '<strong>New — Subscriptions Radar:</strong> A quick dashboard summary of what you\'re paying across recurring subscriptions each month.',
+        '<strong>New — Weekly Digest Email:</strong> A Monday morning recap of money in/out, missing receipts, and your upcoming tax set-aside. Turn it off anytime in Profile settings.',
+        '<strong>New:</strong> A little celebration the moment your first invoice ever gets marked paid.',
+    ]},
     { version: '7.12.0', date: 'JUL 2, 2026', color: '#4c7dff', items: [
         '<strong>New — Your Money Story:</strong> After every import or bank sync, Lumière now shows you what it found — likely tax deductions, recurring subscriptions, and anything flagged for review. Turn it off anytime with one click.',
         '<strong>Improved:</strong> Pages with no data yet now point you straight to importing or connecting your bank instead of showing an empty screen.',

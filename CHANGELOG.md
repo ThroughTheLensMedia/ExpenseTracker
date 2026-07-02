@@ -5,6 +5,21 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.13.0] — 2026-07-02
+
+### Added — Phase B retention features (B1–B5)
+
+- **`web-react/src/components/dashboard/TaxSetAsideWidget.jsx`** (new) — "Set aside $X for Q3" dashboard widget. `ytdNet × estimated_tax_rate`; deadline dates match the existing quarterly logic in `api/routes/brain.js`. New `settings.estimated_tax_rate` field (default 30%), editable in `ProfileTab.jsx`.
+- **`web-react/src/components/dashboard/SubscriptionsRadarWidget.jsx`** (new) — "$X/mo across N subscriptions" summary widget with top-3 vendors. Reuses `metrics.analytics.recurringVendors`, already fetched for Operational Intelligence — no duplicate network call.
+- **`DashboardV2.jsx` / `DashboardTab.jsx`** — both new widgets wired into `dashboard_config.widgets` (default on) and role presets, same pattern as existing widgets.
+- **`api/routes/cron.js`** — two new endpoints: `GET /cron/weekly-report` (money in/out, missing-receipt count, tax set-aside; self-checks for Monday, `?force=1` to override) and `GET /cron/reengagement-report` (14+ day inactive users via `user_daily_activity`, 30-day de-dupe guard via `settings.last_reengagement_sent_at`). Both respect new opt-out settings and follow the existing `isCronAuthorized()` pattern.
+- **`api/utils/mailer.js` / `emailQueue.js`** — new `sendWeeklyDigestEmail()` and `sendReEngagementEmail()`, modeled on the existing monthly-report template styling.
+- **`ProfileTab.jsx`** — new "Email Notifications" section with opt-out checkboxes for the weekly digest and re-engagement email.
+- **`api/routes/invoices.js`** — PATCH now returns `firstInvoicePaid: true` when marking an invoice `paid` results in exactly 1 paid invoice for that user. `Invoice.jsx` shows a one-time in-app celebration (`InvoicePaidCelebration.jsx`) — no email, per design decision.
+- **Ops note:** two new UptimeRobot monitors need to be added for the weekly-report and reengagement-report cron endpoints (same auth pattern as the existing daily/monthly/watchdog monitors).
+
+---
+
 ## [v7.12.0] — 2026-07-02
 
 ### Added — Money Story + Home trust pass + UI micro-polish (A1/A3/D5 of Growth & Polish)

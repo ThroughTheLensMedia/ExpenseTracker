@@ -333,6 +333,12 @@ export default function ProfileTab({ settings, setSettings, onReload, billingOnl
                     </select>
                 </div>
 
+                <div>
+                    <small className="muted" style={{ fontWeight: 900 }}>ESTIMATED TAX SET-ASIDE RATE (%)</small>
+                    <input type="number" min="0" max="60" value={settings.estimated_tax_rate ?? 30} onChange={e => field('estimated_tax_rate', Number(e.target.value))} style={{ marginTop: '8px', padding: '13px' }} />
+                    <div className="muted small" style={{ marginTop: '6px' }}>Used by the dashboard's Quarterly Tax Set-Aside widget — a blended estimate covering self-employment tax plus federal/state income tax. Adjust to your own bracket.</div>
+                </div>
+
                 {/* NAICS paired with Invoice Notes header — or standalone half */}
                 <div>
                     <small className="muted" style={{ fontWeight: 900 }}>IRS BUSINESS CODE (NAICS)</small>
@@ -412,6 +418,19 @@ export default function ProfileTab({ settings, setSettings, onReload, billingOnl
                     <small className="muted" style={{ fontWeight: 900 }}>PERSONALIZED SIGNATURE & SOCIALS</small>
                     <textarea value={settings.signature_text || ''} onChange={e => field('signature_text', e.target.value)} placeholder="Your Name, Website, Instagram..." style={{ marginTop: '8px', padding: '13px', minHeight: '65px', resize: 'vertical' }} />
                     <div className="muted small" style={{ marginTop: '6px' }}>Sign-off for the bottom of invoices.</div>
+                </div>
+
+                {/* Email notifications */}
+                <div className="f2" style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '18px', marginTop: '4px' }}>
+                    <small className="muted" style={{ fontWeight: 900 }}>EMAIL NOTIFICATIONS</small>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: '10px', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={!settings.weekly_digest_optout} onChange={e => field('weekly_digest_optout', !e.target.checked)} style={{ width: 16, height: 16 }} />
+                        <span style={{ fontSize: 13, fontWeight: 700 }}>Weekly digest — money in/out, missing receipts, upcoming tax set-aside (Mondays)</span>
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: '8px', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={!settings.reengagement_email_optout} onChange={e => field('reengagement_email_optout', !e.target.checked)} style={{ width: 16, height: 16 }} />
+                        <span style={{ fontSize: 13, fontWeight: 700 }}>Occasional re-engagement email if you've been away a while</span>
+                    </label>
                 </div>
 
                 {/* Save */}

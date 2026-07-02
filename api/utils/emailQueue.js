@@ -17,7 +17,9 @@ const {
     sendPromoEmail,
     sendContactRelayEmail,
     sendInvoiceApprovalEmail,
-    sendHealthAlertEmail
+    sendHealthAlertEmail,
+    sendWeeklyDigestEmail,
+    sendReEngagementEmail
 } = require('./mailer');
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -74,6 +76,14 @@ async function queueHealthAlertEmail(payload) {
     return withRetry(() => sendHealthAlertEmail(payload), 3);
 }
 
+async function queueWeeklyDigestEmail(payload) {
+    return withRetry(() => sendWeeklyDigestEmail(payload), 2);
+}
+
+async function queueReEngagementEmail(payload) {
+    return withRetry(() => sendReEngagementEmail(payload), 2);
+}
+
 module.exports = {
     queueInvoiceEmail,
     queueInviteEmail,
@@ -82,5 +92,7 @@ module.exports = {
     queuePromoEmail,
     queueContactRelayEmail,
     queueInvoiceApprovalEmail,
-    queueHealthAlertEmail
+    queueHealthAlertEmail,
+    queueWeeklyDigestEmail,
+    queueReEngagementEmail
 };

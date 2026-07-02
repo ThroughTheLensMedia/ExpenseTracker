@@ -442,7 +442,18 @@ router.patch("/:id", async (req, res) => {
             }
         }
 
-        res.json(invoice);
+        // Celebrate the user's first-ever paid invoice (in-app only, no email)
+        let firstInvoicePaid = false;
+        if (invoiceData.status === 'paid') {
+            const { count, error: countError } = await req.sb
+                .from('invoices')
+                .select('id', { count: 'exact', head: true })
+                .eq('user_id', req.user.id)
+                .eq('status', 'paid');
+            if (!countError && count === 1) firstInvoicePaid = true;
+        }
+
+        res.json({ ...invoice, firstInvoicePaid });
     } catch (e) {
         res.status(400).json({ error: e.message });
     }

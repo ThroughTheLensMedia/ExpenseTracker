@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { supabase } = require("../db");
-const { queueDailyReportEmail, queueMonthlyReportEmail, queueHealthAlertEmail } = require("../utils/emailQueue");
+const { queueDailyReportEmail, queueMonthlyReportEmail, queueHealthAlertEmail, queueWeeklyDigestEmail, queueReEngagementEmail } = require("../utils/emailQueue");
 const { ADMIN_UUID } = require("../constants");
 const { listAllUsers } = require("../utils/userDirectory");
 
@@ -291,6 +291,165 @@ async function buildMonthlyReport(supabase, userId, startStr, endStr, avgStartSt
         newVendors
     };
 }
+
+// Builds the numbers for one user's weekly digest email — money in/out for the
+// past 7 days, count of currently-missing receipts, and a YTD-based tax
+// set-aside estimate (same math as the dashboard's TaxSetAsideWidget).
+async function buildWeeklyDigest(supabase, userId, weekStartStr, weekEndStr, taxRate) {
+    const year = new Date().getFullYear();
+    const yearStartStr = `${year}-01-01`;
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    const [{ data: weekRows }, { data: yearRows }, { count: missingReceiptCount }] = await Promise.all([
+        supabase.from('expenses').select('amount_cents, category').eq('user_id', userId).gte('expense_date', weekStartStr).lte('expense_date', weekEndStr),
+        supabase.from('expenses').select('amount_cents, category').eq('user_id', userId).gte('expense_date', yearStartStr).lte('expense_date', todayStr),
+        supabase.from('expenses').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('tax_deductible', true).is('receipt_link', null).gt('amount_cents', 7500),
+    ]);
+
+    const weekExpenses = (weekRows || []).filter(r => (r.amount_cents || 0) > 0 && !NON_SPEND_CATS.has(r.category));
+    const weekIncome = (weekRows || []).filter(r => (r.amount_cents || 0) < 0);
+    const incomeCents = weekIncome.reduce((s, r) => s + Math.abs(r.amount_cents), 0);
+    const spendCents = weekExpenses.reduce((s, r) => s + r.amount_cents, 0);
+    const netCents = incomeCents - spendCents;
+
+    const ytdExpenses = (yearRows || []).filter(r => (r.amount_cents || 0) > 0 && !NON_SPEND_CATS.has(r.category));
+    const ytdIncome = (yearRows || []).filter(r => (r.amount_cents || 0) < 0);
+    const ytdIncomeCents = ytdIncome.reduce((s, r) => s + Math.abs(r.amount_cents), 0);
+    const ytdSpendCents = ytdExpenses.reduce((s, r) => s + r.amount_cents, 0);
+    const ytdNetCents = ytdIncomeCents - ytdSpendCents;
+    const taxSetAsideCents = Math.max(0, ytdNetCents) * ((taxRate ?? 30) / 100);
+
+    // Same quarterly deadlines used in brain.js / TaxSetAsideWidget.jsx
+    const quarterDeadlines = [
+        { date: `${year}-04-15`, label: `Q1 ${year}` },
+        { date: `${year}-06-15`, label: `Q2 ${year}` },
+        { date: `${year}-09-15`, label: `Q3 ${year}` },
+        { date: `${year + 1}-01-15`, label: `Q4 ${year}` },
+    ];
+    const quarterLabel = (quarterDeadlines.find(d => d.date >= todayStr) || quarterDeadlines[quarterDeadlines.length - 1]).label;
+
+    return { incomeCents, spendCents, netCents, missingReceiptCount: missingReceiptCount || 0, taxSetAsideCents, quarterLabel };
+}
+
+// GET /cron/weekly-report
+// Sends every Monday (self-checked — a misconfigured or overlapping external
+// ping can't send digests on the wrong day). ?force=1 bypasses the day check
+// for manual testing.
+router.get("/weekly-report", async (req, res) => {
+    if (!isCronAuthorized(req)) {
+        return res.status(403).json({ error: "Unauthorized" });
+    }
+
+    const force = req.query.force === '1';
+    if (!force && new Date().getDay() !== 1) {
+        return res.json({ ok: true, sent: false, message: "Not Monday — skipped (use ?force=1 to override)." });
+    }
+
+    try {
+        if (!supabase) throw new Error("Supabase service client not initialized");
+
+        const now = new Date();
+        const weekEnd = new Date(now); weekEnd.setDate(weekEnd.getDate() - 1); // yesterday
+        const weekStart = new Date(weekEnd); weekStart.setDate(weekStart.getDate() - 6);
+        const weekStartStr = weekStart.toISOString().split('T')[0];
+        const weekEndStr = weekEnd.toISOString().split('T')[0];
+        const weekLabel = `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+
+        const allUsers = await listAllUsers(supabase);
+        const userIds = allUsers.map(u => u.id);
+        const { data: settingsRows } = await supabase.from('settings').select('user_id, weekly_digest_optout, estimated_tax_rate').in('user_id', userIds);
+        const settingsMap = {};
+        (settingsRows || []).forEach(s => { settingsMap[s.user_id] = s; });
+
+        const results = [];
+        for (const user of allUsers) {
+            if (!user.email) continue;
+            const s = settingsMap[user.id];
+            if (s?.weekly_digest_optout) { results.push({ email: user.email, ok: false, skipped: true, reason: 'opted out' }); continue; }
+            try {
+                const report = await buildWeeklyDigest(supabase, user.id, weekStartStr, weekEndStr, s?.estimated_tax_rate);
+                if (report.incomeCents === 0 && report.spendCents === 0 && report.missingReceiptCount === 0) {
+                    results.push({ email: user.email, ok: false, skipped: true, reason: 'nothing to report' });
+                    continue;
+                }
+                await queueWeeklyDigestEmail({ to: user.email, name: user.display_name || user.email.split('@')[0], weekLabel, ...report });
+                results.push({ email: user.email, ok: true });
+            } catch (err) {
+                console.error(`[CRON] Weekly digest failed for ${user.email}:`, err);
+                results.push({ email: user.email, ok: false, error: err.message });
+            }
+        }
+
+        res.json({ ok: true, weekLabel, sent: results.filter(r => r.ok).length, results });
+    } catch (e) {
+        console.error("[CRON] Weekly digest fatal error:", e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// GET /cron/reengagement-report
+// Users whose most recent activity is 14+ days old get a gentle nudge — but
+// no more than once per 30 days (last_reengagement_sent_at guard), so a daily
+// external ping doesn't spam the same inactive user every day.
+router.get("/reengagement-report", async (req, res) => {
+    if (!isCronAuthorized(req)) {
+        return res.status(403).json({ error: "Unauthorized" });
+    }
+
+    try {
+        if (!supabase) throw new Error("Supabase service client not initialized");
+
+        const cutoffStr = new Date(Date.now() - 14 * 86400000).toISOString().split('T')[0];
+        const dedupeCutoffStr = new Date(Date.now() - 30 * 86400000).toISOString();
+
+        const { data: activityRows, error: actErr } = await supabase.from('user_daily_activity').select('user_id, activity_date');
+        if (actErr) throw actErr;
+
+        const lastActive = {};
+        (activityRows || []).forEach(r => {
+            if (!lastActive[r.user_id] || r.activity_date > lastActive[r.user_id]) lastActive[r.user_id] = r.activity_date;
+        });
+        const inactiveUserIds = Object.entries(lastActive).filter(([, date]) => date < cutoffStr).map(([id]) => id);
+
+        if (!inactiveUserIds.length) {
+            return res.json({ ok: true, sent: 0, message: "No inactive users found." });
+        }
+
+        const [allUsers, settingsRes] = await Promise.all([
+            listAllUsers(supabase),
+            supabase.from('settings').select('user_id, reengagement_email_optout, last_reengagement_sent_at').in('user_id', inactiveUserIds),
+        ]);
+        const settingsMap = {};
+        (settingsRes.data || []).forEach(s => { settingsMap[s.user_id] = s; });
+        const userMap = {};
+        allUsers.forEach(u => { userMap[u.id] = u; });
+
+        const results = [];
+        for (const userId of inactiveUserIds) {
+            const user = userMap[userId];
+            if (!user?.email) continue;
+            const s = settingsMap[userId];
+            if (s?.reengagement_email_optout) { results.push({ email: user.email, ok: false, skipped: true, reason: 'opted out' }); continue; }
+            if (s?.last_reengagement_sent_at && s.last_reengagement_sent_at > dedupeCutoffStr) {
+                results.push({ email: user.email, ok: false, skipped: true, reason: 'sent recently' });
+                continue;
+            }
+            try {
+                await queueReEngagementEmail({ to: user.email, name: user.display_name || user.email.split('@')[0] });
+                await supabase.from('settings').upsert({ user_id: userId, last_reengagement_sent_at: new Date().toISOString() }, { onConflict: 'user_id' });
+                results.push({ email: user.email, ok: true });
+            } catch (err) {
+                console.error(`[CRON] Re-engagement email failed for ${user.email}:`, err);
+                results.push({ email: user.email, ok: false, error: err.message });
+            }
+        }
+
+        res.json({ ok: true, inactiveCount: inactiveUserIds.length, sent: results.filter(r => r.ok).length, results });
+    } catch (e) {
+        console.error("[CRON] Re-engagement fatal error:", e);
+        res.status(500).json({ error: e.message });
+    }
+});
 
 // GET /cron/watchdog
 router.get("/watchdog", async (req, res) => {

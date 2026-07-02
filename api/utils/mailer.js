@@ -713,6 +713,127 @@ ${isPreview ? `<div style="background:#f59e0b;color:#000;padding:10px;text-align
     }
 }
 
+async function sendWeeklyDigestEmail({ to, name, weekLabel, incomeCents, spendCents, netCents, missingReceiptCount, taxSetAsideCents, quarterLabel }) {
+    console.log(`[MAILER] Sending Weekly Digest to ${to}...`);
+    const resend = getResend();
+    if (!resend) return { success: false, error: "Mailer service not configured" };
+
+    const fmt = (cents) => '$' + Math.abs((cents || 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    const fromEmail = process.env.RESEND_FROM || 'Lumière Ledger <support@throughthelens.media>';
+    const appUrl = 'https://www.lumiereledger.com';
+    const netColor = netCents >= 0 ? '#4ade80' : '#f97316';
+
+    const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#0f172a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+<div style="max-width:600px;margin:0 auto;padding:36px 20px;">
+
+  <div style="text-align:center;margin-bottom:28px;">
+    <div style="font-size:20px;font-weight:900;letter-spacing:-0.02em;color:#fff;">LUMIÈRE LEDGER</div>
+    <div style="height:2px;width:40px;background:#4c7dff;margin:8px auto 0;"></div>
+    <div style="font-size:13px;color:#94a3b8;margin-top:10px;">Your Week — ${weekLabel}</div>
+  </div>
+
+  <table style="width:100%;border-collapse:collapse;background:#111827;border-radius:16px;padding:24px;margin-bottom:16px;" cellpadding="0" cellspacing="0">
+    <tr><td style="padding:24px;">
+      <div style="font-size:11px;font-weight:900;color:#4c7dff;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px;">Money In / Out</div>
+      <table style="width:100%;border-collapse:collapse;">
+        <tr>
+          <td style="font-size:13px;color:#94a3b8;padding:6px 0;">Income</td>
+          <td style="text-align:right;font-size:17px;font-weight:900;color:#4ade80;padding:6px 0;">${fmt(incomeCents)}</td>
+        </tr>
+        <tr>
+          <td style="font-size:13px;color:#94a3b8;padding:6px 0;">Expenses</td>
+          <td style="text-align:right;font-size:17px;font-weight:900;color:#fff;padding:6px 0;">${fmt(spendCents)}</td>
+        </tr>
+        <tr>
+          <td style="font-size:13px;color:#94a3b8;padding:6px 0;border-top:1px solid rgba(255,255,255,0.08);">Net</td>
+          <td style="text-align:right;font-size:17px;font-weight:900;color:${netColor};padding:6px 0;border-top:1px solid rgba(255,255,255,0.08);">${fmt(netCents)}</td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+
+  <table style="width:100%;border-collapse:collapse;background:#111827;border-radius:16px;margin-bottom:16px;" cellpadding="0" cellspacing="0">
+    <tr><td style="padding:24px;">
+      <div style="font-size:11px;font-weight:900;color:#f97316;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Missing Receipts</div>
+      <div style="font-size:24px;font-weight:900;color:#fff;">${missingReceiptCount}</div>
+      <div style="font-size:12px;color:#64748b;margin-top:4px;">deductible transaction${missingReceiptCount === 1 ? '' : 's'} over $75 with no receipt attached</div>
+    </td></tr>
+  </table>
+
+  <table style="width:100%;border-collapse:collapse;background:#111827;border-radius:16px;margin-bottom:28px;" cellpadding="0" cellspacing="0">
+    <tr><td style="padding:24px;">
+      <div style="font-size:11px;font-weight:900;color:#fcd34d;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Set Aside for ${quarterLabel}</div>
+      <div style="font-size:24px;font-weight:900;color:#fcd34d;">${fmt(taxSetAsideCents)}</div>
+      <div style="font-size:12px;color:#64748b;margin-top:4px;">estimated, based on your set-aside rate in Profile settings</div>
+    </td></tr>
+  </table>
+
+  <div style="text-align:center;margin-bottom:28px;">
+    <a href="${appUrl}" style="display:inline-block;background:#4c7dff;color:#fff;padding:14px 28px;border-radius:10px;font-weight:900;font-size:14px;text-decoration:none;">Open Your Ledger →</a>
+  </div>
+
+  <p style="text-align:center;font-size:12px;color:#334155;margin:0;line-height:1.8;">
+    You're receiving this because you have a Lumière Ledger account. Turn this off anytime in Profile settings.<br>
+    <a href="${appUrl}" style="color:#475569;">lumiereledger.com</a>
+  </p>
+</div>
+</body>
+</html>`;
+
+    try {
+        const data = await resend.emails.send({ from: fromEmail, to: [to], subject: `Your week at a glance — ${weekLabel}`, html });
+        console.log(`[MAILER] Weekly digest dispatched to ${to}:`, data);
+        return { success: true, data };
+    } catch (error) {
+        console.error(`[MAILER] Weekly digest failed for ${to}:`, error);
+        return { success: false, error: error.message };
+    }
+}
+
+async function sendReEngagementEmail({ to, name }) {
+    console.log(`[MAILER] Sending Re-engagement email to ${to}...`);
+    const resend = getResend();
+    if (!resend) return { success: false, error: "Mailer service not configured" };
+
+    const fromEmail = process.env.RESEND_FROM || 'Lumière Ledger <support@throughthelens.media>';
+    const appUrl = 'https://www.lumiereledger.com';
+
+    const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#0f172a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+<div style="max-width:560px;margin:0 auto;padding:44px 20px;text-align:center;">
+  <div style="font-size:20px;font-weight:900;letter-spacing:-0.02em;color:#fff;">LUMIÈRE LEDGER</div>
+  <div style="height:2px;width:40px;background:#4c7dff;margin:8px auto 24px;"></div>
+
+  <p style="font-size:16px;color:#e2e8f0;line-height:1.7;margin:0 0 24px;">
+    Hey${name ? ` ${name}` : ''} — it's been a little while since you've checked in on your ledger.
+    Your receipts, deductions, and tax set-aside are still adding up in the background — worth a quick look.
+  </p>
+
+  <a href="${appUrl}" style="display:inline-block;background:#4c7dff;color:#fff;padding:14px 30px;border-radius:10px;font-weight:900;font-size:14px;text-decoration:none;margin-bottom:24px;">Open Lumière Ledger →</a>
+
+  <p style="font-size:12px;color:#334155;margin:0;line-height:1.8;">
+    You're receiving this because you have a Lumière Ledger account. Turn this off anytime in Profile settings.<br>
+    <a href="${appUrl}" style="color:#475569;">lumiereledger.com</a>
+  </p>
+</div>
+</body>
+</html>`;
+
+    try {
+        const data = await resend.emails.send({ from: fromEmail, to: [to], subject: `Your ledger's still here — quick check-in?`, html });
+        console.log(`[MAILER] Re-engagement email dispatched to ${to}:`, data);
+        return { success: true, data };
+    } catch (error) {
+        console.error(`[MAILER] Re-engagement email failed for ${to}:`, error);
+        return { success: false, error: error.message };
+    }
+}
+
 async function sendHealthAlertEmail({ to, issues }) {
     console.log(`[MAILER] Sending Health Alert to ${to}...`);
     const resend = getResend();
@@ -849,4 +970,6 @@ module.exports = {
     sendInvoiceApprovalEmail,
     sendHealthAlertEmail,
     sendReceiptConfirmationEmail,
+    sendWeeklyDigestEmail,
+    sendReEngagementEmail,
 };
