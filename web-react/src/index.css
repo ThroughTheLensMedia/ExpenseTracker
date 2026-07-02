@@ -320,6 +320,54 @@ small {
   font-weight: 700;
 }
 
+/* Semantic amount colors — income green, expense neutral, danger red, deduction gold */
+.amt-income { color: #4ade80; }
+.amt-expense { color: var(--text); }
+.amt-danger { color: #ef4444; }
+.amt-deduction { color: #fcd34d; }
+
+/* Skeleton shimmer — loading placeholder bars */
+@keyframes shimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: 200px 0; }
+}
+
+.skeleton {
+  display: inline-block;
+  border-radius: 8px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.12) 50%, rgba(255, 255, 255, 0.05) 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
+/* Opt-in card hover — matches .glass:hover, for interactive .card elements */
+.card-hover {
+  transition: all 0.3s ease;
+}
+
+.card-hover:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  transform: translateY(-2px);
+}
+
+/* Standardized empty state — icon + message + CTA */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 36px 20px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.empty-state svg {
+  opacity: 0.4;
+}
+
 .tableWrap {
   overflow: auto;
   border-radius: 14px;

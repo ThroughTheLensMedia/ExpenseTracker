@@ -1,6 +1,6 @@
 # Lumière Ledger — Master Roadmap
 
-**Version:** v7.11.0 | **Last reviewed:** 2026-07-02  
+**Version:** v7.12.0 | **Last reviewed:** 2026-07-02  
 Source of truth for all sprint work, security status, and product phases.
 
 ---
@@ -78,9 +78,9 @@ Competitive gap analysis vs. QuickBooks Solopreneur / Keeper / Wave / FreshBooks
 
 | Item | Notes |
 |------|-------|
-| **A1 — "Money Story" first-import results screen** | After first CSV import or Plaid connect, show one-time summary: "$X in likely deductions, Y recurring subscriptions, Z flagged transactions." New `MoneyStoryModal.jsx`; hooks in `Import.jsx` + `PlaidLink.jsx`. Also becomes a step in the onboarding wizard (`OnboardingChecklist.jsx`). |
+| **A1 — "Money Story" import results screen** | ✅ v7.12.0 — fires after every successful CSV import / Plaid connect / sync (Joshua chose summary mode over first-import-only). `MoneyStoryModal.jsx` + shared `ModalShell.jsx`; opt-out persists to `settings.money_story_optout`. Onboarding wizard copy updated. |
 | **A2 — "Deductions found ≈ tax savings" dashboard hero stat** | "Lumière found $X in deductions ≈ $Y off your tax bill." Reuses Tax.jsx math; savings = deductions × user-set effective rate (default 25%). New `dashboard_config` widget flag. |
-| **A3 — Home.jsx trust pass** | Real product screenshots (framed mockups), security strip (RLS isolation, encrypted bank tokens, BYOB AI = "your key, your data never trains anyone's model"), testimonial slots, link to SecurityPolicy. |
+| **A3 — Home.jsx trust pass** | ✅ v7.12.0 — CSS product mockup (labeled "illustrative data"), founder's note, persona scenario cards (deliberately NOT fake named testimonials — FTC fake-review rule; swap in real quotes when available), security strip with `/security-policy` links. |
 
 ### Phase B — Retain (Good to Have)
 
@@ -104,8 +104,8 @@ Competitive gap analysis vs. QuickBooks Solopreneur / Keeper / Wave / FreshBooks
 | Item | Status |
 |------|--------|
 | **D1–D4 — Brand pass** (Fraunces display font incl. modals, refined accent via CSS vars, lucide-react icons replace emoji, tabular-nums money typography) | ✅ v7.11.0 — shipped 2026-07-02 |
-| **D5 — Micro-polish** | Skeleton loaders, empty states with CTA, consistent card hover, income=green / expense=neutral / deduction=highlight color conventions |
-| **D6 — Inline-style consolidation** | Clean Up — opportunistic: each file touched in Phases A–C gets repeated inline styles pulled into shared classes |
+| **D5 — Micro-polish** | ✅ v7.12.0 — `.skeleton` shimmer, `.empty-state` (applied to Transactions + Accounts zero-data), `.card-hover`, semantic `.amt-income/.amt-expense/.amt-danger/.amt-deduction` classes. Wider adoption of amt-* classes stays opportunistic. |
+| **D6 — Inline-style consolidation** | ◐ In progress, opportunistic — v7.12.0 extracted shared `ModalShell.jsx`; continue per touched file in Phases B–C |
 
 ---
 

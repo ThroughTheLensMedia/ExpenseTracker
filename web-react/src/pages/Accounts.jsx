@@ -934,6 +934,15 @@ export default function Accounts() {
             )}
 
             {loading && <div style={{ textAlign:'center', padding:'60px 0', color:'rgba(255,255,255,0.4)', fontSize:14 }}>Loading accounts…</div>}
+            {!loading && !error && allAccounts.length === 0 && syncedAccounts.length === 0 && (
+                <div className="empty-state">
+                    <Landmark size={28} />
+                    <span>No accounts yet.</span>
+                    <button className="btn" style={{ padding: '10px 22px', fontSize: 13 }} onClick={() => navigate('/import')}>
+                        Connect a bank or import a CSV
+                    </button>
+                </div>
+            )}
             {error && (
                 <div style={{ background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.25)', borderRadius:12, padding:'16px 20px', color:'#ef4444', fontSize:13, marginBottom:20 }}>
                     {error} <button onClick={load} style={{ marginLeft:12, fontSize:12, color:'#ef4444', background:'none', border:'none', cursor:'pointer', textDecoration:'underline' }}>Retry</button>

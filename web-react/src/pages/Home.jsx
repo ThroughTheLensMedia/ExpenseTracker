@@ -1,6 +1,32 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Bot, FileText, BarChart3, Target, Wrench, Landmark, Map, Paperclip, MessageCircle } from 'lucide-react';
+import { Bot, FileText, BarChart3, Target, Wrench, Landmark, Map, Paperclip, MessageCircle, ShieldCheck, Lock, KeyRound, BadgeCheck, Camera, Palette, Video, Quote } from 'lucide-react';
+// Illustrative use-case scenarios — NOT customer testimonials. When real customer
+// quotes arrive, swap these for a testimonial section (name, photo, quote, permission on file).
+const PERSONAS = [
+  {
+    icon: Camera, accent: '#f97316', title: 'The Wedding Photographer',
+    body: 'Tracks a $14k gear bag with automatic Section 179 depreciation, logs venue round-trips at the IRS rate, and hands their CPA a clean Schedule C export in January.',
+  },
+  {
+    icon: Palette, accent: '#38bdf8', title: 'The Freelance Designer',
+    body: 'Caught $200/mo in forgotten software subscriptions in the first import, and now every Adobe and Figma charge lands in the right tax bucket automatically.',
+  },
+  {
+    icon: Video, accent: '#a78bfa', title: 'The Videographer',
+    body: 'Sends branded invoices clients e-sign from their phone, watches the pipeline move from quote to booked, and knows exactly which client pays late.',
+  },
+];
+
+const SECURITY_ITEMS = [
+  { icon: ShieldCheck, title: 'Tenant isolation', body: 'Row-Level Security enforced at the database — your data is invisible to every other account, by architecture.' },
+  { icon: Lock, title: 'Encrypted bank tokens', body: 'Bank credentials never touch our servers. Plaid tokens are encrypted with libsodium; everything rides TLS.' },
+  { icon: KeyRound, title: 'Your AI, your key', body: 'Bring-your-own-key AI: your financial data goes to your Gemini key — it never trains anyone’s model.' },
+  { icon: BadgeCheck, title: 'SOC 2 Type II infrastructure', body: 'Built on Vercel, Supabase, and Plaid — all SOC 2 Type II certified providers.' },
+];
+
+// Faux-dashboard mockup data (illustrative)
+const MOCK_BARS = [34, 52, 41, 68, 59, 82, 74, 90, 66, 78, 95, 88];
 
 const FEATURES = [
   {
@@ -145,6 +171,44 @@ export default function Home() {
         </div>
       </div>
 
+      {/* ── Product Mockup (illustrative data, pure CSS) ────────────────── */}
+      <div style={{ width: '100%', maxWidth: 900, marginTop: 64 }}>
+        <div className="card glass" style={{ padding: 0, overflow: 'hidden', borderRadius: 18 }}>
+          {/* Browser chrome */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: 'rgba(0,0,0,0.35)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444', opacity: 0.7 }} />
+            <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#fcd34d', opacity: 0.7 }} />
+            <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#4ade80', opacity: 0.7 }} />
+            <span style={{ marginLeft: 10, fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: '3px 12px' }}>www.lumiereledger.com</span>
+          </div>
+          {/* Mock KPIs */}
+          <div style={{ padding: 'clamp(16px, 3vw, 28px)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 20 }}>
+              {[
+                { k: 'GROSS REVENUE', v: '$48,210', cls: 'amt-income' },
+                { k: 'DEDUCTIONS FOUND', v: '$12,384', cls: 'amt-deduction' },
+                { k: 'NET PROFIT', v: '$31,077', cls: 'amt-income' },
+              ].map(s => (
+                <div key={s.k} className="stat">
+                  <div className="k">{s.k}</div>
+                  <div className={`v money ${s.cls}`}>{s.v}</div>
+                </div>
+              ))}
+            </div>
+            {/* Mock bar chart */}
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 90, padding: '0 4px' }}>
+              {MOCK_BARS.map((h, i) => (
+                <div key={i} style={{ flex: 1, height: `${h}%`, borderRadius: '4px 4px 0 0', background: `linear-gradient(180deg, color-mix(in srgb, var(--accent) 70%, transparent), color-mix(in srgb, var(--accent) 25%, transparent))` }} />
+              ))}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: 9, fontWeight: 800, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.08em' }}>
+              <span>JAN</span><span>MAR</span><span>MAY</span><span>JUL</span><span>SEP</span><span>NOV</span>
+            </div>
+          </div>
+        </div>
+        <p style={{ textAlign: 'center', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.2)', marginTop: 10, letterSpacing: '0.06em' }}>ILLUSTRATIVE DATA</p>
+      </div>
+
       {/* ── Tax Automation ──────────────────────────────────────────────── */}
       <div style={{ width: '100%', maxWidth: 1060, marginTop: 72 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24, alignItems: 'center' }}>
@@ -222,6 +286,37 @@ export default function Home() {
             <div key={q} className="card glass" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
               <MessageCircle size={18} style={{ flexShrink: 0, color: 'var(--accent)' }} />
               <span style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.7)', lineHeight: 1.45, fontStyle: 'italic' }}>"{q}"</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Founder's Note ──────────────────────────────────────────────── */}
+      <div style={{ width: '100%', maxWidth: 760, marginTop: 80 }}>
+        <div className="card glass" style={{ padding: 'clamp(28px, 4vw, 44px)', textAlign: 'center' }}>
+          <Quote size={26} style={{ color: 'var(--accent)', marginBottom: 14 }} />
+          <div style={{ fontSize: 11, fontWeight: 900, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 14 }}>Built by a Working Photographer</div>
+          <p style={{ fontFamily: 'var(--display)', fontSize: 'clamp(1.2rem, 2.6vw, 1.6rem)', fontWeight: 600, lineHeight: 1.5, margin: '0 0 18px', color: 'rgba(255,255,255,0.9)' }}>
+            "I built Lumière Ledger because I needed it — a photographer drowning in receipts, mileage, and gear write-offs.
+            You focus on the shot. We'll focus on the finances."
+          </p>
+          <div style={{ fontSize: 13, fontWeight: 800, color: 'rgba(255,255,255,0.6)' }}>Joshua Deuermeyer</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.3)' }}>Founder — Through The Lens Media, Las Vegas</div>
+        </div>
+      </div>
+
+      {/* ── Made For How You Work (illustrative scenarios) ──────────────── */}
+      <div style={{ width: '100%', maxWidth: 1060, marginTop: 56 }}>
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+          <div style={{ fontSize: 11, fontWeight: 900, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 10 }}>Made For How You Work</div>
+          <h2 style={{ fontSize: 'clamp(1.6rem, 3.5vw, 2.2rem)', fontWeight: 950, letterSpacing: '-0.03em', margin: 0 }}>One Ledger, Every Kind of Creative</h2>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
+          {PERSONAS.map(p => (
+            <div key={p.title} className="card glass card-hover" style={{ padding: '26px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <p.icon size={24} style={{ color: p.accent }} />
+              <div style={{ fontWeight: 900, fontSize: 15 }}>{p.title}</div>
+              <p style={{ margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.6, fontWeight: 600 }}>{p.body}</p>
             </div>
           ))}
         </div>
@@ -310,6 +405,28 @@ export default function Home() {
         </div>
       </div>
 
+      {/* ── Security Strip ──────────────────────────────────────────────── */}
+      <div style={{ width: '100%', maxWidth: 1060, marginTop: 72 }}>
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <div style={{ fontSize: 11, fontWeight: 900, color: '#10b981', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 10 }}>Your Data Is Yours</div>
+          <h2 style={{ fontSize: 'clamp(1.6rem, 3.5vw, 2.2rem)', fontWeight: 950, letterSpacing: '-0.03em', margin: 0 }}>Bank-Grade Security, Solo-Business Simple</h2>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 14 }}>
+          {SECURITY_ITEMS.map(s => (
+            <div key={s.title} className="card glass" style={{ padding: '22px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <s.icon size={22} style={{ color: '#10b981' }} />
+              <div style={{ fontWeight: 900, fontSize: 14 }}>{s.title}</div>
+              <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.5)', lineHeight: 1.55, fontWeight: 600 }}>{s.body}</p>
+            </div>
+          ))}
+        </div>
+        <div style={{ textAlign: 'center', marginTop: 20 }}>
+          <NavLink to="/security-policy" style={{ fontSize: 12, fontWeight: 800, color: '#10b981', textDecoration: 'none', borderBottom: '1px solid rgba(16,185,129,0.35)', paddingBottom: 2 }}>
+            Read our full Information Security Policy →
+          </NavLink>
+        </div>
+      </div>
+
       {/* ── Final CTA ───────────────────────────────────────────────────── */}
       <div style={{ width: '100%', maxWidth: 1060, marginTop: 80 }}>
         <div style={{ background: 'radial-gradient(circle at top left, rgba(249,115,22,0.12), rgba(249,115,22,0.02))', border: '1px solid rgba(249,115,22,0.2)', borderRadius: 24, padding: 'clamp(32px, 5vw, 60px)', textAlign: 'center' }}>
@@ -331,6 +448,7 @@ export default function Home() {
           <div style={{ display: 'flex', gap: 24, justifyContent: 'center' }}>
             <NavLink to="/privacy" style={{ color: 'rgba(255,255,255,0.35)', textDecoration: 'none', fontSize: '11px', fontWeight: 800, letterSpacing: '0.05em' }}>PRIVACY POLICY</NavLink>
             <NavLink to="/terms" style={{ color: 'rgba(255,255,255,0.35)', textDecoration: 'none', fontSize: '11px', fontWeight: 800, letterSpacing: '0.05em' }}>TERMS OF SERVICE</NavLink>
+            <NavLink to="/security-policy" style={{ color: 'rgba(255,255,255,0.35)', textDecoration: 'none', fontSize: '11px', fontWeight: 800, letterSpacing: '0.05em' }}>SECURITY</NavLink>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 8 }}>
             <img src="/icon.png" alt="Lumière Ledger" style={{ width: 38, height: 38, borderRadius: 10 }} />

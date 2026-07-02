@@ -7,6 +7,7 @@ import MergeModal from '../components/MergeModal.jsx';
 import CategorySelect from '../components/CategorySelect.jsx';
 import { ALL_CATEGORIES, CATEGORY_GROUPS } from '../constants/categories.js';
 import useExpenseFilters, { useFilterOptions } from '../hooks/useExpenseFilters';
+import { Inbox } from 'lucide-react';
 
 export default function Transactions() {
     const [searchParams] = useSearchParams();
@@ -822,6 +823,17 @@ export default function Transactions() {
                             ))}
                         </div>
                     )}
+                </div>
+            )}
+
+            {/* ─── Empty state ─── */}
+            {!loading && filtered.length === 0 && (
+                <div className="empty-state">
+                    <Inbox size={28} />
+                    <span>No transactions here yet.</span>
+                    <button className="btn" style={{ padding: '10px 22px', fontSize: 13 }} onClick={() => navigate('/import')}>
+                        Import a CSV or connect your bank
+                    </button>
                 </div>
             )}
 

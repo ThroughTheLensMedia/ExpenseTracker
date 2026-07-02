@@ -5,6 +5,19 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.12.0] — 2026-07-02
+
+### Added — Money Story + Home trust pass + UI micro-polish (A1/A3/D5 of Growth & Polish)
+
+- **`web-react/src/components/MoneyStoryModal.jsx`** (new) — after every successful CSV import, Plaid connect, or sync: "$X likely deductions / Y recurring subscriptions / Z flagged for review." Pulls `/tax/summary` + `/metrics/summary`; flagged count from the import/sync response. Stat cards deep-link to Tax / Dashboard / Transactions. "Don't show again" persists `money_story_optout` to settings (cross-device); modal self-suppresses if opted out.
+- **`web-react/src/components/ModalShell.jsx`** (new) — shared rich-modal shell extracted from OnboardingChecklist (D6).
+- **`Import.jsx` / `PlaidLink.jsx`** — trigger Money Story on successful import (`inserted+merged>0`), first connect (`synced>0`), and manual sync (`added>0`). `OnboardingChecklist.jsx` data-import page now mentions the Money Story.
+- **`Home.jsx`** — trust pass: CSS product mockup with browser chrome + KPI cards + bar chart (labeled "illustrative data"); founder's note ("You focus on the shot. We'll focus on the finances."); "Made For How You Work" persona scenario cards (illustrative — intentionally not fake named testimonials, per FTC fake-review rule; swap in real quotes later); security strip (RLS isolation, encrypted bank tokens, BYOB AI, SOC 2 infra) linking to `/security-policy`; SECURITY footer link.
+- **`index.css`** — D5: `.skeleton` shimmer loader, `.empty-state`, opt-in `.card-hover`, semantic amount colors (`.amt-income/.amt-expense/.amt-danger/.amt-deduction`).
+- **`Transactions.jsx` / `Accounts.jsx`** — real empty states with "Import a CSV or connect your bank" CTA → `/import`.
+
+---
+
 ## [v7.11.1] — 2026-07-02
 
 ### Fixed — Fraunces font not loading in production

@@ -1,6 +1,11 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.12.0', date: 'JUL 2, 2026', color: '#4c7dff', items: [
+        '<strong>New — Your Money Story:</strong> After every import or bank sync, Lumière now shows you what it found — likely tax deductions, recurring subscriptions, and anything flagged for review. Turn it off anytime with one click.',
+        '<strong>Improved:</strong> Pages with no data yet now point you straight to importing or connecting your bank instead of showing an empty screen.',
+        '<strong>Improved:</strong> The Lumière Ledger website got a trust upgrade — product preview, a note from the founder, and a full security overview.',
+    ]},
     { version: '7.11.1', date: 'JUL 2, 2026', color: '#94a3b8', items: [
         '<strong>Fixed:</strong> The new heading typeface now loads correctly in production (it was silently falling back to a default font).',
     ]},

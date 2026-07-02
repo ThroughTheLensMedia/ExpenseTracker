@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { apiPost, apiGet, apiDelete, invalidateExpensesCache } from '../api';
 import { useModal } from './ModalContext.jsx';
+import MoneyStoryModal from './MoneyStoryModal.jsx';
 
 const VITE_PRICE = {
     sync_monthly:   import.meta.env.VITE_STRIPE_PRICE_SYNC_MONTHLY,
@@ -26,6 +27,7 @@ export default function PlaidLink({ onSync, autoConnect = false }) {
     const [accountLimitGate, setAccountLimitGate] = useState(false);
     const [billingLoading, setBillingLoading] = useState(null);
     const [billingAnnual, setBillingAnnual] = useState(false);
+    const [moneyStory, setMoneyStory] = useState(null); // { synced|added, linked, flagged } — shown after connect/sync
 
     const loadAccounts = async () => {
         try {
@@ -82,6 +84,7 @@ export default function PlaidLink({ onSync, autoConnect = false }) {
                         setMsg({ ok: true, text: `Connected ${result.connection.institution_name}! ${result.synced} new transactions imported.${linkedNote}` });
                         loadAccounts();
                         if (onSync) onSync();
+                        if (Number(result.synced || 0) > 0) setMoneyStory(result);
                     } catch (err) {
                         setMsg({ ok: false, text: `Connection failed: ${err.message}` });
                     }
@@ -128,6 +131,7 @@ export default function PlaidLink({ onSync, autoConnect = false }) {
             const linkedNote = result.linked > 0 ? ` ${result.linked} matched to existing imports.` : '';
             setMsg({ ok: true, text: `Synced ${result.added} new, ${result.modified} updated, ${result.removed} removed.${linkedNote}` });
             if (onSync) onSync();
+            if (Number(result.added || 0) > 0) setMoneyStory(result);
         } catch (e) {
             setMsg({ ok: false, text: `Sync failed: ${e.message}` });
         } finally {
@@ -151,6 +155,7 @@ export default function PlaidLink({ onSync, autoConnect = false }) {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {moneyStory && <MoneyStoryModal importResult={moneyStory} onClose={() => setMoneyStory(null)} />}
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                 <div>

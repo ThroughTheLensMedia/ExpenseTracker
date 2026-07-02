@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { invalidateExpensesCache, formatMoney, formatDate } from '../api';
 import { useAuth, supabase } from '../components/AuthContext';
 import PlaidLink from '../components/PlaidLink';
+import MoneyStoryModal from '../components/MoneyStoryModal.jsx';
 
 const BANK_PROFILES = [
     { key: 'rocketmoney', label: 'Rocket Money', group: 'recommended' },
@@ -160,6 +161,7 @@ export default function Import() {
     const [detecting, setDetecting] = useState(false);
     const [detectedSource, setDetectedSource] = useState(null);
     const [pendingFile, setPendingFile] = useState(null);
+    const [moneyStory, setMoneyStory] = useState(null); // { inserted, merged } — shown after a successful import
     const [searchParams] = useSearchParams();
     const autoConnect = searchParams.get('connect') === 'true';
     const [showPlaid, setShowPlaid] = useState(autoConnect);
@@ -285,6 +287,7 @@ export default function Import() {
             setPendingFile(null);
             if (Array.isArray(data.errors) && data.errors.length) setRmErrors(data.errors);
             invalidateExpensesCache();
+            if (ins + mrg > 0) setMoneyStory({ inserted: ins, merged: mrg });
         } catch (e) {
             setRmMsg(`❌ Import failed: ${e.message}`);
         }
@@ -624,6 +627,8 @@ export default function Import() {
                     />
                 )}
             </div>
+
+            {moneyStory && <MoneyStoryModal importResult={moneyStory} onClose={() => setMoneyStory(null)} />}
         </section>
     );
 }

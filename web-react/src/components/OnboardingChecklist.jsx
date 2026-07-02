@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiPost } from '../api';
+import ModalShell from './ModalShell.jsx';
 import { BarChart3, Bot, FileText, Landmark, Camera, Car, Building2, Download, Mail, CreditCard, BookOpen, Laptop, Target, FileSpreadsheet, ClipboardList } from 'lucide-react';
 
 const STORAGE_KEY   = 'll_onboarding_dismissed_v2'; // bump version to re-show for all users
@@ -84,16 +85,7 @@ function Pill({ children, color = '#f97316' }) {
     );
 }
 
-// ─── Shared modal shell ────────────────────────────────────────────────────
-function ModalShell({ children, accent = '#f97316' }) {
-    return (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-            <div style={{ background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', border: `1px solid ${accent}33`, borderRadius: 24, padding: '36px 32px', maxWidth: 560, width: '100%', boxShadow: `0 0 80px ${accent}18`, maxHeight: '90vh', overflowY: 'auto' }}>
-                {children}
-            </div>
-        </div>
-    );
-}
+// Shared modal shell lives in ./ModalShell.jsx (extracted v7.12.0)
 
 // ─── Role presets ─────────────────────────────────────────────────────────
 const ROLE_PRESETS = {
@@ -227,7 +219,9 @@ function PageDataImport({ onNext, onBack, onSkip }) {
                     Getting Your Transactions In
                 </h2>
                 <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', fontWeight: 600, margin: 0, lineHeight: 1.6 }}>
-                    Lumière Ledger works best when your transactions are here. Two ways to do it:
+                    Lumière Ledger works best when your transactions are here. Two ways to do it —
+                    and after each import, Lumière shows you your <strong style={{ color: 'rgba(255,255,255,0.7)' }}>Money Story</strong>:
+                    deductions found, subscriptions detected, and anything needing review.
                 </p>
             </div>
 
