@@ -1,1 +1,1 @@
-{"version":"7.10.17","release_date":"2026-07-01","codename":"Lumière Ledger","notes":"v7.10.17: Temporary admin endpoint to backfill Plaid webhook registration on existing connections"}
+{"version":"7.10.18","release_date":"2026-07-01","codename":"Lumière Ledger","notes":"v7.10.18: Removed temporary Plaid webhook backfill endpoint — all 8 connections confirmed registered"}

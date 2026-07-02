@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.10.18', date: 'JUL 1, 2026', color: '#94a3b8', items: [
+        '<strong>Cleanup:</strong> All connected bank accounts now have real-time connection alerts enabled.',
+    ]},
     { version: '7.10.17', date: 'JUL 1, 2026', color: '#94a3b8', items: [
         '<strong>Cleanup:</strong> Internal maintenance for the bank connection alerts released above.',
     ]},

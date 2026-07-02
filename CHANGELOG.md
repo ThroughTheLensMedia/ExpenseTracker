@@ -5,6 +5,14 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.10.18] — 2026-07-01
+
+### Removed — Temporary Plaid webhook backfill endpoint
+
+- **`api/routes/admin.js`** — `POST /admin/backfill-plaid-webhooks` removed. Confirmed via a live dry-run + real run: all 8 active connections (Credit One Bank, Capital One ×2, Navy Federal, America First Credit Union, American Express, Venmo, USAA) successfully registered the webhook. Plaid connection health events now flow in real time for every existing connection, not just new ones.
+
+---
+
 ## [v7.10.17] — 2026-07-01
 
 ### Added — Temporary admin endpoint for Plaid webhook backfill

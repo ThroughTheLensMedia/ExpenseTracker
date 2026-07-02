@@ -11,61 +11,6 @@ const { listAllUsers } = require("../utils/userDirectory");
 router.get("/", (req, res) => res.json({ ok: true, module: "admin", user: req.user?.email }));
 router.get("/test", (req, res) => res.json({ ok: true, test: "admin-reachable" }));
 
-// TEMPORARY — one-time backfill for the v7.10.16 Plaid webhook. Registers the
-// webhook URL on every existing active connection via itemWebhookUpdate (new
-// connections register it automatically via linkTokenCreate already). Runs
-// server-side in production because ENCRYPTION_KEY is marked Sensitive in
-// Vercel and can't be copied into a local .env to run the standalone script.
-// DELETE THIS ROUTE once confirmed run — see ROADMAP.md Active section.
-router.post("/backfill-plaid-webhooks", requireRole('admin'), async (req, res) => {
-    try {
-        const dryRun = req.query.dry_run === '1' || req.body?.dry_run === true;
-        const { decrypt } = require('../utils/cryptoUtil');
-        const { Configuration, PlaidApi, PlaidEnvironments } = require('plaid');
-
-        const plaidClient = new PlaidApi(new Configuration({
-            basePath: PlaidEnvironments[process.env.PLAID_ENV || 'sandbox'],
-            baseOptions: {
-                headers: {
-                    'PLAID-CLIENT-ID': process.env.PLAID_CLIENT_ID,
-                    'PLAID-SECRET': process.env.PLAID_SECRET,
-                },
-            },
-        }));
-
-        const webhookUrl = `${process.env.APP_URL || 'https://www.lumiereledger.com'}/api/plaid/webhook`;
-
-        const { data: rows, error } = await supabase
-            .from('plaid_connections')
-            .select('id, item_id, institution_name, access_token')
-            .eq('status', 'active');
-        if (error) throw error;
-
-        const results = [];
-        for (const row of (rows || [])) {
-            try {
-                const access_token = await decrypt(row.access_token);
-                if (!dryRun) {
-                    await plaidClient.itemWebhookUpdate({ access_token, webhook: webhookUrl });
-                }
-                results.push({ institution: row.institution_name, item_id: row.item_id, ok: true });
-            } catch (err) {
-                results.push({
-                    institution: row.institution_name,
-                    item_id: row.item_id,
-                    ok: false,
-                    error: err.response?.data?.error_message || err.message,
-                });
-            }
-        }
-
-        res.json({ ok: true, dry_run: dryRun, webhook_url: webhookUrl, total: results.length, results });
-    } catch (e) {
-        console.error('[Admin] Plaid webhook backfill error:', e.message);
-        res.status(500).json({ error: e.message });
-    }
-});
-
 // GET /admin/daily-report — Admin UI preview only. Returns activity data; never sends email.
 // Automated cron firing lives at /api/cron/daily-report (mounted before authMiddleware).
 router.get("/daily-report", async (req, res) => {
