@@ -1,6 +1,6 @@
 # Lumière Ledger — Master Roadmap
 
-**Version:** v7.10.16 | **Last reviewed:** 2026-07-01  
+**Version:** v7.10.19 | **Last reviewed:** 2026-07-01  
 Source of truth for all sprint work, security status, and product phases.
 
 ---
@@ -33,7 +33,7 @@ Source of truth for all sprint work, security status, and product phases.
 | Email Receipt Forwarding (Phase 1 + 2) | ✅ Complete — per-user HMAC tokens, DB lookup, address in Integrations tab, v7.8.92 |
 | Sentry error monitoring | ✅ Live — VITE_SENTRY_DSN set in Vercel, Claude API connected, user context wired v7.8.91 |
 | Security Review Cadence tab | ✅ v7.8.95–7.8.98 — 5 tiers, copyable commands, dashboard links |
-| npm audit (api/ + web-react/) | ✅ Both clean — api/ 3 high + 4 moderate fixed; web-react/ react-router high fixed; file-type moderate deferred (ESM-only) |
+| npm audit (api/ + web-react/) | ✅ Re-run 2026-07-01 (v7.10.19) — api/ 2 high fixed (form-data, multer), file-type moderate deferred (ESM-only); web-react/ all 5 vulns cleared |
 | Dashboard customization | ✅ v7.9.1 — role selector in onboarding, widget toggles, gear panel, smart empty states, Dashboard tab in Control Center |
 | Dependabot | ✅ v7.9.0 — `.github/dependabot.yml` live; weekly Monday scans; majors ignored for 6 risky packages |
 | Open public signup | ✅ v7.9.5 — free-tier open signup (no code required); invite-code path validates + auto-redeems after email confirmation; `GET /api/subscription/validate-code/:code` public endpoint |
@@ -62,7 +62,7 @@ Source of truth for all sprint work, security status, and product phases.
 | Item | Notes |
 |------|-------|
 | **Receipt email body parse — re-test** | v7.8.96 hardened the prompt and error logging but the "Total Paid: $XX.XX" case was never re-tested with a live email forward. Send a test and verify System Logs show extracted amount. |
-| **Security Review — monthly/quarterly/annual/dependency still overdue** | Weekly re-run 2026-07-01 (found + fixed the broken Vercel links, v7.10.15). Monthly last run 2026-06-08 (overdue). Quarterly/annual/dependency have never been run once. |
+| **Security Review — quarterly/annual/dependency still overdue** | Weekly re-run 2026-07-01 (fixed broken Vercel links, v7.10.15). Monthly re-run 2026-07-01 — npm audit fixed 2 high vulns in api/ (form-data, multer, v7.10.19) and cleared all 5 in web-react/. Quarterly/annual/dependency have never been run once. |
 
 ---
 
@@ -122,7 +122,7 @@ Source of truth for all sprint work, security status, and product phases.
 
 ---
 
-## ✅ Completed This Sprint (v7.7.0 → v7.10.16)
+## ✅ Completed This Sprint (v7.7.0 → v7.10.19)
 
 | Version | What shipped |
 |---------|-------------|
@@ -200,7 +200,10 @@ Source of truth for all sprint work, security status, and product phases.
 | v7.10.13 | Gated the automatic 30-day trial signup on email confirmation — stops scripted/bot signups from getting full active accounts with zero verification. `/subscription/redeem` upgraded to upsert |
 | v7.10.14 | Cloudflare Turnstile added to signup form (needs `TURNSTILE_SECRET_KEY` in Vercel to activate); Admin SaaS panel split into tabs (Active Members / Invite Codes / Engagement Pulse) |
 | v7.10.15 | Fixed broken Vercel dashboard links in Security Review checklist — wrong org slug on 3 links, found during weekly review |
-| v7.10.16 | Plaid webhook for real-time connection health (`ITEM` events, JWT-verified) — replaces poll-only `needs_reauth` detection. Needs one-time backfill script run for existing connections. |
+| v7.10.16 | Plaid webhook for real-time connection health (`ITEM` events, JWT-verified) — replaces poll-only `needs_reauth` detection |
+| v7.10.17 | Temporary admin endpoint to backfill Plaid webhook registration on existing connections (standalone script blocked by Vercel's Sensitive-flagged `ENCRYPTION_KEY`) |
+| v7.10.18 | Removed temporary Plaid webhook backfill endpoint — all 8 connections confirmed registered |
+| v7.10.19 | Monthly security audit — fixed 2 high vulns in api/ (form-data, multer), cleared all 5 in web-react/ |
 
 ---
 
