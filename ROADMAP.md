@@ -53,7 +53,7 @@ Source of truth for all sprint work, security status, and product phases.
 | `TURNSTILE_SECRET_KEY` added to Vercel | ✅ Confirmed by Joshua 2026-07-01 — Turnstile bot-challenge is now actually active, not just deployed |
 | Security Review — Vercel links broken | ✅ v7.10.15 — 3 links used wrong org slug (`through-the-lens-media`), 404ing on every weekly check. Fixed. |
 | Stripe checkout → webhook → tier gate | ✅ Confirmed end-to-end 2026-07-01 — Joshua ran a real test transaction + refund. `STRIPE_ROADMAP.md` was frozen at its pre-build planning state since 2026-05-18 despite this being live since v7.6.5/v7.8.27 — fully updated. |
-| Plaid webhook support | ✅ v7.10.16 — real-time `ITEM` webhook (`ERROR`/`PENDING_EXPIRATION`/`USER_PERMISSION_REVOKED`/`LOGIN_REPAIRED`), JWT-verified. New connections register it automatically; existing ones need the one-time backfill script (see Active section). |
+| Plaid webhook support | ✅ v7.10.16-18 — real-time `ITEM` webhook (`ERROR`/`PENDING_EXPIRATION`/`USER_PERMISSION_REVOKED`/`LOGIN_REPAIRED`), JWT-verified. Backfill confirmed 2026-07-01 — all 8 active connections (Credit One Bank, Capital One ×2, Navy Federal, America First Credit Union, American Express, Venmo, USAA) registered via a temporary admin endpoint (ENCRYPTION_KEY is marked Sensitive in Vercel, couldn't run the standalone script locally). Endpoint removed after confirming. |
 
 ---
 
@@ -61,7 +61,6 @@ Source of truth for all sprint work, security status, and product phases.
 
 | Item | Notes |
 |------|-------|
-| **Run `api/scripts/backfill-plaid-webhooks.js`** | Shipped v7.10.16. Registers the new Plaid webhook on every existing active connection — new connections get it automatically, but existing ones (Amex, Capital One, USAA, Venmo) won't push real-time health events until this runs once. `node api/scripts/backfill-plaid-webhooks.js --dry-run` first, then without the flag. |
 | **Receipt email body parse — re-test** | v7.8.96 hardened the prompt and error logging but the "Total Paid: $XX.XX" case was never re-tested with a live email forward. Send a test and verify System Logs show extracted amount. |
 | **Security Review — monthly/quarterly/annual/dependency still overdue** | Weekly re-run 2026-07-01 (found + fixed the broken Vercel links, v7.10.15). Monthly last run 2026-06-08 (overdue). Quarterly/annual/dependency have never been run once. |
 

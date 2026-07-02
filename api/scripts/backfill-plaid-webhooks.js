@@ -6,6 +6,15 @@
  * plaid.js, v7.10.16). Existing connections predate that change and need this
  * one-time backfill via Plaid's itemWebhookUpdate API.
  *
+ * NOTE: the actual v7.10.16 backfill was NOT run via this script — Vercel's
+ * ENCRYPTION_KEY is marked Sensitive (write-only, can't be copied out of the
+ * dashboard once set that way), so it couldn't be added to a local .env. It
+ * was run instead via a temporary admin API route (api/routes/admin.js,
+ * removed in v7.10.18 after confirming) that decrypted tokens server-side in
+ * production, where Vercel injects the real value at runtime. This script is
+ * kept for reference / in case ENCRYPTION_KEY is ever available locally
+ * (e.g. during an ENCRYPTION_KEY rotation, per the runbook in CLAUDE.md).
+ *
  * Usage (run locally):
  *   node api/scripts/backfill-plaid-webhooks.js
  *   node api/scripts/backfill-plaid-webhooks.js --dry-run
