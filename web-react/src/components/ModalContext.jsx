@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
+import { BrainCircuit } from 'lucide-react';
 
 /* ───────────────────────────────────────────────────────────────────────────
    Global Modal Context
@@ -49,7 +50,7 @@ export function ModalProvider({ children }) {
                     <div style={{
                         width: '100%', maxWidth: '480px',
                         background: 'linear-gradient(160deg, rgba(17,30,58,0.99), rgba(10,16,35,0.98))',
-                        border: '1px solid rgba(99,102,241,0.35)',
+                        border: '1px solid var(--accent-glow)',
                         borderRadius: '18px',
                         boxShadow: '0 24px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04)',
                         overflow: 'hidden',
@@ -58,14 +59,15 @@ export function ModalProvider({ children }) {
                         {/* Header */}
                         <div style={{
                             padding: '14px 20px',
-                            background: 'rgba(99,102,241,0.12)',
-                            borderBottom: '1px solid rgba(99,102,241,0.2)',
+                            background: 'color-mix(in srgb, var(--accent) 12%, transparent)',
+                            borderBottom: '1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
                             display: 'flex', alignItems: 'center', gap: '10px'
                         }}>
-                            <span style={{ fontSize: '18px' }}>🧠</span>
+                            <BrainCircuit size={18} style={{ color: 'var(--accent)', flexShrink: 0 }} />
                             <span style={{
-                                fontSize: '11px', fontWeight: 800,
-                                letterSpacing: '0.12em', color: 'rgba(165,180,252,0.9)',
+                                fontFamily: 'var(--display)',
+                                fontSize: '12px', fontWeight: 700,
+                                letterSpacing: '0.12em', color: 'var(--muted)',
                                 textTransform: 'uppercase'
                             }}>
                                 Lumière Ledger's Engine says...
@@ -99,8 +101,8 @@ export function ModalProvider({ children }) {
                                 className="btn"
                                 style={{
                                     padding: '9px 22px',
-                                    background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
-                                    boxShadow: '0 4px 14px rgba(99,102,241,0.4)'
+                                    background: 'linear-gradient(135deg, var(--accent), var(--accent2))',
+                                    boxShadow: '0 4px 14px var(--accent-glow)'
                                 }}
                                 autoFocus
                                 onClick={() => resolve(current.type === 'confirm' ? true : undefined)}

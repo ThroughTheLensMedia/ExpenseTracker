@@ -1,51 +1,52 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { Bot, FileText, BarChart3, Target, Wrench, Landmark, Map, Paperclip, MessageCircle } from 'lucide-react';
 
 const FEATURES = [
   {
-    icon: '🤖',
+    icon: Bot,
     title: 'AI Financial Assistant',
     desc: 'Ask Lumière anything about your business. Powered by Google Gemini 2.5 Flash with access to your full transaction history.',
     badge: 'Gemini 2.5 Flash',
   },
   {
-    icon: '🧾',
+    icon: FileText,
     title: 'Professional Invoicing',
     desc: 'Build and send polished invoices with line items, tax, and discounts. Clients e-sign directly on a branded Pay Portal.',
     badge: 'E-Signature Included',
   },
   {
-    icon: '📊',
+    icon: BarChart3,
     title: 'Executive Dashboard',
     desc: 'Real-time gross revenue, net profit, burn rate, and cash flow forecasts.',
     badge: 'Live KPIs',
   },
   {
-    icon: '🎯',
+    icon: Target,
     title: 'CRM Pipeline',
     desc: 'Track every lead from first inquiry to final booking. Visual Kanban board.',
     badge: 'Bookings Pipeline',
   },
   {
-    icon: '🔧',
+    icon: Wrench,
     title: 'Gear Depreciation',
     desc: 'Section 179 and Straight-Line depreciation calculated automatically.',
     badge: null,
   },
   {
-    icon: '🏦',
+    icon: Landmark,
     title: 'Smart CSV Import',
     desc: 'Drop exports from Chase, Amex, Bank of America, Wells Fargo, Rocket Money, and 6+ others.',
     badge: '11+ Bank Profiles',
   },
   {
-    icon: '🗺️',
+    icon: Map,
     title: 'Mileage Tracking',
     desc: 'Log trips at the current IRS standard rate.',
     badge: 'IRS Rate Auto-Applied',
   },
   {
-    icon: '📎',
+    icon: Paperclip,
     title: 'Receipt Management',
     desc: 'Upload receipts from your camera roll, Files app, or iCloud Drive directly.',
     badge: 'Auto Missing-Doc Alerts',
@@ -129,7 +130,7 @@ export default function Home() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 16 }}>
           {FEATURES.map(f => (
             <div key={f.title} className="card glass" style={{ padding: '26px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div style={{ fontSize: '1.8rem', lineHeight: 1 }}>{f.icon}</div>
+              <div style={{ lineHeight: 1 }}><f.icon size={28} style={{ color: 'var(--accent)' }} /></div>
               <div>
                 <div style={{ fontWeight: 900, fontSize: 15, marginBottom: 5 }}>{f.title}</div>
                 {f.badge && (
@@ -219,7 +220,7 @@ export default function Home() {
             'Show me my burn rate trend',
           ].map(q => (
             <div key={q} className="card glass" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ fontSize: 18, flexShrink: 0 }}>💬</span>
+              <MessageCircle size={18} style={{ flexShrink: 0, color: 'var(--accent)' }} />
               <span style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.7)', lineHeight: 1.45, fontStyle: 'italic' }}>"{q}"</span>
             </div>
           ))}

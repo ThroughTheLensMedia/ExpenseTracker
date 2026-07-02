@@ -1,24 +1,25 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiPost } from '../api';
+import { BarChart3, Bot, FileText, Landmark, Camera, Car, Building2, Download, Mail, CreditCard, BookOpen, Laptop, Target, FileSpreadsheet, ClipboardList } from 'lucide-react';
 
 const STORAGE_KEY   = 'll_onboarding_dismissed_v2'; // bump version to re-show for all users
 const CHECKED_KEY   = 'll_onboarding_checked';
 
 // ─── Content ──────────────────────────────────────────────────────────────────
 const FEATURES = [
-    { icon: '📊', label: 'Transaction Ledger',  desc: 'Import & categorize every expense' },
-    { icon: '🤖', label: 'AI Brain',            desc: 'Ask questions about your finances' },
-    { icon: '🧾', label: 'Invoicing',           desc: 'Create & send professional invoices' },
-    { icon: '🏦', label: 'Bank Sync (Plaid)',   desc: 'Automatic live transaction import' },
-    { icon: '📷', label: 'Gear Depreciation',   desc: 'Track camera gear & write-offs' },
-    { icon: '🚗', label: 'Mileage Log',         desc: 'Auto A→B→A round-trip tracking' },
+    { icon: BarChart3, label: 'Transaction Ledger',  desc: 'Import & categorize every expense' },
+    { icon: Bot,       label: 'AI Brain',            desc: 'Ask questions about your finances' },
+    { icon: FileText,  label: 'Invoicing',           desc: 'Create & send professional invoices' },
+    { icon: Landmark,  label: 'Bank Sync (Plaid)',   desc: 'Automatic live transaction import' },
+    { icon: Camera,    label: 'Gear Depreciation',   desc: 'Track camera gear & write-offs' },
+    { icon: Car,       label: 'Mileage Log',         desc: 'Auto A→B→A round-trip tracking' },
 ];
 
 const STEPS = [
     {
         id: 'profile',
-        icon: '🏢',
+        icon: Building2,
         title: 'Set Up Your Profile',
         desc: 'Add your business name, logo, and tax entity. This populates your invoices and reports.',
         action: { label: 'Open Profile', path: '/StudioControlCenter?tab=profile' },
@@ -26,7 +27,7 @@ const STEPS = [
     },
     {
         id: 'import',
-        icon: '📥',
+        icon: Download,
         title: 'Import Your Transactions',
         desc: 'Download a CSV from your bank and import it — or connect via Plaid for live automatic sync.',
         action: { label: 'Go to Bank Import', path: '/import' },
@@ -34,7 +35,7 @@ const STEPS = [
     },
     {
         id: 'receipts',
-        icon: '📧',
+        icon: Mail,
         title: 'Set Up Receipt Forwarding',
         desc: 'Get your unique email address. Forward any receipt email to it and Lumière automatically parses and attaches it to the right transaction.',
         action: { label: 'Set Up in Integrations', path: '/StudioControlCenter?tab=integration' },
@@ -42,7 +43,7 @@ const STEPS = [
     },
     {
         id: 'ai',
-        icon: '🤖',
+        icon: Bot,
         title: 'Add Your Gemini API Key',
         desc: 'Get a free key at aistudio.google.com. Unlocks the AI Financial Assistant — ask anything about your business.',
         action: { label: 'Set Up AI', path: '/StudioControlCenter?tab=intelligence' },
@@ -50,7 +51,7 @@ const STEPS = [
     },
     {
         id: 'stripe',
-        icon: '💳',
+        icon: CreditCard,
         title: 'Enable Online Invoice Payments',
         desc: 'Add your Stripe publishable key so clients can pay invoices by card. Free Stripe account — no monthly fee.',
         action: { label: 'Set Up Stripe', path: '/StudioControlCenter?tab=profile' },
@@ -58,7 +59,7 @@ const STEPS = [
     },
     {
         id: 'invoice',
-        icon: '🧾',
+        icon: FileText,
         title: 'Create Your First Invoice',
         desc: 'Send a professional invoice to a client. Your business profile info pre-fills automatically.',
         action: { label: 'Open Invoicing', path: '/crm/financials' },
@@ -66,7 +67,7 @@ const STEPS = [
     },
     {
         id: 'docs',
-        icon: '📖',
+        icon: BookOpen,
         title: 'Explore the Help Center',
         desc: 'Tips on CSV import, tax categories, mileage tracking, and more.',
         action: { label: 'Open Help Center', path: '/StudioControlCenter?tab=help' },
@@ -103,10 +104,10 @@ const ROLE_PRESETS = {
 };
 
 const ROLES = [
-    { id: 'photographer', icon: '📷', label: 'Photographer', sub: 'Includes Videographers', accent: '#f97316' },
-    { id: 'freelancer',   icon: '💻', label: 'Freelancer',   sub: 'Consultants, designers, writers', accent: '#38bdf8' },
-    { id: 'small_business', icon: '🏢', label: 'Small Business', sub: 'Retail, services, agencies', accent: '#10b981' },
-    { id: 'personal',     icon: '🎯', label: 'Personal / Side Hustle', sub: 'Simple income & expense tracking', accent: '#a78bfa' },
+    { id: 'photographer', icon: Camera, label: 'Photographer', sub: 'Includes Videographers', accent: '#f97316' },
+    { id: 'freelancer',   icon: Laptop, label: 'Freelancer',   sub: 'Consultants, designers, writers', accent: '#38bdf8' },
+    { id: 'small_business', icon: Building2, label: 'Small Business', sub: 'Retail, services, agencies', accent: '#10b981' },
+    { id: 'personal',     icon: Target, label: 'Personal / Side Hustle', sub: 'Simple income & expense tracking', accent: '#a78bfa' },
 ];
 
 // ─── Page 1: Role Selector ─────────────────────────────────────────────────
@@ -133,7 +134,7 @@ function PageRoleSelector({ onNext, onBack, onSkip }) {
             <div style={{ marginBottom: 24 }}>
                 <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Step 1 of 3</div>
                 <h2 style={{ fontSize: 20, fontWeight: 950, letterSpacing: '-0.02em', margin: '0 0 6px', color: 'white' }}>
-                    🎯 What best describes you?
+                    What best describes you?
                 </h2>
                 <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', fontWeight: 600, margin: 0, lineHeight: 1.6 }}>
                     Personalizes your dashboard to show what matters most to you. You can change this any time.
@@ -154,7 +155,7 @@ function PageRoleSelector({ onNext, onBack, onSkip }) {
                             textAlign: 'left', width: '100%', transition: 'all 0.15s',
                         }}
                     >
-                        <span style={{ fontSize: 26, flexShrink: 0 }}>{role.icon}</span>
+                        <role.icon size={24} style={{ flexShrink: 0, color: role.accent }} />
                         <div>
                             <div style={{ fontSize: 14, fontWeight: 900, color: 'white', marginBottom: 2 }}>{role.label}</div>
                             <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>{role.sub}</div>
@@ -196,7 +197,7 @@ function PageWelcome({ onNext, onSkip }) {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 28 }}>
                 {FEATURES.map(f => (
                     <div key={f.label} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, padding: '12px 14px', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                        <span style={{ fontSize: 20, flexShrink: 0 }}>{f.icon}</span>
+                        <f.icon size={18} style={{ flexShrink: 0, color: 'var(--accent)', marginTop: 1 }} />
                         <div>
                             <div style={{ fontSize: 12, fontWeight: 900, color: 'white', marginBottom: 2 }}>{f.label}</div>
                             <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 600, lineHeight: 1.4 }}>{f.desc}</div>
@@ -223,7 +224,7 @@ function PageDataImport({ onNext, onBack, onSkip }) {
             <div style={{ marginBottom: 24 }}>
                 <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Step 2 of 3</div>
                 <h2 style={{ fontSize: 20, fontWeight: 950, letterSpacing: '-0.02em', margin: '0 0 6px', color: 'white' }}>
-                    📥 Getting Your Transactions In
+                    Getting Your Transactions In
                 </h2>
                 <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', fontWeight: 600, margin: 0, lineHeight: 1.6 }}>
                     Lumière Ledger works best when your transactions are here. Two ways to do it:
@@ -233,7 +234,7 @@ function PageDataImport({ onNext, onBack, onSkip }) {
             {/* Option A: CSV */}
             <div style={{ background: 'rgba(56,189,248,0.06)', border: '1px solid rgba(56,189,248,0.2)', borderRadius: 16, padding: '18px 20px', marginBottom: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                    <span style={{ fontSize: 22 }}>📄</span>
+                    <FileSpreadsheet size={22} style={{ flexShrink: 0, color: '#38bdf8' }} />
                     <div>
                         <div style={{ fontSize: 14, fontWeight: 900, color: 'white' }}>CSV Import <Pill color="#38bdf8">Free</Pill></div>
                         <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 600, marginTop: 2 }}>Download from your bank, drag &amp; drop here</div>
@@ -249,7 +250,7 @@ function PageDataImport({ onNext, onBack, onSkip }) {
             {/* Option B: Plaid */}
             <div style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 16, padding: '18px 20px', marginBottom: 24 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                    <span style={{ fontSize: 22 }}>🏦</span>
+                    <Landmark size={22} style={{ flexShrink: 0, color: '#10b981' }} />
                     <div>
                         <div style={{ fontSize: 14, fontWeight: 900, color: 'white' }}>Live Bank Sync via Plaid <Pill color="#10b981">from $4.99/mo</Pill></div>
                         <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 600, marginTop: 2 }}>Connect your bank once — transactions sync automatically</div>
@@ -298,7 +299,7 @@ function PageChecklist({ onDone, onBack, minimized, onMinimize, onRestore }) {
     if (minimized) {
         return (
             <button onClick={onRestore} style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 9999, background: 'linear-gradient(135deg, #a78bfa, #7c3aed)', border: 'none', borderRadius: 999, padding: '12px 20px', color: 'white', fontWeight: 900, fontSize: 13, cursor: 'pointer', boxShadow: '0 4px 24px rgba(167,139,250,0.4)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                📋 Resume Setup
+                <ClipboardList size={16} /> Resume Setup
             </button>
         );
     }
@@ -315,7 +316,7 @@ function PageChecklist({ onDone, onBack, minimized, onMinimize, onRestore }) {
                 <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Step 3 of 3</div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                     <h2 style={{ fontSize: 20, fontWeight: 950, letterSpacing: '-0.02em', margin: 0, color: 'white' }}>
-                        ✅ Setup Checklist
+                        Setup Checklist
                     </h2>
                     <span style={{ fontSize: 12, fontWeight: 800, color: doneCount === STEPS.length ? '#10b981' : 'rgba(255,255,255,0.4)' }}>
                         {doneCount}/{STEPS.length}
@@ -363,8 +364,8 @@ function StepRow({ step, checked, onToggle, onGo, accent }) {
                 {checked ? '✓' : ''}
             </button>
             <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 900, color: 'white', textDecoration: checked ? 'line-through' : 'none', opacity: checked ? 0.6 : 1, marginBottom: 2 }}>
-                    {step.icon} {step.title}
+                <div style={{ fontSize: 13, fontWeight: 900, color: 'white', textDecoration: checked ? 'line-through' : 'none', opacity: checked ? 0.6 : 1, marginBottom: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <step.icon size={14} style={{ flexShrink: 0, color: accent }} /> {step.title}
                 </div>
                 <p style={{ margin: '0 0 6px', fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 600, lineHeight: 1.5 }}>{step.desc}</p>
                 <button onClick={() => onGo(step.action.path)} style={{ fontSize: 11, fontWeight: 800, color: accent, background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', textDecorationColor: `${accent}55` }}>

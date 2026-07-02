@@ -24,12 +24,12 @@ export const ControlSummaryPanel = ({ summary, activeFilter, onChangeFilter }) =
             
             <div style={{ padding: '15px', background: 'rgba(56, 189, 248, 0.05)', border: '1px solid rgba(56, 189, 248, 0.2)', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
                 <div className="muted" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, color: '#38bdf8' }}>Approx Monthly Expense</div>
-                <div style={{ fontWeight: 900, color: '#38bdf8', fontSize: '24px', marginTop: '4px' }}>${(summary.monthly_total / 100).toLocaleString('en-US', {maximumFractionDigits: 0})}<span style={{ fontSize: '12px' }}>/mo</span></div>
+                <div className="money" style={{ fontWeight: 900, color: '#38bdf8', fontSize: '24px', marginTop: '4px' }}>${(summary.monthly_total / 100).toLocaleString('en-US', {maximumFractionDigits: 0})}<span style={{ fontSize: '12px' }}>/mo</span></div>
             </div>
 
             <div style={{ padding: '15px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
                 <div className="muted" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800 }}>Committed Annual</div>
-                <div style={{ fontWeight: 900, color: 'white', fontSize: '24px', marginTop: '4px' }}>${(summary.annual_total / 100).toLocaleString('en-US', {maximumFractionDigits: 0})}<span style={{ fontSize: '12px' }}>/yr</span></div>
+                <div className="money" style={{ fontWeight: 900, color: 'white', fontSize: '24px', marginTop: '4px' }}>${(summary.annual_total / 100).toLocaleString('en-US', {maximumFractionDigits: 0})}<span style={{ fontSize: '12px' }}>/yr</span></div>
             </div>
 
             <div style={{ padding: '15px', background: 'rgba(249, 115, 22, 0.05)', border: '1px solid rgba(249, 115, 22, 0.2)', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
@@ -86,7 +86,7 @@ export const TopOffendersSnapshot = ({ offenders }) => {
                 <div key={o.id} style={{ display: 'flex', alignItems: 'baseline', gap: '6px', background: 'rgba(255,255,255,0.03)', padding: '4px 12px', borderRadius: '12px' }}>
                     <span style={{ fontSize: '12px', fontWeight: 800, textTransform: 'capitalize' }}>{o.vendor}</span>
                     <span style={{ fontSize: '12px', fontWeight: 700, color: 'rgba(255,255,255,0.5)' }}>—</span>
-                    <span style={{ fontSize: '12px', fontWeight: 900, color: '#38bdf8' }}>${(o.monthly_cost / 100).toLocaleString('en-US', {maximumFractionDigits: 0})}/mo</span>
+                    <span className="money" style={{ fontSize: '12px', fontWeight: 900, color: '#38bdf8' }}>${(o.monthly_cost / 100).toLocaleString('en-US', {maximumFractionDigits: 0})}/mo</span>
                 </div>
             ))}
         </div>
@@ -112,8 +112,8 @@ export const RecurringVendorsTable = ({ rows, onRowClick, onIgnoreToggle }) => {
                     {rows.map((row, idx) => (
                         <tr onClick={() => onRowClick && onRowClick(row.vendor)} key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', cursor: 'pointer' }} className="table-row-hover">
                             <td style={{ padding: '12px 15px', fontWeight: 800, textTransform: 'capitalize' }}>{row.vendor}</td>
-                            <td style={{ padding: '12px 15px', textAlign: 'right' }}>${(row.monthly_cost / 100).toLocaleString('en-US', {maximumFractionDigits: 0})}/mo</td>
-                            <td style={{ padding: '12px 15px', textAlign: 'right', color: 'rgba(255,255,255,0.6)' }}>${(row.annual_cost / 100).toLocaleString('en-US', {maximumFractionDigits: 0})}/yr</td>
+                            <td className="money" style={{ padding: '12px 15px', textAlign: 'right' }}>${(row.monthly_cost / 100).toLocaleString('en-US', {maximumFractionDigits: 0})}/mo</td>
+                            <td className="money" style={{ padding: '12px 15px', textAlign: 'right', color: 'rgba(255,255,255,0.6)' }}>${(row.annual_cost / 100).toLocaleString('en-US', {maximumFractionDigits: 0})}/yr</td>
                             <td style={{ padding: '12px 15px', textAlign: 'right' }}>
                                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-end' }}>
                                     {row.isSubscription && <span style={{ color: '#38bdf8', fontSize: '10px', fontWeight: 800 }}>SUB</span>}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiGet, apiPost, apiPut, apiDelete } from '../api';
+import { CreditCard, Landmark, PiggyBank, Pencil, Eye, EyeOff, AlertTriangle, RefreshCw } from 'lucide-react';
 
 // ─── Source metadata ───────────────────────────────────────────────────────────
 const SOURCE_META = {
@@ -49,10 +50,10 @@ function getConnType(acct) {
 
 // Account type groups
 const TYPE_GROUPS = [
-    { key: 'credit',   label: 'Credit Cards',    color: '#f97316', icon: '💳' },
-    { key: 'checking', label: 'Checking',         color: '#38bdf8', icon: '🏦' },
-    { key: 'savings',  label: 'Savings Accounts', color: '#4ade80', icon: '💰' },
-    { key: 'manual',   label: 'Manual Entry',     color: '#a78bfa', icon: '✏️'  },
+    { key: 'credit',   label: 'Credit Cards',    color: '#f97316', icon: CreditCard },
+    { key: 'checking', label: 'Checking',         color: '#38bdf8', icon: Landmark },
+    { key: 'savings',  label: 'Savings Accounts', color: '#4ade80', icon: PiggyBank },
+    { key: 'manual',   label: 'Manual Entry',     color: '#a78bfa', icon: Pencil },
 ];
 
 // Sort options
@@ -291,8 +292,8 @@ function BalanceRows({ source, plaidConnections, filterType = 'all', connectionI
                     {isHov && <span style={{ fontSize:11, color:'rgba(56,189,248,0.6)', fontWeight:700, whiteSpace:'nowrap' }}>View →</span>}
                     <button onClick={e => toggleHide(e, a.account_id)}
                         title={faded ? 'Show this account' : 'Hide this account'}
-                        style={{ background:'none', border:'none', cursor:'pointer', fontSize:13, padding:'2px 4px', opacity: faded ? 0.5 : 0.35, flexShrink:0, lineHeight:1 }}>
-                        {faded ? '🙈' : '👁'}
+                        style={{ background:'none', border:'none', cursor:'pointer', fontSize:13, padding:'2px 4px', opacity: faded ? 0.5 : 0.35, flexShrink:0, lineHeight:1, color:'#fff' }}>
+                        {faded ? <EyeOff size={14} /> : <Eye size={14} />}
                     </button>
                 </div>
             </div>
@@ -559,7 +560,7 @@ function AccountCard({ acct, totalMonth, plaidConnections, connectionId = null, 
                         <button onClick={handleReconnect} disabled={reconnecting}
                             title={plaidConnections?.[0]?.last_item_error || 'This connection needs to be re-authenticated with your bank.'}
                             style={{ background:'rgba(249,115,22,0.15)', border:'1px solid rgba(249,115,22,0.35)', borderRadius:20, color:'#f97316', fontSize:10, fontWeight:800, padding:'3px 10px', cursor:'pointer', whiteSpace:'nowrap' }}>
-                            {reconnecting ? '…' : '⚠️ Reconnect'}
+                            {reconnecting ? '…' : <><AlertTriangle size={11} style={{ verticalAlign: '-1px', marginRight: 4 }} />Reconnect</>}
                         </button>
                     )}
 
@@ -567,7 +568,7 @@ function AccountCard({ acct, totalMonth, plaidConnections, connectionId = null, 
                         <button onClick={onSync} disabled={syncing}
                             title="Sync new transactions from bank"
                             style={{ background:'rgba(16,185,129,0.15)', border:'1px solid rgba(16,185,129,0.3)', borderRadius:20, color:'#10b981', fontSize:10, fontWeight:800, padding:'3px 10px', cursor:'pointer', whiteSpace:'nowrap' }}>
-                            {syncing ? '…' : '🔄 Sync'}
+                            {syncing ? '…' : <><RefreshCw size={11} style={{ verticalAlign: '-1px', marginRight: 4 }} />Sync</>}
                         </button>
                     )}
 
@@ -713,8 +714,8 @@ function GroupHeader({ group, count }) {
     return (
         <div style={{ display:'flex', alignItems:'center', gap:10, margin:'24px 0 10px', padding:'0 2px' }}>
             <div style={{ width:3, height:18, background:group.color, borderRadius:2, flexShrink:0 }} />
-            <div style={{ fontSize:13, fontWeight:900, color:'white' }}>
-                {group.icon} {group.label}
+            <div style={{ fontSize:13, fontWeight:900, color:'white', display:'flex', alignItems:'center', gap:6 }}>
+                <group.icon size={14} style={{ color: group.color, flexShrink: 0 }} /> {group.label}
                 <span style={{ marginLeft:8, fontSize:11, fontWeight:700, color:'rgba(255,255,255,0.3)' }}>{count}</span>
             </div>
         </div>
@@ -908,7 +909,7 @@ export default function Accounts() {
                 <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap', marginBottom:16 }}>
                     {/* Filter pills */}
                     <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-                        {[{k:'all',l:'All'},{k:'credit',l:'💳 Credit'},{k:'checking',l:'🏦 Checking'},{k:'savings',l:'💰 Savings'},{k:'manual',l:'✏️ Manual'}].map(f => (
+                        {[{k:'all',l:'All'},{k:'credit',l:'Credit'},{k:'checking',l:'Checking'},{k:'savings',l:'Savings'},{k:'manual',l:'Manual'}].map(f => (
                             <button key={f.k} onClick={()=>setFilterType(f.k)}
                                 style={{ background: filterType===f.k ? 'rgba(255,255,255,0.12)' : 'none', border:'1px solid rgba(255,255,255,0.12)', borderRadius:20, color: filterType===f.k ? 'white' : 'rgba(255,255,255,0.45)', fontSize:11, fontWeight:800, padding:'5px 14px', cursor:'pointer', whiteSpace:'nowrap' }}>
                                 {f.l}

@@ -6,6 +6,7 @@ import { BrowserRouter as Router, Routes, Route, NavLink, Navigate, useLocation,
 import { AuthProvider, useAuth, supabase } from './components/AuthContext';
 import { ModalProvider } from './components/ModalContext';
 import ErrorBoundary from './components/ErrorBoundary';
+import { LayoutDashboard, ArrowLeftRight, Car, Users } from 'lucide-react';
 
 // Code-split every page — only load the chunk when the user navigates to it
 const DashboardV2    = lazy(() => import('./pages/DashboardV2'));
@@ -32,7 +33,7 @@ import OnboardingChecklist from './components/OnboardingChecklist.jsx';
 // Single source of truth for the "What's New" badge — the check (useEffect below)
 // and the dismiss handler (handleWhatsNewClick) must read the exact same value,
 // or the badge re-lights immediately after being dismissed.
-const CURRENT_VERSION = "7.10.21";
+const CURRENT_VERSION = "7.11.0";
 
 // Shared route-level loading fallback — matches app's existing spinner style
 function PageSpinner() {
@@ -579,20 +580,20 @@ function AppContent() {
       {/* Focused Mobile Navigation */}
       <nav className="bottom-nav mobile-only">
         <NavLink to="/" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`} end>
-          <span className="bottom-nav-icon">📊</span>
+          <span className="bottom-nav-icon"><LayoutDashboard size={20} /></span>
           <span>Dashboard</span>
         </NavLink>
         <NavLink to="/transactions" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
-          <span className="bottom-nav-icon">💸</span>
+          <span className="bottom-nav-icon"><ArrowLeftRight size={20} /></span>
           <span>Ledger</span>
         </NavLink>
         <NavLink to="/mileage" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
-          <span className="bottom-nav-icon">🚗</span>
+          <span className="bottom-nav-icon"><Car size={20} /></span>
           <span>Trips</span>
         </NavLink>
         <NavLink to="/crm" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`} onClick={clearBadge}>
           <span className="bottom-nav-icon" style={{ position: 'relative', display: 'inline-block' }}>
-            👥
+            <Users size={20} />
             {newLeadCount > 0 && (
               <span style={{ position: 'absolute', top: '-6px', right: '-8px', background: '#ef4444', color: 'white', borderRadius: '50%', fontSize: '9px', fontWeight: 900, minWidth: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>
                 {newLeadCount > 9 ? '9+' : newLeadCount}

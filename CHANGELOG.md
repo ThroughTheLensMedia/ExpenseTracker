@@ -5,6 +5,19 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.11.0] — 2026-07-02
+
+### Added — Brand pass (D1–D4 of the Growth & Polish Initiative)
+
+- **`web-react/public/fonts/Fraunces-latin-var.woff2`** (new) + **`index.html`** — self-hosted Fraunces variable font (18KB, latin subset, preloaded). No CDN — privacy story stays clean.
+- **`web-react/src/index.css`** — new `--display` font var applied to `.title`, `h1`–`h3`; accent refined `#2f6bff` → `#4c7dff` (`--accent2: #2a55d9`, new `--accent-glow`); all 15 hardcoded accent-blue values replaced with `var(--accent)` / `color-mix()` so future accent changes are one-line; new `.money` utility (mono + tabular-nums) and tabular-nums on `.stat .v`, `.txnCard .amt`, `.mono`.
+- **`lucide-react`** (new dependency) — replaced ~25 emoji UI icons with SVG icons across `App.jsx` (bottom nav), `Home.jsx` (feature grid + AI prompts), `OnboardingChecklist.jsx` (feature grid, roles, setup steps, data-import cards, resume button), `Accounts.jsx` (type groups, hide/show eye, Reconnect/Sync buttons), `AddOns.jsx`, `Assets.jsx` (receipt links), `PayInvoice.jsx` (status icons, attachment/signed badges). Assets category emoji kept — they render inside native `<option>` elements where SVG can't go. 🚩 ledger flag kept deliberately.
+- **`ModalContext.jsx`** — branded alert/confirm modal now fully on-theme: Fraunces header, theme accent vars replacing off-palette indigo, `BrainCircuit` icon replacing 🧠.
+- **`OpIntellComponents.jsx`** — currency cells/KPIs use the `.money` class for aligned digits.
+- **`ROADMAP.md`** — new "Growth & Polish Initiative" section: Phase A (Money Story, deductions hero stat, Home trust pass), Phase B (tax set-aside, subscriptions radar, weekly digest, re-engagement email, first-payment celebration), Phase C (P&L view, receipt auto-match), D5/D6 design follow-ups.
+
+---
+
 ## [v7.10.21] — 2026-07-01
 
 ### Fixed — Annual Security Review: overly-permissive RLS policy

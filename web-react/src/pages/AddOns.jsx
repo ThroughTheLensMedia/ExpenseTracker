@@ -1,11 +1,12 @@
 // AddOns.jsx — Lumière Ledger Add-On Marketplace
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Link2, Globe, Handshake, PenLine } from 'lucide-react';
 
 const ADDONS = [
     {
         id: 'website-lead-capture',
-        icon: '🔗',
+        icon: Link2,
         name: 'Website Lead Capture',
         tagline: 'Route booking requests from your photography website directly into your CRM pipeline.',
         status: 'available',
@@ -23,7 +24,7 @@ const ADDONS = [
     },
     {
         id: 'website-builder',
-        icon: '🌐',
+        icon: Globe,
         name: 'Photography Website Builder',
         tagline: 'A conversion-optimized website for photographers — built, hosted, and pre-wired to Lumière Ledger.',
         status: 'coming_soon',
@@ -42,7 +43,7 @@ const ADDONS = [
     },
     {
         id: 'client-portal',
-        icon: '🤝',
+        icon: Handshake,
         name: 'Client Portal',
         tagline: 'Give clients a self-service portal to review invoices, approve quotes, and download deliverables.',
         status: 'coming_soon',
@@ -58,7 +59,7 @@ const ADDONS = [
     },
     {
         id: 'contract-esign',
-        icon: '✍️',
+        icon: PenLine,
         name: 'Contract E-Sign',
         tagline: 'Send legally binding contracts directly from a lead or invoice — signed, logged, and stored.',
         status: 'coming_soon',
@@ -98,7 +99,7 @@ export default function AddOns() {
                         {/* Title row */}
                         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                                <span style={{ fontSize: '36px', lineHeight: 1 }}>{addon.icon}</span>
+                                <addon.icon size={32} style={{ color: addon.accentColor, flexShrink: 0 }} />
                                 <div>
                                     <div style={{ fontWeight: 950, fontSize: '1.15rem' }}>{addon.name}</div>
                                     <div className="muted" style={{ fontSize: '13px', marginTop: '4px', maxWidth: '380px' }}>{addon.tagline}</div>

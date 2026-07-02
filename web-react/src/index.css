@@ -1,3 +1,12 @@
+/* Brand display font — self-hosted, variable weight (v7.11.0) */
+@font-face {
+  font-family: "Fraunces";
+  src: url("/fonts/Fraunces-latin-var.woff2") format("woff2");
+  font-weight: 400 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --bg: #0b1220;
   --panel: #0f1a33;
@@ -5,8 +14,9 @@
   --text: #e9eefc;
   --muted: #a8b6dd;
   --line: rgba(255, 255, 255, 0.1);
-  --accent: #2f6bff;
-  --accent2: #1f4fd6;
+  --accent: #4c7dff;
+  --accent2: #2a55d9;
+  --accent-glow: rgba(76, 125, 255, 0.35);
   --ok: #19c37d;
   --warn: #f7b955;
   --bad: #ff4d4d;
@@ -15,6 +25,7 @@
   --radius2: 14px;
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   --sans: ui-sans-serif, -apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  --display: "Fraunces", Georgia, "Times New Roman", serif;
 }
 
 @keyframes fadeInDown {
@@ -34,8 +45,8 @@
 body {
   margin: 0;
   font-family: var(--sans);
-  background: radial-gradient(1000px 700px at 10% 0%, rgba(47, 107, 255, 0.22), transparent 55%),
-    radial-gradient(800px 500px at 90% 10%, rgba(47, 107, 255, 0.16), transparent 45%),
+  background: radial-gradient(1000px 700px at 10% 0%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 55%),
+    radial-gradient(800px 500px at 90% 10%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 45%),
     var(--bg);
   color: var(--text);
 }
@@ -70,9 +81,18 @@ header {
 }
 
 .title {
-  font-weight: 800;
+  font-family: var(--display);
+  font-weight: 700;
   letter-spacing: 0.2px;
-  font-size: 18px;
+  font-size: 19px;
+}
+
+h1,
+h2,
+h3,
+.display {
+  font-family: var(--display);
+  letter-spacing: 0.2px;
 }
 
 .nav {
@@ -111,8 +131,8 @@ header {
 }
 
 .pill.active {
-  border-color: rgba(47, 107, 255, 0.65);
-  background: rgba(47, 107, 255, 0.14);
+  border-color: color-mix(in srgb, var(--accent) 65%, transparent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
 }
 
 .dropdown-wrap {
@@ -163,7 +183,7 @@ header {
 }
 
 .dropdown-item:hover {
-  background: rgba(47, 107, 255, 0.15);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
   color: var(--text);
 }
 
@@ -252,8 +272,8 @@ small {
 }
 
 .btn {
-  border: 1px solid rgba(47, 107, 255, 0.55);
-  background: linear-gradient(180deg, rgba(47, 107, 255, 0.22), rgba(47, 107, 255, 0.1));
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 22%, transparent), color-mix(in srgb, var(--accent) 10%, transparent));
   color: var(--text);
   padding: 10px 12px;
   border-radius: 12px;
@@ -290,6 +310,14 @@ small {
   font-size: 22px;
   font-weight: 900;
   margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Currency display — aligned digits everywhere money is shown */
+.money {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
 }
 
 .tableWrap {
@@ -392,6 +420,7 @@ tr:hover td {
 .txnCard .amt {
   font-weight: 950;
   font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Drawer editor */
@@ -443,12 +472,13 @@ tr:hover td {
 }
 
 .dropzone.drag {
-  border-color: rgba(47, 107, 255, 0.8);
-  background: rgba(47, 107, 255, 0.1);
+  border-color: color-mix(in srgb, var(--accent) 80%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
 .mono {
   font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Footer specific style for the new React version */
@@ -536,14 +566,14 @@ footer {
 }
 
 .dropdown-menu .dropdown-item.active {
-  background: rgba(47, 107, 255, 0.15);
-  border-color: rgba(47, 107, 255, 0.3);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
   color: #fff;
 }
 
 .glow-blue {
-  box-shadow: 0 0 20px rgba(47, 107, 255, 0.15), inset 0 0 10px rgba(47, 107, 255, 0.1);
-  border-color: rgba(47, 107, 255, 0.3) !important;
+  box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 15%, transparent), inset 0 0 10px color-mix(in srgb, var(--accent) 10%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent) !important;
 }
 
 .glow-green {
@@ -721,7 +751,7 @@ footer {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 16px rgba(47, 107, 255, 0.4);
+  box-shadow: 0 8px 16px var(--accent-glow);
   transform: translateY(-20px);
 }
 

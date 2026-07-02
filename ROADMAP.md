@@ -1,6 +1,6 @@
 # Lumière Ledger — Master Roadmap
 
-**Version:** v7.10.21 | **Last reviewed:** 2026-07-01  
+**Version:** v7.11.0 | **Last reviewed:** 2026-07-02  
 Source of truth for all sprint work, security status, and product phases.
 
 ---
@@ -67,6 +67,45 @@ Source of truth for all sprint work, security status, and product phases.
 | **Receipt email body parse — re-test** | v7.8.96 hardened the prompt and error logging but the "Total Paid: $XX.XX" case was never re-tested with a live email forward. Send a test and verify System Logs show extracted amount. |
 | **Security Review — dependency tier still overdue** | Weekly, monthly, quarterly, and annual all re-run 2026-07-01 (v7.10.15/19/20/21). Only the dependency tier has never been run once (it's a subset of what quarterly already covers — `npm audit`/`npm audit fix` in both dirs — low urgency). |
 | **Stripe/Plaid ToS review + Google OAuth consent screen check** | Two annual-checklist items that need Joshua's own read, not something verifiable from code: Stripe Services Agreement / Plaid Legal for payment-processor policy changes, and Google Cloud Console → OAuth Consent Screen re-verification status. |
+
+---
+
+## 🌱 Growth & Polish Initiative (approved 2026-07-02)
+
+Competitive gap analysis vs. QuickBooks Solopreneur / Keeper / Wave / FreshBooks: feature parity is there — the gaps are time-to-value, trust signals, and visual polish. Full plan approved by Joshua 2026-07-02.
+
+### Phase A — Convert (Need)
+
+| Item | Notes |
+|------|-------|
+| **A1 — "Money Story" first-import results screen** | After first CSV import or Plaid connect, show one-time summary: "$X in likely deductions, Y recurring subscriptions, Z flagged transactions." New `MoneyStoryModal.jsx`; hooks in `Import.jsx` + `PlaidLink.jsx`. Also becomes a step in the onboarding wizard (`OnboardingChecklist.jsx`). |
+| **A2 — "Deductions found ≈ tax savings" dashboard hero stat** | "Lumière found $X in deductions ≈ $Y off your tax bill." Reuses Tax.jsx math; savings = deductions × user-set effective rate (default 25%). New `dashboard_config` widget flag. |
+| **A3 — Home.jsx trust pass** | Real product screenshots (framed mockups), security strip (RLS isolation, encrypted bank tokens, BYOB AI = "your key, your data never trains anyone's model"), testimonial slots, link to SecurityPolicy. |
+
+### Phase B — Retain (Good to Have)
+
+| Item | Notes |
+|------|-------|
+| **B1 — Quarterly tax set-aside widget** | "Set aside $X for Q3" — net profit × user-adjustable SE+income rate. The #1 freelancer anxiety competitors headline. |
+| **B2 — Subscriptions radar widget** | "You pay $X/mo across N services" — promotes existing Brain vendor-frequency detection to a visible dashboard widget; links to `Transactions.jsx?search=`. |
+| **B3 — Weekly digest email** | Money in / out / missing receipts / upcoming set-aside via existing Resend + cron report plumbing. Opt-out in ProfileTab. |
+| **B4 — Re-engagement email (14-day inactive)** | Uses `useActivityPulse`/`user_daily_activity` data; gentle "here's what changed" nudge. |
+| **B5 — First-invoice-paid celebration moment** | Small in-app moment when the first client payment lands — retention psychology, cheap to build. |
+
+### Phase C — Compete (Good to Have)
+
+| Item | Notes |
+|------|-------|
+| **C1 — P&L / income-first dashboard view** | Invoices + Plaid deposits + profit line as a first-class view. |
+| **C2 — Receipt auto-match** | Snap/forward a receipt → suggest matching transaction by amount+date, one-tap confirm. |
+
+### Design Pass
+
+| Item | Status |
+|------|--------|
+| **D1–D4 — Brand pass** (Fraunces display font incl. modals, refined accent via CSS vars, lucide-react icons replace emoji, tabular-nums money typography) | ✅ v7.11.0 — shipped 2026-07-02 |
+| **D5 — Micro-polish** | Skeleton loaders, empty states with CTA, consistent card hover, income=green / expense=neutral / deduction=highlight color conventions |
+| **D6 — Inline-style consolidation** | Clean Up — opportunistic: each file touched in Phases A–C gets repeated inline styles pulled into shared classes |
 
 ---
 

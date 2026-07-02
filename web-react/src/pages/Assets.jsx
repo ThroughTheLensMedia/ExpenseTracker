@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { apiGet, apiPost, apiPatch, apiDelete, formatMoney, fetchExpenseYears, apiUpload, fetchAllAssets } from '../api';
 import { useModal } from '../components/ModalContext.jsx';
+import { Receipt } from 'lucide-react';
 
 const CATEGORIES = [
     { name: 'Camera', icon: '📷' },
@@ -297,7 +298,7 @@ export default function Assets() {
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                         <div style={{ fontWeight: 700, fontSize: '12px' }}>{a.description}</div>
                                                         {a.receipt_link && (
-                                                            <a href={a.receipt_link} target="_blank" rel="noreferrer" title="View Receipt" style={{ textDecoration: 'none', fontSize: '12px' }}>🧾</a>
+                                                            <a href={a.receipt_link} target="_blank" rel="noreferrer" title="View Receipt" style={{ textDecoration: 'none', color: 'var(--accent)', display: 'inline-flex' }}><Receipt size={13} /></a>
                                                         )}
                                                     </div>
                                                     <div className="muted small" style={{ fontSize: '9px' }}>{a.purchase_date} · {a.vendor}</div>
@@ -324,7 +325,7 @@ export default function Assets() {
                                     return (
                                         <div key={a.id} className="gear-slot glass" style={{ opacity: a.status === 'sold' ? 0.6 : 1, padding: '12px 14px', borderRadius: '14px' }}>
                                             <div className="cat-icon" style={{ width: '32px', height: '32px', fontSize: '16px', borderRadius: '8px' }}>
-                                                {a.receipt_link ? <a href={a.receipt_link} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>🧾</a> : cat.icon}
+                                                {a.receipt_link ? <a href={a.receipt_link} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', color: 'var(--accent)', display: 'inline-flex' }}><Receipt size={15} /></a> : cat.icon}
                                             </div>
                                             <div className="price-tag" style={{ top: '12px', right: '12px', fontSize: '11px' }}>{formatMoney(a.cost * 100)}</div>
                                             <div style={{ marginTop: '6px' }}>

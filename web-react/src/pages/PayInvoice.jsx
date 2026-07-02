@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { Ban, CheckCircle2, AlertTriangle, FileText, PenLine } from 'lucide-react';
 
 const APP_URL = import.meta.env.VITE_APP_URL || 'https://app.throughthelens.media';
 
@@ -98,7 +99,7 @@ export default function PayInvoice() {
         return (
             <div style={styles.page}>
                 <div style={styles.card}>
-                    <div style={styles.iconLarge}>🚫</div>
+                    <div style={styles.iconLarge}><Ban size={44} style={{ color: '#ef4444' }} /></div>
                     <h1 style={styles.h1}>Invoice Voided</h1>
                     <p style={styles.muted}>This invoice has been voided by the photographer and is no longer valid.</p>
                 </div>
@@ -111,7 +112,7 @@ export default function PayInvoice() {
         return (
             <div style={styles.page}>
                 <div style={styles.card}>
-                    <div style={styles.iconLarge}>✅</div>
+                    <div style={styles.iconLarge}><CheckCircle2 size={44} style={{ color: '#10b981' }} /></div>
                     <h1 style={styles.h1}>Already Approved</h1>
                     <p style={styles.muted}>This invoice has already been approved and signed. No further action is needed.</p>
                 </div>
@@ -124,7 +125,7 @@ export default function PayInvoice() {
         return (
             <div style={styles.page}>
                 <div style={styles.card}>
-                    <div style={styles.iconLarge}>⚠️</div>
+                    <div style={styles.iconLarge}><AlertTriangle size={44} style={{ color: '#f59e0b' }} /></div>
                     <h1 style={styles.h1}>Invoice Not Found</h1>
                     <p style={styles.muted}>{error}</p>
                 </div>
@@ -292,7 +293,7 @@ export default function PayInvoice() {
                         {attachment && (
                             <div style={{ marginTop: '16px' }}>
                                 <a href={attachment.url} target="_blank" rel="noreferrer" style={{ display: 'inline-block', background: '#fff', color: '#f97316', padding: '10px 16px', borderRadius: '8px', fontWeight: 700, fontSize: '13px', textDecoration: 'none', border: '1px solid #f97316' }}>
-                                    📄 View {attachment.name}
+                                    <FileText size={13} style={{ verticalAlign: '-2px', marginRight: 4 }} />View {attachment.name}
                                 </a>
                             </div>
                         )}
@@ -302,7 +303,7 @@ export default function PayInvoice() {
                 {/* Photographer signed badge */}
                 {inv.photographer_signed && (
                     <div style={styles.sigBadge}>
-                        ✍️ Signed by {studio.business_name}
+                        <PenLine size={13} style={{ verticalAlign: '-2px', marginRight: 4 }} />Signed by {studio.business_name}
                     </div>
                 )}
             </div>
