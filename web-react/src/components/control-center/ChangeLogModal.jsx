@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.15.2', date: 'JUL 6, 2026', color: '#94a3b8', items: [
+        '<strong>Fixed:</strong> Found and fixed the real cause of the weekly digest repeat-sending issue — a few settings fields (tax rate, email preferences) weren\'t actually being saved to your account. They now save correctly.',
+    ]},
     { version: '7.15.1', date: 'JUL 6, 2026', color: '#94a3b8', items: [
         '<strong>Fixed:</strong> The weekly digest email could send more often than intended in some configurations. Now strictly limited to once per week.',
         '<strong>Improved:</strong> Better text contrast in the weekly digest and check-in emails — easier to read at a glance.',

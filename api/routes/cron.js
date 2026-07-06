@@ -332,6 +332,14 @@ async function buildWeeklyDigest(supabase, userId, weekStartStr, weekEndStr, tax
 // email to anyone (not even admin) and does not stamp the de-dupe timestamp.
 // Use this for auth/logic testing so a manual curl can never send real email
 // again, matching the incident on 2026-07-06.
+//
+// EMERGENCY-DISABLED 2026-07-06: the root cause (settings table was missing
+// the columns this route depends on — estimated_tax_rate, last_weekly_digest
+// _sent_at, etc. — so the de-dupe check silently no-op'd) is fixed via
+// migration `add_missing_settings_columns_v7_15_2`. Live sending is paused
+// here as an extra safety net until Joshua confirms one real send behaves
+// correctly (dedupes on a second ping) before removing this early return.
+// ?preview=1 still works for dry-run testing.
 router.get("/weekly-report", async (req, res) => {
     if (!isCronAuthorized(req)) {
         return res.status(403).json({ error: "Unauthorized" });
@@ -339,6 +347,11 @@ router.get("/weekly-report", async (req, res) => {
 
     const force = req.query.force === '1';
     const isPreview = req.query.preview === '1';
+
+    if (!isPreview) {
+        return res.json({ ok: true, sent: false, message: "Weekly digest temporarily paused for verification after the 2026-07-06 incident — use ?preview=1 to test, or see cron.js to re-enable." });
+    }
+
     if (!force && !isPreview && new Date().getDay() !== 1) {
         return res.json({ ok: true, sent: false, message: "Not Monday — skipped (use ?force=1 or ?preview=1 to override)." });
     }

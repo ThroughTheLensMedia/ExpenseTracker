@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.15.2] — 2026-07-06
+
+### Fixed — Actual root cause of the weekly digest resend incident
+
+- **The real bug**: `settings` was missing 6 columns Phase B/Money Story code depends on — `estimated_tax_rate`, `weekly_digest_optout`, `reengagement_email_optout`, `last_weekly_digest_sent_at`, `last_reengagement_sent_at`, `money_story_optout`. They were referenced in code (v7.13.0–v7.15.1) but never migrated into the actual database. The `force`-flag fix in v7.15.1 was real but not sufficient — the settings `SELECT` in `/cron/weekly-report` errored silently on the nonexistent columns (unchecked), so the de-dupe map was always empty and every ping kept sending regardless of the flag logic. Confirmed via direct database inspection after the v7.15.1 fix failed to stop the resends (100+ emails sent).
+- **Migration applied directly to production** (`add_missing_settings_columns_v7_15_2`, idempotent `ADD COLUMN IF NOT EXISTS`) — adds all 6 columns with sensible defaults. This also fixes two other silent failures: the tax set-aside rate in Profile settings was never actually persisting, and the digest/re-engagement opt-out checkboxes did nothing.
+- **`api/routes/cron.js`** — `/cron/weekly-report` live sending is temporarily paused (early return, `?preview=1` still works) as an extra safety net pending Joshua confirming one real send correctly de-dupes on a second ping, now that the underlying data layer is fixed.
+
+---
+
 ## [v7.15.1] — 2026-07-06
 
 ### Fixed — Weekly digest sending every ~5 minutes (real production incident)
