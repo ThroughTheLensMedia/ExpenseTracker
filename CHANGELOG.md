@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.15.1] — 2026-07-06
+
+### Fixed — Weekly digest sending every ~5 minutes (real production incident)
+
+- **`api/routes/cron.js`** — the `/cron/weekly-report` de-dupe guard (`last_weekly_digest_sent_at`) was gated behind `!force`, the same flag used to bypass the Monday-only day check. An UptimeRobot monitor URL with `?force=1` in it (recommended for manual testing) bypassed the de-dupe too, causing a real email to send to Joshua roughly every 5 minutes for over an hour before being caught — confirmed via Vercel runtime logs (12+ real Resend dispatches in one hour). De-dupe now always applies regardless of `force`; `force` only ever bypasses the day-of-week check.
+- **`api/utils/mailer.js`** — brightened low-contrast text in the weekly digest and re-engagement email templates. Footer text (`#334155`/`#475569` on a `#0f172a` background) was nearly unreadable; row labels (`#94a3b8`) and description lines (`#64748b`) were borderline. Brightened to `#cbd5e1` (labels) and `#94a3b8` (descriptions/footer) for real contrast against the dark background.
+
+---
+
 ## [v7.15.0] — 2026-07-06
 
 ### Security — BYOB Gemini API keys now encrypted at rest

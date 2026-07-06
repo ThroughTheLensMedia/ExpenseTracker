@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.15.1', date: 'JUL 6, 2026', color: '#94a3b8', items: [
+        '<strong>Fixed:</strong> The weekly digest email could send more often than intended in some configurations. Now strictly limited to once per week.',
+        '<strong>Improved:</strong> Better text contrast in the weekly digest and check-in emails — easier to read at a glance.',
+    ]},
     { version: '7.15.0', date: 'JUL 6, 2026', color: '#94a3b8', items: [
         '<strong>Security:</strong> Your private AI key is now encrypted at rest, matching the same protection your connected bank accounts already have.',
     ]},

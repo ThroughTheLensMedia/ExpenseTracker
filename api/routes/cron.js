@@ -367,7 +367,11 @@ router.get("/weekly-report", async (req, res) => {
             if (!user.email) continue;
             const s = settingsMap[user.id];
             if (s?.weekly_digest_optout) { results.push({ email: user.email, ok: false, skipped: true, reason: 'opted out' }); continue; }
-            if (!force && s?.last_weekly_digest_sent_at && s.last_weekly_digest_sent_at > dedupeCutoffStr) {
+            // De-dupe ALWAYS applies, regardless of ?force=1 — force only bypasses
+            // the day-of-week check above. A monitor URL with ?force=1 left in it
+            // was sending real emails every ~5 minutes on 2026-07-06 because this
+            // check used to also skip de-dupe when force was set. Never again.
+            if (s?.last_weekly_digest_sent_at && s.last_weekly_digest_sent_at > dedupeCutoffStr) {
                 results.push({ email: user.email, ok: false, skipped: true, reason: 'already sent this week' });
                 continue;
             }

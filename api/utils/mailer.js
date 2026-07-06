@@ -732,7 +732,7 @@ async function sendWeeklyDigestEmail({ to, name, weekLabel, incomeCents, spendCe
   <div style="text-align:center;margin-bottom:28px;">
     <div style="font-size:20px;font-weight:900;letter-spacing:-0.02em;color:#fff;">LUMIÈRE LEDGER</div>
     <div style="height:2px;width:40px;background:#4c7dff;margin:8px auto 0;"></div>
-    <div style="font-size:13px;color:#94a3b8;margin-top:10px;">Your Week — ${weekLabel}</div>
+    <div style="font-size:13px;color:#cbd5e1;margin-top:10px;">Your Week — ${weekLabel}</div>
   </div>
 
   <table style="width:100%;border-collapse:collapse;background:#111827;border-radius:16px;padding:24px;margin-bottom:16px;" cellpadding="0" cellspacing="0">
@@ -740,15 +740,15 @@ async function sendWeeklyDigestEmail({ to, name, weekLabel, incomeCents, spendCe
       <div style="font-size:11px;font-weight:900;color:#4c7dff;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px;">Money In / Out</div>
       <table style="width:100%;border-collapse:collapse;">
         <tr>
-          <td style="font-size:13px;color:#94a3b8;padding:6px 0;">Income</td>
+          <td style="font-size:13px;color:#cbd5e1;padding:6px 0;">Income</td>
           <td style="text-align:right;font-size:17px;font-weight:900;color:#4ade80;padding:6px 0;">${fmt(incomeCents)}</td>
         </tr>
         <tr>
-          <td style="font-size:13px;color:#94a3b8;padding:6px 0;">Expenses</td>
+          <td style="font-size:13px;color:#cbd5e1;padding:6px 0;">Expenses</td>
           <td style="text-align:right;font-size:17px;font-weight:900;color:#fff;padding:6px 0;">${fmt(spendCents)}</td>
         </tr>
         <tr>
-          <td style="font-size:13px;color:#94a3b8;padding:6px 0;border-top:1px solid rgba(255,255,255,0.08);">Net</td>
+          <td style="font-size:13px;color:#cbd5e1;padding:6px 0;border-top:1px solid rgba(255,255,255,0.08);">Net</td>
           <td style="text-align:right;font-size:17px;font-weight:900;color:${netColor};padding:6px 0;border-top:1px solid rgba(255,255,255,0.08);">${fmt(netCents)}</td>
         </tr>
       </table>
@@ -759,7 +759,7 @@ async function sendWeeklyDigestEmail({ to, name, weekLabel, incomeCents, spendCe
     <tr><td style="padding:24px;">
       <div style="font-size:11px;font-weight:900;color:#f97316;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Missing Receipts</div>
       <div style="font-size:24px;font-weight:900;color:#fff;">${missingReceiptCount}</div>
-      <div style="font-size:12px;color:#64748b;margin-top:4px;">deductible transaction${missingReceiptCount === 1 ? '' : 's'} over $75 with no receipt attached</div>
+      <div style="font-size:12px;color:#94a3b8;margin-top:4px;">deductible transaction${missingReceiptCount === 1 ? '' : 's'} over $75 with no receipt attached</div>
     </td></tr>
   </table>
 
@@ -767,7 +767,7 @@ async function sendWeeklyDigestEmail({ to, name, weekLabel, incomeCents, spendCe
     <tr><td style="padding:24px;">
       <div style="font-size:11px;font-weight:900;color:#fcd34d;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Set Aside for ${quarterLabel}</div>
       <div style="font-size:24px;font-weight:900;color:#fcd34d;">${fmt(taxSetAsideCents)}</div>
-      <div style="font-size:12px;color:#64748b;margin-top:4px;">estimated, based on your set-aside rate in Profile settings</div>
+      <div style="font-size:12px;color:#94a3b8;margin-top:4px;">estimated, based on your set-aside rate in Profile settings</div>
     </td></tr>
   </table>
 
@@ -775,9 +775,9 @@ async function sendWeeklyDigestEmail({ to, name, weekLabel, incomeCents, spendCe
     <a href="${appUrl}" style="display:inline-block;background:#4c7dff;color:#fff;padding:14px 28px;border-radius:10px;font-weight:900;font-size:14px;text-decoration:none;">Open Your Ledger →</a>
   </div>
 
-  <p style="text-align:center;font-size:12px;color:#334155;margin:0;line-height:1.8;">
+  <p style="text-align:center;font-size:12px;color:#94a3b8;margin:0;line-height:1.8;">
     You're receiving this because you have a Lumière Ledger account. Turn this off anytime in Profile settings.<br>
-    <a href="${appUrl}" style="color:#475569;">lumiereledger.com</a>
+    <a href="${appUrl}" style="color:#cbd5e1;">lumiereledger.com</a>
   </p>
 </div>
 </body>
@@ -816,9 +816,9 @@ async function sendReEngagementEmail({ to, name }) {
 
   <a href="${appUrl}" style="display:inline-block;background:#4c7dff;color:#fff;padding:14px 30px;border-radius:10px;font-weight:900;font-size:14px;text-decoration:none;margin-bottom:24px;">Open Lumière Ledger →</a>
 
-  <p style="font-size:12px;color:#334155;margin:0;line-height:1.8;">
+  <p style="font-size:12px;color:#94a3b8;margin:0;line-height:1.8;">
     You're receiving this because you have a Lumière Ledger account. Turn this off anytime in Profile settings.<br>
-    <a href="${appUrl}" style="color:#475569;">lumiereledger.com</a>
+    <a href="${appUrl}" style="color:#cbd5e1;">lumiereledger.com</a>
   </p>
 </div>
 </body>
