@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.13.2', date: 'JUL 6, 2026', color: '#94a3b8', items: [
+        '<strong>Cleanup:</strong> Backend safety adjustments to the new weekly digest and re-engagement email automation ahead of a full rollout.',
+    ]},
     { version: '7.13.1', date: 'JUL 5, 2026', color: '#94a3b8', items: [
         '<strong>Fixed:</strong> A dollar mismatch between the Operational Intelligence panel and the new Subscriptions Radar widget — the correct number is the lower one, now shown consistently in both places.',
         '<strong>Cleanup:</strong> Hardened the weekly digest email against duplicate sends.',

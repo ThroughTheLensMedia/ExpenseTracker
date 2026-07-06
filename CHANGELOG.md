@@ -5,6 +5,14 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.13.2] — 2026-07-06
+
+### Changed — Restrict weekly digest + disable re-engagement automation
+
+- **`api/routes/cron.js`** — while verifying the new cron endpoints against a live-loaded `CRON_SECRET`, the manual auth test (no `?preview=1` existed on either new endpoint, unlike `monthly-report`) sent a real weekly digest to Joshua and real re-engagement emails to 17 real inactive users. Per Joshua's direction: `/cron/weekly-report` now filters its user list to `ADMIN_UUID` only (real users get nothing until explicitly reopened); `/cron/reengagement-report` returns early with an "automation disabled" message — Joshua is handling re-engagement manually. Both gates are commented with the date and reason, and are meant to be removed once ready to go live for real users.
+
+---
+
 ## [v7.13.1] — 2026-07-05
 
 ### Fixed — Weekly digest duplicate-send risk + Operational Intelligence dollar mismatch

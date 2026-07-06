@@ -1,6 +1,6 @@
 # Lumière Ledger — Master Roadmap
 
-**Version:** v7.13.1 | **Last reviewed:** 2026-07-05  
+**Version:** v7.13.2 | **Last reviewed:** 2026-07-06  
 Source of truth for all sprint work, security status, and product phases.
 
 ---
@@ -88,8 +88,8 @@ Competitive gap analysis vs. QuickBooks Solopreneur / Keeper / Wave / FreshBooks
 |------|-------|
 | **B1 — Quarterly tax set-aside widget** | ✅ `TaxSetAsideWidget.jsx` — "Set aside $X for Q3" = YTD net profit × `estimated_tax_rate` (user-editable in ProfileTab, default 30%). Deadlines match `brain.js`'s existing quarterly dates. |
 | **B2 — Subscriptions radar widget** | ✅ `SubscriptionsRadarWidget.jsx` — "$X/mo across N subscriptions", top 3 vendors. Reuses `metrics.analytics.recurringVendors` already fetched for Operational Intelligence — no extra API call. |
-| **B3 — Weekly digest email** | ✅ `GET /api/cron/weekly-report` — money in/out, missing receipts, tax set-aside. Self-checks for Monday (`?force=1` to override); v7.13.1 added a per-user `last_weekly_digest_sent_at` 5-day de-dupe guard since UptimeRobot's free plan can't do true weekly scheduling — a monitor polling every 5 min–1 hr on Monday would otherwise send duplicates. Opt-out: `settings.weekly_digest_optout`. |
-| **B4 — Re-engagement email (14-day inactive)** | ✅ `GET /api/cron/reengagement-report` — queries `user_daily_activity` for 14+ day inactive users; 30-day de-dupe via `settings.last_reengagement_sent_at`. Opt-out: `settings.reengagement_email_optout`. Joshua adding UptimeRobot monitor (free plan, custom `Authorization` header — 2026-07-05). |
+| **B3 — Weekly digest email** | ✅ built, ⚠️ **admin-only gate active (v7.13.2)** — `GET /api/cron/weekly-report` sends only to Joshua (`ADMIN_UUID` filter) until he's ready to open it to real users. Money in/out, missing receipts, tax set-aside. Self-checks for Monday (`?force=1` to override); per-user `last_weekly_digest_sent_at` 5-day de-dupe guard since UptimeRobot's free plan can't do true weekly scheduling. Opt-out: `settings.weekly_digest_optout`. UptimeRobot monitor added 2026-07-05, safe to leave on — admin-only gate prevents any real-user sends. |
+| **B4 — Re-engagement email (14-day inactive)** | ✅ built, ⚠️ **disabled (v7.13.2)** — `GET /api/cron/reengagement-report` returns early with no sends. Joshua is handling re-engagement manually for now. Underlying logic (14-day inactivity query, 30-day de-dupe via `settings.last_reengagement_sent_at`, opt-out `settings.reengagement_email_optout`) intact for when this gets re-enabled. |
 | **B5 — First-invoice-paid celebration moment** | ✅ In-app modal only (`InvoicePaidCelebration.jsx`), no email — fires when an invoice PATCH to `status=paid` makes the user's paid-invoice count exactly 1. |
 
 ### Phase C — Compete (Good to Have)

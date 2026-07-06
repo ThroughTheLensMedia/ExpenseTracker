@@ -1,1 +1,1 @@
-{"version":"7.13.1","release_date":"2026-07-05","codename":"Lumière Ledger","notes":"v7.13.1: Fix weekly digest duplicate-send risk (UptimeRobot free-plan polling) + Operational Intelligence / Subscriptions Radar dollar mismatch"}
+{"version":"7.13.2","release_date":"2026-07-06","codename":"Lumière Ledger","notes":"v7.13.2: Restrict weekly digest to admin-only, disable re-engagement automation (manual for now)"}

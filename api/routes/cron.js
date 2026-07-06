@@ -359,7 +359,9 @@ router.get("/weekly-report", async (req, res) => {
         const weekLabel = `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
         const dedupeCutoffStr = new Date(Date.now() - 5 * 86400000).toISOString();
 
-        const allUsers = await listAllUsers(supabase);
+        // ADMIN-ONLY GATE (2026-07-06, Joshua's direction): real users must not
+        // receive this yet. Remove this filter once ready to go fully live.
+        const allUsers = (await listAllUsers(supabase)).filter(u => u.id === ADMIN_UUID);
         const userIds = allUsers.map(u => u.id);
         const { data: settingsRows } = await supabase.from('settings').select('user_id, weekly_digest_optout, estimated_tax_rate, last_weekly_digest_sent_at').in('user_id', userIds);
         const settingsMap = {};
@@ -400,11 +402,18 @@ router.get("/weekly-report", async (req, res) => {
 // Users whose most recent activity is 14+ days old get a gentle nudge — but
 // no more than once per 30 days (last_reengagement_sent_at guard), so a daily
 // external ping doesn't spam the same inactive user every day.
+//
+// DISABLED 2026-07-06 (Joshua's direction): he's handling re-engagement
+// manually for now. Automated sending returns early below — remove the
+// early-return once ready to turn this back on.
 router.get("/reengagement-report", async (req, res) => {
     if (!isCronAuthorized(req)) {
         return res.status(403).json({ error: "Unauthorized" });
     }
 
+    return res.json({ ok: true, sent: 0, message: "Re-engagement automation is disabled — handled manually for now." });
+
+    // eslint-disable-next-line no-unreachable
     try {
         if (!supabase) throw new Error("Supabase service client not initialized");
 
