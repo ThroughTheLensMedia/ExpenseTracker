@@ -37,19 +37,26 @@ export default function OperationalIntelligenceSection({ data }) {
     }, [data]);
 
     // 2. Derive Summary
+    // "Approx Monthly Expense" must be scoped to the same row set as "Active
+    // Subscriptions" (isSubscription only) — previously it summed every
+    // non-ignored flagged row (review/duplicate/unused too), so a vendor
+    // flagged "review" but NOT a subscription would inflate the dollar total
+    // without being counted in the subscription count above it. Surfaced by
+    // the Subscriptions Radar dashboard widget showing a different number.
     const summary = useMemo(() => {
         const activeRows = rows.filter(r => r.flag !== 'ignored');
-        const subCount = rows.filter(r => r.isSubscription && r.flag !== 'ignored').length;
-        
-        let activeCount = subCount;
+        const subRows = activeRows.filter(r => r.isSubscription);
+        const subCount = subRows.length;
+
         let monthlyTotal = 0;
         let reviewCount = 0;
         let reviewMonthlyTotal = 0;
         let duplicateCount = 0;
         let unusedCount = 0;
 
+        subRows.forEach(row => { monthlyTotal += row.monthly_cost; });
+
         for (const row of activeRows) {
-            monthlyTotal += row.monthly_cost;
             if (row.flag === 'review') {
                 reviewCount++;
                 reviewMonthlyTotal += row.monthly_cost;
@@ -57,11 +64,11 @@ export default function OperationalIntelligenceSection({ data }) {
             if (row.flag === 'duplicate') duplicateCount++;
             if (row.flag === 'unused') unusedCount++;
         }
-        
+
         let ignoredCount = rows.length - activeRows.length;
 
         return {
-            active_count: activeCount,
+            active_count: subCount,
             monthly_total: monthlyTotal,
             annual_total: monthlyTotal * 12,
             review_count: reviewCount,

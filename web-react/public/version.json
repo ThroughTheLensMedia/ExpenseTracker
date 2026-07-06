@@ -1,1 +1,1 @@
-{"version":"7.13.0","release_date":"2026-07-02","codename":"Lumière Ledger","notes":"v7.13.0: Phase B retention — tax set-aside widget, subscriptions radar, weekly digest + re-engagement emails, first-paid-invoice celebration"}
+{"version":"7.13.1","release_date":"2026-07-05","codename":"Lumière Ledger","notes":"v7.13.1: Fix weekly digest duplicate-send risk (UptimeRobot free-plan polling) + Operational Intelligence / Subscriptions Radar dollar mismatch"}

@@ -334,7 +334,10 @@ async function buildWeeklyDigest(supabase, userId, weekStartStr, weekEndStr, tax
 // GET /cron/weekly-report
 // Sends every Monday (self-checked — a misconfigured or overlapping external
 // ping can't send digests on the wrong day). ?force=1 bypasses the day check
-// for manual testing.
+// for manual testing. Since UptimeRobot's free plan is interval-based polling
+// (no true weekly cron), this endpoint may be hit many times on a Monday — a
+// per-user last_weekly_digest_sent_at guard (5-day window) prevents duplicate
+// sends regardless of how often the monitor pings.
 router.get("/weekly-report", async (req, res) => {
     if (!isCronAuthorized(req)) {
         return res.status(403).json({ error: "Unauthorized" });
@@ -354,10 +357,11 @@ router.get("/weekly-report", async (req, res) => {
         const weekStartStr = weekStart.toISOString().split('T')[0];
         const weekEndStr = weekEnd.toISOString().split('T')[0];
         const weekLabel = `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+        const dedupeCutoffStr = new Date(Date.now() - 5 * 86400000).toISOString();
 
         const allUsers = await listAllUsers(supabase);
         const userIds = allUsers.map(u => u.id);
-        const { data: settingsRows } = await supabase.from('settings').select('user_id, weekly_digest_optout, estimated_tax_rate').in('user_id', userIds);
+        const { data: settingsRows } = await supabase.from('settings').select('user_id, weekly_digest_optout, estimated_tax_rate, last_weekly_digest_sent_at').in('user_id', userIds);
         const settingsMap = {};
         (settingsRows || []).forEach(s => { settingsMap[s.user_id] = s; });
 
@@ -366,6 +370,10 @@ router.get("/weekly-report", async (req, res) => {
             if (!user.email) continue;
             const s = settingsMap[user.id];
             if (s?.weekly_digest_optout) { results.push({ email: user.email, ok: false, skipped: true, reason: 'opted out' }); continue; }
+            if (!force && s?.last_weekly_digest_sent_at && s.last_weekly_digest_sent_at > dedupeCutoffStr) {
+                results.push({ email: user.email, ok: false, skipped: true, reason: 'already sent this week' });
+                continue;
+            }
             try {
                 const report = await buildWeeklyDigest(supabase, user.id, weekStartStr, weekEndStr, s?.estimated_tax_rate);
                 if (report.incomeCents === 0 && report.spendCents === 0 && report.missingReceiptCount === 0) {
@@ -373,6 +381,7 @@ router.get("/weekly-report", async (req, res) => {
                     continue;
                 }
                 await queueWeeklyDigestEmail({ to: user.email, name: user.display_name || user.email.split('@')[0], weekLabel, ...report });
+                await supabase.from('settings').upsert({ user_id: user.id, last_weekly_digest_sent_at: new Date().toISOString() }, { onConflict: 'user_id' });
                 results.push({ email: user.email, ok: true });
             } catch (err) {
                 console.error(`[CRON] Weekly digest failed for ${user.email}:`, err);

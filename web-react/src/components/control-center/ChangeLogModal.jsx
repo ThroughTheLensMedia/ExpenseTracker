@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.13.1', date: 'JUL 5, 2026', color: '#94a3b8', items: [
+        '<strong>Fixed:</strong> A dollar mismatch between the Operational Intelligence panel and the new Subscriptions Radar widget — the correct number is the lower one, now shown consistently in both places.',
+        '<strong>Cleanup:</strong> Hardened the weekly digest email against duplicate sends.',
+    ]},
     { version: '7.13.0', date: 'JUL 2, 2026', color: '#4c7dff', items: [
         '<strong>New — Quarterly Tax Set-Aside:</strong> Your dashboard now estimates how much to set aside for taxes each quarter, based on your year-to-date profit. Adjust your estimated rate anytime in Profile settings.',
         '<strong>New — Subscriptions Radar:</strong> A quick dashboard summary of what you\'re paying across recurring subscriptions each month.',

@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.13.1] — 2026-07-05
+
+### Fixed — Weekly digest duplicate-send risk + Operational Intelligence dollar mismatch
+
+- **`api/routes/cron.js`** — `GET /cron/weekly-report` only checked "is today Monday", with no guard against firing repeatedly within that day. Since UptimeRobot's free plan is interval-based polling (no true weekly cron support), a monitor pinging every 5 min–1 hr on a Monday would have sent every user the same digest dozens of times. Added a per-user `settings.last_weekly_digest_sent_at` guard (5-day window), matching the de-dupe already protecting the re-engagement email. Found while scoping the UptimeRobot monitor setup for the new B3/B4 cron endpoints — confirmed the account is on the free tier, so this needed fixing before those monitors go live.
+- **`web-react/src/components/dashboard/OperationalIntelligenceSection.jsx`** — "Approx Monthly Expense" summed every non-ignored flagged vendor row (subscriptions, review, duplicate, unused all mixed together), while "Active Subscriptions" counted subscriptions only — two stats in the same panel computed from different row sets. A vendor flagged "review" but not a subscription (e.g. Hover, $34/mo) inflated the dollar total without being in the subscription count above it. Surfaced because the new Subscriptions Radar widget (v7.13.0) sits next to it and computes both figures from the same subscription-only set, exposing the $34/mo gap side by side on the dashboard. Scoped `monthly_total`/`annual_total` to subscription rows only, matching `active_count`.
+
+---
+
 ## [v7.13.0] — 2026-07-02
 
 ### Added — Phase B retention features (B1–B5)
