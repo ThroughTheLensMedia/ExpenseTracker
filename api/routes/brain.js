@@ -527,11 +527,31 @@ async function executeTool(name, args, sb, userId) {
     }
 }
 
+// ─── GET /api/brain/messages ──────────────────────────────────────────────────
+// Persisted conversation history, oldest first, for the frontend to hydrate on load.
+
+router.get("/messages", async (req, res) => {
+    try {
+        const limit = Math.min(parseInt(req.query.limit, 10) || 50, 100);
+        const { data, error } = await req.sb
+            .from("brain_messages")
+            .select("role, content, created_at")
+            .eq("user_id", req.user.id)
+            .order("created_at", { ascending: false })
+            .limit(limit);
+        if (error) return res.status(500).json({ error: error.message });
+        res.json({ messages: (data || []).reverse() });
+    } catch (e) {
+        console.error("[AI Brain] messages fetch error:", e.message);
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // ─── POST /api/brain/ask ──────────────────────────────────────────────────────
 
 router.post("/ask", async (req, res) => {
     try {
-        const { prompt, context, history = [] } = req.body;
+        const { prompt, context } = req.body;
 
         const { data: settings, error: settingsError } = await req.sb
             .from("settings").select("*").eq("user_id", req.user.id).maybeSingle();
@@ -624,13 +644,22 @@ PURCHASE vs PAYMENT DISTINCTION (critical):
 - INCLUDE them — with a per-account breakdown — when the user explicitly asks about credit card payments, how much they paid toward cards, payment history, or what they paid per account. Use search_transactions with category "Credit Card Payment" or "Internal Transfer" and present the account_breakdown field from the response grouped by account name and total.`,
         });
 
-        // Seed chat with prior conversation so follow-up questions retain context
+        // Seed chat with prior conversation so follow-up questions retain context.
+        // Sourced server-side from brain_messages (not a client-supplied array) so
+        // history is correct immediately after a reload or in a new browser session.
         // Gemini history format: alternating user/model roles, parts array
+        const { data: priorMessages } = await req.sb
+            .from("brain_messages")
+            .select("role, content")
+            .eq("user_id", req.user.id)
+            .order("created_at", { ascending: false })
+            .limit(10);
+
         const geminiHistory = [];
-        for (const msg of history) {
+        for (const msg of (priorMessages || []).reverse()) {
             const role = msg.role === 'assistant' ? 'model' : 'user';
             if (geminiHistory.length > 0 && geminiHistory[geminiHistory.length - 1].role === role) continue; // skip consecutive same-role (e.g. greeting)
-            geminiHistory.push({ role, parts: [{ text: msg.text }] });
+            geminiHistory.push({ role, parts: [{ text: msg.content }] });
         }
         // Gemini requires history to start with user and alternate — trim leading model messages
         while (geminiHistory.length > 0 && geminiHistory[0].role !== 'user') geminiHistory.shift();
@@ -695,6 +724,19 @@ PURCHASE vs PAYMENT DISTINCTION (critical):
         }
 
         if (!text) return res.status(500).json({ error: "The Brain returned an empty response. Try again." });
+
+        // Persist both sides — awaited (Vercel can freeze the function right after the
+        // response is sent, so a true fire-and-forget insert risks never completing),
+        // but non-fatal: a failed insert must never break the chat response.
+        try {
+            const { error: insertError } = await req.sb.from("brain_messages").insert([
+                { user_id: req.user.id, role: "user", content: prompt },
+                { user_id: req.user.id, role: "assistant", content: text }
+            ]);
+            if (insertError) console.error("[AI Brain] messages insert failed:", insertError.message);
+        } catch (insertErr) {
+            console.error("[AI Brain] messages insert threw:", insertErr.message);
+        }
 
         res.json({ ok: true, answer: text, pendingActions: pendingActions.length > 0 ? pendingActions : undefined });
 

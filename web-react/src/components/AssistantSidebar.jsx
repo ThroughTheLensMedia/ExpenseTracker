@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { apiPost, apiPatch } from '../api';
+import { apiGet, apiPost, apiPatch } from '../api';
 import { useAuth } from './AuthContext';
 
 // Lightweight markdown renderer — handles bullets, bold, italic, line breaks
@@ -54,6 +54,15 @@ export default function AssistantSidebar() {
     const [pendingActions, setPendingActions] = useState([]);
     const endRef = useRef(null);
 
+    // Hydrate from persisted server-side history on mount — greeting only shows for a new user
+    useEffect(() => {
+        apiGet('/brain/messages?limit=50').then(res => {
+            if (res.messages?.length) {
+                setMessages(res.messages.map(m => ({ role: m.role, text: m.content })));
+            }
+        }).catch(() => { /* non-fatal — keep the greeting */ });
+    }, []);
+
     useEffect(() => {
         if (endRef.current) endRef.current.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
@@ -75,15 +84,10 @@ export default function AssistantSidebar() {
         setLoading(true);
 
         try {
-            // Send the last 10 messages as history so Brain retains conversation context
-            const history = messages
-                .filter(m => m.role === 'user' || m.role === 'assistant')
-                .slice(-10)
-                .map(m => ({ role: m.role, text: m.text }));
-
+            // Conversation history is sourced server-side from brain_messages now,
+            // not a client-supplied array — see api/routes/brain.js POST /ask
             const res = await apiPost('/brain/ask', {
                 prompt: userMsg,
-                history,
                 context: {
                     page: window.location.pathname,
                     business: settings?.business_name

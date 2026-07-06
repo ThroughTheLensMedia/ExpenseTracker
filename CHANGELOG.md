@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.16.0] — 2026-07-06
+
+### Added — Persistent AI Brain conversation memory
+
+- **New table `brain_messages`** (`api/migrations/011_brain_messages.sql`) — `user_id`, `role`, `content`, `created_at`, RLS-scoped to the owning user. Applied directly to production via Supabase MCP.
+- **`api/routes/brain.js`** — new `GET /messages?limit=50` returns persisted history (chronological) for the frontend to hydrate on load. `POST /ask` no longer trusts a client-supplied `history` array for Gemini context — it now fetches the last 10 messages from `brain_messages` server-side, so a reload or a second browser session sees identical, correct history instead of a browser-local-only window. Both sides of each exchange are persisted after the answer is computed (awaited, not fire-and-forget — Vercel can freeze a function immediately after the response is sent, so an un-awaited insert risked silently never completing); a failed insert is logged but never breaks the chat response.
+- **`web-react/src/components/AssistantSidebar.jsx`** — hydrates `messages` from `GET /brain/messages` on mount; the greeting only shows for a genuinely new user (empty history). Removed the client-side `history` param from the send flow — the server is now the sole source of conversation context.
+
+---
+
 ## [v7.15.5] — 2026-07-06
 
 ### Completed — Gemini key encryption migration run + temp route removed
