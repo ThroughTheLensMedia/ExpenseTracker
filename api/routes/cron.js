@@ -4,6 +4,7 @@ const { supabase } = require("../db");
 const { queueDailyReportEmail, queueMonthlyReportEmail, queueHealthAlertEmail, queueWeeklyDigestEmail, queueReEngagementEmail } = require("../utils/emailQueue");
 const { ADMIN_UUID } = require("../constants");
 const { listAllUsers } = require("../utils/userDirectory");
+const { NON_SPEND_CATS, CC_PAYMENT_PATTERN } = require("../utils/spendCategories");
 
 function isCronAuthorized(req) {
     const cronSecret = (process.env.CRON_SECRET || '').trim();
@@ -165,19 +166,8 @@ router.get("/monthly-report", async (req, res) => {
     }
 });
 
-// Categories that are not true spending — exclude from all spend analysis sections
-const NON_SPEND_CATS = new Set([
-    // Income
-    'Photo Income', 'Freelance Income', 'Contract Income', 'Military Retirement',
-    'VA Benefits', 'Rental Income', 'Side Income',
-    // Misc Income / non-taxable / transfers
-    'IRS Tax Refund', 'State Tax Refund', 'Refund', 'Reimbursement',
-    'Cashback / Rewards', 'Interest Income', 'Dividend Income',
-    'Internal Transfer', 'Credit Card Payment', 'Deposit',
-]);
-
-// Vendor name patterns that indicate a credit card payment or fund transfer
-const CC_PAYMENT_PATTERN = /\b(autopay|payment|epayment|pmt|e-payment|bill pay|epay|xfer|transfer|apple card|ach|wire)\b/i;
+// NON_SPEND_CATS / CC_PAYMENT_PATTERN moved to ../utils/spendCategories.js
+// (shared with metrics.js so the dashboard and this digest agree on totals).
 
 async function buildMonthlyReport(supabase, userId, startStr, endStr, avgStartStr, avgEndStr) {
     const [{ data: lastMonth }, { data: avgMonths }] = await Promise.all([

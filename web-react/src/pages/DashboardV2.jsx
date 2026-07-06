@@ -215,6 +215,16 @@ export default function DashboardV2({ apiStatus }) {
                         AWAITING PAYMENT
                     </div>
                 </div>
+
+                <div className="card glass cursor-pointer" onClick={() => navigate('/tax')} style={{ margin: 0, padding: '24px', position: 'relative', borderTop: '4px solid #a78bfa', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                    <div className="muted" style={{ fontWeight: 800, fontSize: '11px', letterSpacing: '0.05em', marginBottom: '8px' }}>DEDUCTIONS FOUND (YTD)</div>
+                    <div className="money" style={{ fontSize: '2.4rem', fontWeight: 950, color: '#a78bfa' }}>
+                        {loading ? '---' : formatMoney(metrics?.snapshot?.ytdDeductibleCents)}
+                    </div>
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', marginTop: '8px' }}>
+                        {loading ? '---' : `≈ ${formatMoney(Math.max(0, metrics?.snapshot?.ytdDeductibleCents || 0) * (taxRate / 100))} off your tax bill`}
+                    </div>
+                </div>
             </div>
 
             {/* Retention widgets: tax set-aside + subscriptions radar */}

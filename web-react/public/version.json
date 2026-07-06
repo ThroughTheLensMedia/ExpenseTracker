@@ -1,1 +1,1 @@
-{"version":"7.13.3","release_date":"2026-07-06","codename":"Lumière Ledger","notes":"v7.13.3: Add true ?preview=1 dry-run mode to weekly-report and reengagement-report cron endpoints"}
+{"version":"7.14.0","release_date":"2026-07-06","codename":"Lumière Ledger","notes":"v7.14.0: A2 deductions/tax-savings hero stat + dashboard data-consistency audit fixes"}

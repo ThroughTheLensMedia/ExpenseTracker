@@ -1,6 +1,6 @@
 # Lumière Ledger — Master Roadmap
 
-**Version:** v7.13.3 | **Last reviewed:** 2026-07-06  
+**Version:** v7.14.0 | **Last reviewed:** 2026-07-06  
 Source of truth for all sprint work, security status, and product phases.
 
 ---
@@ -79,7 +79,7 @@ Competitive gap analysis vs. QuickBooks Solopreneur / Keeper / Wave / FreshBooks
 | Item | Notes |
 |------|-------|
 | **A1 — "Money Story" import results screen** | ✅ v7.12.0 — fires after every successful CSV import / Plaid connect / sync (Joshua chose summary mode over first-import-only). `MoneyStoryModal.jsx` + shared `ModalShell.jsx`; opt-out persists to `settings.money_story_optout`. Onboarding wizard copy updated. |
-| **A2 — "Deductions found ≈ tax savings" dashboard hero stat** | "Lumière found $X in deductions ≈ $Y off your tax bill." Reuses Tax.jsx math; savings = deductions × user-set effective rate (default 25%). New `dashboard_config` widget flag. |
+| **A2 — "Deductions found ≈ tax savings" dashboard hero stat** | ✅ v7.14.0 — 5th KPI card on the executive snapshot: "$X deductions found (YTD) ≈ $Y off your tax bill." Savings = deductions × `settings.estimated_tax_rate` (same rate B1's Tax Set-Aside widget uses). `/api/metrics/summary` now computes `ytdDeductibleCents` using the exact same formula as `tax.js`'s Schedule C math — no separate calculation to drift out of sync. |
 | **A3 — Home.jsx trust pass** | ✅ v7.12.0 — CSS product mockup (labeled "illustrative data"), founder's note, persona scenario cards (deliberately NOT fake named testimonials — FTC fake-review rule; swap in real quotes when available), security strip with `/security-policy` links. |
 
 ### Phase B — Retain (✅ shipped v7.13.0)
@@ -259,6 +259,24 @@ Competitive gap analysis vs. QuickBooks Solopreneur / Keeper / Wave / FreshBooks
 - [ ] **Step 5 — Invoice Creation** (deferred) — `create_invoice_draft` write tool
 - [ ] **Step 6 — Chart/Analysis Output Popup** (deferred) — Chart.js modal + Download CSV
 
+### Capability audit (2026-07-06) — where the Brain stands vs. market
+
+Full inventory: `api/routes/brain.js` (11 tools — 6 read, 5 write, all writes require in-app approval before executing), `gemini-2.5-flash`, session-only chat memory (last 10 messages, resets on reload), document context injected as raw text (no embeddings — `getEmbedding()` exists but is never called), 50-txn-per-run batch ledger repair.
+
+**Confirmed gaps vs. Keeper/QuickBooks Solopreneur/Cleo-style assistants:**
+1. **No persistent memory** — every session starts cold, no rolling history across visits.
+2. **No proactive insights** — Brain only answers when asked; the `ai_coaching_mode` toggle in `IntelligenceTab.jsx` is UI-only, backend never checks it.
+3. **No receipt line-item parsing** — Vision use is limited to full-text transcription, not itemized extraction.
+4. **No voice input.**
+5. **Security gap, unrelated to competitive parity:** BYOB Gemini keys stored unencrypted (see Clean Up section above) — recommend fixing regardless of which feature work gets prioritized.
+
+**Proposed priority order (pending Joshua's pick):**
+1. Encrypt `settings.gemini_api_key` at rest (libsodium, matching the Plaid token pattern) — security, not a feature.
+2. Remove or wire up the two inert toggles (`ai_silent_mode`, `ai_coaching_mode`) — either build the backend behavior or remove the dead UI.
+3. Persistent conversation memory (rolling window, not full transcript storage).
+4. Proactive coaching (scheduled Brain summary — could piggyback on the weekly digest cron infra already built in Phase B).
+5. Receipt line-item parsing (bigger lift — structured extraction vs. today's plain-text transcription).
+
 ---
 
 ## 📷 Phase 3: Computer Vision & RAG
@@ -304,6 +322,8 @@ Competitive gap analysis vs. QuickBooks Solopreneur / Keeper / Wave / FreshBooks
 
 ## 🚩 Clean Up / Technical Debt
 
+- **✅ Dashboard data-consistency audit (v7.14.0)** — full pass across `DashboardV2.jsx`/`metrics.js` after the OpIntell/Subscriptions Radar dollar mismatch (v7.13.1) suggested more of the same bug class. Found and fixed: (1) `metrics.js` used a narrow 5-keyword substring filter to exclude transfers/refunds from YTD income/spend, while `cron.js`'s weekly digest used a fuller 16-category exact-match list (`NON_SPEND_CATS`) — the two disagreed on rows like "Refund" or "Reimbursement", producing different YTD totals on the dashboard vs. the email for the same data. Extracted the exclusion logic into `api/utils/spendCategories.js`, shared by both routes. (2) `OpIntellComponents.jsx` formatted cents with manual `.toLocaleString()` — `undefined`/`null` values rendered as `$NaN`; replaced with a safe `Intl.NumberFormat`-based helper. **Verified NOT a bug:** Operational Intelligence's "Expense Pressure" insight (all recurring vendors) vs. Subscriptions Radar (subscriptions only) are two intentionally different, clearly-labeled metrics — no fix needed. **Flagged, not yet fixed:** `tax.js`'s `/tax/summary` (Schedule C basis for the Tax page) applies **no category exclusion at all** — it sums every expense row into a bucket (including "Unassigned"), so an "Internal Transfer" or "Credit Card Payment" accidentally left uncategorized would inflate the Tax page's total spend/deductible figures. This touches tax-return-adjacent numbers, so it needs Joshua's explicit direction before changing — noted here rather than silently altered.
+- **⚠️ AI Brain capability gaps (found during v7.14.0 research pass)** — `settings.gemini_api_key` (user's own BYOB key) is stored **unencrypted** in the DB, inconsistent with the app's existing Plaid-token encryption standard (libsodium). Also found dead/inert code: `ai_silent_mode` and `ai_coaching_mode` toggles in `IntelligenceTab.jsx` save a setting the backend never reads; `classifyTransactions()` and `getEmbedding()` in `api/utils/gemini.js` are exported but never called by any route. See AI Brain roadmap section below for the full capability inventory and proposed next steps.
 - **⚠️ Dependency Hygiene Protocol** — Any `api/package.json` change must regenerate `api/package-lock.json` in the same commit. Stale lock file = Vercel silent-skip = Lambda crash. Root cause of v7.6.7 outage. See Rule 10 in CLAUDE.md.
 - **`file-type` moderate vuln (GHSA-5v7r-6r5c-r473)** — Infinite loop on malformed ASF audio file header. Impact: near-zero (receipts.js only handles JPEG/PNG/PDF). Fix requires `file-type@22` which is ESM-only — needs `receipts.js` refactor to dynamic `import()`. Not blocking.
 - **`plaid_account_id` backfill** — Existing pre-v7.8.4 Plaid transactions have NULL `plaid_account_id`. Historical sub-account breakdown unavailable until users re-sync.

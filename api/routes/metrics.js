@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const { isNonSpendRow } = require("../utils/spendCategories");
 
 router.get("/summary", async (req, res) => {
   try {
@@ -28,7 +29,7 @@ router.get("/summary", async (req, res) => {
     while (keepFetching) {
         const { data, error } = await req.sb
             .from("expenses")
-            .select("amount_cents, expense_date, category, vendor, is_subscription")
+            .select("amount_cents, expense_date, category, vendor, is_subscription, tax_deductible, business_use_pct")
             .gte("expense_date", startDate)
             .lte("expense_date", endDate)
             .eq("user_id", req.user.id)
@@ -65,8 +66,8 @@ router.get("/summary", async (req, res) => {
     let ytdSpend = 0;
     let mtdIncome = 0;
     let mtdSpend = 0;
+    let ytdDeductibleCents = 0; // same formula as tax.js: tax_deductible ? amount * business_use_pct/100 : 0
 
-    const ignoreCategories = ['internal transfer', 'credit card payment', 'funds transfer', 'payment', 'transfer'];
     const knownSubscriptions = ['adobe', 'netflix', 'hulu', 'spotify', 'apple', 'google workspace', 'squarespace', 'chatgpt', 'openai', 'amazon web services', 'aws'];
     const leakageWarningKeywords = ['netflix', 'hulu', 'spotify', 'peloton', 'xbox', 'playstation', 'door dash', 'ubereats'];
 
@@ -87,9 +88,10 @@ router.get("/summary", async (req, res) => {
       for (const row of allExpenses) {
         const cat = String(row.category || '').toLowerCase();
         const vend = String(row.vendor || '').toLowerCase();
-        
-        // Skip transfers
-        if (ignoreCategories.some(i => cat.includes(i) || vend.includes(i))) continue;
+
+        // Skip non-spend rows — shared with cron.js's weekly digest so the
+        // dashboard and email agree on the same YTD totals (v7.14.0 fix).
+        if (isNonSpendRow(row.category, row.vendor)) continue;
 
         const cents = Number(row.amount_cents || 0);
         const isIncome = cents < 0;
@@ -124,6 +126,10 @@ router.get("/summary", async (req, res) => {
               }
             } else {
               ytdSpend += absValue;
+              if (row.tax_deductible) {
+                const pct = (row.business_use_pct === null || row.business_use_pct === undefined) ? 100 : row.business_use_pct;
+                ytdDeductibleCents += absValue * (pct / 100);
+              }
               if (monthNum === currentMonth && targetYear == new Date().getFullYear()) {
                  mtdSpend += absValue;
               }
@@ -285,7 +291,7 @@ router.get("/summary", async (req, res) => {
       snapshot: {
         mtdIncome, mtdSpend, mtdNet: mtdIncome - mtdSpend,
         ytdIncome, ytdSpend, ytdNet: ytdIncome - ytdSpend,
-        openReceivablesCents
+        openReceivablesCents, ytdDeductibleCents
       },
       analytics: {
         topCategoriesYear,

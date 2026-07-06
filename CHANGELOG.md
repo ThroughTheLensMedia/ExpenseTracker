@@ -5,6 +5,22 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.14.0] — 2026-07-06
+
+### Added — A2: Deductions found ≈ tax savings dashboard hero stat
+
+- **`api/routes/metrics.js`** — `/api/metrics/summary` now returns `snapshot.ytdDeductibleCents`, computed with the exact same formula tax.js uses for Schedule C (`amount × business_use_pct/100` when `tax_deductible`) — single source of truth, no second calculation to drift out of sync.
+- **`DashboardV2.jsx`** — 5th executive-snapshot KPI card: "$X deductions found (YTD) ≈ $Y off your tax bill", using the same `estimated_tax_rate` setting as the B1 Tax Set-Aside widget.
+
+### Fixed — Dashboard data-consistency audit
+
+- **`api/utils/spendCategories.js`** (new) — extracted the transfer/refund exclusion logic that `cron.js`'s weekly digest already had (`NON_SPEND_CATS`, 16 categories) into a shared module. `metrics.js` previously used a much narrower 5-keyword substring filter, so rows like "Refund" or "Reimbursement" were excluded from the weekly digest but silently included in the dashboard's YTD income/spend/net — now both agree.
+- **`OpIntellComponents.jsx`** — replaced manual `.toLocaleString()` cents formatting with a safe `Intl.NumberFormat` helper; a missing/undefined cost value previously rendered as `$NaN`.
+- **Verified not a bug:** Operational Intelligence's "Expense Pressure" (all recurring vendors) vs. Subscriptions Radar (subscriptions only) are intentionally distinct, clearly-labeled metrics.
+- **Flagged for Joshua's direction (not changed):** `tax.js`'s Schedule C summary applies no category exclusion at all, unlike the dashboard/digest — see ROADMAP.md Clean Up section.
+
+---
+
 ## [v7.13.3] — 2026-07-06
 
 ### Added — `?preview=1` true dry-run mode for both new cron endpoints

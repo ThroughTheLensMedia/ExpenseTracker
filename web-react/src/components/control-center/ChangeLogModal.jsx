@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.14.0', date: 'JUL 6, 2026', color: '#4c7dff', items: [
+        '<strong>New:</strong> Your dashboard now shows deductions found this year and roughly what that\'s worth off your tax bill, right alongside your other key numbers.',
+        '<strong>Fixed:</strong> A few dashboard figures could disagree slightly with the weekly digest email for the same data — now they always match.',
+    ]},
     { version: '7.13.3', date: 'JUL 6, 2026', color: '#94a3b8', items: [
         '<strong>Cleanup:</strong> Added a safe test mode to the backend automation added this week — internal testing tooling only, no visible changes.',
     ]},
