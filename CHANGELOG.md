@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.16.1] — 2026-07-06
+
+### Fixed — AI Brain gave fabricated credit card payment totals
+
+- **`api/routes/brain.js`** — `search_transactions` only accepted a single category filter per call. Answering "how much have I paid to credit cards this year" requires combining two categories (`Credit Card Payment` + `Internal Transfer`), which the system prompt asked Gemini to do via two separate tool calls, then manually add the results together in the reply text. Confirmed via direct SQL against production that the numbers Gemini reported (e.g. "Apple Card: $302.28") didn't match the real ledger at all (actual: -$1,748.15) — the model was fabricating plausible-looking numbers rather than doing reliable multi-step arithmetic.
+- `category` now accepts a comma-separated list (e.g. `"Credit Card Payment,Internal Transfer"`), matched via a single Supabase `.or()` filter — the total and per-account breakdown are computed once, deterministically, in code. System prompt updated to require one combined call and to report the tool's numbers verbatim, never recomputed by hand. Verified against production: real combined total for 2026 is $50,309.58 across 51 transactions, matching the sum of the two categories queried separately.
+- Update CHANGELOG.md, ROADMAP.md, ChangeLogModal.jsx, version.json, App.jsx
+
+---
+
 ## [v7.16.0] — 2026-07-06
 
 ### Added — Persistent AI Brain conversation memory

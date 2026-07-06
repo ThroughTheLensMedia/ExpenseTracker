@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.16.1', date: 'JUL 6, 2026', color: '#94a3b8', items: [
+        '<strong>Fixed:</strong> The Lumière Assistant could give an incorrect total when asked how much you\'ve paid toward credit cards or transfers this year. It now computes that number directly from your ledger instead of estimating it.',
+    ]},
     { version: '7.16.0', date: 'JUL 6, 2026', color: '#4c7dff', items: [
         '<strong>New:</strong> The Lumière Assistant now remembers your conversation — pick up where you left off after closing the app or switching devices, instead of starting fresh every time.',
     ]},

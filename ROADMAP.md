@@ -276,6 +276,8 @@ Full inventory: `api/routes/brain.js` (11 tools — 6 read, 5 write, all writes 
 3. Proactive coaching (scheduled Brain summary — could piggyback on the weekly digest cron infra already built in Phase B) — not started. Note: remove or wire up the two inert toggles (`ai_silent_mode`, `ai_coaching_mode`) as part of this.
 4. Receipt line-item parsing (bigger lift — structured extraction vs. today's plain-text transcription) — not started.
 
+**✅ v7.16.1 — Fixed a real-world data-accuracy bug found while using v7.16.0.** Joshua asked "how much have I paid to credit cards this year" and Gemini returned fabricated per-account numbers that didn't match the ledger (confirmed via direct SQL). Root cause: `search_transactions` only took one category filter, so combining "Credit Card Payment" + "Internal Transfer" required Gemini to call it twice and manually sum the results in prose — an unreliable multi-step-arithmetic task for an LLM. Fixed by accepting a comma-separated category list matched via a single `.or()` query, so the total/breakdown are computed once in code. General lesson: any Brain answer requiring the model to combine numbers across multiple tool calls is a latent accuracy risk — prefer a single deterministic tool call over model-side aggregation wherever a query can be expressed that way.
+
 ---
 
 ## 📷 Phase 3: Computer Vision & RAG

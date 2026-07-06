@@ -15,7 +15,7 @@ const BRAIN_TOOLS = [{
             parameters: {
                 type: 'OBJECT',
                 properties: {
-                    category:            { type: 'STRING',  description: 'Category to filter by (e.g. "Camera & Equipment", "Dining & Drinks")' },
+                    category:            { type: 'STRING',  description: 'Category to filter by (e.g. "Camera & Equipment", "Dining & Drinks"). To match multiple categories in one call, pass a comma-separated list (e.g. "Credit Card Payment,Internal Transfer") — the total and account_breakdown will cover all of them combined. Never call this tool twice for two categories and add the totals yourself; pass both at once instead.' },
                     start_date:          { type: 'STRING',  description: 'Start date YYYY-MM-DD' },
                     end_date:            { type: 'STRING',  description: 'End date YYYY-MM-DD' },
                     vendor:              { type: 'STRING',  description: 'Vendor name — partial match' },
@@ -170,7 +170,12 @@ async function executeTool(name, args, sb, userId) {
             let q = sb.from('expenses')
                 .select('id, vendor, amount_cents, expense_date, category, source, tax_deductible, tax_bucket, notes')
                 .eq('user_id', userId);
-            if (args.category)           q = q.ilike('category', `%${args.category}%`);
+            if (args.category) {
+                const cats = args.category.split(',').map(c => c.trim()).filter(Boolean);
+                q = cats.length > 1
+                    ? q.or(cats.map(c => `category.ilike.%${c}%`).join(','))
+                    : q.ilike('category', `%${cats[0]}%`);
+            }
             if (args.start_date)         q = q.gte('expense_date', args.start_date);
             if (args.end_date)           q = q.lte('expense_date', args.end_date);
             if (args.vendor)             q = q.ilike('vendor', `%${args.vendor}%`);
@@ -641,7 +646,7 @@ CATEGORY NAMES (use these exact strings or partial matches — category filter u
 PURCHASE vs PAYMENT DISTINCTION (critical):
 - Credit card payments, loan payments, ACH transfers, and internal transfers are NOT purchases — they are balance transfers between accounts.
 - EXCLUDE them when the user asks about purchases, biggest expenses, spending totals, or top categories. Vendors to skip: anything containing "EPAYMENT", "ACH PMT", "AUTOPAY", "BILL PAY", "LOAN PMT", "INTERNAL TRANSFER". If a purchase query returns one of these as the top result, skip it and report the next real vendor transaction. Inform the user you excluded payment entries.
-- INCLUDE them — with a per-account breakdown — when the user explicitly asks about credit card payments, how much they paid toward cards, payment history, or what they paid per account. Use search_transactions with category "Credit Card Payment" or "Internal Transfer" and present the account_breakdown field from the response grouped by account name and total.`,
+- INCLUDE them — with a per-account breakdown — when the user explicitly asks about credit card payments, how much they paid toward cards, payment history, or what they paid per account. Call search_transactions ONCE with category "Credit Card Payment,Internal Transfer" (comma-separated, matches both in a single call) and present the total and account_breakdown fields exactly as returned — never call the tool once per category and add the totals yourself, and never recompute or re-derive the total or per-account figures by hand. Report the numbers the tool returns verbatim.`,
         });
 
         // Seed chat with prior conversation so follow-up questions retain context.
