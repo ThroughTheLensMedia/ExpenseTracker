@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { repairLedgerBatch, getGeminiModel } = require("../utils/gemini");
+const { decryptOrPlain } = require("../utils/cryptoUtil");
 
 // ─── Tool Definitions ────────────────────────────────────────────────────────
 // Gemini function declarations — the model decides which to call based on the
@@ -536,7 +537,7 @@ router.post("/ask", async (req, res) => {
             .from("settings").select("*").eq("user_id", req.user.id).maybeSingle();
         if (settingsError) return res.status(500).json({ error: "Database Link Error" });
 
-        const apiKey = settings?.gemini_api_key;
+        const apiKey = await decryptOrPlain(settings?.gemini_api_key);
         if (!apiKey) return res.status(400).json({ error: "No API Key found. Please set your key in the Control Center." });
 
         const businessName = settings?.business_name || "your studio";
@@ -710,7 +711,7 @@ router.post("/repair-ledger", async (req, res) => {
         const { data: settings } = await req.sb
             .from("settings").select("*").eq("user_id", req.user.id).maybeSingle();
 
-        const apiKey = settings?.gemini_api_key;
+        const apiKey = await decryptOrPlain(settings?.gemini_api_key);
         if (!apiKey) return res.status(400).json({
             error: "AI Brain is missing its API key.",
             detail: "Go to Ledger Control Center → Intelligence to set your Gemini API Key."

@@ -408,6 +408,7 @@ Plaid-connected accounts use `source: 'plaid'` regardless of institution. Known 
 - **Trial signup gate (v7.10.13):** the automatic 30-day `free_beta` trial only grants once `email_confirmed_at` is set — DB trigger-level, not app-level, so it can't be bypassed by calling the API directly. Self-serve Stripe checkout without a code remains untouched by design (confirmed 2026-07-01).
 - **Cloudflare Turnstile on signup (v7.10.14):** `POST /api/verify-turnstile` is public and fails open if `TURNSTILE_SECRET_KEY` is unset — this is intentional so a missing env var never blocks real signups, but it also means the check is a no-op until the key is set in Vercel.
 - **RLS policy naming ≠ RLS policy enforcement (v7.10.21):** a policy named `"Service role full access"` on `user_daily_activity` had `qual: true` — RLS doesn't check caller role by name, so it was actually granting universal access, not service-role-only. `service_role` already has `BYPASSRLS` and never needed a policy for this. Dropped in the annual review. When writing a new RLS policy, verify the `qual` clause actually enforces what the name claims — don't trust the label.
+- **BYOB Gemini keys encrypted at rest (v7.15.0):** `settings.gemini_api_key` is now encrypted with the same libsodium/`ENCRYPTION_KEY` pattern as Plaid tokens (`api/utils/cryptoUtil.js`). `decryptOrPlain()` is used at every read site so legacy plaintext rows keep working until `api/scripts/encrypt-existing-gemini-keys.js` migrates them — safe to deploy before running the migration.
 
 ---
 

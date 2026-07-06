@@ -1,6 +1,7 @@
 const express = require('express');
 const multer  = require('multer');
 const { getGeminiModel } = require('../utils/gemini');
+const { decryptOrPlain } = require('../utils/cryptoUtil');
 const { supabase: adminClient } = require('../db'); // service role — needed for Storage (bucket has no RLS policies)
 
 const router = express.Router();
@@ -109,7 +110,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
             .eq('user_id', req.user.id)
             .maybeSingle();
 
-        const apiKey = settings?.gemini_api_key;
+        const apiKey = await decryptOrPlain(settings?.gemini_api_key);
         const mime = req.file.mimetype;
 
         // Images require Gemini Vision — PDFs do not

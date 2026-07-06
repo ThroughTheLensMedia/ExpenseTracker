@@ -3,6 +3,7 @@ const multer = require("multer");
 const fileType = require("file-type");
 const { supabase } = require("../db");
 const { getGeminiModel } = require("../utils/gemini");
+const { decryptOrPlain } = require("../utils/cryptoUtil");
 const { deriveReceiptToken } = require("../utils/tokenUtils");
 
 const router = express.Router();
@@ -72,7 +73,7 @@ router.post("/extract", upload.single("file"), async (req, res) => {
         const { data: settings } = await req.sb
             .from('settings').select('gemini_api_key').eq('user_id', req.user.id).maybeSingle();
 
-        const apiKey = settings?.gemini_api_key;
+        const apiKey = await decryptOrPlain(settings?.gemini_api_key);
         if (!apiKey) return res.status(400).json({ error: "no_key" });
 
         const model = await getGeminiModel(apiKey);

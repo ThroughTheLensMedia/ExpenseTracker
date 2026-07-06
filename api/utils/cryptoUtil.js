@@ -51,4 +51,16 @@ async function decrypt(encrypted) {
     return sodium.to_string(msg);
 }
 
-module.exports = { encrypt, decrypt };
+// Decrypts if the value is in encrypted "<nonce>:<cipher>" form; otherwise
+// returns it unchanged. Lets a plaintext→encrypted migration roll out safely:
+// rows not yet migrated keep working until the one-time script re-encrypts them.
+async function decryptOrPlain(value) {
+    if (!value) return value;
+    try {
+        return await decrypt(value);
+    } catch {
+        return value;
+    }
+}
+
+module.exports = { encrypt, decrypt, decryptOrPlain };

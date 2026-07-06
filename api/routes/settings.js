@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const { encrypt, decryptOrPlain } = require("../utils/cryptoUtil");
 
 // Get settings - always returns an object even if empty
 router.get("/", async (req, res) => {
@@ -15,6 +16,9 @@ router.get("/", async (req, res) => {
         console.error("[SETTINGS] Fetch error:", error.message);
         return res.status(500).json({ error: error.message });
     }
+    if (row?.gemini_api_key) {
+        row.gemini_api_key = await decryptOrPlain(row.gemini_api_key);
+    }
     res.json(row);
 });
 
@@ -28,6 +32,11 @@ router.post("/", async (req, res) => {
         const protectedFields = ['id', 'created_at', 'updated_at'];
         protectedFields.forEach(f => delete payload[f]);
 
+        // Encrypt the BYOB Gemini key at rest (v7.15.0) — matches Plaid token handling.
+        if (typeof payload.gemini_api_key === 'string' && payload.gemini_api_key.length > 0) {
+            payload.gemini_api_key = await encrypt(payload.gemini_api_key);
+        }
+
         const { data, error } = await req.sb
             .from("settings")
             .upsert({ ...payload, user_id: req.user.id }, { onConflict: 'user_id' })
@@ -35,6 +44,9 @@ router.post("/", async (req, res) => {
             .single();
 
         if (error) throw error;
+        if (data?.gemini_api_key) {
+            data.gemini_api_key = await decryptOrPlain(data.gemini_api_key);
+        }
         res.json(data);
     } catch (e) {
         console.error("Settings save error:", e);

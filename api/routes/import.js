@@ -3,6 +3,7 @@ const multer = require("multer");
 const csvParser = require("csv-parser");
 const fs = require("fs");
 const os = require("os");
+const { decryptOrPlain } = require("../utils/cryptoUtil");
 
 const router = express.Router();
 const upload = multer({ dest: os.tmpdir(), limits: { fileSize: 25 * 1024 * 1024 } });
@@ -506,7 +507,8 @@ async function parseCsvAndImport(sb, filePath, profileKey, res) {
         if (st?.ai_silent_mode && st?.gemini_api_key && toInsert.length > 0) {
             try {
                 const { repairLedgerBatch } = require("../utils/gemini");
-                const aiCleaned = await repairLedgerBatch(st.gemini_api_key, toInsert.map((it, idx) => ({ ...it, id: idx })));
+                const stApiKey = await decryptOrPlain(st.gemini_api_key);
+                const aiCleaned = await repairLedgerBatch(stApiKey, toInsert.map((it, idx) => ({ ...it, id: idx })));
                 aiCleaned.forEach(ai => {
                     const idx = ai.id;
                     if (toInsert[idx]) {

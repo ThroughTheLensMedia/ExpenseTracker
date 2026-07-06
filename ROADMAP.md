@@ -1,6 +1,6 @@
 # Lumière Ledger — Master Roadmap
 
-**Version:** v7.14.0 | **Last reviewed:** 2026-07-06  
+**Version:** v7.15.0 | **Last reviewed:** 2026-07-06  
 Source of truth for all sprint work, security status, and product phases.
 
 ---
@@ -268,14 +268,13 @@ Full inventory: `api/routes/brain.js` (11 tools — 6 read, 5 write, all writes 
 2. **No proactive insights** — Brain only answers when asked; the `ai_coaching_mode` toggle in `IntelligenceTab.jsx` is UI-only, backend never checks it.
 3. **No receipt line-item parsing** — Vision use is limited to full-text transcription, not itemized extraction.
 4. **No voice input.**
-5. **Security gap, unrelated to competitive parity:** BYOB Gemini keys stored unencrypted (see Clean Up section above) — recommend fixing regardless of which feature work gets prioritized.
+5. **Security gap, unrelated to competitive parity:** ✅ **Fixed v7.15.0** — BYOB Gemini keys now encrypted at rest (see Clean Up section above).
 
-**Proposed priority order (pending Joshua's pick):**
-1. Encrypt `settings.gemini_api_key` at rest (libsodium, matching the Plaid token pattern) — security, not a feature.
-2. Remove or wire up the two inert toggles (`ai_silent_mode`, `ai_coaching_mode`) — either build the backend behavior or remove the dead UI.
-3. Persistent conversation memory (rolling window, not full transcript storage).
-4. Proactive coaching (scheduled Brain summary — could piggyback on the weekly digest cron infra already built in Phase B).
-5. Receipt line-item parsing (bigger lift — structured extraction vs. today's plain-text transcription).
+**Priority order (Joshua confirmed all four, 2026-07-06):**
+1. ✅ **v7.15.0 — Encrypt `settings.gemini_api_key` at rest.** Shipped: `decryptOrPlain()` helper in `cryptoUtil.js`, encrypt-on-save/decrypt-on-read in `settings.js` and all 6 downstream read sites (`brain.js` ×2, `receipts.js`, `documents.js`, `import.js`, `emailInbound.js`), one-time migration script `api/scripts/encrypt-existing-gemini-keys.js` (idempotent, `--dry-run` supported — **Joshua still needs to run this once against production**, same runbook shape as the Plaid rotation script).
+2. Persistent conversation memory (rolling window, not full transcript storage) — not started.
+3. Proactive coaching (scheduled Brain summary — could piggyback on the weekly digest cron infra already built in Phase B) — not started. Note: remove or wire up the two inert toggles (`ai_silent_mode`, `ai_coaching_mode`) as part of this.
+4. Receipt line-item parsing (bigger lift — structured extraction vs. today's plain-text transcription) — not started.
 
 ---
 
@@ -323,7 +322,8 @@ Full inventory: `api/routes/brain.js` (11 tools — 6 read, 5 write, all writes 
 ## 🚩 Clean Up / Technical Debt
 
 - **✅ Dashboard data-consistency audit (v7.14.0)** — full pass across `DashboardV2.jsx`/`metrics.js` after the OpIntell/Subscriptions Radar dollar mismatch (v7.13.1) suggested more of the same bug class. Found and fixed: (1) `metrics.js` used a narrow 5-keyword substring filter to exclude transfers/refunds from YTD income/spend, while `cron.js`'s weekly digest used a fuller 16-category exact-match list (`NON_SPEND_CATS`) — the two disagreed on rows like "Refund" or "Reimbursement", producing different YTD totals on the dashboard vs. the email for the same data. Extracted the exclusion logic into `api/utils/spendCategories.js`, shared by both routes. (2) `OpIntellComponents.jsx` formatted cents with manual `.toLocaleString()` — `undefined`/`null` values rendered as `$NaN`; replaced with a safe `Intl.NumberFormat`-based helper. **Verified NOT a bug:** Operational Intelligence's "Expense Pressure" insight (all recurring vendors) vs. Subscriptions Radar (subscriptions only) are two intentionally different, clearly-labeled metrics — no fix needed. **Flagged, not yet fixed:** `tax.js`'s `/tax/summary` (Schedule C basis for the Tax page) applies **no category exclusion at all** — it sums every expense row into a bucket (including "Unassigned"), so an "Internal Transfer" or "Credit Card Payment" accidentally left uncategorized would inflate the Tax page's total spend/deductible figures. This touches tax-return-adjacent numbers, so it needs Joshua's explicit direction before changing — noted here rather than silently altered.
-- **⚠️ AI Brain capability gaps (found during v7.14.0 research pass)** — `settings.gemini_api_key` (user's own BYOB key) is stored **unencrypted** in the DB, inconsistent with the app's existing Plaid-token encryption standard (libsodium). Also found dead/inert code: `ai_silent_mode` and `ai_coaching_mode` toggles in `IntelligenceTab.jsx` save a setting the backend never reads; `classifyTransactions()` and `getEmbedding()` in `api/utils/gemini.js` are exported but never called by any route. See AI Brain roadmap section below for the full capability inventory and proposed next steps.
+- **✅ AI Brain — Gemini key encryption (v7.15.0)** — `settings.gemini_api_key` was stored unencrypted, inconsistent with the app's existing Plaid-token standard. Now encrypted the same way (libsodium, `ENCRYPTION_KEY`). **Action needed:** run `api/scripts/encrypt-existing-gemini-keys.js --dry-run` then for real against production (needs local `.env` with `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY`/`ENCRYPTION_KEY`, same as the Plaid rotation runbook) to migrate existing plaintext keys — code is safe to run before this (falls back to plaintext until migrated).
+- **⚠️ AI Brain — remaining gaps** — dead/inert code found in the same audit: `ai_silent_mode` (this one IS actually read, by `import.js`'s silent-mode repair) and `ai_coaching_mode` toggles in `IntelligenceTab.jsx` — `ai_coaching_mode` saves a setting the backend never reads. `classifyTransactions()` and `getEmbedding()` in `api/utils/gemini.js` are exported but never called by any route. See AI Brain roadmap section below for the full capability inventory and remaining priority order.
 - **⚠️ Dependency Hygiene Protocol** — Any `api/package.json` change must regenerate `api/package-lock.json` in the same commit. Stale lock file = Vercel silent-skip = Lambda crash. Root cause of v7.6.7 outage. See Rule 10 in CLAUDE.md.
 - **`file-type` moderate vuln (GHSA-5v7r-6r5c-r473)** — Infinite loop on malformed ASF audio file header. Impact: near-zero (receipts.js only handles JPEG/PNG/PDF). Fix requires `file-type@22` which is ESM-only — needs `receipts.js` refactor to dynamic `import()`. Not blocking.
 - **`plaid_account_id` backfill** — Existing pre-v7.8.4 Plaid transactions have NULL `plaid_account_id`. Historical sub-account breakdown unavailable until users re-sync.

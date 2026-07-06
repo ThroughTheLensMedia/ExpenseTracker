@@ -5,6 +5,18 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.15.0] — 2026-07-06
+
+### Security — BYOB Gemini API keys now encrypted at rest
+
+- **`api/utils/cryptoUtil.js`** — new `decryptOrPlain()` helper: decrypts if the value is in encrypted form, otherwise passes it through unchanged. Lets the migration roll out with zero downtime — code ships first, works correctly on both migrated and not-yet-migrated rows.
+- **`api/routes/settings.js`** — `POST /` now encrypts `gemini_api_key` before every upsert (same libsodium/`ENCRYPTION_KEY` pattern already used for Plaid tokens); `GET /` and the POST response both decrypt it back before returning to the frontend, so `IntelligenceTab.jsx` needs no changes.
+- **6 downstream read sites** updated to decrypt before use: `api/routes/brain.js` (chat + ledger repair), `api/routes/receipts.js`, `api/routes/documents.js`, `api/routes/import.js` (silent-mode auto-clean), `api/routes/emailInbound.js`.
+- **`api/scripts/encrypt-existing-gemini-keys.js`** (new) — one-time migration for keys already in the database, mirroring the existing `rotate-plaid-tokens.js` runbook shape. Idempotent (decrypt-tests each row first, skips already-migrated ones), `--dry-run` supported. **Needs to be run once against production** — see ROADMAP.md AI Brain section for the exact command.
+- Found and corrected a detail from the v7.14.0 audit: `ai_silent_mode` is actually read (by `import.js`'s silent auto-clean on CSV import) — only `ai_coaching_mode` is fully inert.
+
+---
+
 ## [v7.14.0] — 2026-07-06
 
 ### Added — A2: Deductions found ≈ tax savings dashboard hero stat

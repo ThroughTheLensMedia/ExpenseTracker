@@ -2,6 +2,7 @@ const { createClient } = require('@supabase/supabase-js');
 const { parseReceiptFromEmailBody, parseReceiptFromFile } = require('../utils/receiptEmailParser');
 const { sendReceiptConfirmationEmail } = require('../utils/mailer');
 const log = require('../utils/logger');
+const { decryptOrPlain } = require('../utils/cryptoUtil');
 
 // Phase 1 fallback: hardcoded token → userId for Joshua while the DB token
 // system ramps up. Once all users have called GET /receipts/my-address at
@@ -115,7 +116,7 @@ const handler = async (req) => {
             log.error('email-inbound', 'No Gemini API key found', { userId, error: settingsErr?.message }, userId);
             return;
         }
-        const apiKey = settings.gemini_api_key;
+        const apiKey = await decryptOrPlain(settings.gemini_api_key);
 
         // --- Step 1: Parse receipt ---
         let extracted = null;
