@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.13.3', date: 'JUL 6, 2026', color: '#94a3b8', items: [
+        '<strong>Cleanup:</strong> Added a safe test mode to the backend automation added this week — internal testing tooling only, no visible changes.',
+    ]},
     { version: '7.13.2', date: 'JUL 6, 2026', color: '#94a3b8', items: [
         '<strong>Cleanup:</strong> Backend safety adjustments to the new weekly digest and re-engagement email automation ahead of a full rollout.',
     ]},

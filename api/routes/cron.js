@@ -338,14 +338,19 @@ async function buildWeeklyDigest(supabase, userId, weekStartStr, weekEndStr, tax
 // (no true weekly cron), this endpoint may be hit many times on a Monday — a
 // per-user last_weekly_digest_sent_at guard (5-day window) prevents duplicate
 // sends regardless of how often the monitor pings.
+// ?preview=1 is a true dry run — computes and returns everything but sends no
+// email to anyone (not even admin) and does not stamp the de-dupe timestamp.
+// Use this for auth/logic testing so a manual curl can never send real email
+// again, matching the incident on 2026-07-06.
 router.get("/weekly-report", async (req, res) => {
     if (!isCronAuthorized(req)) {
         return res.status(403).json({ error: "Unauthorized" });
     }
 
     const force = req.query.force === '1';
-    if (!force && new Date().getDay() !== 1) {
-        return res.json({ ok: true, sent: false, message: "Not Monday — skipped (use ?force=1 to override)." });
+    const isPreview = req.query.preview === '1';
+    if (!force && !isPreview && new Date().getDay() !== 1) {
+        return res.json({ ok: true, sent: false, message: "Not Monday — skipped (use ?force=1 or ?preview=1 to override)." });
     }
 
     try {
@@ -382,6 +387,10 @@ router.get("/weekly-report", async (req, res) => {
                     results.push({ email: user.email, ok: false, skipped: true, reason: 'nothing to report' });
                     continue;
                 }
+                if (isPreview) {
+                    results.push({ email: user.email, ok: true, dryRun: true, report });
+                    continue;
+                }
                 await queueWeeklyDigestEmail({ to: user.email, name: user.display_name || user.email.split('@')[0], weekLabel, ...report });
                 await supabase.from('settings').upsert({ user_id: user.id, last_weekly_digest_sent_at: new Date().toISOString() }, { onConflict: 'user_id' });
                 results.push({ email: user.email, ok: true });
@@ -391,7 +400,7 @@ router.get("/weekly-report", async (req, res) => {
             }
         }
 
-        res.json({ ok: true, weekLabel, sent: results.filter(r => r.ok).length, results });
+        res.json({ ok: true, preview: isPreview, weekLabel, sent: isPreview ? 0 : results.filter(r => r.ok).length, results });
     } catch (e) {
         console.error("[CRON] Weekly digest fatal error:", e);
         res.status(500).json({ error: e.message });
@@ -404,16 +413,21 @@ router.get("/weekly-report", async (req, res) => {
 // external ping doesn't spam the same inactive user every day.
 //
 // DISABLED 2026-07-06 (Joshua's direction): he's handling re-engagement
-// manually for now. Automated sending returns early below — remove the
+// manually for now. Live sending short-circuits below — remove the
 // early-return once ready to turn this back on.
+// ?preview=1 is a true dry run — bypasses the disabled-early-return so the
+// query/logic can be tested, but sends no email to anyone and does not stamp
+// the de-dupe timestamp.
 router.get("/reengagement-report", async (req, res) => {
     if (!isCronAuthorized(req)) {
         return res.status(403).json({ error: "Unauthorized" });
     }
 
-    return res.json({ ok: true, sent: 0, message: "Re-engagement automation is disabled — handled manually for now." });
+    const isPreview = req.query.preview === '1';
+    if (!isPreview) {
+        return res.json({ ok: true, sent: 0, message: "Re-engagement automation is disabled — handled manually for now. Use ?preview=1 for a dry run." });
+    }
 
-    // eslint-disable-next-line no-unreachable
     try {
         if (!supabase) throw new Error("Supabase service client not initialized");
 
@@ -452,17 +466,10 @@ router.get("/reengagement-report", async (req, res) => {
                 results.push({ email: user.email, ok: false, skipped: true, reason: 'sent recently' });
                 continue;
             }
-            try {
-                await queueReEngagementEmail({ to: user.email, name: user.display_name || user.email.split('@')[0] });
-                await supabase.from('settings').upsert({ user_id: userId, last_reengagement_sent_at: new Date().toISOString() }, { onConflict: 'user_id' });
-                results.push({ email: user.email, ok: true });
-            } catch (err) {
-                console.error(`[CRON] Re-engagement email failed for ${user.email}:`, err);
-                results.push({ email: user.email, ok: false, error: err.message });
-            }
+            results.push({ email: user.email, ok: true, dryRun: true });
         }
 
-        res.json({ ok: true, inactiveCount: inactiveUserIds.length, sent: results.filter(r => r.ok).length, results });
+        res.json({ ok: true, preview: true, inactiveCount: inactiveUserIds.length, sent: 0, results });
     } catch (e) {
         console.error("[CRON] Re-engagement fatal error:", e);
         res.status(500).json({ error: e.message });

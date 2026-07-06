@@ -5,6 +5,14 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.13.3] — 2026-07-06
+
+### Added — `?preview=1` true dry-run mode for both new cron endpoints
+
+- **`api/routes/cron.js`** — `GET /cron/weekly-report?preview=1` and `GET /cron/reengagement-report?preview=1` now compute and return full results without sending any email to anyone, not even admin, and without stamping the de-dupe timestamps. Matches `monthly-report`'s existing `?preview=1` query-param convention, but is a true no-send dry run rather than an admin-only real send — closes the gap that let a manual auth-verification curl on 2026-07-06 send real emails. The admin-only production gate (weekly-report) and the disabled-by-default gate (reengagement-report) from v7.13.2 are unchanged for live/non-preview calls.
+
+---
+
 ## [v7.13.2] — 2026-07-06
 
 ### Changed — Restrict weekly digest + disable re-engagement automation
