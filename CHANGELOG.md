@@ -5,6 +5,14 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.15.4] — 2026-07-06
+
+### Added — Temporary admin route to run the Gemini key encryption migration
+
+- **`api/routes/admin.js`** — `POST /admin/encrypt-gemini-keys` (admin-only, supports `?dry_run=1`). `ENCRYPTION_KEY` is marked Sensitive in Vercel and can't be exported for a local script run, so this runs the same logic as `api/scripts/encrypt-existing-gemini-keys.js` (shipped v7.15.0, never executed) server-side, where the Sensitive env var is already usable. Same precedent as the v7.10.17 Plaid webhook backfill route. **Temporary — remove once the live run confirms 0 failures.**
+
+---
+
 ## [v7.15.3] — 2026-07-06
 
 ### Hardened — Fail closed on settings-query errors + re-enabled weekly digest
