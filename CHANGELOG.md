@@ -10,7 +10,7 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 ### Hardened — Fail closed on settings-query errors + re-enabled weekly digest
 
 - **`api/routes/cron.js`** — both `/cron/weekly-report` and `/cron/reengagement-report` now check the `error` field on their `settings` queries and refuse to send (fail closed, HTTP 500 with logged detail) rather than silently proceeding with an empty settings map — the exact failure mode that caused the 2026-07-06 resend incident. The de-dupe stamp upsert after a real send is also checked; if it fails to save, this is now logged loudly (`stampError`) instead of silently risking a repeat on the next ping.
-- **Weekly digest live sending re-enabled** (the temporary pause from v7.15.2 is lifted) — root cause fixed via the v7.15.2 migration; one real send + de-dupe-on-second-ping verification to follow immediately after this deploys. Admin-only gate (`ADMIN_UUID` filter, v7.13.2) remains in place underneath.
+- **Weekly digest live sending re-enabled** (the temporary pause from v7.15.2 is lifted) — root cause fixed via the v7.15.2 migration. **Verified post-deploy:** the database record shows `last_weekly_digest_sent_at = 2026-07-06 12:09:43 UTC` — the one send that landed in the gap between the migration and the v7.15.2 pause deploying, the first time that stamp ever saved successfully. A manual verification call afterward was correctly blocked ("already sent this week"), confirming the de-dupe guard holds. Admin-only gate (`ADMIN_UUID` filter, v7.13.2) remains in place underneath.
 
 ---
 
