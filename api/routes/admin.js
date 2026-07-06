@@ -7,7 +7,6 @@ const router = express.Router();
 const { queueInviteEmail, queueDailyReportEmail, queueHealthAlertEmail } = require("../utils/emailQueue");
 const { requireRole } = require("../middleware/auth");
 const { listAllUsers } = require("../utils/userDirectory");
-const { encrypt, decrypt } = require("../utils/cryptoUtil");
 
 router.get("/", (req, res) => res.json({ ok: true, module: "admin", user: req.user?.email }));
 router.get("/test", (req, res) => res.json({ ok: true, test: "admin-reachable" }));
@@ -737,56 +736,6 @@ router.post("/security-reviews/complete", requireRole('admin'), async (req, res)
         res.json(data);
     } catch (e) {
         console.error('[Admin] security-reviews POST error:', e.message);
-        res.status(500).json({ error: e.message });
-    }
-});
-
-// TEMPORARY — one-time Gemini key encryption migration (v7.16.0).
-// ENCRYPTION_KEY is marked Sensitive in Vercel and can't be exported for a
-// local script, so this runs the same logic as
-// api/scripts/encrypt-existing-gemini-keys.js server-side instead.
-// Remove this route once the live run confirms 0 failures.
-router.post("/encrypt-gemini-keys", requireRole('admin'), async (req, res) => {
-    const dryRun = req.query.dry_run === '1';
-    try {
-        const { data: rows, error } = await supabase
-            .from('settings')
-            .select('user_id, gemini_api_key')
-            .not('gemini_api_key', 'is', null);
-
-        if (error) return res.status(500).json({ error: error.message });
-        if (!rows?.length) return res.json({ dryRun, migrated: 0, alreadyDone: 0, failed: 0, details: [] });
-
-        let migrated = 0, alreadyDone = 0, failed = 0;
-        const details = [];
-
-        for (const row of rows) {
-            try {
-                await decrypt(row.gemini_api_key);
-                alreadyDone++;
-                details.push({ user_id: row.user_id, status: 'already_encrypted' });
-            } catch {
-                try {
-                    const encrypted = await encrypt(row.gemini_api_key);
-                    if (!dryRun) {
-                        const { error: updateErr } = await supabase
-                            .from('settings')
-                            .update({ gemini_api_key: encrypted })
-                            .eq('user_id', row.user_id);
-                        if (updateErr) throw new Error(updateErr.message);
-                    }
-                    migrated++;
-                    details.push({ user_id: row.user_id, status: dryRun ? 'would_encrypt' : 'encrypted' });
-                } catch (err) {
-                    failed++;
-                    details.push({ user_id: row.user_id, status: 'failed', error: err.message });
-                }
-            }
-        }
-
-        res.json({ dryRun, migrated, alreadyDone, failed, details });
-    } catch (e) {
-        console.error('[Admin] encrypt-gemini-keys error:', e.message);
         res.status(500).json({ error: e.message });
     }
 });

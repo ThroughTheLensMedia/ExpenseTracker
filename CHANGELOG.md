@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.15.5] — 2026-07-06
+
+### Completed — Gemini key encryption migration run + temp route removed
+
+- **Migration executed against production**, verified via direct SQL: both users with a BYOB Gemini key (`49e7efcb-...` and `1fd43a56-...`) now have `gemini_api_key` in `<nonce>:<cipher>` format (109 chars), 0 plaintext rows remain, 0 failures. The v7.15.0 encryption rollout (shipped but never run) is now fully complete.
+- **`api/routes/admin.js`** — temporary `POST /admin/encrypt-gemini-keys` route removed now that the one-time migration is confirmed done, per the standing rule against leaving one-off admin migration endpoints live in production (same cleanup discipline as the v7.10.18 Plaid webhook backfill route removal).
+- Update CHANGELOG.md, ROADMAP.md, ChangeLogModal.jsx, version.json, App.jsx
+
+---
+
 ## [v7.15.4] — 2026-07-06
 
 ### Added — Temporary admin route to run the Gemini key encryption migration

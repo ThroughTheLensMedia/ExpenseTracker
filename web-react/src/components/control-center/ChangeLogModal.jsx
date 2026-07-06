@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.15.5', date: 'JUL 6, 2026', color: '#94a3b8', items: [
+        '<strong>Cleanup:</strong> Finished migrating existing AI keys to encrypted storage — no visible changes.',
+    ]},
     { version: '7.15.4', date: 'JUL 6, 2026', color: '#94a3b8', items: [
         '<strong>Cleanup:</strong> Internal tooling to finish the AI key encryption rollout from v7.15.0 — no visible changes.',
     ]},
