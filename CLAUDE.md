@@ -16,7 +16,7 @@ The world's most elite, AI-driven financial command center for creative professi
 
 | Property | Value |
 |----------|-------|
-| **Version** | v7.10.21 |
+| **Version** | v7.16.1 |
 | **Status** | Active Development — Open Public Launch |
 | **Deploy target** | `www.lumiereledger.com` (primary) — `app.throughthelens.media` 301 redirects to it |
 | **Deployment** | Vercel (auto-deploy on `git push origin main`) |
@@ -242,7 +242,6 @@ Express 4.19 API (api/)
 
 | Gap | File | Impact |
 |-----|------|--------|
-| Plaid webhook backfill not run | `api/scripts/backfill-plaid-webhooks.js` | Shipped v7.10.16. New connections auto-register the webhook; existing connections (Amex, Capital One, USAA, Venmo) need this one-time script run to get real-time health events. |
 | `REDIS_URL` not set in Vercel | Vercel env panel | Bull removed v7.8.90 — direct Resend fallback is intentional. Set only if re-enabling queue layer. |
 | `plaid_account_id` backfill | `expenses` table | Pre-v7.8.4 Plaid transactions have NULL `plaid_account_id`. Sub-account breakdown unavailable on historical rows until users re-sync. |
 | `file-type` moderate vuln | `api/routes/receipts.js` | v22 is ESM-only; needs dynamic `import()` refactor. Near-zero real risk (ASF audio only). |
@@ -301,9 +300,9 @@ Express 4.19 API (api/)
 
 **Other components** — `AssistantSidebar.jsx` (AI chat panel), `CategorySelect.jsx` (shared category dropdown), `ModalContext.jsx` (branded modal, replaces native confirm/alert).
 
-**Backend routes not in the curated table above (`api/routes/`)** — `import.js` (CSV import engine, 11+ bank parsers), `invoices.js`, `tax.js`, `assets.js`, `mileage.js`, `rules.js`, `receipts.js`, `settings.js`, `subscription.js` (beta code redemption), `activity.js`, `leads.js`, `intake.js` (public, server-to-server, validates `x-intake-secret`), `intake-keys.js` (authenticated CRUD for per-user `ll-` prefixed intake keys), `pwa.js` (quick-snap receipt capture), `cron.js` (daily/monthly reports + watchdog).
+**Backend routes not in the curated table above (`api/routes/`)** — `import.js` (CSV import engine, 11+ bank parsers), `invoices.js`, `tax.js`, `assets.js`, `mileage.js`, `rules.js`, `receipts.js`, `settings.js`, `subscription.js` (beta code redemption), `activity.js`, `leads.js`, `intake.js` (public, server-to-server, validates `x-intake-secret`), `intake-keys.js` (authenticated CRUD for per-user `ll-` prefixed intake keys), `pwa.js` (quick-snap receipt capture), `cron.js` (daily/monthly reports + watchdog), `brain.js` (AI Brain — 11 agentic tools over Gemini 2.5 Flash, `GET /messages` + `POST /ask` with server-side persistent history in `brain_messages`, `POST /repair-ledger` batch categorization).
 
-**Database — SQL Schemas** — `supabase_schema.sql` (expenses, classification_rules, mileage_logs, mileage_rates), `supabase_schema_rls.sql` (RLS policies), `supabase_schema_settings.sql` (settings incl. `dashboard_config`), `supabase_schema_activity.sql`, `supabase_schema_leads.sql`, `supabase_schema_plaid.sql`, `supabase_schema_intake_keys.sql`, `api/migrations/009_user_categories.sql`, `supabase_fix_admin_rls.sql`.
+**Database — SQL Schemas** — `supabase_schema.sql` (expenses, classification_rules, mileage_logs, mileage_rates), `supabase_schema_rls.sql` (RLS policies), `supabase_schema_settings.sql` (settings incl. `dashboard_config`), `supabase_schema_activity.sql`, `supabase_schema_leads.sql`, `supabase_schema_plaid.sql`, `supabase_schema_intake_keys.sql`, `api/migrations/009_user_categories.sql`, `api/migrations/010_gate_trial_on_email_confirmation.sql`, `api/migrations/011_brain_messages.sql` (persistent AI Brain conversation history, RLS-scoped), `supabase_fix_admin_rls.sql`.
 
 ---
 
@@ -408,7 +407,8 @@ Plaid-connected accounts use `source: 'plaid'` regardless of institution. Known 
 - **Trial signup gate (v7.10.13):** the automatic 30-day `free_beta` trial only grants once `email_confirmed_at` is set — DB trigger-level, not app-level, so it can't be bypassed by calling the API directly. Self-serve Stripe checkout without a code remains untouched by design (confirmed 2026-07-01).
 - **Cloudflare Turnstile on signup (v7.10.14):** `POST /api/verify-turnstile` is public and fails open if `TURNSTILE_SECRET_KEY` is unset — this is intentional so a missing env var never blocks real signups, but it also means the check is a no-op until the key is set in Vercel.
 - **RLS policy naming ≠ RLS policy enforcement (v7.10.21):** a policy named `"Service role full access"` on `user_daily_activity` had `qual: true` — RLS doesn't check caller role by name, so it was actually granting universal access, not service-role-only. `service_role` already has `BYPASSRLS` and never needed a policy for this. Dropped in the annual review. When writing a new RLS policy, verify the `qual` clause actually enforces what the name claims — don't trust the label.
-- **BYOB Gemini keys encrypted at rest (v7.15.0):** `settings.gemini_api_key` is now encrypted with the same libsodium/`ENCRYPTION_KEY` pattern as Plaid tokens (`api/utils/cryptoUtil.js`). `decryptOrPlain()` is used at every read site so legacy plaintext rows keep working until `api/scripts/encrypt-existing-gemini-keys.js` migrates them — safe to deploy before running the migration.
+- **BYOB Gemini keys encrypted at rest (v7.15.0, migration complete v7.15.5):** `settings.gemini_api_key` is encrypted with the same libsodium/`ENCRYPTION_KEY` pattern as Plaid tokens (`api/utils/cryptoUtil.js`). `decryptOrPlain()` is used at every read site so any future legacy plaintext row would keep working. All existing keys were migrated in production (confirmed via direct SQL, 0 plaintext remaining) via a temporary admin route since `ENCRYPTION_KEY` is Sensitive in Vercel and can't be exported for a local script — same pattern as the v7.10.17 Plaid webhook backfill. Route removed after confirming success.
+- **Model-side numerical aggregation is unreliable (v7.16.1):** the AI Brain's `search_transactions` tool only accepted one category filter, so answering "how much have I paid to credit cards" required Gemini to call it twice (once per category) and manually sum the results in prose — it fabricated plausible-looking numbers that didn't match the real ledger (confirmed via direct SQL). Fixed by accepting a comma-separated category list via a single Supabase `.or()` filter, so totals are computed once in code. General rule: never let the model combine numbers across multiple tool calls when a single deterministic query can express the same filter.
 
 ---
 
