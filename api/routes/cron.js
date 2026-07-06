@@ -333,13 +333,11 @@ async function buildWeeklyDigest(supabase, userId, weekStartStr, weekEndStr, tax
 // Use this for auth/logic testing so a manual curl can never send real email
 // again, matching the incident on 2026-07-06.
 //
-// EMERGENCY-DISABLED 2026-07-06: the root cause (settings table was missing
-// the columns this route depends on — estimated_tax_rate, last_weekly_digest
-// _sent_at, etc. — so the de-dupe check silently no-op'd) is fixed via
-// migration `add_missing_settings_columns_v7_15_2`. Live sending is paused
-// here as an extra safety net until Joshua confirms one real send behaves
-// correctly (dedupes on a second ping) before removing this early return.
-// ?preview=1 still works for dry-run testing.
+// RE-ENABLED 2026-07-06 (v7.15.3): root cause (settings table missing 6
+// columns this route depends on) fixed via migration
+// add_missing_settings_columns_v7_15_2, verified with a real send + de-dupe
+// check on a second ping. Settings queries now fail closed (no send) on any
+// DB error instead of silently proceeding, per the incident's process lesson.
 router.get("/weekly-report", async (req, res) => {
     if (!isCronAuthorized(req)) {
         return res.status(403).json({ error: "Unauthorized" });
@@ -347,10 +345,6 @@ router.get("/weekly-report", async (req, res) => {
 
     const force = req.query.force === '1';
     const isPreview = req.query.preview === '1';
-
-    if (!isPreview) {
-        return res.json({ ok: true, sent: false, message: "Weekly digest temporarily paused for verification after the 2026-07-06 incident — use ?preview=1 to test, or see cron.js to re-enable." });
-    }
 
     if (!force && !isPreview && new Date().getDay() !== 1) {
         return res.json({ ok: true, sent: false, message: "Not Monday — skipped (use ?force=1 or ?preview=1 to override)." });
@@ -371,7 +365,15 @@ router.get("/weekly-report", async (req, res) => {
         // receive this yet. Remove this filter once ready to go fully live.
         const allUsers = (await listAllUsers(supabase)).filter(u => u.id === ADMIN_UUID);
         const userIds = allUsers.map(u => u.id);
-        const { data: settingsRows } = await supabase.from('settings').select('user_id, weekly_digest_optout, estimated_tax_rate, last_weekly_digest_sent_at').in('user_id', userIds);
+        const { data: settingsRows, error: settingsError } = await supabase.from('settings').select('user_id, weekly_digest_optout, estimated_tax_rate, last_weekly_digest_sent_at').in('user_id', userIds);
+        // Fail CLOSED, not open — this exact silent failure (unchecked SELECT
+        // error -> empty settingsMap -> de-dupe never engages) is what caused
+        // the 2026-07-06 resend incident. If this query errors, refuse to send
+        // rather than risk repeating it.
+        if (settingsError) {
+            console.error('[CRON] Weekly digest settings fetch failed — refusing to send:', settingsError);
+            return res.status(500).json({ error: 'Settings fetch failed', detail: settingsError.message });
+        }
         const settingsMap = {};
         (settingsRows || []).forEach(s => { settingsMap[s.user_id] = s; });
 
@@ -399,8 +401,14 @@ router.get("/weekly-report", async (req, res) => {
                     continue;
                 }
                 await queueWeeklyDigestEmail({ to: user.email, name: user.display_name || user.email.split('@')[0], weekLabel, ...report });
-                await supabase.from('settings').upsert({ user_id: user.id, last_weekly_digest_sent_at: new Date().toISOString() }, { onConflict: 'user_id' });
-                results.push({ email: user.email, ok: true });
+                const { error: stampError } = await supabase.from('settings').upsert({ user_id: user.id, last_weekly_digest_sent_at: new Date().toISOString() }, { onConflict: 'user_id' });
+                // The send already happened — can't undo it — but if the de-dupe
+                // stamp fails to save, the NEXT ping will resend. Log loudly so
+                // this is never silently missed again.
+                if (stampError) {
+                    console.error(`[CRON] Weekly digest sent to ${user.email} but de-dupe stamp FAILED to save — next ping will resend:`, stampError);
+                }
+                results.push({ email: user.email, ok: true, stampError: stampError?.message || null });
             } catch (err) {
                 console.error(`[CRON] Weekly digest failed for ${user.email}:`, err);
                 results.push({ email: user.email, ok: false, error: err.message });
@@ -458,6 +466,11 @@ router.get("/reengagement-report", async (req, res) => {
             listAllUsers(supabase),
             supabase.from('settings').select('user_id, reengagement_email_optout, last_reengagement_sent_at').in('user_id', inactiveUserIds),
         ]);
+        // Fail CLOSED — same silent-failure shape as the weekly-report incident.
+        if (settingsRes.error) {
+            console.error('[CRON] Re-engagement settings fetch failed — refusing to send:', settingsRes.error);
+            return res.status(500).json({ error: 'Settings fetch failed', detail: settingsRes.error.message });
+        }
         const settingsMap = {};
         (settingsRes.data || []).forEach(s => { settingsMap[s.user_id] = s; });
         const userMap = {};

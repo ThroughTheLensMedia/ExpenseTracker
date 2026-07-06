@@ -1,1 +1,1 @@
-{"version":"7.15.2","release_date":"2026-07-06","codename":"Lumière Ledger","notes":"v7.15.2: Fix root cause of weekly digest resend incident — missing settings columns migrated; weekly digest paused pending verification"}
+{"version":"7.15.3","release_date":"2026-07-06","codename":"Lumière Ledger","notes":"v7.15.3: Fail-closed error handling on settings queries, weekly digest re-enabled pending verification test"}
