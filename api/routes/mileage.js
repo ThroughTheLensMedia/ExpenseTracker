@@ -21,7 +21,8 @@ const MileageSchema = z.object({
     miles: z.coerce.number().min(0),
     purpose: z.string().trim().min(1, "Purpose required"),
     source: z.string().trim().min(1).optional(),
-    notes: z.string().trim().nullable().optional()
+    notes: z.string().trim().nullable().optional(),
+    needs_review: z.boolean().optional()
 });
 
 const QuerySchema = z.object({

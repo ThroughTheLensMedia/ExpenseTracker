@@ -552,6 +552,7 @@ async function executeTool(name, args, sb, userId) {
 
             let miles = args.miles;
             let autoCalculated = false;
+            let needsReview = false;
             if (!miles) {
                 try {
                     const oneWay = await getDrivingDistanceMiles(args.origin, args.destination);
@@ -559,7 +560,8 @@ async function executeTool(name, args, sb, userId) {
                     autoCalculated = true;
                 } catch (err) {
                     console.error(`[AI Brain] log_mileage_trip distance lookup failed: ${err.message}`);
-                    return { error: `${err.message} Ask the user to confirm/clarify the origin and destination, or give an exact mile count instead.` };
+                    miles = 0;
+                    needsReview = true;
                 }
             }
 
@@ -571,10 +573,14 @@ async function executeTool(name, args, sb, userId) {
                 pendingAction: {
                     id: `pending_${Date.now()}`,
                     type: 'log_mileage_trip',
-                    description: `Log **${miles} mi**${autoCalculated ? ' (auto-calculated)' : ''} — ${routeLabel} on ${args.log_date}`,
-                    payload: { log_date: args.log_date, miles, purpose, source: 'ai_brain', notes: args.notes || null }
+                    description: needsReview
+                        ? `Log **0 mi (needs review)** — couldn't auto-calculate the distance for ${routeLabel} on ${args.log_date}. Logging it now so it isn't lost; update the exact mileage on the Mileage page.`
+                        : `Log **${miles} mi**${autoCalculated ? ' (auto-calculated)' : ''} — ${routeLabel} on ${args.log_date}`,
+                    payload: { log_date: args.log_date, miles, purpose, source: 'ai_brain', notes: args.notes || null, needs_review: needsReview }
                 },
-                message: `Pending confirmation: log ${miles} mi trip.`
+                message: needsReview
+                    ? `Pending confirmation: log trip flagged for mileage review.`
+                    : `Pending confirmation: log ${miles} mi trip.`
             };
         }
 
@@ -673,7 +679,8 @@ TRANSACTION RULES:
 - If a search returns 0 results, broaden the search — try a different vendor keyword, remove the category filter, or search by date range. Never confidently tell the user they have no spending in a category without trying at least 2 search variations.
 
 MILEAGE RULES:
-- Before calling log_mileage_trip, confirm you have: origin, destination, round-trip yes/no, and date. The exact mile count is calculated automatically from the origin/destination — do NOT ask the user for it upfront. Only pass a miles value yourself if the user volunteers their own exact number, or if the tool returns an error saying the addresses couldn't be resolved (then ask the user to clarify the address or give an exact mile count).
+- Before calling log_mileage_trip, confirm you have: origin, destination, round-trip yes/no, and date. The exact mile count is calculated automatically from the origin/destination — do NOT ask the user for it upfront. Only pass a miles value yourself if the user volunteers their own exact number.
+- If the automatic distance calculation fails, the tool still logs the trip (as 0 mi, flagged for review) rather than losing it — tell the user it was logged but flagged for a mileage review, and suggest they confirm the addresses or update the exact mileage on the Mileage page when convenient. Do not treat this as a hard failure requiring the user to redo anything.
 - Business purpose (notes) matters for tax recordkeeping — if the user doesn't mention why the trip was for business (client name, shoot, errand purpose), ask for a short note before calling the tool.
 
 SUBSCRIPTIONS RULE:

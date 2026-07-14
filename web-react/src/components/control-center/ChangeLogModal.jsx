@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.19.0', date: 'JUL 14, 2026', color: '#4c7dff', items: [
+        '<strong>Improved:</strong> If the Lumière Assistant can\'t automatically figure out a trip\'s mileage, it now logs the trip anyway (flagged for you to update) instead of losing it entirely.',
+        '<strong>Improved:</strong> The weekly digest now flags mileage entries that are missing either a business purpose note or an exact mile count.',
+    ]},
     { version: '7.18.0', date: 'JUL 13, 2026', color: '#4c7dff', items: [
         '<strong>Improved:</strong> The Lumière Assistant now calculates your drive distance automatically when you log a mileage trip — no more guessing or looking up the exact miles yourself.',
         '<strong>New:</strong> Your weekly digest email will now flag any AI-logged trips that are missing a business purpose note, so your mileage records stay tax-ready.',

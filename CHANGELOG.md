@@ -5,6 +5,19 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.19.0] — 2026-07-14
+
+### Changed — Failed mileage auto-calculation no longer drops the trip
+
+- **Root cause of the reported "Brain can't log the trip" bug (confirmed via Vercel runtime logs, not guessed):** `REQUEST_DENIED — You must enable Billing on the Google Cloud Project` — the Google Cloud project behind `GOOGLE_MAPS_SERVER_KEY` didn't have billing enabled, so every Distance Matrix call was rejected outright. Diagnosed by adding explicit logging to `api/utils/googleMaps.js` and `api/routes/brain.js`'s `log_mileage_trip` handler (prior commit) — that logging is what surfaced the real error instead of a generic failure.
+- **`api/migrations/013_mileage_logs_needs_review.sql`** (applied to production) — adds `needs_review` boolean to `mileage_logs`, default `false`.
+- **`api/routes/brain.js`** — when the Distance Matrix lookup fails and no exact mile count was given, `log_mileage_trip` no longer drops the trip and returns an error. It now still logs the trip (as 0 mi, `needs_review: true`) so it isn't lost, with a pending-confirmation card telling the user it needs a manual mileage update. Still requires Approve/Reject like every other write tool — nothing saves without confirmation.
+- **`api/routes/mileage.js`** — schema accepts the new optional `needs_review` field.
+- **`api/routes/cron.js` / `api/utils/mailer.js`** — the weekly digest's mileage follow-up card (added v7.18.0) is now "Mileage Needs Review" and catches AI-logged trips that are missing a business-purpose note **or** flagged `needs_review` (mileage couldn't be calculated), not just the note case.
+- Update CHANGELOG.md, ChangeLogModal.jsx, version.json, App.jsx
+
+---
+
 ## [v7.18.0] — 2026-07-13
 
 ### Changed — AI Brain now auto-calculates mileage + weekly digest follow-up for undocumented trips

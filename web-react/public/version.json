@@ -1,1 +1,1 @@
-{"version":"7.18.0","release_date":"2026-07-13","codename":"Lumière Ledger","notes":"v7.18.0: AI Brain auto-calculates mileage + weekly digest follow-up for undocumented trips"}
+{"version":"7.19.0","release_date":"2026-07-14","codename":"Lumière Ledger","notes":"v7.19.0: Failed mileage auto-calculation now flags the trip for review instead of dropping it"}
