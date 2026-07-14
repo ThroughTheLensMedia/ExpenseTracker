@@ -558,6 +558,7 @@ async function executeTool(name, args, sb, userId) {
                     miles = Math.round((args.is_round_trip ? oneWay * 2 : oneWay) * 10) / 10;
                     autoCalculated = true;
                 } catch (err) {
+                    console.error(`[AI Brain] log_mileage_trip distance lookup failed: ${err.message}`);
                     return { error: `${err.message} Ask the user to confirm/clarify the origin and destination, or give an exact mile count instead.` };
                 }
             }
