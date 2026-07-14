@@ -5,6 +5,21 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.18.0] — 2026-07-13
+
+### Changed — AI Brain now auto-calculates mileage + weekly digest follow-up for undocumented trips
+
+- **New `api/utils/googleMaps.js`** — `getDrivingDistanceMiles(origin, destination)` calls Google's Distance Matrix REST API server-side via plain `fetch` (no new npm dependency). Requires a new **server-side** env var `GOOGLE_MAPS_SERVER_KEY` (Distance Matrix API enabled, same Google Cloud project as the existing `VITE_GOOGLE_MAPS_API_KEY`) — the existing client key is HTTP-referrer-restricted to the app's domain and can't be called from Node. Fails closed with a clear error (not a crash) if the key is unset or an address can't be resolved.
+- **`api/routes/brain.js`** — the `log_mileage_trip` tool (added v7.17.0) no longer asks the user for an exact mile count. It now calculates the driving distance itself from the stated origin/destination, doubling it for round trips, and shows the computed number on the confirmation card for the user to review before approving. `miles` is now an optional override only for when the user states their own exact number. Also now asks for a short business-purpose note (client/shoot name) up front, since that data is used by the new weekly digest follow-up below.
+- **Migration `api/migrations/012_mileage_logs_source_notes.sql`** (applied to production) — adds `source` (default `'manual'`) and nullable `notes` columns to `mileage_logs`, mirroring the existing `expenses.source` pattern. Distinguishes AI-logged trips from manual entries and stores the business-purpose text separately from the combined display `purpose` string, so it can be checked without parsing.
+- **`api/routes/mileage.js`** — `MileageSchema` accepts the new optional `source`/`notes` fields; manual entries from `Mileage.jsx` are unaffected (fields simply default).
+- **`api/routes/cron.js` / `api/utils/mailer.js`** — the weekly digest email ("Your week at a glance") now includes a new card, "Mileage Needs a Note," when one or more AI-logged trips that week have no business-purpose note — nudging the user to add one on the Mileage page for accurate tax records. Follows the exact same conditional-card pattern as the existing Missing Receipts card; the card is omitted entirely when the count is 0.
+- Update CHANGELOG.md, ChangeLogModal.jsx, version.json, App.jsx, CLAUDE.md, SERVICES.md
+
+**Deploy note:** `GOOGLE_MAPS_SERVER_KEY` must be generated in Google Cloud Console (same project as the existing Maps key, Distance Matrix API enabled) and added to Vercel Production before the auto-calculation goes live — until then the tool fails closed (asks for exact miles) rather than breaking.
+
+---
+
 ## [v7.17.0] — 2026-07-13
 
 ### Added — AI Brain mileage logging + Fixed — PWA hamburger menu off-screen

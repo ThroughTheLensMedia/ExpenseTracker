@@ -290,11 +290,13 @@ async function buildWeeklyDigest(supabase, userId, weekStartStr, weekEndStr, tax
     const yearStartStr = `${year}-01-01`;
     const todayStr = new Date().toISOString().split('T')[0];
 
-    const [{ data: weekRows }, { data: yearRows }, { count: missingReceiptCount }] = await Promise.all([
+    const [{ data: weekRows }, { data: yearRows }, { count: missingReceiptCount }, { data: mileageRows }] = await Promise.all([
         supabase.from('expenses').select('amount_cents, category').eq('user_id', userId).gte('expense_date', weekStartStr).lte('expense_date', weekEndStr),
         supabase.from('expenses').select('amount_cents, category').eq('user_id', userId).gte('expense_date', yearStartStr).lte('expense_date', todayStr),
         supabase.from('expenses').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('tax_deductible', true).is('receipt_link', null).gt('amount_cents', 7500),
+        supabase.from('mileage_logs').select('notes').eq('user_id', userId).eq('source', 'ai_brain').gte('log_date', weekStartStr).lte('log_date', weekEndStr),
     ]);
+    const missingMileageNoteCount = (mileageRows || []).filter(r => !r.notes || !r.notes.trim()).length;
 
     const weekExpenses = (weekRows || []).filter(r => (r.amount_cents || 0) > 0 && !NON_SPEND_CATS.has(r.category));
     const weekIncome = (weekRows || []).filter(r => (r.amount_cents || 0) < 0);
@@ -318,7 +320,7 @@ async function buildWeeklyDigest(supabase, userId, weekStartStr, weekEndStr, tax
     ];
     const quarterLabel = (quarterDeadlines.find(d => d.date >= todayStr) || quarterDeadlines[quarterDeadlines.length - 1]).label;
 
-    return { incomeCents, spendCents, netCents, missingReceiptCount: missingReceiptCount || 0, taxSetAsideCents, quarterLabel };
+    return { incomeCents, spendCents, netCents, missingReceiptCount: missingReceiptCount || 0, missingMileageNoteCount, taxSetAsideCents, quarterLabel };
 }
 
 // GET /cron/weekly-report

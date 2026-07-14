@@ -19,7 +19,9 @@ const KNOWN_IRS_RATES = {
 const MileageSchema = z.object({
     log_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format"),
     miles: z.coerce.number().min(0),
-    purpose: z.string().trim().min(1, "Purpose required")
+    purpose: z.string().trim().min(1, "Purpose required"),
+    source: z.string().trim().min(1).optional(),
+    notes: z.string().trim().nullable().optional()
 });
 
 const QuerySchema = z.object({

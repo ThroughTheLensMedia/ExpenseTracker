@@ -713,7 +713,7 @@ ${isPreview ? `<div style="background:#f59e0b;color:#000;padding:10px;text-align
     }
 }
 
-async function sendWeeklyDigestEmail({ to, name, weekLabel, incomeCents, spendCents, netCents, missingReceiptCount, taxSetAsideCents, quarterLabel }) {
+async function sendWeeklyDigestEmail({ to, name, weekLabel, incomeCents, spendCents, netCents, missingReceiptCount, missingMileageNoteCount, taxSetAsideCents, quarterLabel }) {
     console.log(`[MAILER] Sending Weekly Digest to ${to}...`);
     const resend = getResend();
     if (!resend) return { success: false, error: "Mailer service not configured" };
@@ -763,13 +763,22 @@ async function sendWeeklyDigestEmail({ to, name, weekLabel, incomeCents, spendCe
     </td></tr>
   </table>
 
-  <table style="width:100%;border-collapse:collapse;background:#111827;border-radius:16px;margin-bottom:28px;" cellpadding="0" cellspacing="0">
+  <table style="width:100%;border-collapse:collapse;background:#111827;border-radius:16px;margin-bottom:16px;" cellpadding="0" cellspacing="0">
     <tr><td style="padding:24px;">
       <div style="font-size:11px;font-weight:900;color:#fcd34d;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Set Aside for ${quarterLabel}</div>
       <div style="font-size:24px;font-weight:900;color:#fcd34d;">${fmt(taxSetAsideCents)}</div>
       <div style="font-size:12px;color:#94a3b8;margin-top:4px;">estimated, based on your set-aside rate in Profile settings</div>
     </td></tr>
   </table>
+
+  ${missingMileageNoteCount > 0 ? `
+  <table style="width:100%;border-collapse:collapse;background:#111827;border-radius:16px;margin-bottom:28px;" cellpadding="0" cellspacing="0">
+    <tr><td style="padding:24px;">
+      <div style="font-size:11px;font-weight:900;color:#f97316;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Mileage Needs a Note</div>
+      <div style="font-size:24px;font-weight:900;color:#fff;">${missingMileageNoteCount}</div>
+      <div style="font-size:12px;color:#94a3b8;margin-top:4px;">AI-logged trip${missingMileageNoteCount === 1 ? '' : 's'} this week don't have a business purpose noted yet — add one on the Mileage page for accurate tax records</div>
+    </td></tr>
+  </table>` : ''}
 
   <div style="text-align:center;margin-bottom:28px;">
     <a href="${appUrl}" style="display:inline-block;background:#4c7dff;color:#fff;padding:14px 28px;border-radius:10px;font-weight:900;font-size:14px;text-decoration:none;">Open Your Ledger →</a>

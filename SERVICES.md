@@ -72,10 +72,10 @@
 ---
 
 ### Google Cloud Console
-**Purpose:** Google OAuth (sign-in) + Google Maps API (mileage tracking)
-**Plan:** Free tier (Maps has usage limits)
+**Purpose:** Google OAuth (sign-in) + Google Maps API (mileage tracking, client-side round-trip calc and server-side AI Brain auto-calc)
+**Plan:** Free tier (Maps has usage limits — Distance Matrix billed per-request past free tier, same billing account as the existing Maps key)
 **Dashboard:** https://console.cloud.google.com
-**Used for:** Supabase Google OAuth provider, `VITE_GOOGLE_MAPS_API_KEY`
+**Used for:** Supabase Google OAuth provider, `VITE_GOOGLE_MAPS_API_KEY` (browser, Mileage page map tool), `GOOGLE_MAPS_SERVER_KEY` (v7.18.0, server-side, Distance Matrix API only — used by the AI Brain's `log_mileage_trip` tool)
 
 ---
 

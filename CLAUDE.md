@@ -186,6 +186,7 @@ Express 4.19 API (api/)
   - ✅ `JWT_SECRET`, `CRON_SECRET`, `NODE_ENV=production`
   - ✅ `RESEND_API_KEY`, `RESEND_FROM`
   - ✅ `VITE_GOOGLE_MAPS_API_KEY`
+  - ⚠️ `GOOGLE_MAPS_SERVER_KEY` — **v7.18.0, needs to be set** — separate, non-browser-restricted Google Maps key (Distance Matrix API enabled, same Google Cloud project as `VITE_GOOGLE_MAPS_API_KEY`) used server-side by the AI Brain's `log_mileage_trip` tool to auto-calculate driving distance. Fails closed (asks the user for an exact mile count instead) if unset — safe, but the auto-calculation feature is inert until this is set.
   - ✅ `ENCRYPTION_KEY` — set, required for Plaid token encryption
   - ✅ `PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENV=production`
   - ✅ `VITE_SENTRY_DSN` — set, Sentry.io active with Claude API connected
@@ -231,7 +232,8 @@ Express 4.19 API (api/)
 
 ### Google Cloud Console (OAuth + Maps)
 - **OAuth:** Google sign-in. `lumiereledger.com` added to authorized domains + redirect URIs (done 2026-05-16).
-- **Maps API:** `VITE_GOOGLE_MAPS_API_KEY` set in Vercel. Powers mileage A→B→A round-trip (in progress).
+- **Maps API:** `VITE_GOOGLE_MAPS_API_KEY` set in Vercel. Powers mileage A→B→A round-trip on the Mileage page (client-side, browser Maps JS SDK).
+- **Maps API (server-side, v7.18.0):** `GOOGLE_MAPS_SERVER_KEY` — separate key, Distance Matrix API enabled, used by `api/utils/googleMaps.js` (`getDrivingDistanceMiles()`) so the AI Brain's `log_mileage_trip` tool can auto-calculate exact mileage from an origin/destination without asking the user. Cannot reuse the `VITE_` key — it's HTTP-referrer-restricted to the app's domain and unusable from Node.
 
 ### UptimeRobot
 - **Purpose:** Layer 1 external monitoring — pings `/api/health` every 5 minutes.
