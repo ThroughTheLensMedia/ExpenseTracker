@@ -72,10 +72,11 @@
 ---
 
 ### Google Cloud Console
-**Purpose:** Google OAuth (sign-in) + Google Maps API (mileage tracking, client-side round-trip calc and server-side AI Brain auto-calc)
-**Plan:** Free tier (Maps has usage limits — Distance Matrix billed per-request past free tier, same billing account as the existing Maps key)
+**Purpose:** Google OAuth (sign-in) + Google Maps API (mileage tracking, client-side round-trip calc)
+**Plan:** Free tier (Maps has usage limits)
 **Dashboard:** https://console.cloud.google.com
-**Used for:** Supabase Google OAuth provider, `VITE_GOOGLE_MAPS_API_KEY` (browser, Mileage page map tool), `GOOGLE_MAPS_SERVER_KEY` (v7.18.0, server-side, Distance Matrix API only — used by the AI Brain's `log_mileage_trip` tool)
+**Used for:** Supabase Google OAuth provider, `VITE_GOOGLE_MAPS_API_KEY` (browser, Mileage page map tool)
+**Not in use — decision, not a gap:** `GOOGLE_MAPS_SERVER_KEY` / Distance Matrix API (server-side AI Brain mileage auto-calc, built v7.18.0) is intentionally unconfigured. Google requires enabling billing on the project to use Distance Matrix, and the billing-enabled-project quota increase Joshua requested would require prepaying for the added connections — decided 2026-07-14 it's not worth the cost. The AI Brain's `log_mileage_trip` tool fails closed by design (logs the trip flagged `needs_review` instead of losing it; the weekly digest surfaces it for manual mileage entry). Do not re-pursue without Joshua's direction.
 
 ---
 

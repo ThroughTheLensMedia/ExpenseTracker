@@ -186,7 +186,7 @@ Express 4.19 API (api/)
   - ✅ `JWT_SECRET`, `CRON_SECRET`, `NODE_ENV=production`
   - ✅ `RESEND_API_KEY`, `RESEND_FROM`
   - ✅ `VITE_GOOGLE_MAPS_API_KEY`
-  - ⚠️ `GOOGLE_MAPS_SERVER_KEY` — **v7.18.0, needs to be set** — separate, non-browser-restricted Google Maps key (Distance Matrix API enabled, same Google Cloud project as `VITE_GOOGLE_MAPS_API_KEY`) used server-side by the AI Brain's `log_mileage_trip` tool to auto-calculate driving distance. Fails closed (asks the user for an exact mile count instead) if unset — safe, but the auto-calculation feature is inert until this is set.
+  - ⛔ `GOOGLE_MAPS_SERVER_KEY` — **intentionally NOT set (decision confirmed 2026-07-14)** — Google requires enabling billing on the Cloud project to use the Distance Matrix API, and the billing-enabled-project quota request Joshua submitted would require prepaying for the added connections. Not worth the cost for this feature. The AI Brain's `log_mileage_trip` tool fails closed by design when this is unset: it still logs the trip (0 mi, `needs_review = true`) instead of losing it, and the weekly digest email flags it for Joshua to fill in the real mileage by hand. Do not re-enable or chase this without Joshua's explicit direction — this is a deliberate cost tradeoff, not an unfinished setup step.
   - ✅ `ENCRYPTION_KEY` — set, required for Plaid token encryption
   - ✅ `PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENV=production`
   - ✅ `VITE_SENTRY_DSN` — set, Sentry.io active with Claude API connected
@@ -233,7 +233,7 @@ Express 4.19 API (api/)
 ### Google Cloud Console (OAuth + Maps)
 - **OAuth:** Google sign-in. `lumiereledger.com` added to authorized domains + redirect URIs (done 2026-05-16).
 - **Maps API:** `VITE_GOOGLE_MAPS_API_KEY` set in Vercel. Powers mileage A→B→A round-trip on the Mileage page (client-side, browser Maps JS SDK).
-- **Maps API (server-side, v7.18.0):** `GOOGLE_MAPS_SERVER_KEY` — separate key, Distance Matrix API enabled, used by `api/utils/googleMaps.js` (`getDrivingDistanceMiles()`) so the AI Brain's `log_mileage_trip` tool can auto-calculate exact mileage from an origin/destination without asking the user. Cannot reuse the `VITE_` key — it's HTTP-referrer-restricted to the app's domain and unusable from Node.
+- **Maps API (server-side, v7.18.0 — intentionally inactive):** `api/utils/googleMaps.js` (`getDrivingDistanceMiles()`) would let the AI Brain's `log_mileage_trip` tool auto-calculate exact mileage server-side, using a separate `GOOGLE_MAPS_SERVER_KEY` (can't reuse the browser `VITE_` key — it's HTTP-referrer-restricted and unusable from Node). Joshua decided not to enable billing for this (Google requires prepaying for the added billing-enabled-project quota) — confirmed 2026-07-14, not a bug. The code fails closed by design: every mileage trip still gets logged (flagged `needs_review` when the calculation can't run), and the weekly digest surfaces those for manual mileage entry. See Vercel env var list above for the full reasoning — don't treat the missing key as something to fix.
 
 ### UptimeRobot
 - **Purpose:** Layer 1 external monitoring — pings `/api/health` every 5 minutes.
