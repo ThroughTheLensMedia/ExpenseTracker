@@ -33,7 +33,7 @@ import OnboardingChecklist from './components/OnboardingChecklist.jsx';
 // Single source of truth for the "What's New" badge — the check (useEffect below)
 // and the dismiss handler (handleWhatsNewClick) must read the exact same value,
 // or the badge re-lights immediately after being dismissed.
-const CURRENT_VERSION = "7.16.1";
+const CURRENT_VERSION = "7.17.0";
 
 // Shared route-level loading fallback — matches app's existing spinner style
 function PageSpinner() {
@@ -345,7 +345,7 @@ function AppContent() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
             <img src="/icon.png" alt="Lumière Ledger Logo" style={{ width: '40px', height: '40px', borderRadius: '10px' }} />
             <div>
-              <div className="title" style={{ fontSize: '1.8rem', fontWeight: 950, letterSpacing: '-0.02em', whiteSpace: 'nowrap', lineHeight: 1 }}>LUMIÈRE LEDGER</div>
+              <div className="header-title">LUMIÈRE LEDGER</div>
               <div className="muted" style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.05em', marginTop: '2px', opacity: 0.6 }}>INTEL FOR TODAY'S PHOTOGRAPHER</div>
             </div>
           </div>

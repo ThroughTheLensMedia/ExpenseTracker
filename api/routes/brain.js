@@ -154,6 +154,22 @@ const BRAIN_TOOLS = [{
                 },
                 required: ['transaction_id']
             }
+        },
+        {
+            name: 'log_mileage_trip',
+            description: 'Log a business mileage trip (origin, destination, round trip or one-way) to the Mileage page. Returns a pending action for user confirmation — never executes directly. If the user does not give an exact mile count, do NOT guess — ask them for it, or tell them they can use the Mileage page\'s route calculator (map-based A→B→A tool) to auto-calculate and log it precisely for tax purposes.',
+            parameters: {
+                type: 'OBJECT',
+                properties: {
+                    origin:        { type: 'STRING',  description: 'Starting location — required' },
+                    destination:   { type: 'STRING',  description: 'Destination location — required' },
+                    is_round_trip: { type: 'BOOLEAN', description: 'Whether this is a round trip (there and back) — required' },
+                    log_date:      { type: 'STRING',  description: 'Trip date YYYY-MM-DD — required. Use today if the user says "today".' },
+                    miles:         { type: 'NUMBER',  description: 'Exact total mileage for the trip, as stated by the user — required. Never estimate or guess this value.' },
+                    notes:         { type: 'STRING',  description: 'Optional trip purpose or client/shoot name' }
+                },
+                required: ['origin', 'destination', 'is_round_trip', 'log_date', 'miles']
+            }
         }
     ]
 }];
@@ -527,6 +543,28 @@ async function executeTool(name, args, sb, userId) {
             };
         }
 
+        case 'log_mileage_trip': {
+            if (!args.origin)      return { error: 'Missing origin. Ask the user where the trip started.' };
+            if (!args.destination) return { error: 'Missing destination. Ask the user where the trip ended.' };
+            if (args.is_round_trip === undefined) return { error: 'Missing round-trip flag. Ask the user if this was a round trip or one-way.' };
+            if (!args.log_date)    return { error: 'Missing date. Ask the user for the trip date.' };
+            if (!args.miles)       return { error: 'Missing exact mileage. Ask the user for the total mile count, or suggest they use the Mileage page\'s route calculator (map-based tool) to auto-calculate it precisely for tax purposes. Never estimate this yourself.' };
+
+            const routeLabel = `${args.origin} → ${args.destination}${args.is_round_trip ? ' (Round Trip)' : ''}`;
+            const purpose = args.notes ? `${args.notes} | ${routeLabel}` : routeLabel;
+
+            return {
+                __pending: true,
+                pendingAction: {
+                    id: `pending_${Date.now()}`,
+                    type: 'log_mileage_trip',
+                    description: `Log **${args.miles} mi** — ${routeLabel} on ${args.log_date}`,
+                    payload: { log_date: args.log_date, miles: args.miles, purpose }
+                },
+                message: `Pending confirmation: log ${args.miles} mi trip.`
+            };
+        }
+
         default:
             return { error: `Unknown tool: ${name}` };
     }
@@ -593,11 +631,11 @@ What I can change (requires your approval before anything saves):
 - Update a CRM lead status (Inquiry → Contacted → Booked → Completed → Lost).
 - Mark an invoice paid, sent, draft, or void.
 - Link an existing transaction to a CRM lead.
+- Log a business mileage trip (I'll ask for the exact mile count if you don't give it, or point you to the Mileage page's route calculator).
 
 What I cannot do yet:
 - Create an invoice from scratch (coming in a future update).
 - Upload or attach receipts.
-- Access mileage logs directly (use the Mileage page).
 - Connect to your bank in real time (Plaid integration is pending approval).
 - Send emails or client notifications.
 - Access prior-year tax filings or external accounting software.
@@ -620,6 +658,9 @@ TRANSACTION RULES:
 - When a user says they have purchased something, spent money, or mentions past expenses, ALWAYS call search_transactions first to check if those records already exist. Only offer create_transaction if the search returns no matching results.
 - To edit an existing transaction (rename vendor, change category, fix notes/date/amount): call search_transactions first to get the UUID, then call update_transaction with only the fields that need changing. Never guess a UUID.
 - If a search returns 0 results, broaden the search — try a different vendor keyword, remove the category filter, or search by date range. Never confidently tell the user they have no spending in a category without trying at least 2 search variations.
+
+MILEAGE RULES:
+- Before calling log_mileage_trip, confirm you have: origin, destination, round-trip yes/no, date, and the exact mile count. If the mile count is missing, ask the user for it — or suggest they use the Mileage page's map-based route calculator to auto-calculate and log it precisely for tax purposes. Never estimate or guess a mile count yourself.
 
 SUBSCRIPTIONS RULE:
 - When the user asks about "subscriptions", "recurring charges", "monthly bills", "what I pay every month", or similar phrasing:

@@ -5,6 +5,17 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.17.0] — 2026-07-13
+
+### Added — AI Brain mileage logging + Fixed — PWA hamburger menu off-screen
+
+- **`api/routes/brain.js`** — new 12th agentic tool `log_mileage_trip`. Follows the same pending-confirmation pattern as the other 5 write tools (never writes directly). Requires origin, destination, round-trip flag, date, and exact mile count; if the mile count is missing, the system prompt instructs Gemini to ask the user for it or point them to the Mileage page's map-based route calculator rather than estimate — mileage feeds tax deduction totals, so a guessed number was not acceptable. Approving the pending action posts to the existing `POST /mileage` endpoint — no new backend routes or external dependencies (no server-side Google Maps call was added; that calculation still lives client-side in `Mileage.jsx` as before).
+- **`web-react/src/components/AssistantSidebar.jsx`** — added the `log_mileage_trip` branch to `handleApprove`.
+- **`web-react/src/index.css` / `App.jsx`** — fixed the PWA hamburger (`.mobile-toggle`) menu button being pushed off-screen on mobile. Root cause: the v7.11.0 brand-font pass switched the header title to the wider "Fraunces" serif display font, and an inline style on top of that forced it even larger (`1.8rem`/weight `950`) with `white-space: nowrap`; the header had no `flex-wrap` and the toggle had no `flex-shrink: 0`, so the wider nowrap title crowded the toggle out of the visible row on narrow viewports. Moved the title's inline styles into a new `.header-title` CSS class (inline styles can't be overridden by media queries), added a `max-width: 768px` rule shrinking that title, added `flex-wrap` to the header and `flex-shrink: 0` to `.mobile-toggle` at that same breakpoint. Verified in an isolated render at both mobile (375px) and full width — toggle stays visible and clickable in both.
+- Update CHANGELOG.md, ChangeLogModal.jsx, version.json, App.jsx
+
+---
+
 ## [v7.16.1] — 2026-07-06
 
 ### Fixed — AI Brain gave fabricated credit card payment totals

@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.17.0', date: 'JUL 13, 2026', color: '#4c7dff', items: [
+        '<strong>New:</strong> The Lumière Assistant can now log a mileage trip for you — tell it where you drove and it\'ll ask for the exact mile count if you don\'t give it, so your tax deduction stays accurate.',
+        '<strong>Fixed:</strong> The mobile menu button could get pushed off-screen on some phones. It now stays visible and tappable.',
+    ]},
     { version: '7.16.1', date: 'JUL 6, 2026', color: '#94a3b8', items: [
         '<strong>Fixed:</strong> The Lumière Assistant could give an incorrect total when asked how much you\'ve paid toward credit cards or transfers this year. It now computes that number directly from your ledger instead of estimating it.',
     ]},

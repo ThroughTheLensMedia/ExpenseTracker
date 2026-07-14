@@ -134,6 +134,10 @@ export default function AssistantSidebar() {
                 await apiPatch(`/expenses/${action.payload.transactionId}`, action.payload.updates);
                 setMessages(prev => [...prev, { role: 'assistant', text: `Done — **${action.payload.displayVendor}** has been updated.` }]);
                 dispatchRefresh('transactions');
+            } else if (action.type === 'log_mileage_trip') {
+                await apiPost('/mileage', action.payload);
+                setMessages(prev => [...prev, { role: 'assistant', text: `Done — mileage log added.` }]);
+                dispatchRefresh('mileage');
             }
         } catch (err) {
             setMessages(prev => [...prev, { role: 'assistant', text: `Action failed: ${err.message}` }]);
