@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { apiPost, apiPut } from '../../api';
+import { apiPost, apiPut, apiDelete } from '../../api';
 import { 
     SectionHeader, 
     ControlSummaryPanel, 
@@ -32,7 +32,8 @@ export default function OperationalIntelligenceSection({ data, onReload }) {
                 annual_cost: r.annualProjectedCents || 0,
                 flag: flag,
                 isSubscription: r.flags?.isSubscription || false,
-                cadenceLabel: r.cadenceLabel || 'Unconfirmed'
+                cadenceLabel: r.cadenceLabel || 'Unconfirmed',
+                mergedFrom: r.mergedFrom || []
             };
         }).sort((a, b) => b.monthly_cost - a.monthly_cost);
     }, [data]);
@@ -123,6 +124,16 @@ export default function OperationalIntelligenceSection({ data, onReload }) {
         }
     };
 
+    const handleUnmerge = async (vendorKey) => {
+        try {
+            await apiDelete(`/vendors/alias/${encodeURIComponent(vendorKey)}`);
+            if (onReload) await onReload();
+            else window.location.reload();
+        } catch (err) {
+            alert('Failed to unmerge vendor: ' + err.message);
+        }
+    };
+
     if (rows.length === 0) {
         return (
             <div className="card glass glow-blue" style={{ margin: 0, padding: '30px' }}>
@@ -149,7 +160,7 @@ export default function OperationalIntelligenceSection({ data, onReload }) {
                 />
             </div>
 
-            <RecurringVendorsTable rows={filteredRows} onRowClick={handleRowClick} onIgnoreToggle={handleIgnoreToggle} onMerge={handleMerge} />
+            <RecurringVendorsTable rows={filteredRows} onRowClick={handleRowClick} onIgnoreToggle={handleIgnoreToggle} onMerge={handleMerge} onUnmerge={handleUnmerge} />
         </div>
     );
 }

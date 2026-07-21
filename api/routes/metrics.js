@@ -73,7 +73,16 @@ router.get("/summary", async (req, res) => {
     // one canonical name for recurring-spend rollups. Untouched vendors pass
     // through unchanged — this map is empty until a user explicitly merges.
     const vendorAliasMap = {};
-    (vAliases || []).forEach(a => { vendorAliasMap[String(a.vendor_key).toLowerCase()] = String(a.canonical_name).toLowerCase(); });
+    // canonical_name -> [vendor_key, ...] merged into it, so the UI can offer
+    // an "Unmerge" action per variant instead of just a one-way Merge.
+    const mergedFromMap = {};
+    (vAliases || []).forEach(a => {
+        const key = String(a.vendor_key).toLowerCase();
+        const canonical = String(a.canonical_name).toLowerCase();
+        vendorAliasMap[key] = canonical;
+        if (!mergedFromMap[canonical]) mergedFromMap[canonical] = [];
+        mergedFromMap[canonical].push(key);
+    });
 
     let ytdIncome = 0;
     let ytdSpend = 0;
@@ -232,6 +241,7 @@ router.get("/summary", async (req, res) => {
                 lastSeen: data.lastDate,
                 cadenceConfirmed,
                 cadenceLabel,
+                mergedFrom: mergedFromMap[vend] || [],
                 flags: {
                     isSubscription: isKnownSub,
                     review: data.count < 6 && avgCostPerOccurrence > 2000,

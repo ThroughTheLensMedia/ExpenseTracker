@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.21.1', date: 'JUL 21, 2026', color: '#94a3b8', items: [
+        '<strong>New:</strong> Merged vendors on the Operational Intelligence table now show an "Unmerge" option, so a merge can be undone if it was a mistake.',
+    ]},
     { version: '7.21.0', date: 'JUL 21, 2026', color: '#4c7dff', items: [
         '<strong>New:</strong> You can now set a "Billing Cycle" (Monthly/Quarterly/Annual) on a recurring transaction, so an annual renewal doesn\'t get averaged into a misleading monthly figure.',
         '<strong>New:</strong> Merge vendor name variants (e.g. combine "Starlink Internet" into "Starlink") directly from the Operational Intelligence table on your dashboard.',

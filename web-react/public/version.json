@@ -1,1 +1,1 @@
-{"version":"7.21.0","release_date":"2026-07-21","codename":"Lumière Ledger","notes":"v7.21.0: Set a transaction's Billing Cycle and merge vendor name variants on the dashboard"}
+{"version":"7.21.1","release_date":"2026-07-21","codename":"Lumière Ledger","notes":"v7.21.1: Added Unmerge action for vendor merges on the Operational Intelligence table"}

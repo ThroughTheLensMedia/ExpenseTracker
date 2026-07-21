@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.21.1] — 2026-07-21
+
+### Changed — Unmerge action for vendor merges
+
+- **`api/routes/metrics.js`** — each recurring vendor now returns `mergedFrom`, the list of vendor name variants merged into it (from `vendor_aliases`), so the UI can distinguish a merged vendor from an untouched one.
+- **Operational Intelligence table** — merged variants now show as small removable chips under the canonical vendor name (e.g. "starlink internet ✕" under "Starlink"). Clicking the ✕ calls the existing `DELETE /api/vendors/alias/:vendor_key` endpoint (added v7.20.1, unused until now) and splits that variant back into its own row.
+- Update CHANGELOG.md, ChangeLogModal.jsx, version.json, App.jsx, CLAUDE.md
+
+---
+
 ## [v7.21.0] — 2026-07-21
 
 ### Changed — Phase 3: Billing Cycle field + vendor merging in the UI

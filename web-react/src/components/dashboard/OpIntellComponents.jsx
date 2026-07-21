@@ -96,7 +96,7 @@ export const TopOffendersSnapshot = ({ offenders }) => {
     );
 };
 
-export const RecurringVendorsTable = ({ rows, onRowClick, onIgnoreToggle, onMerge }) => {
+export const RecurringVendorsTable = ({ rows, onRowClick, onIgnoreToggle, onMerge, onUnmerge }) => {
     const [mergingVendor, setMergingVendor] = useState(null);
     const [mergeTarget, setMergeTarget] = useState('');
     const [merging, setMerging] = useState(false);
@@ -151,6 +151,30 @@ export const RecurringVendorsTable = ({ rows, onRowClick, onIgnoreToggle, onMerg
                                         <button className="btn sm secondary" style={{ padding: '4px 8px', fontSize: '9px' }} onClick={e => { e.stopPropagation(); setMergingVendor(null); }}>✕</button>
                                     </div>
                                 ) : row.vendor}
+                                {!mergingVendor && row.mergedFrom && row.mergedFrom.length > 0 && (
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }} onClick={e => e.stopPropagation()}>
+                                        {row.mergedFrom.map(mv => (
+                                            <span
+                                                key={mv}
+                                                style={{
+                                                    fontSize: '9px', fontWeight: 700, textTransform: 'capitalize', letterSpacing: '0.02em',
+                                                    color: 'rgba(255,255,255,0.45)', background: 'rgba(255,255,255,0.04)',
+                                                    padding: '2px 6px', borderRadius: '999px', display: 'inline-flex', alignItems: 'center', gap: '4px',
+                                                }}
+                                                title={`"${mv}" is merged into this vendor`}
+                                            >
+                                                {mv}
+                                                <button
+                                                    onClick={() => onUnmerge && onUnmerge(mv)}
+                                                    style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', padding: 0, fontSize: '10px', lineHeight: 1 }}
+                                                    title={`Unmerge "${mv}" back into its own row`}
+                                                >
+                                                    ✕
+                                                </button>
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
                             </td>
                             <td className="money" style={{ padding: '12px 15px', textAlign: 'right' }}>
                                 ${fmtCents(row.monthly_cost)}/mo
