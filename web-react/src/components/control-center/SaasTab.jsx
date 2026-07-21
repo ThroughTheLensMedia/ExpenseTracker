@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
 import { apiPost, apiPatch, apiDelete } from '../../api';
 import { useModal } from '../ModalContext.jsx';
-import { PLAID_EXEMPT_IDS, deriveTier } from '../../constants/billing';
+import { PLAID_EXEMPT_IDS, ADMIN_UUID, deriveTier } from '../../constants/billing';
+
+const INVITE_VALID_DAYS = 90;
+const EXTEND_DAYS = 90;
+const STRIPE_FEE_PCT = 0.029;
+const STRIPE_FEE_FLAT = 0.30;
 
 const VIEWS = [
     { key: 'members', label: '👥  Active Members' },
@@ -22,12 +27,12 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
     const [editingSession, setEditingSession] = useState(null);
     const [editSessionData, setEditSessionData] = useState({ name: '', plan: '', notes: '' });
 
-    const isAdmin = user?.email?.toLowerCase() === 'joshua.deuermeyer@gmail.com';
+    const isAdmin = user?.id === ADMIN_UUID;
 
     const handleGenerateBetaCode = async () => {
         setGenCodeLoading(true);
         try {
-            await apiPost('/admin/beta-codes', { daysValid: 90, assigned_to_name: inviteName, assigned_to_email: inviteEmail, plan_type: invitePlan, notes: inviteNotes || undefined });
+            await apiPost('/admin/beta-codes', { daysValid: INVITE_VALID_DAYS, assigned_to_name: inviteName, assigned_to_email: inviteEmail, plan_type: invitePlan, notes: inviteNotes || undefined });
             modal.alert(inviteEmail ? `Success! Invite created and emailed to ${inviteEmail}.` : `Success! Invite code ${inviteName ? 'for ' + inviteName : ''} created.`);
             setInviteName(''); setInviteEmail(''); setInvitePlan('beta_tester'); setInviteNotes('');
             onReload(true);
@@ -60,9 +65,9 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
     };
 
     const handleExtendSubscription = async (userId, email) => {
-        const ok = await modal.confirm(`Extend ${email}'s access by 90 days?`);
+        const ok = await modal.confirm(`Extend ${email}'s access by ${EXTEND_DAYS} days?`);
         if (!ok) return;
-        try { await apiPost(`/admin/subscriptions/${userId}/extend`); modal.alert(`Success! 90 days added to ${email}.`); onReload(true); } catch (err) { modal.alert(err.message); }
+        try { await apiPost(`/admin/subscriptions/${userId}/extend`); modal.alert(`Success! ${EXTEND_DAYS} days added to ${email}.`); onReload(true); } catch (err) { modal.alert(err.message); }
     };
 
     const handleRevokeSubscription = async (userId, email) => {
@@ -91,7 +96,7 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
         return [d > 0 ? `${d}d` : '', h > 0 ? `${h}h` : '', `${m}m`].filter(Boolean).join(' ');
     };
 
-    const PLAN_OPTIONS = ['free', 'free_beta', 'beta_tester', 'lifetime', 'core_monthly', 'core_annual', 'studio_monthly', 'studio_annual'];
+    const PLAN_OPTIONS = ['free', 'free_beta', 'beta_tester', 'lifetime', 'sync_monthly', 'sync_annual', 'core_monthly', 'core_annual', 'studio_monthly', 'studio_annual'];
 
     const PLAN_COST = {
         free: 0, free_beta: 0, beta_tester: 0, lifetime: 0,
@@ -100,7 +105,7 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
         core_monthly: 9, core_annual: 7.17,
         studio_monthly: 19, studio_annual: 15.17,
     };
-    const TIER_COLORS = { free: 'secondary', sync: 'secondary', core: 'warn', studio: 'ok' };
+    const TIER_COLORS = { free: 'secondary', sync: 'accent', core: 'warn', studio: 'ok' };
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', maxWidth: '100%', boxSizing: 'border-box' }}>
@@ -226,7 +231,9 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
                                 const tier = deriveTier(s.plan_type, s.admin_tier);
                                 const baseCost = PLAN_COST[s.plan_type] || 0;
                                 const plaidFee = PLAID_EXEMPT_IDS.includes(s.user_id) ? 0 : (s.plaid_account_count || 0) * 0.50;
-                                const monthlyCost = baseCost + plaidFee;
+                                // Stripe passes this through at cost on the Plaid subtotal only — see PLAID_BILLING_SPEC.md
+                                const stripePassThroughFee = plaidFee > 0 ? (plaidFee * STRIPE_FEE_PCT) + STRIPE_FEE_FLAT : 0;
+                                const monthlyCost = baseCost + plaidFee + stripePassThroughFee;
                                 const joinedDate = s.joined_at ? new Date(s.joined_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
                                 return (
                                     <tr key={s.user_id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
@@ -235,10 +242,15 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
                                             <div className="muted" style={{ fontSize: '11px', marginTop: '2px' }}>{s.email}</div>
                                         </td>
                                         <td><span className={`tag ${TIER_COLORS[tier]}`} style={{ fontSize: '10px', fontWeight: 900 }}>{tier.toUpperCase()}</span></td>
-                                        <td><span className="tag secondary" style={{ fontSize: '10px', fontWeight: 800 }}>{(s.plan_type || 'free').toUpperCase().replace(/_/g, ' ')}</span></td>
+                                        <td>
+                                            <span className="tag secondary" style={{ fontSize: '10px', fontWeight: 800 }}>{(s.plan_type || 'free').toUpperCase().replace(/_/g, ' ')}</span>
+                                            {monthlyCost > 0 && !s.stripe_customer_id && (
+                                                <span className="tag bad" style={{ fontSize: '9px', fontWeight: 900, marginLeft: '6px' }} title="No Stripe customer on this record — not an active billed subscription. Likely a manually granted/legacy account.">NO STRIPE</span>
+                                            )}
+                                        </td>
                                         <td style={{ fontWeight: 900, fontSize: '13px', color: monthlyCost > 0 ? '#4ade80' : 'rgba(255,255,255,0.35)' }}>
                                             {monthlyCost > 0 ? (
-                                                <span title={plaidFee > 0 ? `$${baseCost.toFixed(2)} plan + $${plaidFee.toFixed(2)} Plaid` : undefined}>
+                                                <span title={plaidFee > 0 ? `$${baseCost.toFixed(2)} plan + $${plaidFee.toFixed(2)} Plaid + $${stripePassThroughFee.toFixed(2)} Stripe fee` : undefined}>
                                                     ${monthlyCost.toFixed(2)}
                                                 </span>
                                             ) : '—'}

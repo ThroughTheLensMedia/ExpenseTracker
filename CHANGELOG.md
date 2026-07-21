@@ -5,6 +5,20 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.19.2] — 2026-07-21
+
+### Fixed — SaaS admin dashboard hardcoded-values cleanup
+
+- **`isAdmin` check** — `SaasTab.jsx` gated the whole admin console on a hardcoded login email string. Now checks `user.id === ADMIN_UUID` (new export in `web-react/src/constants/billing.js`), matching the single-source-of-truth pattern from the v7.10.11 hardcoded constants audit.
+- **`PLAN_OPTIONS` dropdown** — was missing `sync_monthly`/`sync_annual`, both real live Stripe-configured tiers. There was no way to set a user to Sync from the Edit Session panel without direct SQL. Added.
+- **Duration constants** — `90`-day invite validity and extend duration were repeated 3x as raw literals in `SaasTab.jsx`. Extracted to `INVITE_VALID_DAYS`/`EXTEND_DAYS`.
+- **Plaid billing estimate** — the admin "Monthly Est." column showed `accounts × $0.50` only. Per `PLAID_BILLING_SPEC.md`, every real Plaid invoice also carries a 2.9%+$0.30 Stripe processing fee on that subtotal — the estimate was quietly under-counting what Plaid users are actually charged. Now included, with the tooltip breakdown updated to show all three line items.
+- **Tier colors** — `TIER_COLORS` mapped both `free` and `sync` to the same gray `secondary` tag, making a paying Sync member look unpaid at a glance. Added a new `.tag.accent` CSS class (`index.css`) built on `var(--accent)` so Sync gets its own brand-consistent color.
+- `PLAN_COST` price map left unchanged — confirmed as a deliberate display-only estimate, not tied to live Stripe price IDs, per Joshua's direction (no reason to over-engineer this).
+- Update CHANGELOG.md, ChangeLogModal.jsx, version.json, App.jsx, ROADMAP.md
+
+---
+
 ## [v7.19.1] — 2026-07-20
 
 ### Fixed — SaaS admin "Edit Session" save crashed on every user

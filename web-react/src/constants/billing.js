@@ -6,10 +6,13 @@
 // AND this file — there is no automated way to share code across the
 // frontend/backend boundary here, so keep the two in sync by hand.
 
+// Joshua Deuermeyer — owner/admin account. Must match api/constants.js ADMIN_UUID.
+export const ADMIN_UUID = '49e7efcb-6434-4f0c-9563-3151a6d50df9';
+
 // Joshua Deuermeyer (admin) + Michelle Gornichec — comped Plaid billing.
 // Confirmed 2026-07-01: everyone else pays. Must match api/constants.js.
 export const PLAID_EXEMPT_IDS = [
-    '49e7efcb-6434-4f0c-9563-3151a6d50df9',
+    ADMIN_UUID,
     'fcb92809-70f1-4ae0-b39c-e317378a01a7',
 ];
 

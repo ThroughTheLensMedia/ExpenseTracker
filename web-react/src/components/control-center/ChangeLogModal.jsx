@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.19.2', date: 'JUL 21, 2026', color: '#94a3b8', items: [
+        '<strong>Cleanup:</strong> Internal fixes to the admin SaaS dashboard\'s billing estimate and tier display — no visible changes for regular members.',
+    ]},
     { version: '7.19.1', date: 'JUL 20, 2026', color: '#94a3b8', items: [
         '<strong>Fixed:</strong> Editing a member\'s name/plan in the SaaS admin dashboard was failing with a database error for every user. Now saves correctly.',
     ]},
