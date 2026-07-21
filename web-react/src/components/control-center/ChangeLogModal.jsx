@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.19.1', date: 'JUL 20, 2026', color: '#94a3b8', items: [
+        '<strong>Fixed:</strong> Editing a member\'s name/plan in the SaaS admin dashboard was failing with a database error for every user. Now saves correctly.',
+    ]},
     { version: '7.19.0', date: 'JUL 14, 2026', color: '#4c7dff', items: [
         '<strong>Improved:</strong> If the Lumière Assistant can\'t automatically figure out a trip\'s mileage, it now logs the trip anyway (flagged for you to update) instead of losing it entirely.',
         '<strong>Improved:</strong> The weekly digest now flags mileage entries that are missing either a business purpose note or an exact mile count.',

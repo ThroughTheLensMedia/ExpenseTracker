@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.19.1] — 2026-07-20
+
+### Fixed — SaaS admin "Edit Session" save crashed on every user
+
+- **Root cause (confirmed via schema inspection, not guessed):** `api/routes/admin.js`'s `PATCH /admin/subscriptions/:userId` has always attempted `UPDATE user_subscriptions SET display_name = ...`, but that column never existed on `user_subscriptions` — it threw a Supabase "column not found in schema cache" error before the rest of the update (plan_type, status, expires_at) could run. This affected every user edit from the SaaS Management tab, not just the one reported (Emma Deuermeyer, expired → Lifetime).
+- **`api/migrations/014_add_display_name_to_subscriptions.sql`** (applied to production) — adds `display_name TEXT` to `user_subscriptions`. No code changes needed — the GET route (line 315-321) and PATCH route (line 358-364) already read/wrote this column correctly; they were just failing because it didn't exist.
+- Update CHANGELOG.md, ChangeLogModal.jsx, version.json, App.jsx, CLAUDE.md
+
+---
+
 ## [v7.19.0] — 2026-07-14
 
 ### Changed — Failed mileage auto-calculation no longer drops the trip

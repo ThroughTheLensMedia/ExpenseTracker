@@ -16,7 +16,7 @@ The world's most elite, AI-driven financial command center for creative professi
 
 | Property | Value |
 |----------|-------|
-| **Version** | v7.16.1 |
+| **Version** | v7.19.1 |
 | **Status** | Active Development — Open Public Launch |
 | **Deploy target** | `www.lumiereledger.com` (primary) — `app.throughthelens.media` 301 redirects to it |
 | **Deployment** | Vercel (auto-deploy on `git push origin main`) |
@@ -391,6 +391,7 @@ Plaid-connected accounts use `source: 'plaid'` regardless of institution. Known 
 | Missing doc | Badge fires when: `amount_cents > 7500` AND `tax_deductible = true` AND `receipt_link` is null |
 | Import clock | `daysSinceImport` ignores `source === 'manual'` — only bank/CSV imports reset the clock |
 | Account aliases | `account_aliases` table: `(user_id, source_key, display_name, visible)`. Upsert via `PUT /api/accounts/alias`. |
+| Subscription display name | `user_subscriptions.display_name` (added v7.19.1, `api/migrations/014_add_display_name_to_subscriptions.sql`) — admin-settable name override, edited via SaaS Management tab `PATCH /admin/subscriptions/:userId`. Distinct from `account_aliases.display_name` (per-account label) and Auth user metadata. |
 | Plaid billing exempt | `PLAID_BILLING_EXEMPT` from `api/constants.js` (single source of truth as of v7.10.11). Joshua + Michelle Gornichec (`fcb92809-70f1-4ae0-b39c-e317378a01a7`). Frontend mirror: `web-react/src/constants/billing.js`. |
 | Dashboard config | `dashboard_config JSONB` on `settings` table. Shape: `{ role, widgets: { invoices, forecast, performance_chart, top_expenses, insights, operational_intelligence } }`. Defaults all-on if null. Widget flag: `!== false`. |
 | Trial signup gate | New `auth.users` rows only get an active `user_subscriptions` row once `email_confirmed_at` is set (v7.10.13). No `profiles` table exists anywhere — use `listAllUsers()` from `api/utils/userDirectory.js` for any "all users" lookup. |
