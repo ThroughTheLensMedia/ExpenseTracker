@@ -5,6 +5,19 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.20.0] — 2026-07-21
+
+### Changed — Weekly digest now forecasts upcoming recurring subscription charges
+
+- **New "Upcoming Recurring Bills" card** in the weekly digest email, shown when at least one subscription is projected to charge again within the next 7 days. Omitted entirely when there are none, matching the existing conditional-card pattern (Mileage Needs Review).
+- **`api/utils/spendCategories.js`** — extracted `KNOWN_SUBSCRIPTION_VENDORS` (the keyword list used to detect subscriptions like Adobe/Netflix/Spotify) out of `api/routes/metrics.js` into the shared category util, so the dashboard's Subscriptions Radar widget and the new digest forecast agree on what counts as a subscription instead of maintaining two independent lists.
+- **`api/routes/cron.js`** — new `projectUpcomingSubscriptionCharges()`: pulls the trailing 365 days of expenses, groups by vendor, and includes only vendors flagged as a subscription (per-row `is_subscription` flag or a known-vendor keyword match) — a frequently recurring but non-subscription vendor (e.g. weekly Amazon shopping) is deliberately excluded. Cadence is derived from the actual gap between real charge dates when a vendor has 2+ occurrences in the window; a vendor seen only once (e.g. an annual renewal like Amazon Prime) assumes a 365-day cadence since there's no gap yet to measure.
+- **`api/utils/mailer.js`** — `sendWeeklyDigestEmail()` renders the new card, listing each upcoming vendor with its expected date and last-charged amount.
+- Also fixed as part of this diagnosis: the weekly digest's Income figure previously counted internal transfers between the user's own accounts, and Missing Receipts counted the user's entire history instead of just the current tax year — see v7.19.3 below.
+- Update CHANGELOG.md, ChangeLogModal.jsx, version.json, App.jsx, CLAUDE.md
+
+---
+
 ## [v7.19.3] — 2026-07-21
 
 ### Fixed — Weekly digest email miscounted income and missing receipts

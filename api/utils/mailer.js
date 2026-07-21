@@ -713,7 +713,7 @@ ${isPreview ? `<div style="background:#f59e0b;color:#000;padding:10px;text-align
     }
 }
 
-async function sendWeeklyDigestEmail({ to, name, weekLabel, incomeCents, spendCents, netCents, missingReceiptCount, mileageReviewCount, taxSetAsideCents, quarterLabel }) {
+async function sendWeeklyDigestEmail({ to, name, weekLabel, incomeCents, spendCents, netCents, missingReceiptCount, mileageReviewCount, taxSetAsideCents, quarterLabel, upcomingRecurringCharges }) {
     console.log(`[MAILER] Sending Weekly Digest to ${to}...`);
     const resend = getResend();
     if (!resend) return { success: false, error: "Mailer service not configured" };
@@ -772,11 +772,27 @@ async function sendWeeklyDigestEmail({ to, name, weekLabel, incomeCents, spendCe
   </table>
 
   ${mileageReviewCount > 0 ? `
-  <table style="width:100%;border-collapse:collapse;background:#111827;border-radius:16px;margin-bottom:28px;" cellpadding="0" cellspacing="0">
+  <table style="width:100%;border-collapse:collapse;background:#111827;border-radius:16px;margin-bottom:16px;" cellpadding="0" cellspacing="0">
     <tr><td style="padding:24px;">
       <div style="font-size:11px;font-weight:900;color:#f97316;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Mileage Needs Review</div>
       <div style="font-size:24px;font-weight:900;color:#fff;">${mileageReviewCount}</div>
       <div style="font-size:12px;color:#94a3b8;margin-top:4px;">AI-logged trip${mileageReviewCount === 1 ? '' : 's'} this week ${mileageReviewCount === 1 ? "is" : "are"} missing a business purpose note or an exact mile count — update on the Mileage page for accurate tax records</div>
+    </td></tr>
+  </table>` : ''}
+
+  ${(upcomingRecurringCharges && upcomingRecurringCharges.length > 0) ? `
+  <table style="width:100%;border-collapse:collapse;background:#111827;border-radius:16px;margin-bottom:28px;" cellpadding="0" cellspacing="0">
+    <tr><td style="padding:24px;">
+      <div style="font-size:11px;font-weight:900;color:#38bdf8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Upcoming Recurring Bills</div>
+      <table style="width:100%;border-collapse:collapse;">
+        ${upcomingRecurringCharges.map(c => `
+        <tr>
+          <td style="font-size:13px;color:#cbd5e1;padding:6px 0;text-transform:capitalize;">${c.vendor}</td>
+          <td style="text-align:right;font-size:12px;color:#94a3b8;padding:6px 0;">${new Date(c.expectedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</td>
+          <td style="text-align:right;font-size:14px;font-weight:900;color:#fff;padding:6px 0 6px 14px;">${fmt(c.amountCents)}</td>
+        </tr>`).join('')}
+      </table>
+      <div style="font-size:12px;color:#94a3b8;margin-top:10px;">expected in the next 7 days, based on your subscription history</div>
     </td></tr>
   </table>` : ''}
 

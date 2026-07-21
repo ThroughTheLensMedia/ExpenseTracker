@@ -20,6 +20,12 @@ const NON_SPEND_CATS = new Set([
 // Vendor name patterns that indicate a credit card payment or fund transfer.
 const CC_PAYMENT_PATTERN = /\b(autopay|payment|epayment|pmt|e-payment|bill pay|epay|xfer|transfer|apple card|ach|wire)\b/i;
 
+// Vendor substrings that identify a known recurring subscription, used
+// alongside the per-transaction `is_subscription` flag. Shared by
+// metrics.js (Subscriptions Radar widget) and cron.js (weekly digest
+// upcoming-bills forecast) so both agree on what counts as a subscription.
+const KNOWN_SUBSCRIPTION_VENDORS = ['adobe', 'netflix', 'hulu', 'spotify', 'apple', 'google workspace', 'squarespace', 'chatgpt', 'openai', 'amazon web services', 'aws'];
+
 // True if a row (given its category and/or vendor) should be excluded from
 // spend/income rollups — combines the category Set check and vendor pattern.
 function isNonSpendRow(category, vendor) {
@@ -28,4 +34,4 @@ function isNonSpendRow(category, vendor) {
     return false;
 }
 
-module.exports = { NON_SPEND_CATS, CC_PAYMENT_PATTERN, isNonSpendRow };
+module.exports = { NON_SPEND_CATS, CC_PAYMENT_PATTERN, KNOWN_SUBSCRIPTION_VENDORS, isNonSpendRow };

@@ -4,7 +4,7 @@ const { supabase } = require("../db");
 const { queueDailyReportEmail, queueMonthlyReportEmail, queueHealthAlertEmail, queueWeeklyDigestEmail, queueReEngagementEmail } = require("../utils/emailQueue");
 const { ADMIN_UUID } = require("../constants");
 const { listAllUsers } = require("../utils/userDirectory");
-const { NON_SPEND_CATS, CC_PAYMENT_PATTERN } = require("../utils/spendCategories");
+const { NON_SPEND_CATS, CC_PAYMENT_PATTERN, KNOWN_SUBSCRIPTION_VENDORS } = require("../utils/spendCategories");
 
 function isCronAuthorized(req) {
     const cronSecret = (process.env.CRON_SECRET || '').trim();
@@ -285,18 +285,74 @@ async function buildMonthlyReport(supabase, userId, startStr, endStr, avgStartSt
 // Builds the numbers for one user's weekly digest email — money in/out for the
 // past 7 days, count of currently-missing receipts, and a YTD-based tax
 // set-aside estimate (same math as the dashboard's TaxSetAsideWidget).
+// Projects which subscription vendors are due to charge again in the next
+// `windowDays` days. Cadence per vendor is derived from real charge dates
+// (average gap between consecutive hits) rather than assumed — except a
+// vendor seen only once in the trailing year (e.g. an annual renewal like
+// Amazon Prime), where there's no gap to measure and a 365-day cadence is
+// assumed. Only vendors flagged as subscriptions (per-row `is_subscription`
+// flag or a known-vendor keyword match — same list metrics.js's
+// Subscriptions Radar widget uses) are included; a vendor that's merely
+// recurring (e.g. weekly Amazon shopping) is deliberately excluded.
+function projectUpcomingSubscriptionCharges(subRows, todayStr, windowDays) {
+    const today = new Date(todayStr);
+    const windowEnd = new Date(today);
+    windowEnd.setDate(windowEnd.getDate() + windowDays);
+
+    const byVendor = {};
+    for (const row of (subRows || [])) {
+        const vend = (row.vendor || '').trim().toLowerCase();
+        if (!vend) continue;
+        const isKnownSub = row.is_subscription || KNOWN_SUBSCRIPTION_VENDORS.some(k => vend.includes(k));
+        if (!isKnownSub) continue;
+        if (!byVendor[vend]) byVendor[vend] = { dates: [], lastAmountCents: 0 };
+        byVendor[vend].dates.push(row.expense_date);
+        byVendor[vend].lastAmountCents = row.amount_cents;
+    }
+
+    const upcoming = [];
+    for (const [vend, data] of Object.entries(byVendor)) {
+        const dates = data.dates.slice().sort();
+        const lastDate = new Date(dates[dates.length - 1]);
+        let cadenceDays = 365;
+        if (dates.length >= 2) {
+            const gaps = [];
+            for (let i = 1; i < dates.length; i++) {
+                gaps.push((new Date(dates[i]) - new Date(dates[i - 1])) / (1000 * 60 * 60 * 24));
+            }
+            cadenceDays = Math.round(gaps.reduce((s, g) => s + g, 0) / gaps.length);
+        }
+        const nextExpected = new Date(lastDate);
+        nextExpected.setDate(nextExpected.getDate() + cadenceDays);
+        if (nextExpected >= today && nextExpected <= windowEnd) {
+            upcoming.push({
+                vendor: vend,
+                amountCents: data.lastAmountCents,
+                expectedDate: nextExpected.toISOString().split('T')[0],
+            });
+        }
+    }
+    upcoming.sort((a, b) => a.expectedDate.localeCompare(b.expectedDate));
+    return upcoming;
+}
+
 async function buildWeeklyDigest(supabase, userId, weekStartStr, weekEndStr, taxRate) {
     const year = new Date().getFullYear();
     const yearStartStr = `${year}-01-01`;
     const todayStr = new Date().toISOString().split('T')[0];
+    const oneYearAgo = new Date();
+    oneYearAgo.setDate(oneYearAgo.getDate() - 365);
+    const oneYearAgoStr = oneYearAgo.toISOString().split('T')[0];
 
-    const [{ data: weekRows }, { data: yearRows }, { count: missingReceiptCount }, { data: mileageRows }] = await Promise.all([
+    const [{ data: weekRows }, { data: yearRows }, { count: missingReceiptCount }, { data: mileageRows }, { data: subRows }] = await Promise.all([
         supabase.from('expenses').select('amount_cents, category').eq('user_id', userId).gte('expense_date', weekStartStr).lte('expense_date', weekEndStr),
         supabase.from('expenses').select('amount_cents, category').eq('user_id', userId).gte('expense_date', yearStartStr).lte('expense_date', todayStr),
         supabase.from('expenses').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('tax_deductible', true).is('receipt_link', null).gt('amount_cents', 7500).gte('expense_date', yearStartStr).lte('expense_date', todayStr),
         supabase.from('mileage_logs').select('notes, needs_review').eq('user_id', userId).eq('source', 'ai_brain').gte('log_date', weekStartStr).lte('log_date', weekEndStr),
+        supabase.from('expenses').select('vendor, amount_cents, expense_date, is_subscription').eq('user_id', userId).gt('amount_cents', 0).gte('expense_date', oneYearAgoStr).lte('expense_date', todayStr),
     ]);
     const mileageReviewCount = (mileageRows || []).filter(r => r.needs_review || !r.notes || !r.notes.trim()).length;
+    const upcomingRecurringCharges = projectUpcomingSubscriptionCharges(subRows, todayStr, 7);
 
     const weekExpenses = (weekRows || []).filter(r => (r.amount_cents || 0) > 0 && !NON_SPEND_CATS.has(r.category));
     const weekIncome = (weekRows || []).filter(r => (r.amount_cents || 0) < 0 && !NON_SPEND_CATS.has(r.category));
@@ -320,7 +376,7 @@ async function buildWeeklyDigest(supabase, userId, weekStartStr, weekEndStr, tax
     ];
     const quarterLabel = (quarterDeadlines.find(d => d.date >= todayStr) || quarterDeadlines[quarterDeadlines.length - 1]).label;
 
-    return { incomeCents, spendCents, netCents, missingReceiptCount: missingReceiptCount || 0, mileageReviewCount, taxSetAsideCents, quarterLabel };
+    return { incomeCents, spendCents, netCents, missingReceiptCount: missingReceiptCount || 0, mileageReviewCount, taxSetAsideCents, quarterLabel, upcomingRecurringCharges };
 }
 
 // GET /cron/weekly-report

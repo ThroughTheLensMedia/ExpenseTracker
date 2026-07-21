@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { isNonSpendRow } = require("../utils/spendCategories");
+const { isNonSpendRow, KNOWN_SUBSCRIPTION_VENDORS } = require("../utils/spendCategories");
 
 router.get("/summary", async (req, res) => {
   try {
@@ -68,7 +68,7 @@ router.get("/summary", async (req, res) => {
     let mtdSpend = 0;
     let ytdDeductibleCents = 0; // same formula as tax.js: tax_deductible ? amount * business_use_pct/100 : 0
 
-    const knownSubscriptions = ['adobe', 'netflix', 'hulu', 'spotify', 'apple', 'google workspace', 'squarespace', 'chatgpt', 'openai', 'amazon web services', 'aws'];
+    const knownSubscriptions = KNOWN_SUBSCRIPTION_VENDORS;
     const leakageWarningKeywords = ['netflix', 'hulu', 'spotify', 'peloton', 'xbox', 'playstation', 'door dash', 'ubereats'];
 
     const categoryBreakdownYear = {};

@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.20.0', date: 'JUL 21, 2026', color: '#4c7dff', items: [
+        '<strong>New:</strong> Your weekly digest email now includes an "Upcoming Recurring Bills" card, flagging any subscriptions expected to charge in the next 7 days.',
+    ]},
     { version: '7.19.3', date: 'JUL 21, 2026', color: '#4c7dff', items: [
         '<strong>Fixed:</strong> Your weekly digest email could count money transferred between your own accounts as income. It now correctly excludes transfers, refunds, and credit card payments.',
         '<strong>Fixed:</strong> The "Missing Receipts" count in your weekly digest now only reflects the current tax year instead of your entire account history.',
