@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { isNonSpendRow, KNOWN_SUBSCRIPTION_VENDORS } = require("../utils/spendCategories");
+const { deriveCadenceDays, monthlyEquivalentCents } = require("../utils/recurringVendors");
 
 router.get("/summary", async (req, res) => {
   try {
@@ -19,6 +20,11 @@ router.get("/summary", async (req, res) => {
         .select("vendor, is_ignored")
         .eq("user_id", req.user.id)
         .then(r => r).catch(() => ({ data: null }));
+    const vendorAliasesPromise = req.sb
+        .from("vendor_aliases")
+        .select("vendor_key, canonical_name")
+        .eq("user_id", req.user.id)
+        .then(r => r).catch(() => ({ data: null }));
 
     let allExpenses = [];
     let offset = 0;
@@ -29,7 +35,7 @@ router.get("/summary", async (req, res) => {
     while (keepFetching) {
         const { data, error } = await req.sb
             .from("expenses")
-            .select("amount_cents, expense_date, category, vendor, is_subscription, tax_deductible, business_use_pct")
+            .select("amount_cents, expense_date, category, vendor, is_subscription, billing_cycle, tax_deductible, business_use_pct")
             .gte("expense_date", startDate)
             .lte("expense_date", endDate)
             .eq("user_id", req.user.id)
@@ -49,9 +55,10 @@ router.get("/summary", async (req, res) => {
     }
 
     // Await the parallel fetches now that pagination is done
-    const [{ data: invoices, error: invError }, { data: vSettings }] = await Promise.all([
+    const [{ data: invoices, error: invError }, { data: vSettings }, { data: vAliases }] = await Promise.all([
         invoicesPromise,
         vendorSettingsPromise,
+        vendorAliasesPromise,
     ]);
 
     if (expError) throw expError;
@@ -61,6 +68,12 @@ router.get("/summary", async (req, res) => {
     const ignoredVendorsList = vSettings
         ? vSettings.filter(v => v.is_ignored).map(v => String(v.vendor).toLowerCase())
         : [];
+
+    // Resolve vendor name variants (e.g. "Starlink" + "Starlink Internet") to
+    // one canonical name for recurring-spend rollups. Untouched vendors pass
+    // through unchanged — this map is empty until a user explicitly merges.
+    const vendorAliasMap = {};
+    (vAliases || []).forEach(a => { vendorAliasMap[String(a.vendor_key).toLowerCase()] = String(a.canonical_name).toLowerCase(); });
 
     let ytdIncome = 0;
     let ytdSpend = 0;
@@ -87,7 +100,8 @@ router.get("/summary", async (req, res) => {
     if (allExpenses.length > 0) {
       for (const row of allExpenses) {
         const cat = String(row.category || '').toLowerCase();
-        const vend = String(row.vendor || '').toLowerCase();
+        const rawVend = String(row.vendor || '').toLowerCase();
+        const vend = vendorAliasMap[rawVend] || rawVend;
 
         // Skip non-spend rows — shared with cron.js's weekly digest so the
         // dashboard and email agree on the same YTD totals (v7.14.0 fix).
@@ -155,11 +169,13 @@ router.get("/summary", async (req, res) => {
               // Track vendor hits for recurrence
               if (vend) {
                  if (!vendorActivity[vend]) {
-                     vendorActivity[vend] = { count: 0, total: 0, lastDate: row.expense_date, is_sub: false };
+                     vendorActivity[vend] = { count: 0, total: 0, lastDate: row.expense_date, is_sub: false, dates: [], billingCycle: null };
                  }
                  vendorActivity[vend].count += 1;
                  vendorActivity[vend].total += absValue;
+                 vendorActivity[vend].dates.push(row.expense_date);
                  if (row.is_subscription) vendorActivity[vend].is_sub = true;
+                 if (row.billing_cycle) vendorActivity[vend].billingCycle = row.billing_cycle;
                  if (row.expense_date > vendorActivity[vend].lastDate) {
                      vendorActivity[vend].lastDate = row.expense_date;
                  }
@@ -190,14 +206,17 @@ router.get("/summary", async (req, res) => {
     for (const [vend, data] of Object.entries(vendorActivity)) {
         const isKnownSub = data.is_sub || knownSubscriptions.some(k => vend.includes(k));
         if (data.count >= 3 || isKnownSub) {
-            const avgCost = data.total / data.count;
+            const avgCostPerOccurrence = data.total / data.count;
+            const { cadenceDays, cadenceConfirmed } = deriveCadenceDays(data.dates, data.billingCycle);
+            const avgMonthlyCents = monthlyEquivalentCents(avgCostPerOccurrence, cadenceDays);
             const isLeakage = leakageWarningKeywords.some(k => vend.includes(k));
-            
+
             recurringVendors.push({
                 vendor: vend,
-                avgMonthlyCents: avgCost,
-                annualProjectedCents: avgCost * 12,
+                avgMonthlyCents,
+                annualProjectedCents: avgMonthlyCents * 12,
                 lastSeen: data.lastDate,
+                cadenceConfirmed,
                 flags: {
                     isSubscription: isKnownSub,
                     review: data.count < 6 && avgCost > 2000, 

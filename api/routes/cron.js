@@ -5,6 +5,7 @@ const { queueDailyReportEmail, queueMonthlyReportEmail, queueHealthAlertEmail, q
 const { ADMIN_UUID } = require("../constants");
 const { listAllUsers } = require("../utils/userDirectory");
 const { NON_SPEND_CATS, CC_PAYMENT_PATTERN, KNOWN_SUBSCRIPTION_VENDORS } = require("../utils/spendCategories");
+const { deriveCadenceDays } = require("../utils/recurringVendors");
 
 function isCronAuthorized(req) {
     const cronSecret = (process.env.CRON_SECRET || '').trim();
@@ -286,14 +287,15 @@ async function buildMonthlyReport(supabase, userId, startStr, endStr, avgStartSt
 // past 7 days, count of currently-missing receipts, and a YTD-based tax
 // set-aside estimate (same math as the dashboard's TaxSetAsideWidget).
 // Projects which subscription vendors are due to charge again in the next
-// `windowDays` days. Cadence per vendor is derived from real charge dates
-// (average gap between consecutive hits) rather than assumed — except a
-// vendor seen only once in the trailing year (e.g. an annual renewal like
-// Amazon Prime), where there's no gap to measure and a 365-day cadence is
-// assumed. Only vendors flagged as subscriptions (per-row `is_subscription`
-// flag or a known-vendor keyword match — same list metrics.js's
-// Subscriptions Radar widget uses) are included; a vendor that's merely
-// recurring (e.g. weekly Amazon shopping) is deliberately excluded.
+// `windowDays` days. Cadence per vendor comes from the shared
+// deriveCadenceDays() helper (api/utils/recurringVendors.js) — an explicit
+// billing_cycle on the transaction wins if set, otherwise it's derived from
+// real charge-date gaps, otherwise (a vendor seen only once, e.g. an annual
+// renewal like Amazon Prime) a 365-day cadence is assumed. Only vendors
+// flagged as subscriptions (per-row `is_subscription` flag or a
+// known-vendor keyword match — same list metrics.js's Subscriptions Radar
+// widget uses) are included; a vendor that's merely recurring (e.g. weekly
+// Amazon shopping) is deliberately excluded.
 function projectUpcomingSubscriptionCharges(subRows, todayStr, windowDays) {
     const today = new Date(todayStr);
     const windowEnd = new Date(today);
@@ -305,23 +307,21 @@ function projectUpcomingSubscriptionCharges(subRows, todayStr, windowDays) {
         if (!vend) continue;
         const isKnownSub = row.is_subscription || KNOWN_SUBSCRIPTION_VENDORS.some(k => vend.includes(k));
         if (!isKnownSub) continue;
-        if (!byVendor[vend]) byVendor[vend] = { dates: [], lastAmountCents: 0 };
+        if (!byVendor[vend]) byVendor[vend] = { dates: [], lastAmountCents: 0, billingCycle: null };
         byVendor[vend].dates.push(row.expense_date);
-        byVendor[vend].lastAmountCents = row.amount_cents;
+        if (row.expense_date >= (byVendor[vend].lastDate || '')) {
+            byVendor[vend].lastDate = row.expense_date;
+            byVendor[vend].lastAmountCents = row.amount_cents;
+        }
+        if (row.billing_cycle) byVendor[vend].billingCycle = row.billing_cycle;
     }
 
     const upcoming = [];
     for (const [vend, data] of Object.entries(byVendor)) {
         const dates = data.dates.slice().sort();
         const lastDate = new Date(dates[dates.length - 1]);
-        let cadenceDays = 365;
-        if (dates.length >= 2) {
-            const gaps = [];
-            for (let i = 1; i < dates.length; i++) {
-                gaps.push((new Date(dates[i]) - new Date(dates[i - 1])) / (1000 * 60 * 60 * 24));
-            }
-            cadenceDays = Math.round(gaps.reduce((s, g) => s + g, 0) / gaps.length);
-        }
+        const { cadenceDays: derivedCadenceDays } = deriveCadenceDays(dates, data.billingCycle);
+        const cadenceDays = Math.round(derivedCadenceDays || 365);
         const nextExpected = new Date(lastDate);
         nextExpected.setDate(nextExpected.getDate() + cadenceDays);
         if (nextExpected >= today && nextExpected <= windowEnd) {
@@ -349,7 +349,7 @@ async function buildWeeklyDigest(supabase, userId, weekStartStr, weekEndStr, tax
         supabase.from('expenses').select('amount_cents, category').eq('user_id', userId).gte('expense_date', yearStartStr).lte('expense_date', todayStr),
         supabase.from('expenses').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('tax_deductible', true).is('receipt_link', null).gt('amount_cents', 7500).gte('expense_date', yearStartStr).lte('expense_date', todayStr),
         supabase.from('mileage_logs').select('notes, needs_review').eq('user_id', userId).eq('source', 'ai_brain').gte('log_date', weekStartStr).lte('log_date', weekEndStr),
-        supabase.from('expenses').select('vendor, amount_cents, expense_date, is_subscription').eq('user_id', userId).gt('amount_cents', 0).gte('expense_date', oneYearAgoStr).lte('expense_date', todayStr),
+        supabase.from('expenses').select('vendor, amount_cents, expense_date, is_subscription, billing_cycle').eq('user_id', userId).gt('amount_cents', 0).gte('expense_date', oneYearAgoStr).lte('expense_date', todayStr),
     ]);
     const mileageReviewCount = (mileageRows || []).filter(r => r.needs_review || !r.notes || !r.notes.trim()).length;
     const upcomingRecurringCharges = projectUpcomingSubscriptionCharges(subRows, todayStr, 7);
