@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 // Safe cents→dollar formatter — never shows "$NaN" if a value is missing.
 const fmtCents = (cents) => new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format((cents || 0) / 100);
@@ -96,7 +96,29 @@ export const TopOffendersSnapshot = ({ offenders }) => {
     );
 };
 
-export const RecurringVendorsTable = ({ rows, onRowClick, onIgnoreToggle }) => {
+export const RecurringVendorsTable = ({ rows, onRowClick, onIgnoreToggle, onMerge }) => {
+    const [mergingVendor, setMergingVendor] = useState(null);
+    const [mergeTarget, setMergeTarget] = useState('');
+    const [merging, setMerging] = useState(false);
+
+    const startMerge = (e, vendor) => {
+        e.stopPropagation();
+        setMergingVendor(vendor);
+        setMergeTarget('');
+    };
+
+    const saveMerge = async (e, vendor) => {
+        e.stopPropagation();
+        if (!mergeTarget.trim() || merging) return;
+        setMerging(true);
+        try {
+            await onMerge(vendor, mergeTarget.trim());
+        } finally {
+            setMerging(false);
+            setMergingVendor(null);
+        }
+    };
+
     return (
         <div style={{ background: 'rgba(255,255,255,0.01)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
             <table style={{ width: '100%', minWidth: '550px', borderCollapse: 'collapse', fontSize: '12px' }}>
@@ -114,7 +136,22 @@ export const RecurringVendorsTable = ({ rows, onRowClick, onIgnoreToggle }) => {
                     ) : null}
                     {rows.map((row, idx) => (
                         <tr onClick={() => onRowClick && onRowClick(row.vendor)} key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', cursor: 'pointer' }} className="table-row-hover">
-                            <td style={{ padding: '12px 15px', fontWeight: 800, textTransform: 'capitalize' }}>{row.vendor}</td>
+                            <td style={{ padding: '12px 15px', fontWeight: 800, textTransform: 'capitalize' }}>
+                                {mergingVendor === row.vendor ? (
+                                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }} onClick={e => e.stopPropagation()}>
+                                        <input
+                                            autoFocus
+                                            value={mergeTarget}
+                                            onChange={e => setMergeTarget(e.target.value)}
+                                            onKeyDown={e => { if (e.key === 'Enter') saveMerge(e, row.vendor); if (e.key === 'Escape') setMergingVendor(null); }}
+                                            placeholder="Merge into..."
+                                            style={{ padding: '4px 8px', fontSize: '11px', fontWeight: 700, textTransform: 'none', width: '120px' }}
+                                        />
+                                        <button className="btn sm" style={{ padding: '4px 8px', fontSize: '9px' }} disabled={merging} onClick={e => saveMerge(e, row.vendor)}>SAVE</button>
+                                        <button className="btn sm secondary" style={{ padding: '4px 8px', fontSize: '9px' }} onClick={e => { e.stopPropagation(); setMergingVendor(null); }}>✕</button>
+                                    </div>
+                                ) : row.vendor}
+                            </td>
                             <td className="money" style={{ padding: '12px 15px', textAlign: 'right' }}>
                                 ${fmtCents(row.monthly_cost)}/mo
                                 {row.cadenceLabel && row.cadenceLabel !== 'Monthly' && (
@@ -151,6 +188,16 @@ export const RecurringVendorsTable = ({ rows, onRowClick, onIgnoreToggle }) => {
                                     >
                                         {row.flag === 'ignored' ? 'RESTORE' : 'IGNORE'}
                                     </button>
+                                    {onMerge && (
+                                        <button
+                                            className="btn sm"
+                                            style={{ padding: '4px 8px', fontSize: '9px', fontWeight: 900, letterSpacing: '0.05em', background: 'rgba(56,189,248,0.08)', color: '#38bdf8', border: 'none', borderRadius: '6px' }}
+                                            onClick={(e) => startMerge(e, row.vendor)}
+                                            title="Merge this vendor's name variant into another (e.g. combine 'Starlink Internet' into 'Starlink')"
+                                        >
+                                            MERGE
+                                        </button>
+                                    )}
                                 </div>
                             </td>
                         </tr>

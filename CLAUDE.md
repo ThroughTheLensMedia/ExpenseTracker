@@ -16,7 +16,7 @@ The world's most elite, AI-driven financial command center for creative professi
 
 | Property | Value |
 |----------|-------|
-| **Version** | v7.20.2 |
+| **Version** | v7.21.0 |
 | **Status** | Active Development — Open Public Launch |
 | **Deploy target** | `www.lumiereledger.com` (primary) — `app.throughthelens.media` 301 redirects to it |
 | **Deployment** | Vercel (auto-deploy on `git push origin main`) |
@@ -391,6 +391,8 @@ Plaid-connected accounts use `source: 'plaid'` regardless of institution. Known 
 | Missing doc | Badge fires when: `amount_cents > 7500` AND `tax_deductible = true` AND `receipt_link` is null |
 | Import clock | `daysSinceImport` ignores `source === 'manual'` — only bank/CSV imports reset the clock |
 | Account aliases | `account_aliases` table: `(user_id, source_key, display_name, visible)`. Upsert via `PUT /api/accounts/alias`. |
+| Vendor aliases | `vendor_aliases` table: `(user_id, vendor_key, canonical_name)` (added v7.20.1, `api/migrations/015_billing_cycle_and_vendor_aliases.sql`) — merges vendor name variants (e.g. "Starlink" + "Starlink Internet") for Operational Intelligence recurring-vendor rollups. Upsert/delete via `PUT`/`DELETE /api/vendors/alias`, mergeable from the dashboard's Operational Intelligence table (MERGE button, v7.21.0). |
+| Recurring vendor cadence | `expenses.billing_cycle` (nullable: `monthly`/`quarterly`/`annual`, added v7.20.1) — set via Transaction Drawer when "Recurring" is checked (v7.21.0). `api/utils/recurringVendors.js`'s `deriveCadenceDays()` uses it if set, else derives cadence from real charge-date gaps (2+ occurrences), else falls back to a naive total/count average flagged `cadenceLabel: 'Unconfirmed'`. Shared by `metrics.js` (dashboard) and `cron.js` (weekly digest forecast) so both agree. |
 | Subscription display name | `user_subscriptions.display_name` (added v7.19.1, `api/migrations/014_add_display_name_to_subscriptions.sql`) — admin-settable name override, edited via SaaS Management tab `PATCH /admin/subscriptions/:userId`. Distinct from `account_aliases.display_name` (per-account label) and Auth user metadata. |
 | Plaid billing exempt | `PLAID_BILLING_EXEMPT` from `api/constants.js` (single source of truth as of v7.10.11). Joshua + Michelle Gornichec (`fcb92809-70f1-4ae0-b39c-e317378a01a7`). Frontend mirror: `web-react/src/constants/billing.js`. |
 | Dashboard config | `dashboard_config JSONB` on `settings` table. Shape: `{ role, widgets: { invoices, forecast, performance_chart, top_expenses, insights, operational_intelligence } }`. Defaults all-on if null. Widget flag: `!== false`. |

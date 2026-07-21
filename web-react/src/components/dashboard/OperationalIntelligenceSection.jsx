@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { apiPost } from '../../api';
+import { apiPost, apiPut } from '../../api';
 import { 
     SectionHeader, 
     ControlSummaryPanel, 
@@ -9,7 +9,7 @@ import {
     RecurringVendorsTable 
 } from './OpIntellComponents.jsx';
 
-export default function OperationalIntelligenceSection({ data }) {
+export default function OperationalIntelligenceSection({ data, onReload }) {
     const navigate = useNavigate();
     const [activeFilter, setActiveFilter] = useState('all');
 
@@ -113,6 +113,16 @@ export default function OperationalIntelligenceSection({ data }) {
         }
     };
 
+    const handleMerge = async (vendorKey, canonicalName) => {
+        try {
+            await apiPut('/vendors/alias', { vendor_key: vendorKey, canonical_name: canonicalName });
+            if (onReload) await onReload();
+            else window.location.reload();
+        } catch (err) {
+            alert('Failed to merge vendor: ' + err.message);
+        }
+    };
+
     if (rows.length === 0) {
         return (
             <div className="card glass glow-blue" style={{ margin: 0, padding: '30px' }}>
@@ -139,7 +149,7 @@ export default function OperationalIntelligenceSection({ data }) {
                 />
             </div>
 
-            <RecurringVendorsTable rows={filteredRows} onRowClick={handleRowClick} onIgnoreToggle={handleIgnoreToggle} />
+            <RecurringVendorsTable rows={filteredRows} onRowClick={handleRowClick} onIgnoreToggle={handleIgnoreToggle} onMerge={handleMerge} />
         </div>
     );
 }

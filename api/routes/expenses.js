@@ -46,7 +46,8 @@ const ExpenseBaseSchema = z.object({
   tax_bucket: z.string().trim().optional().default(""),
   business_use_pct: z.coerce.number().min(0).max(100).default(100),
   receipt_link: z.string().trim().optional().nullable(),
-  is_subscription: z.boolean().default(false)
+  is_subscription: z.boolean().default(false),
+  billing_cycle: z.enum(['monthly', 'quarterly', 'annual']).optional().nullable()
 });
 
 const ExpenseUpdateSchema = ExpenseBaseSchema.partial();

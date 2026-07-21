@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.21.0', date: 'JUL 21, 2026', color: '#4c7dff', items: [
+        '<strong>New:</strong> You can now set a "Billing Cycle" (Monthly/Quarterly/Annual) on a recurring transaction, so an annual renewal doesn\'t get averaged into a misleading monthly figure.',
+        '<strong>New:</strong> Merge vendor name variants (e.g. combine "Starlink Internet" into "Starlink") directly from the Operational Intelligence table on your dashboard.',
+    ]},
     { version: '7.20.2', date: 'JUL 21, 2026', color: '#4c7dff', items: [
         '<strong>New:</strong> Operational Intelligence now labels annual and quarterly charges (like a domain or insurance renewal) so they don\'t look like a real monthly subscription.',
         '<strong>Fixed:</strong> A backend error in yesterday\'s recurring-vendor update that could affect some accounts\' dashboard data.',

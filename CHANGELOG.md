@@ -5,6 +5,18 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.21.0] — 2026-07-21
+
+### Changed — Phase 3: Billing Cycle field + vendor merging in the UI
+
+- **`web-react/src/components/TransactionDrawer.jsx`** — new "Billing Cycle" dropdown (Monthly/Quarterly/Annual), shown only when "Recurring" is checked. Setting this on an annual/quarterly charge (e.g. a domain or insurance renewal) tells the dashboard its real cadence instead of letting it guess from occurrence count.
+- **`api/routes/expenses.js`** — `ExpenseBaseSchema` now accepts `billing_cycle` (`monthly`/`quarterly`/`annual`, optional).
+- **Dashboard Operational Intelligence table** (`OpIntellComponents.jsx`, `OperationalIntelligenceSection.jsx`) — new inline **MERGE** action per vendor row: type a canonical name and save to combine name variants (e.g. "Starlink Internet" → "Starlink", "Apple Services"/"Apple iCloud" → "Apple") into one rollup, via the `PUT /api/vendors/alias` endpoint added in v7.20.1. Table refreshes via the dashboard's existing metrics refetch instead of a full page reload.
+- This completes the 3-phase Operational Intelligence accuracy fix (v7.20.1 schema + cadence math → v7.20.2 cadence labeling → v7.21.0 the UI to actually set them) prompted by Hover showing as $34/mo instead of ~$2.83/mo, and Starlink/Apple appearing as multiple unrelated vendors.
+- Update CHANGELOG.md, ChangeLogModal.jsx, version.json, App.jsx, CLAUDE.md, ROADMAP.md
+
+---
+
 ## [v7.20.2] — 2026-07-21
 
 ### Fixed — Operational Intelligence bug from v7.20.1 + annual/quarterly charge labeling

@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import OperationalIntelligenceSection from '../components/dashboard/OperationalIntelligenceSection.jsx';
 import TaxSetAsideWidget from '../components/dashboard/TaxSetAsideWidget.jsx';
 import SubscriptionsRadarWidget from '../components/dashboard/SubscriptionsRadarWidget.jsx';
-import { fetchDashboardMetrics, getDashboardMetricsCache, apiGet, apiPost } from '../api';
+import { fetchDashboardMetrics, getDashboardMetricsCache, apiGet, apiPost, apiPut } from '../api';
 
 const DEFAULT_WIDGETS = {
     invoices: true,
@@ -76,6 +76,13 @@ export default function DashboardV2({ apiStatus }) {
             }
         };
         loadAll();
+    }, [targetYear]);
+
+    const reloadMetrics = useCallback(async () => {
+        try {
+            const { data } = await fetchDashboardMetrics(targetYear, true);
+            setMetrics(data);
+        } catch (_) { /* non-fatal — table just keeps its current data */ }
     }, [targetYear]);
 
     // Close gear panel on outside click
@@ -496,7 +503,7 @@ export default function DashboardV2({ apiStatus }) {
 
             {/* Layer 4: Operational Intelligence (Recurring Subscriptions & Bills) */}
             {widgets.operational_intelligence !== false && (
-                <OperationalIntelligenceSection data={metrics?.analytics?.recurringVendors} />
+                <OperationalIntelligenceSection data={metrics?.analytics?.recurringVendors} onReload={reloadMetrics} />
             )}
 
 

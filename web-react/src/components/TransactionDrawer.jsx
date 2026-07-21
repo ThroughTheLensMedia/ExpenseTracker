@@ -69,7 +69,7 @@ async function imageToPdf(file) {
 const initialState = {
     date: new Date().toISOString().slice(0, 10),
     amount: '', vendor: '', category: '', taxBucket: '',
-    bizPct: 100, deduct: false, isSub: false, flagged: false, notes: '', receiptLink: '',
+    bizPct: 100, deduct: false, isSub: false, billingCycle: '', flagged: false, notes: '', receiptLink: '',
     receiptFile: null, source: 'manual', msg: '', savedId: null, saving: false,
     scanning: false, scanMsg: '',
     tipBreakdown: null,   // { subtotal, tip, tax, total } when tip detected on receipt
@@ -92,6 +92,7 @@ function reducer(state, action) {
                 bizPct: action.tx.business_use_pct == null ? 100 : action.tx.business_use_pct,
                 deduct: !!action.tx.tax_deductible,
                 isSub: !!action.tx.is_subscription,
+                billingCycle: action.tx.billing_cycle || '',
                 flagged: !!action.tx.needs_review,
                 notes: action.tx.notes || '',
                 receiptLink: action.tx.receipt_link || '',
@@ -131,7 +132,7 @@ function formatSourceKey(key) {
 export default function TransactionDrawer({ transaction, onClose, onSave, onDelete, accounts = [] }) {
     const modal = useModal();
     const [state, dispatch] = useReducer(reducer, initialState);
-    const { date, amount, vendor, category, taxBucket, bizPct, deduct, isSub, flagged, notes,
+    const { date, amount, vendor, category, taxBucket, bizPct, deduct, isSub, billingCycle, flagged, notes,
             receiptLink, receiptFile, source, msg, savedId, scanning, scanMsg,
             tipBreakdown, tipSplitPair } = state;
 
@@ -261,6 +262,7 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
                 amount_cents: Math.round(Number(amount || 0) * 100),
                 tax_deductible: deduct,
                 is_subscription: isSub,
+                billing_cycle: isSub ? (billingCycle || null) : null,
                 needs_review: flagged,
                 tax_bucket: taxBucket,
                 business_use_pct: Number(bizPct),
@@ -652,6 +654,24 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
                             <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>🚩 Review</span>
                         </label>
                     </div>
+
+                    {/* ── Billing Cycle (only relevant when Recurring is checked) ── */}
+                    {isSub && (
+                        <div className="row" style={{ marginTop: '10px' }}>
+                            <div>
+                                <small className="muted">Billing Cycle</small>
+                                <select value={billingCycle} onChange={e => field('billingCycle', e.target.value)} style={{ width: '100%', padding: '8px' }}>
+                                    <option value="">-- Not sure yet --</option>
+                                    <option value="monthly">Monthly</option>
+                                    <option value="quarterly">Quarterly</option>
+                                    <option value="annual">Annual</option>
+                                </select>
+                                <div className="muted" style={{ fontSize: '11px', marginTop: '4px' }}>
+                                    How often this actually charges — set this for an annual/quarterly renewal (e.g. a domain or insurance) so it doesn't get averaged into a monthly figure on your dashboard.
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* ── Notes ── */}
                     <div className="row" style={{ marginTop: '10px' }}>
