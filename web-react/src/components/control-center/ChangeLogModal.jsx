@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.20.2', date: 'JUL 21, 2026', color: '#4c7dff', items: [
+        '<strong>New:</strong> Operational Intelligence now labels annual and quarterly charges (like a domain or insurance renewal) so they don\'t look like a real monthly subscription.',
+        '<strong>Fixed:</strong> A backend error in yesterday\'s recurring-vendor update that could affect some accounts\' dashboard data.',
+    ]},
     { version: '7.20.1', date: 'JUL 21, 2026', color: '#94a3b8', items: [
         '<strong>Cleanup:</strong> Backend groundwork for more accurate recurring-vendor spend tracking (annual vs. monthly charges, vendor merging) — no visible changes yet.',
     ]},

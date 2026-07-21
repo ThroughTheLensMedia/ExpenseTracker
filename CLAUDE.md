@@ -16,7 +16,7 @@ The world's most elite, AI-driven financial command center for creative professi
 
 | Property | Value |
 |----------|-------|
-| **Version** | v7.20.1 |
+| **Version** | v7.20.2 |
 | **Status** | Active Development — Open Public Launch |
 | **Deploy target** | `www.lumiereledger.com` (primary) — `app.throughthelens.media` 301 redirects to it |
 | **Deployment** | Vercel (auto-deploy on `git push origin main`) |

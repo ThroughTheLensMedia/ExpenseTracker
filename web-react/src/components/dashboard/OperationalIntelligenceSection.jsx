@@ -31,7 +31,8 @@ export default function OperationalIntelligenceSection({ data }) {
                 monthly_cost: r.avgMonthlyCents || 0,
                 annual_cost: r.annualProjectedCents || 0,
                 flag: flag,
-                isSubscription: r.flags?.isSubscription || false
+                isSubscription: r.flags?.isSubscription || false,
+                cadenceLabel: r.cadenceLabel || 'Unconfirmed'
             };
         }).sort((a, b) => b.monthly_cost - a.monthly_cost);
     }, [data]);

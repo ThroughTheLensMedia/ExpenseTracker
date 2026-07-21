@@ -207,9 +207,23 @@ router.get("/summary", async (req, res) => {
         const isKnownSub = data.is_sub || knownSubscriptions.some(k => vend.includes(k));
         if (data.count >= 3 || isKnownSub) {
             const avgCostPerOccurrence = data.total / data.count;
-            const { cadenceDays, cadenceConfirmed } = deriveCadenceDays(data.dates, data.billingCycle);
+            const { cadenceDays, cadenceConfirmed, source } = deriveCadenceDays(data.dates, data.billingCycle);
             const avgMonthlyCents = monthlyEquivalentCents(avgCostPerOccurrence, cadenceDays);
             const isLeakage = leakageWarningKeywords.some(k => vend.includes(k));
+
+            // Human-readable cadence label so the UI can distinguish a real
+            // monthly subscription from an annual/quarterly charge that's
+            // merely been averaged into a monthly-equivalent figure.
+            let cadenceLabel = 'Unconfirmed';
+            if (data.billingCycle === 'annual') cadenceLabel = 'Annual';
+            else if (data.billingCycle === 'quarterly') cadenceLabel = 'Quarterly';
+            else if (data.billingCycle === 'monthly') cadenceLabel = 'Monthly';
+            else if (source === 'detected') {
+                if (cadenceDays >= 330) cadenceLabel = 'Annual';
+                else if (cadenceDays >= 80 && cadenceDays <= 100) cadenceLabel = 'Quarterly';
+                else if (cadenceDays >= 25 && cadenceDays <= 35) cadenceLabel = 'Monthly';
+                else cadenceLabel = `Every ~${Math.round(cadenceDays)}d`;
+            }
 
             recurringVendors.push({
                 vendor: vend,
@@ -217,9 +231,10 @@ router.get("/summary", async (req, res) => {
                 annualProjectedCents: avgMonthlyCents * 12,
                 lastSeen: data.lastDate,
                 cadenceConfirmed,
+                cadenceLabel,
                 flags: {
                     isSubscription: isKnownSub,
-                    review: data.count < 6 && avgCost > 2000, 
+                    review: data.count < 6 && avgCostPerOccurrence > 2000,
                     duplicate: false,
                     unused: false,
                     ignored: ignoredVendorsList.includes(vend)

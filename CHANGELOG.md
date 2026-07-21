@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.20.2] — 2026-07-21
+
+### Fixed — Operational Intelligence bug from v7.20.1 + annual/quarterly charge labeling
+
+- **Fixed a real bug shipped in v7.20.1:** `api/routes/metrics.js`'s recurring-vendor "review" flag referenced the old `avgCost` variable name after it was renamed to `avgCostPerOccurrence` during the cadence-math rewrite — a `ReferenceError` on every request that reached that line. Caught before it hit a real user session; fixed as part of this release.
+- **New: cadence badge on the Operational Intelligence vendor table** (`OpIntellComponents.jsx`) — per Joshua's feedback that a $2.83/mo figure for an annual Hover renewal looked identical to a real monthly subscription like T-Mobile. Vendors now show an **ANNUAL**/**QUARTERLY**/**UNCONFIRMED** badge next to their monthly-equivalent figure whenever it isn't a real month-to-month charge, with a tooltip explaining the estimate. `api/routes/metrics.js` now returns a `cadenceLabel` per vendor (explicit `billing_cycle` wins; otherwise inferred from detected cadence days; `Unconfirmed` when there's only one charge on record and nothing to go on yet).
+- Update CHANGELOG.md, ChangeLogModal.jsx, version.json, App.jsx, CLAUDE.md
+
+---
+
 ## [v7.20.1] — 2026-07-21
 
 ### Changed — Recurring vendor spend is now cadence-aware (backend, Phase 1 + 2 of Operational Intelligence accuracy fix)

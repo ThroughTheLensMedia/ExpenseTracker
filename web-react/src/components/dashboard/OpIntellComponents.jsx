@@ -115,7 +115,22 @@ export const RecurringVendorsTable = ({ rows, onRowClick, onIgnoreToggle }) => {
                     {rows.map((row, idx) => (
                         <tr onClick={() => onRowClick && onRowClick(row.vendor)} key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', cursor: 'pointer' }} className="table-row-hover">
                             <td style={{ padding: '12px 15px', fontWeight: 800, textTransform: 'capitalize' }}>{row.vendor}</td>
-                            <td className="money" style={{ padding: '12px 15px', textAlign: 'right' }}>${fmtCents(row.monthly_cost)}/mo</td>
+                            <td className="money" style={{ padding: '12px 15px', textAlign: 'right' }}>
+                                ${fmtCents(row.monthly_cost)}/mo
+                                {row.cadenceLabel && row.cadenceLabel !== 'Monthly' && (
+                                    <div
+                                        style={{
+                                            fontSize: '9px', fontWeight: 900, letterSpacing: '0.04em', marginTop: '2px',
+                                            color: row.cadenceLabel === 'Unconfirmed' ? 'rgba(255,255,255,0.35)' : '#fbbf24',
+                                        }}
+                                        title={row.cadenceLabel === 'Unconfirmed'
+                                            ? 'Only one charge seen yet — this figure assumes monthly until confirmed. Set the Billing Cycle on the transaction if it actually charges less often.'
+                                            : `Charges ${row.cadenceLabel.toLowerCase()}, not monthly — this is an averaged monthly-equivalent figure.`}
+                                    >
+                                        {row.cadenceLabel.toUpperCase()}
+                                    </div>
+                                )}
+                            </td>
                             <td className="money" style={{ padding: '12px 15px', textAlign: 'right', color: 'rgba(255,255,255,0.6)' }}>${fmtCents(row.annual_cost)}/yr</td>
                             <td style={{ padding: '12px 15px', textAlign: 'right' }}>
                                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-end' }}>
