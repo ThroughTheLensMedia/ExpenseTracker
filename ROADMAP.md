@@ -67,6 +67,7 @@ Source of truth for all sprint work, security status, and product phases.
 | **Receipt email body parse — re-test** | v7.8.96 hardened the prompt and error logging but the "Total Paid: $XX.XX" case was never re-tested with a live email forward. Send a test and verify System Logs show extracted amount. |
 | **Security Review — dependency tier still overdue** | Weekly, monthly, quarterly, and annual all re-run 2026-07-01 (v7.10.15/19/20/21). Only the dependency tier has never been run once (it's a subset of what quarterly already covers — `npm audit`/`npm audit fix` in both dirs — low urgency). |
 | **Stripe/Plaid ToS review + Google OAuth consent screen check** | Two annual-checklist items that need Joshua's own read, not something verifiable from code: Stripe Services Agreement / Plaid Legal for payment-processor policy changes, and Google Cloud Console → OAuth Consent Screen re-verification status. |
+| **Operational Intelligence accuracy fix — Phase 3 remaining** | Phases 1+2 shipped (v7.20.1, backend-only): `billing_cycle` column, `vendor_aliases` table, cadence-aware recurring-vendor math, `PUT/DELETE /api/vendors/alias`. **Phase 3 (not started):** Transaction Drawer needs a "Billing Cycle" select (Monthly/Quarterly/Annual, shown when Recurring is checked); dashboard Operational Intelligence vendor table needs a "Merge" action wired to the new alias endpoint. First real-world validation: merge Starlink + Starlink Internet, Apple + Apple Services + Apple iCloud, and set Hover to Annual. |
 
 ---
 

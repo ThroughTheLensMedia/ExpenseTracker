@@ -5,6 +5,21 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.20.1] — 2026-07-21
+
+### Changed — Recurring vendor spend is now cadence-aware (backend, Phase 1 + 2 of Operational Intelligence accuracy fix)
+
+- **Root cause (confirmed via code + live schema):** the dashboard's Operational Intelligence recurring-vendor table divided total spend by number of occurrences and called it "avg monthly," with no concept of actual billing cadence — an annual domain renewal (Hover, $34/yr) showed as $34/**mo**, a 12x overstatement. There was also no way to merge vendor name variants (e.g. "Starlink" and "Starlink Internet" showing as two unrelated line items) since grouping was by exact vendor text.
+- **`api/migrations/015_billing_cycle_and_vendor_aliases.sql`** (applied to production) — adds nullable `expenses.billing_cycle` and a new `vendor_aliases` table (RLS matching the existing `account_aliases` pattern).
+- **`api/utils/recurringVendors.js`** (new) — shared `deriveCadenceDays()`/`monthlyEquivalentCents()`: an explicit `billing_cycle` wins if set; otherwise cadence is derived from the real gap between a vendor's actual charge dates when there are 2+ occurrences; otherwise falls back to the original total/count math unchanged — verified byte-identical for any vendor nobody has touched, so nothing shifts for existing users until they act.
+- **`api/routes/metrics.js`** — recurring-vendor calc now uses the shared cadence helper, and resolves each vendor through `vendor_aliases` before grouping so merged vendors roll up together.
+- **`api/routes/cron.js`** — the v7.20.0 weekly digest forecast now shares the same cadence helper instead of its own copy (was calculating identically but independently — same "two routes disagree" class the v7.14.0 dashboard audit already fixed once).
+- **`api/routes/vendors.js`** — new `PUT`/`DELETE /api/vendors/alias` endpoints for merging/un-merging vendor name variants, mirrors `PUT /api/accounts/alias` exactly.
+- **Not yet built (Phase 3):** a "Billing Cycle" field in the Transaction Drawer and a vendor-merge action in the dashboard UI — this release is backend-only; nothing is user-facing until Phase 3 ships.
+- Update CHANGELOG.md, ChangeLogModal.jsx, version.json, App.jsx, CLAUDE.md
+
+---
+
 ## [v7.20.0] — 2026-07-21
 
 ### Changed — Weekly digest now forecasts upcoming recurring subscription charges
