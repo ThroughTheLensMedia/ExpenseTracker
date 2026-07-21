@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.19.3', date: 'JUL 21, 2026', color: '#4c7dff', items: [
+        '<strong>Fixed:</strong> Your weekly digest email could count money transferred between your own accounts as income. It now correctly excludes transfers, refunds, and credit card payments.',
+        '<strong>Fixed:</strong> The "Missing Receipts" count in your weekly digest now only reflects the current tax year instead of your entire account history.',
+    ]},
     { version: '7.19.2', date: 'JUL 21, 2026', color: '#94a3b8', items: [
         '<strong>Cleanup:</strong> Internal fixes to the admin SaaS dashboard\'s billing estimate and tier display — no visible changes for regular members.',
     ]},

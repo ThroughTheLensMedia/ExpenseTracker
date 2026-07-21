@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.19.3] — 2026-07-21
+
+### Fixed — Weekly digest email miscounted income and missing receipts
+
+- **Income included internal transfers (confirmed via `buildWeeklyDigest()` in `api/routes/cron.js`):** the expense side of the digest already excludes `NON_SPEND_CATS` (transfers, refunds, credit card payments) via `spendCategories.js`, but the income side never applied the same filter — any negative-amount row, including money moved between the user's own accounts, was counted as real income. This inflated both the weekly Income figure and the YTD net used for the "Set Aside for Q_" tax estimate. Fixed by applying `NON_SPEND_CATS` to income the same way it's already applied to expenses, both weekly and YTD.
+- **Missing Receipts count had no date scope:** the query counted every deductible transaction over $75 with no receipt across the account's *entire history*, not the current tax year — so a long-time user saw a lifetime backlog number every week instead of a manageable current-year figure. Scoped to the current calendar year (`yearStartStr` → today), matching the tax set-aside calculation's existing year boundary.
+- Update CHANGELOG.md, ChangeLogModal.jsx, version.json, App.jsx, CLAUDE.md
+
+---
+
 ## [v7.19.2] — 2026-07-21
 
 ### Fixed — SaaS admin dashboard hardcoded-values cleanup
