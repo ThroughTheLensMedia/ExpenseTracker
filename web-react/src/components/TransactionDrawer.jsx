@@ -403,6 +403,23 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
                                 <span style={{ fontSize: '12px', color: 'var(--muted)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                     {receiptFile ? receiptFile.name : receiptLink}
                                 </span>
+                                {receiptLink && (
+                                    <button
+                                        className="btn secondary"
+                                        style={{ fontSize: '12px', padding: '4px 10px', flexShrink: 0 }}
+                                        onClick={async () => {
+                                            try {
+                                                const json = await apiGet(`/receipts/signed-url?path=${encodeURIComponent(receiptLink)}`);
+                                                if (json.url) window.open(json.url, '_blank');
+                                                else modal.alert('Could not load receipt: ' + (json.error || 'Unknown error'));
+                                            } catch (err) {
+                                                modal.alert('Could not load receipt: ' + (err?.message || err));
+                                            }
+                                        }}
+                                    >
+                                        View
+                                    </button>
+                                )}
                                 <button
                                     className="btn secondary"
                                     style={{ fontSize: '12px', padding: '4px 10px', flexShrink: 0 }}

@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.21.2] — 2026-08-05
+
+### Changed — View receipt from the edit drawer
+
+- **`web-react/src/components/TransactionDrawer.jsx`** — added a "View" button next to an attached receipt in the edit drawer, using the same `/api/receipts/signed-url` fetch pattern already used on the Transactions ledger. Previously the drawer only showed the filename/link with no way to open the actual file — you had to close the drawer and view it from the ledger instead.
+- Update CHANGELOG.md, ChangeLogModal.jsx, version.json, App.jsx
+
+---
+
 ## [v7.21.1] — 2026-07-21
 
 ### Changed — Unmerge action for vendor merges

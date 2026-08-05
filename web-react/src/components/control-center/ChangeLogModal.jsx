@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.21.2', date: 'AUG 05, 2026', color: '#94a3b8', items: [
+        '<strong>Fixed:</strong> You can now view an attached receipt directly from the transaction edit screen, instead of having to close it and look it up from the main ledger.',
+    ]},
     { version: '7.21.1', date: 'JUL 21, 2026', color: '#94a3b8', items: [
         '<strong>New:</strong> Merged vendors on the Operational Intelligence table now show an "Unmerge" option, so a merge can be undone if it was a mistake.',
     ]},
