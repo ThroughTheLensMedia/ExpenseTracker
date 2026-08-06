@@ -652,6 +652,32 @@ footer {
   border-color: rgba(25, 195, 125, 0.3) !important;
 }
 
+.invoice-item-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.invoice-item-controls {
+  display: grid;
+  grid-template-columns: 80px 120px 40px;
+  gap: 8px;
+  align-items: center;
+}
+
+@media (max-width: 640px) {
+  .invoice-item-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .invoice-item-controls {
+    grid-template-columns: 1fr 1fr 40px;
+  }
+}
+
 .locker-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));

@@ -11,32 +11,34 @@ const BRAND_ORANGE = '#f97316';
 function InvoiceItemRow({ item, index, onChange, onRemove }) {
     const hasQty = item.quantity && Number(item.quantity) > 0;
     return (
-        <div key={index} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 80px 120px 40px', gap: '12px', alignItems: 'center', marginBottom: '12px' }}>
+        <div key={index} className="invoice-item-row">
             <input
                 placeholder="Description"
                 value={item.description || ''}
                 onChange={e => onChange(index, 'description', e.target.value)}
                 style={{ background: 'rgba(255,255,255,0.05)', fontSize: '13px' }}
             />
-            <input
-                type="number"
-                placeholder="Qty"
-                value={item.quantity || ''}
-                onChange={e => onChange(index, 'quantity', Number(e.target.value))}
-                style={{ background: 'rgba(255,255,255,0.05)', fontSize: '13px', textAlign: 'center' }}
-            />
-            {hasQty ? (
+            <div className="invoice-item-controls">
                 <input
                     type="number"
-                    placeholder="Price"
-                    value={item.unit_price || ''}
-                    onChange={e => onChange(index, 'unit_price', e.target.value)}
-                    style={{ background: 'rgba(255,255,255,0.05)', fontSize: '13px', textAlign: 'right' }}
+                    placeholder="Qty"
+                    value={item.quantity || ''}
+                    onChange={e => onChange(index, 'quantity', Number(e.target.value))}
+                    style={{ background: 'rgba(255,255,255,0.05)', fontSize: '13px', textAlign: 'center' }}
                 />
-            ) : (
-                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.2)', textAlign: 'center', fontStyle: 'italic' }}>set qty first</div>
-            )}
-            <button type="button" className="btn sm danger" onClick={() => onRemove(index)} style={{ padding: '8px' }}>✕</button>
+                {hasQty ? (
+                    <input
+                        type="number"
+                        placeholder="Price"
+                        value={item.unit_price || ''}
+                        onChange={e => onChange(index, 'unit_price', e.target.value)}
+                        style={{ background: 'rgba(255,255,255,0.05)', fontSize: '13px', textAlign: 'right' }}
+                    />
+                ) : (
+                    <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.2)', textAlign: 'center', fontStyle: 'italic' }}>set qty first</div>
+                )}
+                <button type="button" className="btn sm danger" onClick={() => onRemove(index)} style={{ padding: '8px' }}>✕</button>
+            </div>
         </div>
     );
 }
@@ -692,7 +694,7 @@ export default function Invoice() {
         }
     };
 
-    const handleCreateInvoice = async (e, andSend = false) => {
+    const handleCreateInvoice = async (e, mode = 'draft') => {
         if (e) e.preventDefault();
         setStatusMsg(null);
 
@@ -708,6 +710,10 @@ export default function Invoice() {
         const emptyItem = formData.items.findIndex(it => !it.description.trim());
         if (emptyItem !== -1) {
             setStatusMsg({ type: 'bad', text: `Line Item #${emptyItem + 1} must have a description.` });
+            return;
+        }
+        if (mode === 'send' && !formData.clientEmail?.trim()) {
+            setStatusMsg({ type: 'bad', text: 'Client email is required to send an invoice. Add one, or use Save Draft / Save & Mark Paid instead.' });
             return;
         }
 
@@ -769,13 +775,33 @@ export default function Invoice() {
             setIsCreatorOpen(false);
             resetFormData();
 
-            if (andSend) {
+            if (mode === 'send') {
                 const freshInvs = await fetchAllInvoices(true);
                 setInvoices(freshInvs);
                 const targetInv = freshInvs.find(i =>
                     editingId ? i.id === editingId : i.invoice_number === savedNumber
                 );
                 if (targetInv) setTimeout(() => handleSendEmail(targetInv), 150);
+            } else if (mode === 'paid') {
+                const freshInvs = await fetchAllInvoices(true);
+                const targetInv = freshInvs.find(i =>
+                    editingId ? i.id === editingId : i.invoice_number === savedNumber
+                );
+                if (targetInv) {
+                    try {
+                        const result = await apiPatch(`/invoices/${targetInv.id}`, { status: 'paid' });
+                        setStatusMsg({ type: 'ok', text: `Invoice #${savedNumber} saved and marked paid.` });
+                        if (result?.firstInvoicePaid) {
+                            const subtotal = (targetInv.invoice_items || []).reduce((s, it) => s + (it.unit_price_cents * it.quantity), 0);
+                            const tax = Math.round(subtotal * (targetInv.tax_percent / 100));
+                            const discountAmount = Math.round(subtotal * (((targetInv.discount_cents || 0) / 100) / 100));
+                            setFirstPaidCelebration({ clientName: formData.clientName || 'your client', totalCents: subtotal + tax - discountAmount });
+                        }
+                    } catch (payErr) {
+                        setStatusMsg({ type: 'bad', text: `Saved, but failed to mark paid: ${payErr.message}` });
+                    }
+                }
+                setInvoices(await fetchAllInvoices(true));
             } else {
                 setTimeout(load, 10);
             }
@@ -788,6 +814,10 @@ export default function Invoice() {
                     errorText = `${parsed[0].path?.join(' -> ') || 'Error'}: ${parsed[0].message}`;
                 }
             } catch (e) { /* use raw message */ }
+
+            if (errorText.includes('email is missing')) {
+                errorText = 'Saved as a draft — add a client email to send it.';
+            }
 
             setStatusMsg({ type: 'bad', text: errorText });
             setLoading(false);
@@ -1287,34 +1317,50 @@ export default function Invoice() {
                                 Preview Current Draft
                             </button>
 
-                            <div style={{ height: '100px' }} /> {/* Spacing for fixed footer */}
+                            <div style={{ height: '150px' }} /> {/* Spacing for fixed footer */}
                         </form>
 
-                        <div style={{ position: 'sticky', bottom: 0, background: '#121c32', padding: '24px 32px', borderTop: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 -10px 40px rgba(0,0,0,0.3)', zIndex: 10 }}>
+                        <div style={{ position: 'sticky', bottom: 0, background: '#121c32', padding: '20px 32px 24px', borderTop: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 -10px 40px rgba(0,0,0,0.3)', zIndex: 10 }}>
                             {statusMsg && (
-                                <div className={`tag ${statusMsg.type === 'ok' ? 'ok' : 'bad'}`} style={{ marginBottom: '16px', justifyContent: 'center', width: '100%', padding: '12px' }}>
+                                <div className={`tag ${statusMsg.type === 'ok' ? 'ok' : 'bad'}`} style={{ marginBottom: '14px', justifyContent: 'center', width: '100%', padding: '12px' }}>
                                     {statusMsg.text}
                                 </div>
                             )}
-                            <div style={{ display: 'flex', gap: '12px' }}>
+                            <div style={{ display: 'flex', gap: '12px', marginBottom: '10px' }}>
                                 <button
                                     type="button"
-                                    onClick={(e) => handleCreateInvoice(e, false)}
+                                    onClick={(e) => handleCreateInvoice(e, 'draft')}
                                     disabled={loading}
                                     className="btn secondary"
-                                    style={{ height: '56px', fontSize: '1rem', flex: 1 }}
+                                    style={{ height: '52px', fontSize: '0.95rem', flex: 1 }}
                                 >
                                     {loading ? '⏳ SAVING...' : (editingId ? 'UPDATE DRAFT' : 'SAVE DRAFT')}
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={(e) => handleCreateInvoice(e, true)}
+                                    onClick={(e) => handleCreateInvoice(e, 'paid')}
+                                    disabled={loading}
+                                    className="btn glow-green"
+                                    style={{ height: '52px', fontSize: '0.95rem', flex: 1 }}
+                                >
+                                    {loading ? '⏳ SAVING...' : (editingId ? 'UPDATE & MARK PAID' : 'SAVE & MARK PAID')}
+                                </button>
+                            </div>
+                            <div>
+                                <button
+                                    type="button"
+                                    onClick={(e) => handleCreateInvoice(e, 'send')}
                                     disabled={loading}
                                     className="btn glow-blue"
-                                    style={{ height: '56px', fontSize: '1rem', flex: 2 }}
+                                    style={{ height: '52px', fontSize: '0.95rem', width: '100%' }}
                                 >
                                     {loading ? '⏳ SAVING...' : (editingId ? 'UPDATE & SEND EMAIL' : 'SAVE & SEND EMAIL')}
                                 </button>
+                                {!formData.clientEmail?.trim() && (
+                                    <div className="muted extra-small" style={{ marginTop: '8px', textAlign: 'center' }}>
+                                        Requires a client email — no email? Use Save Draft or Save & Mark Paid.
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
