@@ -1,0 +1,29 @@
+---
+description: Database rules — applied automatically when editing SQL files, migrations, and schema definitions
+globs: "**/*.sql,**/migrations/**,**/migration*"
+alwaysApply: false
+---
+
+## Database Rules
+
+- Every migration must be idempotent — safe to run multiple times.
+- Use `IF NOT EXISTS`, `IF EXISTS`, `ON CONFLICT DO NOTHING` patterns throughout.
+- Never write a migration that truncates, drops, or destroys existing data unless explicitly instructed.
+- Show the full SQL before executing it.
+- Include a rollback block as a comment at the bottom of every migration.
+
+## Schema Rules
+
+- Every user-facing table needs `user_id UUID` referencing `auth.users`.
+- Enable RLS on every user table.
+- Currency stored as `BIGINT` (integer cents) — never FLOAT or DECIMAL.
+- Dates stored as `DATE` in `YYYY-MM-DD` format.
+- Soft deletes preferred over hard deletes unless told otherwise.
+
+## Before Altering Existing Tables
+
+Flag and confirm before:
+- Adding a NOT NULL column to a table with existing rows (requires backfill plan)
+- Changing a primary key or foreign key
+- Renaming a column or table that other code references
+- Dropping any column or index

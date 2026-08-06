@@ -1,0 +1,32 @@
+---
+description: Backend rules — applied automatically when editing API routes, middleware, and server logic
+globs: "api/**/*.js,api/**/*.ts,routes/**/*.js,routes/**/*.ts,server.js,server.ts"
+alwaysApply: false
+---
+
+## Backend Rules
+
+- Security first — validate all user input at system boundaries.
+- Never expose service-role keys, API secrets, or internal tokens to the frontend.
+- All destructive operations (DELETE, UPDATE) must be scoped to the authenticated user.
+- No silent failures — all errors must be caught, logged, and return a meaningful response.
+- Fail closed on errors — a database failure returns 503, not a pass-through.
+
+## API Changes
+
+Before modifying any endpoint:
+- Define the new request/response shape
+- Confirm backward compatibility with existing callers
+- Include error handling for all failure cases
+
+## Auth
+
+- Never bypass auth middleware on protected routes.
+- JWT validation happens in middleware — do not re-implement it inside routes.
+- Dev-only bypasses must use AND logic: `!process.env.VERCEL && NODE_ENV !== 'production'` — cannot activate in production.
+
+## Dependencies
+
+- Never add a new npm package without flagging it first.
+- After adding to package.json, run `npm install` to update the lock file.
+- Always commit both `package.json` and `package-lock.json` together.

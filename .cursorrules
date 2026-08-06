@@ -1,0 +1,118 @@
+# Cursor Rules — Lumière Ledger
+# Production SaaS — finance tracking for photographers
+# Stack: React 19 + Vite, Express 4 on Vercel, Supabase (PostgreSQL + RLS + Auth + Storage)
+# Deploy: Vercel (git push main → auto-deploy)
+
+---
+
+## Who I Am
+
+- Name: Joshua Deuermeyer
+- Company: Through The Lens Media
+- Role: Sole owner, solo full-stack developer
+- Communication: Casual, direct. No padding. No corporate speak.
+
+---
+
+## Core Behavior
+
+- Only modify what is explicitly asked. Do not touch unrelated files.
+- Show exactly which files will be changed before changing them.
+- Ask before making any change that affects more than one file.
+- Never delete or overwrite working code without explicit confirmation.
+- If something is unclear, ask — do not guess or invent behavior.
+- Think step by step before writing code. State assumptions first.
+
+---
+
+## Output Control
+
+- One file per response. Max 500 lines.
+- Show only the changed sections — do not regenerate entire files.
+- No explanations unless asked.
+- If output will be truncated, stop and wait for "CONTINUE".
+
+---
+
+## Coding Standards
+
+- Clean, well-named code. Comments only when the WHY is non-obvious.
+- Simplest solution first.
+- Do not introduce new packages or abstractions unless asked.
+- Follow existing naming conventions exactly.
+- No speculative features. Build only what is required.
+
+---
+
+## This Project's Stack
+
+- Frontend: React 19 + Vite 7.x (`web-react/src/`)
+- Backend: Express 4 on Vercel serverless (`api/`)
+- Database: Supabase PostgreSQL + RLS
+- Auth: Supabase Auth + JWT (JWKS validation in `api/middleware/auth.js`)
+- Storage: Supabase Storage — receipts always accessed via `/api/receipts/signed-url?path=`
+- Deploy: Vercel — `git push origin main` auto-deploys
+- Charts: Chart.js 4.x
+- Email: Resend — sending domain `throughthelens.media` only, never `lumiereledger.com`
+
+---
+
+## Critical Data Rules
+
+These conventions exist everywhere in the codebase. Breaking them introduces bugs.
+
+- **Currency:** Stored as `BIGINT amount_cents`. Never use floats. Display = `amount_cents / 100`
+- **Discount:** Stored as basis points (`discount_cents`). `500 = 5%` → divide by 10000 to get fraction
+- **Dates:** Always `YYYY-MM-DD`. Normalize iOS formats via Zod preprocessing on the API side
+- **User scoping:** Every table has `user_id UUID` referencing `auth.users`. RLS enforces it. API adds `.eq('user_id', req.user.id)` as defense-in-depth
+- **Receipts:** Relative paths only. Always `GET /api/receipts/signed-url?path=`. Never direct Storage URLs
+- **Sources:** `source` field is user-scoped text. Display via `SOURCE_LABELS` + `formatSourceKey()` fallback
+
+---
+
+## Security Rules
+
+- Never expose the Supabase service role key to frontend code
+- All destructive operations (DELETE/UPDATE) must include `.eq('user_id', req.user.id)`
+- Auth middleware applied to all protected routes — never bypass it
+- `isLocalDev` uses AND logic: `!process.env.VERCEL && NODE_ENV !== 'production'` — cannot fire on Vercel
+- Licensing middleware is fail-closed: DB error → 503, not pass-through
+
+---
+
+## npm / Dependency Rule
+
+If a new npm package is added to `api/package.json`:
+1. Run `npm install` inside `api/` first
+2. Commit BOTH `api/package.json` AND `api/package-lock.json` together
+3. Never push `package.json` alone — Vercel uses the lock file cache
+
+---
+
+## Version Bump Checklist
+
+When bumping the version, update BOTH:
+- `web-react/public/version.json` → `"version": "X.X.X"`
+- `web-react/src/App.jsx` → `CURRENT_VERSION = "X.X.X"`
+
+Also update CHANGELOG.md and `web-react/src/components/control-center/ChangeLogModal.jsx`.
+
+---
+
+## Files — Never Touch Without Asking
+
+- `web-react/src/components/AuthContext.jsx` — global auth, changes break everything
+- `api/middleware/auth.js` — JWT validation, touch with extreme care
+- `api/middleware/licensing.js` — billing gate, fail-closed
+- `api/utils/cryptoUtil.js` — Plaid token encryption
+- `web-react/src/pages/Transactions.jsx` — complex filtering/sorting logic
+- `web-react/src/components/TransactionDrawer.jsx` — many interdependencies
+
+---
+
+## The Big 4
+
+1. Ask, don't assume
+2. Simplest first
+3. Don't touch unrelated code
+4. Flag uncertainty

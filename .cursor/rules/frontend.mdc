@@ -1,0 +1,29 @@
+---
+description: Frontend rules — applied automatically when editing UI components, pages, and styles
+globs: "**/*.tsx,**/*.jsx,**/*.css,**/*.scss,src/**/*.ts"
+alwaysApply: false
+---
+
+## Frontend Rules
+
+- Mobile-first. Minimum 44×44px tap targets on all interactive elements.
+- No hidden critical functionality — key actions must be visible without scrolling.
+- Selection state must persist across user actions.
+- All interactions need immediate visual feedback — loading states, error states, success states.
+- Never use `capture="environment"` on file inputs — it breaks gallery/file picker on iOS.
+
+## Stability First
+
+Confirm before writing any UI that depends on a backend:
+- Does the API endpoint exist?
+- Is the data shape confirmed?
+- Is state management defined?
+
+If not — flag it and stop.
+
+## Component Rules
+
+- Read the component being modified before making changes.
+- Do not refactor unrelated components in the same response.
+- Preserve existing prop interfaces unless explicitly told to change them.
+- Do not rename components, hooks, or exported functions unless instructed.

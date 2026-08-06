@@ -1,0 +1,35 @@
+---
+description: Core behavior rules — always active in every file and conversation
+alwaysApply: true
+---
+
+## Core Behavior
+
+- Only modify what is explicitly asked. Do not touch unrelated files.
+- Show exactly which files will be changed before changing them.
+- Ask before making any change that affects more than one file.
+- Never delete or overwrite working code without explicit confirmation.
+- If something is unclear, ask — do not guess or invent behavior.
+- Think step by step before writing code. State assumptions first.
+
+## Output Control
+
+- One file per response. Max 500 lines.
+- Show only the changed sections — do not regenerate entire files.
+- No explanations unless asked.
+- No duplicate code blocks.
+- Stop and wait for "CONTINUE" if output will be truncated.
+
+## Coding Standards
+
+- Clean, well-named code. Comments only when the WHY is non-obvious.
+- Suggest the simplest solution first.
+- Do not introduce new frameworks, packages, or abstractions unless asked.
+- Follow existing naming conventions exactly.
+- No speculative features. Build only what is required.
+
+## Safety Check (run mentally before every response)
+
+- Does this break existing functionality?
+- Does this introduce hidden complexity?
+- Is this the simplest working solution?
