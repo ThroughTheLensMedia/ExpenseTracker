@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { apiGet, apiPost, apiPatch, apiDelete, formatMoney, invalidateExpensesCache, fetchAllInvoices, fetchAllLeads } from '../api';
+import { apiGet, apiPost, apiPatch, apiDelete, formatMoney, invalidateExpensesCache, invalidateCache, fetchAllInvoices, fetchAllClients, fetchAllLeads } from '../api';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { useModal } from '../components/ModalContext.jsx';
@@ -415,6 +415,21 @@ export default function Invoice() {
         }
     };
 
+    const [clientFilterText, setClientFilterText] = useState('');
+    const [clientSortConfig, setClientSortConfig] = useState({ key: 'name', dir: 'asc' });
+    const [mergingClient, setMergingClient] = useState(null);
+    const [mergeTargetId, setMergeTargetId] = useState('');
+    const [emailingClient, setEmailingClient] = useState(null);
+    const [emailForm, setEmailForm] = useState({ subject: '', message: '' });
+
+    const handleClientSort = (key) => {
+        if (clientSortConfig.key === key) {
+            setClientSortConfig({ key, dir: clientSortConfig.dir === 'asc' ? 'desc' : 'asc' });
+        } else {
+            setClientSortConfig({ key, dir: 'asc' });
+        }
+    };
+
     const [isCreatorOpen, setIsCreatorOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [previewingInvoice, setPreviewingInvoice] = useState(null);
@@ -471,13 +486,12 @@ export default function Invoice() {
         try {
             const [invs, cls, lds, st] = await Promise.all([
                 fetchAllInvoices(true),
-                apiGet('/invoices/clients'),
+                fetchAllClients(true),
                 fetchAllLeads().catch(() => ({ leads: [] })),
                 apiGet('/settings').catch(() => ({}))
             ]);
             setInvoices(invs);
-            // /invoices/clients returns { data, pagination } — unwrap to array
-            setClients(Array.isArray(cls) ? cls : (cls?.data || []));
+            setClients(cls);
             setLeads(lds.leads || []);
             const settingsData = (st && typeof st === 'object' && !st.error) ? st : {};
             setSettings(settingsData);
@@ -917,6 +931,56 @@ export default function Invoice() {
         return invoices.filter(inv => inv.status === 'draft').length;
     }, [invoices]);
 
+    const invoiceCountByClient = useMemo(() => {
+        const m = new Map();
+        invoices.forEach(inv => {
+            if (inv.client_id != null) m.set(inv.client_id, (m.get(inv.client_id) || 0) + 1);
+        });
+        return m;
+    }, [invoices]);
+
+    const handleDeleteClient = async (client) => {
+        const ok = await modal.confirm(`Are you sure you want to permanently delete ${client.name}?`);
+        if (!ok) return;
+        try {
+            await apiDelete(`/invoices/clients/${client.id}`);
+            invalidateCache('clients');
+            load();
+            setStatusMsg({ type: 'ok', text: "Client deleted successfully." });
+        } catch (err) {
+            setStatusMsg({ type: 'bad', text: err.message });
+        }
+    };
+
+    const handleMergeClients = async (source, targetId) => {
+        const target = clients.find(c => String(c.id) === String(targetId));
+        const n = invoiceCountByClient.get(source.id) || 0;
+        const ok = await modal.confirm(
+            `${n} invoice${n === 1 ? '' : 's'} will move from "${source.name}" to "${target?.name}". ` +
+            `"${source.name}" will then be permanently deleted. Continue?`
+        );
+        if (!ok) return;
+        try {
+            await apiPost('/invoices/clients/merge', { source_client_id: source.id, target_client_id: targetId });
+            invalidateCache('clients');
+            setMergingClient(null);
+            await load();
+            setStatusMsg({ type: 'ok', text: `Merged into ${target?.name}.` });
+        } catch (err) {
+            setStatusMsg({ type: 'bad', text: err.message });
+        }
+    };
+
+    const handleEmailClient = async (client) => {
+        try {
+            await apiPost(`/invoices/clients/${client.id}/email`, emailForm);
+            setEmailingClient(null);
+            setStatusMsg({ type: 'ok', text: `Email queued to ${client.name}.` });
+        } catch (err) {
+            setStatusMsg({ type: 'bad', text: err.message });
+        }
+    };
+
     return (
         <section style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
@@ -1118,21 +1182,149 @@ export default function Invoice() {
                         )}
                     </div>
                 ) : (
-                    <div className="locker-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', margin: 0 }}>
-                        {clients.map(c => (
-                            <div key={c.id} className="card glass gear-slot" style={{ margin: 0, padding: '24px' }}>
-                                <h3 style={{ margin: 0, fontWeight: 900 }}>{c.name}</h3>
-                                <div className="muted small">{c.email}</div>
-                                <div className="hr" style={{ margin: '15px 0' }}></div>
-                                <button className="btn sm primary" style={{ width: '100%' }} onClick={() => {
-                                    setIsCreatorOpen(true);
-                                    setFormData(prev => ({ ...prev, clientName: c.name || '', clientEmail: c.email || '', clientPhone: c.phone || '', clientId: c.id }));
-                                }}>New Invoice</button>
-                            </div>
-                        ))}
+                    <div className="tableWrap">
+                        <div style={{ padding: '16px 16px 0' }}>
+                            <input
+                                placeholder="Search clients by name, email, or phone..."
+                                value={clientFilterText}
+                                onChange={e => setClientFilterText(e.target.value)}
+                                style={{ maxWidth: '360px' }}
+                            />
+                        </div>
+                        {loading && clients.length === 0 ? (
+                            <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>Loading clients...</div>
+                        ) : (
+                            <table style={{ width: '100%' }}>
+                                <thead>
+                                    <tr>
+                                        <th onClick={() => handleClientSort('name')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                                            Name {clientSortConfig.key === 'name' ? (clientSortConfig.dir === 'asc' ? '↑' : '↓') : ''}
+                                        </th>
+                                        <th onClick={() => handleClientSort('email')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                                            Email {clientSortConfig.key === 'email' ? (clientSortConfig.dir === 'asc' ? '↑' : '↓') : ''}
+                                        </th>
+                                        <th onClick={() => handleClientSort('phone')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                                            Phone {clientSortConfig.key === 'phone' ? (clientSortConfig.dir === 'asc' ? '↑' : '↓') : ''}
+                                        </th>
+                                        <th onClick={() => handleClientSort('invoices')} style={{ textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}>
+                                            Invoices {clientSortConfig.key === 'invoices' ? (clientSortConfig.dir === 'asc' ? '↑' : '↓') : ''}
+                                        </th>
+                                        <th style={{ textAlign: 'center' }}>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {clients
+                                        .filter(c => {
+                                            if (!clientFilterText) return true;
+                                            const term = clientFilterText.toLowerCase();
+                                            const name = (c.name || '').toLowerCase();
+                                            const email = (c.email || '').toLowerCase();
+                                            const phone = (c.phone || '').toLowerCase();
+                                            return name.includes(term) || email.includes(term) || phone.includes(term);
+                                        })
+                                        .sort((a, b) => {
+                                            const dirMod = clientSortConfig.dir === 'asc' ? 1 : -1;
+                                            if (clientSortConfig.key === 'invoices') {
+                                                const nA = invoiceCountByClient.get(a.id) || 0;
+                                                const nB = invoiceCountByClient.get(b.id) || 0;
+                                                return (nA - nB) * dirMod;
+                                            }
+                                            const vA = (a[clientSortConfig.key] || '').toLowerCase();
+                                            const vB = (b[clientSortConfig.key] || '').toLowerCase();
+                                            if (vA < vB) return -1 * dirMod;
+                                            if (vA > vB) return 1 * dirMod;
+                                            return 0;
+                                        })
+                                        .map(c => (
+                                        <tr key={c.id}>
+                                            <td style={{ fontWeight: 700 }}>{c.name}</td>
+                                            <td className="muted small">{c.email || '--'}</td>
+                                            <td className="muted small">{c.phone || '--'}</td>
+                                            <td style={{ textAlign: 'center' }}>{invoiceCountByClient.get(c.id) || 0}</td>
+                                            <td style={{ textAlign: 'center' }}>
+                                                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                                                    <button className="btn sm primary" onClick={() => {
+                                                        setIsCreatorOpen(true);
+                                                        setFormData(prev => ({ ...prev, clientName: c.name || '', clientEmail: c.email || '', clientPhone: c.phone || '', clientId: c.id }));
+                                                    }}>New Invoice</button>
+                                                    <button className="btn sm secondary" onClick={() => {
+                                                        setEmailingClient(c);
+                                                        setEmailForm({ subject: '', message: '' });
+                                                    }}>Email</button>
+                                                    <button className="btn sm secondary" onClick={() => {
+                                                        setMergingClient(c);
+                                                        setMergeTargetId('');
+                                                    }}>Merge into...</button>
+                                                    <button className="btn sm sm-icon" onClick={() => handleDeleteClient(c)} style={{ padding: '0 8px', color: '#ff4d4d' }}>✕</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {!clients.length && <tr><td colSpan="5" className="muted center" style={{ padding: '60px' }}>No clients.</td></tr>}
+                                </tbody>
+                            </table>
+                        )}
                     </div>
                 )}
             </div>
+
+            {/* MERGE CLIENT DRAWER */}
+            {mergingClient && (
+                <div className="drawer">
+                    <div className="drawer-panel" style={{ width: 'min(420px, 100%)', padding: '24px' }}>
+                        <h2 style={{ marginTop: 0 }}>Merge "{mergingClient.name}"</h2>
+                        <p className="muted small">
+                            All invoices ({invoiceCountByClient.get(mergingClient.id) || 0}) and leads linked to
+                            this client will move to the client you choose below, then "{mergingClient.name}" will be permanently deleted.
+                        </p>
+                        <select value={mergeTargetId} onChange={e => setMergeTargetId(e.target.value)}>
+                            <option value="">-- Select target client --</option>
+                            {clients.filter(c => c.id !== mergingClient.id).map(c => (
+                                <option key={c.id} value={c.id}>{c.name} ({c.email || 'no email'})</option>
+                            ))}
+                        </select>
+                        <div style={{ display: 'flex', gap: '10px', marginTop: '20px', justifyContent: 'flex-end' }}>
+                            <button className="btn secondary" onClick={() => setMergingClient(null)}>Cancel</button>
+                            <button
+                                className="btn primary"
+                                disabled={!mergeTargetId}
+                                onClick={() => handleMergeClients(mergingClient, mergeTargetId)}
+                            >
+                                Merge
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* EMAIL CLIENT DRAWER */}
+            {emailingClient && (
+                <div className="drawer">
+                    <div className="drawer-panel" style={{ width: 'min(560px, 100%)', padding: '24px' }}>
+                        <h2 style={{ marginTop: 0 }}>Email {emailingClient.name}</h2>
+                        <div className="muted small" style={{ marginBottom: '16px' }}>To: {emailingClient.email || 'no email on file'}</div>
+                        <small className="muted" style={{ fontWeight: 800 }}>SUBJECT</small>
+                        <input value={emailForm.subject} onChange={e => setEmailForm({ ...emailForm, subject: e.target.value })} style={{ marginTop: '6px' }} />
+                        <small className="muted" style={{ fontWeight: 800, marginTop: '16px', display: 'block' }}>MESSAGE</small>
+                        <textarea
+                            rows={8}
+                            value={emailForm.message}
+                            onChange={e => setEmailForm({ ...emailForm, message: e.target.value })}
+                            style={{ width: '100%', marginTop: '6px' }}
+                        />
+                        <div style={{ display: 'flex', gap: '10px', marginTop: '20px', justifyContent: 'flex-end' }}>
+                            <button className="btn secondary" onClick={() => setEmailingClient(null)}>Cancel</button>
+                            <button
+                                className="btn primary"
+                                disabled={!emailingClient.email || !emailForm.subject.trim() || !emailForm.message.trim()}
+                                onClick={() => handleEmailClient(emailingClient)}
+                            >
+                                Send
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* CREATOR DRAWER */}
             {isCreatorOpen && (

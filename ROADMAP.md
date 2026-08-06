@@ -1,6 +1,6 @@
 # Lumière Ledger — Master Roadmap
 
-**Version:** v7.16.1 | **Last reviewed:** 2026-07-06  
+**Version:** v7.22.0 | **Last reviewed:** 2026-08-06  
 Source of truth for all sprint work, security status, and product phases.
 
 ---
@@ -145,7 +145,7 @@ Competitive gap analysis vs. QuickBooks Solopreneur / Keeper / Wave / FreshBooks
 | Item | Notes |
 |------|-------|
 | Invoice PDF formatting | Known formatting issues — not blocking launch |
-| Client invoice history | CRM should consolidate repeat clients — Phase 5 |
+| Client invoice history | ✅ v7.22.0 — Clients tab is a sortable/filterable table (name/email/phone/invoice count) with Merge (reassigns invoices + leads, deletes the duplicate), Delete (blocked if invoices are attached), and direct Email actions. Remaining: create-time dedup by email so freehand invoice entry stops creating new duplicates in the first place (see Clean Up below), and full CRM/leads-directory unification — Phase 5. |
 | Bank Import UI cleanup | Remove emojis, demote niche banks, surface Rocket Money as recommended |
 | Apple Card CSV via email | Apple Card can't connect via Plaid. Detect `.csv` attachment in `emailInbound.js`, parse Apple Card format, bulk-insert with dedup. Workaround: manual CSV import. Build after email ingestion is stable. |
 | 7-day unmatched receipt digest | Cron/UptimeRobot endpoint — email user list of `pending_receipts` older than 7 days |
@@ -344,6 +344,8 @@ Full inventory: `api/routes/brain.js` (11 tools — 6 read, 5 write, all writes 
 - **⚠️ Dependency Hygiene Protocol** — Any `api/package.json` change must regenerate `api/package-lock.json` in the same commit. Stale lock file = Vercel silent-skip = Lambda crash. Root cause of v7.6.7 outage. See Rule 10 in CLAUDE.md.
 - **`file-type` moderate vuln (GHSA-5v7r-6r5c-r473)** — Infinite loop on malformed ASF audio file header. Impact: near-zero (receipts.js only handles JPEG/PNG/PDF). Fix requires `file-type@22` which is ESM-only — needs `receipts.js` refactor to dynamic `import()`. Not blocking.
 - **`plaid_account_id` backfill** — Existing pre-v7.8.4 Plaid transactions have NULL `plaid_account_id`. Historical sub-account breakdown unavailable until users re-sync.
+- **✅ Client list/merge/delete/email + `invoice_number` scope fix (v7.22.0)** — Clients tab replaced (card grid → table with Merge/Delete/Email actions), prompted by real production duplicate client records with no cleanup tool. Also fixed two bugs found/left over while building this: (1) `fetchAllInvoices` (`web-react/src/api/index.js`) only ever fetched the first 50 invoices — never paginated despite the route supporting it; now pages through everything, same pattern as `fetchAllExpenses`. (2) `invoices.invoice_number` had a database-wide `UNIQUE` constraint instead of one scoped per user (`api/migrations/016_scope_invoice_number_unique_per_user.sql`, applied to production 2026-08-06) — two unrelated accounts could never share an invoice number, so every new user's suggested first invoice number (`INV-1001`) could only ever belong to one account, total.
+- **⚠️ Client creation still doesn't dedup by email** — typing a client name/email freehand into the invoice form always inserts a new `clients` row, even if the name/email exactly match an existing client (only reused if you explicitly click an existing client first). This is the actual root cause of the duplicate-client mess Merge (above) cleans up after the fact. `api/routes/intake.js`'s lead-intake endpoint already has the right case-insensitive `ilike` email-lookup pattern to mirror into `handleCreateInvoice`'s client-creation branch in `Invoice.jsx`. Not yet built.
 - **✅ `SaasTab.jsx` hardcoded values audit (v7.19.2)** — found while diagnosing the `dvaldivia2013` "CORE plan, no Stripe charge" question (v7.19.1). Fixed: (1) `isAdmin` now checks `user.id === ADMIN_UUID` (added to `web-react/src/constants/billing.js`) instead of a hardcoded login email — restores single-source-of-truth pattern from the v7.10.11 audit. (2) `PLAN_OPTIONS` now includes `sync_monthly`/`sync_annual` so Sync tier can be set from the Edit dropdown without SQL. (3) `90`-day invite/extend duration extracted to `INVITE_VALID_DAYS`/`EXTEND_DAYS` constants (still duplicated against `api/routes/admin.js`'s `/extend` route by hand — no shared package across the boundary). (4) Admin "Monthly Est." column now adds the 2.9%+$0.30 Stripe pass-through fee on top of the $0.50/account Plaid line item (confirmed against `PLAID_BILLING_SPEC.md` — base rate was already correct, just missing the fee layer that appears on real invoices). (5) `TIER_COLORS` gives Sync its own `.tag.accent` class (new, `var(--accent)`-based) instead of blending into Free's `secondary` gray. `PLAN_COST` price map left as-is per Joshua's call — display-only estimate, not worth deriving from Stripe.
 
 ---

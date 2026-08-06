@@ -288,11 +288,36 @@ export async function fetchAllInvoices(force = false) {
         const cached = getCached(key);
         if (cached) return cached;
     }
-    const res = await apiGet('/invoices');
-    // API returns paginated shape { data, pagination }; callers expect a plain array
-    const data = Array.isArray(res) ? res : (res?.data || []);
-    setCache(key, data);
-    return data;
+    const PAGE = 500; // matches server-side cap in GET /invoices
+    let offset = 0;
+    let all = [];
+    while (true) {
+        const res = await apiGet(`/invoices?limit=${PAGE}&offset=${offset}`);
+        const rows = Array.isArray(res) ? res : (res?.data || []);
+        all = all.concat(rows);
+        if (rows.length === PAGE) offset += PAGE; else break;
+    }
+    setCache(key, all);
+    return all;
+}
+
+export async function fetchAllClients(force = false) {
+    const key = 'clients';
+    if (!force) {
+        const cached = getCached(key);
+        if (cached) return cached;
+    }
+    const PAGE = 500; // matches server-side cap in GET /invoices/clients
+    let offset = 0;
+    let all = [];
+    while (true) {
+        const res = await apiGet(`/invoices/clients?limit=${PAGE}&offset=${offset}`);
+        const rows = Array.isArray(res) ? res : (res?.data || []);
+        all = all.concat(rows);
+        if (rows.length === PAGE) offset += PAGE; else break;
+    }
+    setCache(key, all);
+    return all;
 }
 
 export async function fetchAllLeads(force = false) {

@@ -5,6 +5,23 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.22.0] — 2026-08-06
+
+### Added — Clients tab overhaul: list view, merge, delete, direct email
+
+- **`web-react/src/pages/Invoice.jsx`** — the Clients tab was a card grid showing only name/email with no way to delete, edit, or email a client. Replaced with a sortable/filterable table (name, email, phone, invoice count) with per-row actions: New Invoice (existing), Email, Merge into..., Delete. Prompted by production data showing real duplicate client records (e.g. the same person's name typed slightly differently on separate invoices, each freehand entry creates a new row with zero dedup) with no cleanup tool available.
+- **`api/routes/invoices.js`** — three new endpoints:
+  - `DELETE /invoices/clients/:id` — deletes a client, but blocks with a clear `400` (invoice count in the message) if any invoices are still attached, since `invoices.client_id`/`leads.client_id` are `ON DELETE SET NULL` and a silent delete would blank out real invoice/lead history.
+  - `POST /invoices/clients/merge` — the actual duplicate-cleanup tool: reassigns every invoice **and lead** from a duplicate client onto the canonical one, then deletes the duplicate. Reassigns before deleting so a failed reassignment never orphans data.
+  - `POST /invoices/clients/:id/email` — freeform subject/message email to a client, not tied to any invoice. Reuses the existing invoice-email branding shell (studio logo/name header, footer) and the existing `queueInvoiceEmail` Resend/retry plumbing — `sendInvoiceEmail` was already fully generic, no mailer changes needed.
+- **Fixed a real pre-existing bug found while building this:** `fetchAllInvoices` (`web-react/src/api/index.js`) only ever fetched the first 50 invoices — it called `GET /invoices` once with no pagination, despite the route supporting `limit`/`offset`. Any account with more than 50 invoices was silently missing rows everywhere that function is used. Now pages through the full result set, same pattern as `fetchAllExpenses`. Added `fetchAllClients` alongside it for the same reason.
+- **Verified against live production data before shipping:** ran the guarded delete against a real zero-invoice test client (succeeded) and a real client with an invoice attached (correctly blocked), ran a real merge between two duplicate client records and confirmed via direct DB query that the lead moved and the duplicate was gone, and sent a real test email end-to-end through Resend.
+- **Also landed in this release, previously applied to production but never committed:** `api/migrations/016_scope_invoice_number_unique_per_user.sql` — `invoices.invoice_number` had a database-wide `UNIQUE` constraint instead of one scoped per user, so two unrelated accounts could never use the same invoice number (e.g. every new user's suggested first invoice number, `INV-1001`, could only ever belong to one account total). Replaced with `UNIQUE (user_id, invoice_number)`.
+- **Not built (flagged for later):** client creation still doesn't dedup by email when a name/email is typed freehand into the invoice form — `api/routes/intake.js`'s lead-intake endpoint already has the right case-insensitive lookup pattern to mirror there. Merge is the cleanup tool for now; this would stop new duplicates from being created in the first place.
+- Update CHANGELOG.md, ChangeLogModal.jsx, version.json, App.jsx, ROADMAP.md, CLAUDE.md
+
+---
+
 ## [v7.21.3] — 2026-08-05
 
 ### Changed — Brain reasoning: explicit low temperature

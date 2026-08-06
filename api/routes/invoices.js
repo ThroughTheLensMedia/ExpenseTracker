@@ -80,6 +80,167 @@ router.post("/clients", async (req, res) => {
     }
 });
 
+const MergeClientsSchema = z.object({
+    source_client_id: z.coerce.number().int(),
+    target_client_id: z.coerce.number().int(),
+});
+
+router.post("/clients/merge", async (req, res) => {
+    try {
+        const { source_client_id, target_client_id } = MergeClientsSchema.parse(req.body);
+        if (source_client_id === target_client_id) {
+            return res.status(400).json({ error: "Cannot merge a client into itself." });
+        }
+
+        const { data: owned, error: ownErr } = await req.sb
+            .from("clients")
+            .select("id")
+            .eq("user_id", req.user.id)
+            .in("id", [source_client_id, target_client_id]);
+        if (ownErr) throw ownErr;
+        if (!owned || owned.length !== 2) {
+            return res.status(404).json({ error: "One or both clients were not found." });
+        }
+
+        // Reassign before deleting — if either update fails, the source client
+        // survives intact instead of being deleted with orphaned references.
+        const { data: movedInvoices, error: invErr } = await req.sb
+            .from("invoices")
+            .update({ client_id: target_client_id })
+            .eq("client_id", source_client_id)
+            .eq("user_id", req.user.id)
+            .select("id");
+        if (invErr) throw invErr;
+
+        const { error: leadErr } = await req.sb
+            .from("leads")
+            .update({ client_id: target_client_id })
+            .eq("client_id", source_client_id)
+            .eq("user_id", req.user.id);
+        if (leadErr) throw leadErr;
+
+        const { error: delErr } = await req.sb
+            .from("clients")
+            .delete()
+            .eq("id", source_client_id)
+            .eq("user_id", req.user.id);
+        if (delErr) throw delErr;
+
+        res.json({ ok: true, movedInvoices: (movedInvoices || []).length, targetClientId: target_client_id });
+    } catch (e) {
+        if (e instanceof z.ZodError) return res.status(400).json({ error: e.errors });
+        res.status(500).json({ error: e.message });
+    }
+});
+
+router.delete("/clients/:id", async (req, res) => {
+    try {
+        const clientId = req.params.id;
+
+        const { count, error: countErr } = await req.sb
+            .from("invoices")
+            .select("id", { count: "exact", head: true })
+            .eq("client_id", clientId)
+            .eq("user_id", req.user.id);
+        if (countErr) throw countErr;
+
+        if (count > 0) {
+            return res.status(400).json({
+                error: `This client has ${count} invoice${count === 1 ? '' : 's'} attached. Merge into another client instead of deleting.`,
+                invoiceCount: count
+            });
+        }
+
+        // Not checking leads.client_id here — a lead losing its client link on a
+        // zero-invoice delete is a low-stakes papercut (ON DELETE SET NULL), not
+        // a financial-integrity risk like an invoice going blank would be.
+        const { error } = await req.sb
+            .from("clients")
+            .delete()
+            .eq("id", clientId)
+            .eq("user_id", req.user.id);
+        if (error) throw error;
+
+        res.json({ ok: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+const ClientEmailSchema = z.object({
+    subject: z.string().trim().min(1),
+    message: z.string().trim().min(1),
+});
+
+router.post("/clients/:id/email", async (req, res) => {
+    try {
+        const body = ClientEmailSchema.parse(req.body);
+
+        const { data: client, error: clientErr } = await req.sb
+            .from("clients")
+            .select("id, name, email")
+            .eq("id", req.params.id)
+            .eq("user_id", req.user.id)
+            .single();
+        if (clientErr || !client) return res.status(404).json({ error: "Client not found." });
+        if (!client.email) return res.status(400).json({ error: "This client has no email address on file." });
+
+        const { data: settings } = await req.sb
+            .from('settings')
+            .select('business_name, email, logo_url, phone, website')
+            .maybeSingle();
+
+        const studioName = settings?.business_name || 'Your Photographer';
+        const studioEmail = settings?.email || null;
+        const appUrl = process.env.APP_URL || 'https://www.lumiereledger.com';
+
+        let logoUrlImg = settings?.logo_url;
+        if (logoUrlImg && logoUrlImg.startsWith('/')) logoUrlImg = appUrl + logoUrlImg;
+        if (logoUrlImg && logoUrlImg.startsWith('data:')) logoUrlImg = null; // avoid Gmail clipping
+
+        const logoHtml = logoUrlImg
+            ? `<img src="${logoUrlImg}" alt="${studioName}" style="max-height:60px; max-width:180px; object-fit:contain; margin-bottom:8px;">`
+            : `<div style="font-size:20px; font-weight:900; color:#1e293b; letter-spacing:-0.02em;">${studioName}</div>`;
+
+        const messageHtml = body.message.replace(/\n/g, '<br/>');
+
+        const emailBody = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+<body style="margin:0; padding:0; background:#f8fafc; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <div style="max-width:620px; margin:0 auto; padding:40px 20px;">
+    <div style="text-align:center; margin-bottom:32px;">
+      ${logoHtml}
+      <div style="height:2px; width:40px; background:#f97316; margin:12px auto 0;"></div>
+    </div>
+
+    <p style="font-size:16px; color:#334155; margin:0 0 20px;">Hi ${client.name},</p>
+    <p style="font-size:15px; color:#475569; margin:0 0 28px; line-height:1.6;">${messageHtml}</p>
+
+    <div style="text-align:center; padding-top:24px; border-top:1px solid #e2e8f0;">
+      <p style="font-size:12px; color:#94a3b8; margin:0;">${studioName}${settings?.email ? ` &middot; ${settings.email}` : ''}${settings?.phone ? ` &middot; ${settings.phone}` : ''}</p>
+      <p style="font-size:11px; color:#cbd5e1; margin:8px 0 0;">This email was sent via Lumière Ledger</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+        queueInvoiceEmail({
+            to: client.email,
+            subject: body.subject,
+            body: emailBody,
+            fromName: studioName,
+            replyTo: studioEmail
+        }).catch(err => console.error("[CLIENT EMAIL QUEUE] Failed to enqueue:", err));
+
+        res.json({ ok: true });
+    } catch (e) {
+        if (e instanceof z.ZodError) return res.status(400).json({ error: e.errors });
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // --- INVOICES ---
 
 router.get("/", async (req, res) => {

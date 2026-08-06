@@ -1,6 +1,13 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.22.0', date: 'AUG 06, 2026', color: '#4c7dff', items: [
+        '<strong>New:</strong> The Clients tab is now a searchable, sortable list showing each client\'s name, email, phone, and how many invoices they have — instead of a card grid with just a name and email.',
+        '<strong>New:</strong> Merge duplicate client records into one — all their invoices and CRM leads move to the record you keep, and the duplicate is removed.',
+        '<strong>New:</strong> Delete a client record directly (only available once it has no invoices attached, so your invoice history is never accidentally blanked out).',
+        '<strong>New:</strong> Email a client directly from their record — no invoice required, just a subject and message.',
+        '<strong>Fixed:</strong> Some accounts with a large number of invoices weren\'t having all of them counted correctly in a few places behind the scenes.',
+    ]},
     { version: '7.21.3', date: 'AUG 05, 2026', color: '#94a3b8', items: [
         '<strong>Improved:</strong> Tuned the Lumière Assistant\'s underlying model settings for more consistent, reliable answers on financial questions.',
     ]},
