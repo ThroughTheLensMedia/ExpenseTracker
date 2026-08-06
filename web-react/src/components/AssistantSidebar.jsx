@@ -153,32 +153,34 @@ export default function AssistantSidebar() {
 
     return (
         <>
-            {/* Floating Toggle Button */}
-            <button
-                onClick={() => setIsOpen(!isOpen)}
-                style={{
-                    position: 'fixed',
-                    bottom: '100px',
-                    right: '30px',
-                    width: '60px',
-                    height: '60px',
-                    borderRadius: '50%',
-                    background: hasKey ? 'var(--accent)' : 'rgba(249,115,22,0.5)',
-                    border: 'none',
-                    boxShadow: '0 8px 32px rgba(249, 115, 22, 0.4)',
-                    cursor: 'pointer',
-                    zIndex: 9999,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '24px',
-                    transition: 'transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
-                }}
-                onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
-                onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-            >
-                {isOpen ? '✕' : '📸'}
-            </button>
+            {/* Floating Toggle Button — hidden while panel is open (header ✕ closes it instead) so it can't sit on top of the chat input */}
+            {!isOpen && (
+                <button
+                    onClick={() => setIsOpen(true)}
+                    style={{
+                        position: 'fixed',
+                        bottom: '90px',
+                        right: '24px',
+                        width: '46px',
+                        height: '46px',
+                        borderRadius: '50%',
+                        background: hasKey ? 'var(--accent)' : 'rgba(249,115,22,0.5)',
+                        border: 'none',
+                        boxShadow: '0 6px 20px rgba(249, 115, 22, 0.4)',
+                        cursor: 'pointer',
+                        zIndex: 9999,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '18px',
+                        transition: 'transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
+                    onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                >
+                    📸
+                </button>
+            )}
 
             {/* Sidebar Panel */}
             <div style={{
