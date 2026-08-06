@@ -220,6 +220,8 @@ Express 4.19 API (api/)
 - **Reliability:** 503 errors trigger automatic retries via `repairLedgerBatch()` in `utils/gemini.js`
 - **Persona:** "Lumière Assistant" — not "Studio Assistant"
 - **SUBSCRIPTIONS RULE:** When user asks about subscriptions/recurring charges, Brain searches ALL categories (no category filter) over 60-90 days for vendor frequency patterns. Never dead-end on zero Software & Subscriptions results.
+- **Reasoning tuning (v7.21.3):** both Gemini call sites (`utils/gemini.js`'s `getGeminiModel()` and `routes/brain.js`'s `/ask` handler) explicitly set `generationConfig: { temperature: 0.2 }` — previously unset, running on the API default (~1.0). Lower temperature favors deterministic tool selection and numeric consistency over creative variance.
+- ⚠️ **`@google/generative-ai` SDK is EOL (Aug 31, 2025), pinned at v0.24.1.** No further updates will ever ship — Google has moved all new development to the successor `@google/genai` package. This SDK has no `thinkingConfig`/thinking-budget support, and Gemini 3.x model compatibility through it isn't confirmed by Google's current docs. A migration to `@google/genai` is tracked in `ROADMAP.md`'s Technical Debt section — it's the prerequisite for thinking-budget tuning and a user-selectable Gemini model picker (also tracked, blocked on this). Do not add a model picker before this migration lands — there's nothing to pick between yet.
 
 ### Plaid ✅ LIVE
 - **Status:** Production — fully wired and gated. `PLAID_ENV=production`, `PLAID_CLIENT_ID`, `PLAID_SECRET`, `ENCRYPTION_KEY` all set in Vercel.

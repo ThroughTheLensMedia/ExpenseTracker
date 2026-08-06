@@ -629,6 +629,7 @@ router.post("/ask", async (req, res) => {
         const client = new genAI.GoogleGenerativeAI(apiKey);
         const model = client.getGenerativeModel({
             model: "gemini-2.5-flash",
+            generationConfig: { temperature: 0.2 },
             systemInstruction: `You are the Lumière Assistant — an elite financial AI advisor for ${businessName}, a professional photography business. Today is ${today}. Current view: ${context?.page || "dashboard"}.
 
 You have live tools to query and update the ledger, invoices, CRM, and metrics.

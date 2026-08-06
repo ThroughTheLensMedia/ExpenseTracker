@@ -5,6 +5,17 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.21.3] — 2026-08-05
+
+### Changed — Brain reasoning: explicit low temperature
+
+- **`api/utils/gemini.js`** and **`api/routes/brain.js`** — both Gemini model calls now set `generationConfig: { temperature: 0.2 }` (previously unset, running on the API default of ~1.0). Lower temperature reduces the model's tendency to guess on tool selection and numeric answers instead of following the deterministic instructions already in the tool schemas/prompts.
+- No other behavior changed — tool declarations, the function-calling loop, and RAG doc injection are untouched.
+- Investigated and deferred: a "thinking budget" config was also considered, but the installed SDK (`@google/generative-ai@0.24.1`) doesn't support it and reached end-of-life Aug 31, 2025. Migrating to the successor `@google/genai` package (needed for thinking-budget tuning, verified Gemini 3.x support, and a future user-selectable model picker) is tracked as its own item in `ROADMAP.md`.
+- Update CHANGELOG.md, ChangeLogModal.jsx, version.json, App.jsx, ROADMAP.md, CLAUDE.md
+
+---
+
 ## [v7.21.2] — 2026-08-05
 
 ### Changed — View receipt from the edit drawer

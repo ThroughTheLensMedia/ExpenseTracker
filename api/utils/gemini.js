@@ -11,7 +11,10 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 async function getGeminiModel(apiKey) {
     if (!apiKey) throw new Error("Gemini API Key is required to power the AI Brain.");
     const genAI = new GoogleGenerativeAI(apiKey);
-    return genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    return genAI.getGenerativeModel({
+        model: "gemini-2.5-flash",
+        generationConfig: { temperature: 0.2 }
+    });
 }
 
 /**

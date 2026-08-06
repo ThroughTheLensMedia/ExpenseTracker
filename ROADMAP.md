@@ -119,6 +119,7 @@ Competitive gap analysis vs. QuickBooks Solopreneur / Keeper / Wave / FreshBooks
 | **REDIS_URL — remove or wire up** | Bull was removed v7.8.90. Direct Resend fallback is intentional and working. Either set `REDIS_URL` and re-enable queue layer, or remove dead queue code from `emailQueue.js`. |
 | **`plaid_account_id` backfill** | Pre-v7.8.4 Plaid transactions have NULL `plaid_account_id`. Sub-account spending breakdown won't work on historical data until users re-sync. Document or prompt user to sync. |
 | **`rotate-plaid-tokens.js` references stale schema** | Found 2026-07-01 while building the webhook backfill script: `api/scripts/rotate-plaid-tokens.js` queries a `plaid_items` table with an `encrypted_access_token` column — current schema is `plaid_connections`/`access_token`. Verify and fix before ever actually running an `ENCRYPTION_KEY` rotation. |
+| **`@google/generative-ai` SDK is EOL** | Found 2026-08-05 while scoping Brain reasoning tuning: pinned at v0.24.1, and Google permanently stopped shipping updates to this package on Aug 31, 2025. No `thinkingConfig`/thinking-budget support, and Gemini 3.x model compatibility isn't confirmed by Google's current docs — new development is pointed at the successor `@google/genai` package. Migration touches both Gemini call sites (`api/utils/gemini.js`, `api/routes/brain.js`) and needs its own testing pass. Prerequisite for the Gemini model picker below. |
 
 ---
 
@@ -150,6 +151,7 @@ Competitive gap analysis vs. QuickBooks Solopreneur / Keeper / Wave / FreshBooks
 | 7-day unmatched receipt digest | Cron/UptimeRobot endpoint — email user list of `pending_receipts` older than 7 days |
 | Account merging by last-4 digits | Auto-match CSV source to Plaid sub-account by institution + last 4 digits. Manual merge covers this for now. |
 | AI Brain: Combine Similar Transactions | New AI action to detect and merge near-duplicate expense rows (pending+posted Plaid, CSV+Plaid overlap). Requires new action type in `AssistantSidebar.jsx`, backend merge route, and confirm UI before any writes. |
+| AI Brain: user-selectable Gemini model | Let users pick their model in Settings (e.g. 2.5 Flash vs. a newer Flash tier) based on their own API key's budget/tier. Needs: `gemini_model` column on `settings` (idempotent migration, nullable, default `NULL` → `gemini-2.5-flash`), a small model registry in `api/constants.js`, and a dropdown in `IntelligenceTab.jsx` (reuse the existing `handleToggle` auto-save-on-change pattern already used there for `ai_silent_mode`/`ai_coaching_mode`). **Blocked on the `@google/generative-ai` SDK EOL item above** — a single-option picker has nothing to pick between until a second, verified-compatible model exists. |
 
 ---
 

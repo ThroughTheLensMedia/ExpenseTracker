@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.21.3', date: 'AUG 05, 2026', color: '#94a3b8', items: [
+        '<strong>Improved:</strong> Tuned the Lumière Assistant\'s underlying model settings for more consistent, reliable answers on financial questions.',
+    ]},
     { version: '7.21.2', date: 'AUG 05, 2026', color: '#94a3b8', items: [
         '<strong>Fixed:</strong> You can now view an attached receipt directly from the transaction edit screen, instead of having to close it and look it up from the main ledger.',
     ]},
