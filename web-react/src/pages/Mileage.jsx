@@ -64,6 +64,7 @@ export default function Mileage() {
     const originRef = useRef(null);
     const destinationRef = useRef(null);
     const waypointRef = useRef(null);
+    const logTripCardRef = useRef(null);
     const originAutocomplete = useRef(null);
     const destinationAutocomplete = useRef(null);
     const waypointAutocomplete = useRef(null);
@@ -99,6 +100,7 @@ export default function Mileage() {
     }, []);
 
     const handleAddManualTrip = async () => {
+        if (!manualDate) return modal.alert('Please enter a trip date.');
         if (!manualName) return modal.alert('Please enter a trip name or client.');
         if (!manualMiles || isNaN(Number(manualMiles)) || Number(manualMiles) <= 0)
             return modal.alert('Please enter a valid mileage amount.');
@@ -259,6 +261,28 @@ export default function Mileage() {
         setEditPurpose(m.purpose);
     };
 
+    const handleDuplicateTrip = (m) => {
+        setEditingId(null);
+        setManualMode(true);
+
+        const parts = m.purpose?.split(' | ') || [];
+        const name = parts[0] || '';
+        const modeOrRoute = parts[1] || '';
+        const notes = parts[2] || '';
+
+        setManualName(name);
+        setManualNotes(
+            modeOrRoute && modeOrRoute !== 'Manual Entry'
+                ? `${modeOrRoute}${notes ? ' — ' + notes : ''}`
+                : notes
+        );
+        setManualMiles(String(m.miles));
+        setManualDate('');
+        setLinkedInvoice('');
+
+        logTripCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
     const handleSaveEdit = async () => {
         if (!editDate || !editMiles || !editPurpose) return modal.alert("All fields are required.");
         try {
@@ -345,7 +369,7 @@ export default function Mileage() {
             </div>
 
             {/* Maps Trip Logger */}
-            <div className="card" style={{ marginBottom: '20px' }}>
+            <div ref={logTripCardRef} className="card" style={{ marginBottom: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
                     <div>
                         <h2 style={{ margin: 0 }}>Log New Trip</h2>
@@ -448,8 +472,8 @@ export default function Mileage() {
                         <button
                             className="btn primary glow-blue"
                             onClick={handleAddManualTrip}
-                            disabled={!manualName || !manualMiles}
-                            style={{ width: '100%', padding: '14px', fontSize: '15px', fontWeight: 800, opacity: (!manualName || !manualMiles) ? 0.4 : 1 }}
+                            disabled={!manualDate || !manualName || !manualMiles}
+                            style={{ width: '100%', padding: '14px', fontSize: '15px', fontWeight: 800, opacity: (!manualDate || !manualName || !manualMiles) ? 0.4 : 1 }}
                         >
                             ✅ Log This Trip
                         </button>
@@ -749,6 +773,7 @@ export default function Mileage() {
                                             {formatMoney(Number(m.miles) * currentRate * 100)}
                                         </td>
                                         <td style={{ textAlign: 'right', whiteSpace: 'nowrap', verticalAlign: 'top', paddingTop: '12px' }}>
+                                            <button className="btn sm secondary" onClick={() => handleDuplicateTrip(m)} style={{ marginRight: '6px' }}>Copy</button>
                                             <button className="btn sm secondary" onClick={() => handleStartEdit(m)} style={{ marginRight: '6px' }}>Edit</button>
                                             <button className="btn sm secondary" onClick={() => handleDeleteMileage(m.id)} style={{ color: '#ef4444' }}>×</button>
                                         </td>

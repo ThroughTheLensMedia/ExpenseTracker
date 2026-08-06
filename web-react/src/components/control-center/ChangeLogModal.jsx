@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.22.2', date: 'AUG 06, 2026', color: '#94a3b8', items: [
+        '<strong>New:</strong> "Copy" a trip on the Mileage Tracker to quickly log another day of the same shoot — client, location, and miles carry over, you just fill in the new date.',
+    ]},
     { version: '7.22.1', date: 'AUG 06, 2026', color: '#94a3b8', items: [
         '<strong>New:</strong> Click a client\'s name to see every invoice tied to them — where each one is in the pipeline (draft, sent, paid) and their total paid over time.',
     ]},

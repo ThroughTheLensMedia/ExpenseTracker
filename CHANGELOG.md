@@ -5,6 +5,17 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.22.2] — 2026-08-06
+
+### Added — Mileage Tracker: duplicate trip entry
+
+- **`web-react/src/pages/Mileage.jsx`** — new **Copy** button on each Trip History row. Populates the Manual Entry form with the source trip's name, miles, and notes (a Maps Autopilot trip's route string is folded into notes rather than dropped, since addresses aren't reliably re-seedable into a live Google Places Autocomplete). Date and Link to Invoice are left blank for the user to fill in fresh. Prompted by multi-day shoots at the same client/location, where every field but the date repeats.
+- Added a date-required guard to `handleAddManualTrip` (and disabled the Log This Trip button on a blank date) since duplicate now clears that field intentionally.
+- No backend or schema changes — reuses the existing `POST /mileage` create path, so a duplicated trip is always a new row; the source trip is untouched.
+- Update CHANGELOG.md, ChangeLogModal.jsx, version.json, App.jsx
+
+---
+
 ## [v7.22.1] — 2026-08-06
 
 ### Added — Client detail drawer: invoice pipeline + lifetime paid
