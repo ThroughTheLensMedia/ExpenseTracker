@@ -1486,6 +1486,29 @@ export default function Invoice() {
                                 </div>
                             )}
 
+                            <div>
+                                <small className="muted" style={{ fontWeight: 800 }}>EXISTING CLIENT</small>
+                                <select
+                                    value={formData.clientId || ''}
+                                    onChange={e => {
+                                        const picked = clients.find(c => String(c.id) === e.target.value);
+                                        if (picked) {
+                                            setFormData(prev => ({ ...prev, clientId: picked.id, clientName: picked.name || '', clientEmail: picked.email || '', clientPhone: picked.phone || '' }));
+                                        } else {
+                                            setFormData(prev => ({ ...prev, clientId: '' }));
+                                        }
+                                    }}
+                                >
+                                    <option value="">-- New client (type below) --</option>
+                                    {clients.map(c => (
+                                        <option key={c.id} value={c.id}>{c.name} ({c.email || 'no email'})</option>
+                                    ))}
+                                </select>
+                                <div className="muted extra-small" style={{ marginTop: '4px' }}>
+                                    Pick an existing client to attach this invoice to them instead of creating a new record — use this to fix a wrongly-filed invoice (e.g. one entered under your own name before you had the real client's info).
+                                </div>
+                            </div>
+
                             <div className="grid two">
                                 <div>
                                     <small className="muted" style={{ fontWeight: 800 }}>CLIENT NAME</small>
@@ -1502,6 +1525,17 @@ export default function Invoice() {
                                         autoComplete="off"
                                         value={formData.clientEmail || ''}
                                         onChange={e => setFormData({ ...formData, clientEmail: e.target.value, clientId: '' })}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid two">
+                                <div>
+                                    <small className="muted" style={{ fontWeight: 800 }}>CLIENT PHONE (OPTIONAL)</small>
+                                    <input
+                                        autoComplete="off"
+                                        value={formData.clientPhone || ''}
+                                        onChange={e => setFormData({ ...formData, clientPhone: e.target.value, clientId: '' })}
                                     />
                                 </div>
                             </div>
