@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.22.1] — 2026-08-06
+
+### Added — Client detail drawer: invoice pipeline + lifetime paid
+
+- **`web-react/src/pages/Invoice.jsx`** — a client's name in the Clients tab is now clickable, opening a detail drawer with two stat cards (**Total Paid** — lifetime sum of their `paid` invoices, **Outstanding** — sum of `sent`-but-unpaid invoices) and a list of every invoice for that client (number, date, status badge, amount), newest first. Clicking an invoice row opens the existing full invoice preview (`handlePreview`) — no new preview UI needed, reused as-is. Direct follow-up to v7.22.0's Clients table — the table showed an invoice *count* but no way to see the invoices themselves or how much a client had actually paid over time.
+- Update CHANGELOG.md, ChangeLogModal.jsx, version.json, App.jsx, ROADMAP.md
+
+---
+
 ## [v7.22.0] — 2026-08-06
 
 ### Added — Clients tab overhaul: list view, merge, delete, direct email

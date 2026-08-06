@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.22.1', date: 'AUG 06, 2026', color: '#94a3b8', items: [
+        '<strong>New:</strong> Click a client\'s name to see every invoice tied to them — where each one is in the pipeline (draft, sent, paid) and their total paid over time.',
+    ]},
     { version: '7.22.0', date: 'AUG 06, 2026', color: '#4c7dff', items: [
         '<strong>New:</strong> The Clients tab is now a searchable, sortable list showing each client\'s name, email, phone, and how many invoices they have — instead of a card grid with just a name and email.',
         '<strong>New:</strong> Merge duplicate client records into one — all their invoices and CRM leads move to the record you keep, and the duplicate is removed.',

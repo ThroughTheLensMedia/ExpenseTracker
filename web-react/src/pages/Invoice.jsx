@@ -421,6 +421,7 @@ export default function Invoice() {
     const [mergeTargetId, setMergeTargetId] = useState('');
     const [emailingClient, setEmailingClient] = useState(null);
     const [emailForm, setEmailForm] = useState({ subject: '', message: '' });
+    const [viewingClient, setViewingClient] = useState(null);
 
     const handleClientSort = (key) => {
         if (clientSortConfig.key === key) {
@@ -939,6 +940,26 @@ export default function Invoice() {
         return m;
     }, [invoices]);
 
+    const viewingClientInvoices = useMemo(() => {
+        if (!viewingClient) return [];
+        return invoices
+            .filter(inv => inv.client_id === viewingClient.id)
+            .map(inv => {
+                const subtotal = (inv.invoice_items || []).reduce((s, it) => s + (it.unit_price_cents * it.quantity), 0);
+                const tax = Math.round(subtotal * (inv.tax_percent / 100));
+                const discountPercent = (inv.discount_cents || 0) / 100;
+                const discountAmount = Math.round(subtotal * (discountPercent / 100));
+                return { ...inv, total: subtotal + tax - discountAmount };
+            })
+            .sort((a, b) => new Date(b.issue_date) - new Date(a.issue_date));
+    }, [viewingClient, invoices]);
+
+    const viewingClientTotals = useMemo(() => {
+        const paid = viewingClientInvoices.filter(i => i.status === 'paid').reduce((s, i) => s + i.total, 0);
+        const outstanding = viewingClientInvoices.filter(i => i.status === 'sent').reduce((s, i) => s + i.total, 0);
+        return { paid, outstanding };
+    }, [viewingClientInvoices]);
+
     const handleDeleteClient = async (client) => {
         const ok = await modal.confirm(`Are you sure you want to permanently delete ${client.name}?`);
         if (!ok) return;
@@ -1237,7 +1258,14 @@ export default function Invoice() {
                                         })
                                         .map(c => (
                                         <tr key={c.id}>
-                                            <td style={{ fontWeight: 700 }}>{c.name}</td>
+                                            <td style={{ fontWeight: 700 }}>
+                                                <span
+                                                    onClick={() => setViewingClient(c)}
+                                                    style={{ cursor: 'pointer', color: BRAND_ORANGE, textDecoration: 'underline', textUnderlineOffset: '3px' }}
+                                                >
+                                                    {c.name}
+                                                </span>
+                                            </td>
                                             <td className="muted small">{c.email || '--'}</td>
                                             <td className="muted small">{c.phone || '--'}</td>
                                             <td style={{ textAlign: 'center' }}>{invoiceCountByClient.get(c.id) || 0}</td>
@@ -1320,6 +1348,64 @@ export default function Invoice() {
                                 onClick={() => handleEmailClient(emailingClient)}
                             >
                                 Send
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* CLIENT DETAIL DRAWER */}
+            {viewingClient && (
+                <div className="drawer">
+                    <div className="drawer-panel" style={{ width: 'min(560px, 100%)', padding: '24px' }}>
+                        <h2 style={{ marginTop: 0 }}>{viewingClient.name}</h2>
+                        <div className="muted small" style={{ marginBottom: '20px' }}>
+                            {viewingClient.email || 'no email'}{viewingClient.phone ? ` · ${viewingClient.phone}` : ''}
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
+                            <div className="stat" style={{ flex: 1 }}>
+                                <div className="k">Total Paid</div>
+                                <div style={{ fontSize: '1.3rem', fontWeight: 900, color: '#4ade80' }}>{formatMoney(viewingClientTotals.paid)}</div>
+                            </div>
+                            <div className="stat" style={{ flex: 1 }}>
+                                <div className="k">Outstanding</div>
+                                <div style={{ fontSize: '1.3rem', fontWeight: 900, color: '#facc15' }}>{formatMoney(viewingClientTotals.outstanding)}</div>
+                            </div>
+                        </div>
+
+                        <small className="muted" style={{ fontWeight: 800 }}>INVOICES ({viewingClientInvoices.length})</small>
+                        <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {viewingClientInvoices.map(inv => (
+                                <div
+                                    key={inv.id}
+                                    onClick={() => { setViewingClient(null); handlePreview(inv); }}
+                                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer' }}
+                                >
+                                    <div>
+                                        <div style={{ fontWeight: 800, color: BRAND_ORANGE }}>#{inv.invoice_number}</div>
+                                        <div className="muted small">{inv.issue_date}</div>
+                                    </div>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <div style={{ fontWeight: 900 }}>{formatMoney(inv.total)}</div>
+                                        <span className={`tag ${inv.status === 'paid' ? 'ok' : 'warn'}`}>{inv.status}</span>
+                                    </div>
+                                </div>
+                            ))}
+                            {!viewingClientInvoices.length && <div className="muted small" style={{ padding: '20px 0', textAlign: 'center' }}>No invoices yet.</div>}
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '10px', marginTop: '24px', justifyContent: 'flex-end' }}>
+                            <button className="btn secondary" onClick={() => setViewingClient(null)}>Close</button>
+                            <button
+                                className="btn primary"
+                                onClick={() => {
+                                    setViewingClient(null);
+                                    setIsCreatorOpen(true);
+                                    setFormData(prev => ({ ...prev, clientName: viewingClient.name || '', clientEmail: viewingClient.email || '', clientPhone: viewingClient.phone || '', clientId: viewingClient.id }));
+                                }}
+                            >
+                                New Invoice
                             </button>
                         </div>
                     </div>
