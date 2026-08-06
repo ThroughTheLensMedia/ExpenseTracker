@@ -5,6 +5,19 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.22.3] — 2026-08-06
+
+### Fixed — Mileage Tracker: mode-switch data loss + Edit moved into main form
+
+- **`web-react/src/pages/Mileage.jsx`** — Date/Trip Name/Notes were tracked as two separate sets of state, one per mode (`manualDate`/`tripDate`, etc.), so switching between Maps Autopilot and Manual Entry appeared to wipe whatever was already typed even though nothing was actually lost. Merged into shared `formDate`/`formName`/`formNotes` used by both forms — switching modes now preserves input in both directions. `manualMiles` (typed) and `calculatedMiles` (Maps-derived) stay separate, since they're fundamentally different values.
+- **Edit now opens in the main "Log New Trip" card** instead of a cramped inline table row — same form Copy already uses, so Joshua can attach or change an invoice link while editing (previously only available when adding). Always lands in Manual Entry mode for the same reason Copy does (Maps Autopilot addresses aren't reliably re-seedable into a live Autocomplete). Save now branches `PUT` vs `POST` on `editingId`, same pattern as `TransactionDrawer.jsx`. Removed the old inline-row edit UI and its dedicated `editDate`/`editMiles`/`editPurpose` state entirely.
+- **Invoice auto-restore on Edit:** if a trip's notes end in the app's own `Invoice #123 — Name` marker, Edit matches it back to a real invoice and pre-selects it in the dropdown, stripping the ref out of the visible notes (it's regenerated from the dropdown on save, same as before). Prevents silently dropping a real invoice link just from fixing a typo or the mileage number. Falls back to a blank dropdown (with the raw text still visible in notes) if no match is found. Copy's behavior is unchanged — it still blanks date and invoice, since it's always creating a new day's entry, not correcting one.
+- The "Maps Autopilot" toggle is disabled while editing (with a tooltip) so a mid-edit mode switch can't leave the form in an inconsistent state.
+- No backend or schema changes — reuses the existing `PUT /mileage/:id` and `POST /mileage` routes.
+- Update CHANGELOG.md, ChangeLogModal.jsx, version.json, App.jsx
+
+---
+
 ## [v7.22.2] — 2026-08-06
 
 ### Added — Mileage Tracker: duplicate trip entry

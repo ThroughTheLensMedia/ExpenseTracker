@@ -35,9 +35,6 @@ export default function Mileage() {
     // Map / trip state
     const [origin, setOrigin] = useState('');
     const [destination, setDestination] = useState('');
-    const [tripName, setTripName] = useState('');
-    const [tripNotes, setTripNotes] = useState('');
-    const [tripDate, setTripDate] = useState(new Date().toISOString().slice(0, 10));
     const [calculatedMiles, setCalculatedMiles] = useState(null);
     const [directions, setDirections] = useState(null);
     const [waypoint, setWaypoint] = useState('');
@@ -46,20 +43,18 @@ export default function Mileage() {
     const [calculating, setCalculating] = useState(false);
     const [mapError, setMapError] = useState('');
 
-    // Manual entry mode
+    // Log New Trip form — shared between Maps Autopilot and Manual Entry modes
+    // so switching modes never loses what's already been typed
     const [manualMode, setManualMode] = useState(false);
-    const [manualDate, setManualDate] = useState(new Date().toISOString().slice(0, 10));
-    const [manualName, setManualName] = useState('');
+    const [formDate, setFormDate] = useState(new Date().toISOString().slice(0, 10));
+    const [formName, setFormName] = useState('');
+    const [formNotes, setFormNotes] = useState('');
     const [manualMiles, setManualMiles] = useState('');
-    const [manualNotes, setManualNotes] = useState('');
     const [linkedInvoice, setLinkedInvoice] = useState('');
     const [invoicesList, setInvoicesList] = useState([]);
 
-    // Edit state
+    // Edit state — set when editing an existing trip; the form above is reused for it
     const [editingId, setEditingId] = useState(null);
-    const [editDate, setEditDate] = useState('');
-    const [editMiles, setEditMiles] = useState('');
-    const [editPurpose, setEditPurpose] = useState('');
 
     const originRef = useRef(null);
     const destinationRef = useRef(null);
@@ -99,28 +94,38 @@ export default function Mileage() {
         }).catch(() => {});
     }, []);
 
-    const handleAddManualTrip = async () => {
-        if (!manualDate) return modal.alert('Please enter a trip date.');
-        if (!manualName) return modal.alert('Please enter a trip name or client.');
+    const resetForm = () => {
+        setEditingId(null);
+        setFormName(''); setManualMiles(''); setFormNotes(''); setLinkedInvoice('');
+        setFormDate(new Date().toISOString().slice(0, 10));
+    };
+
+    const handleSaveManualTrip = async () => {
+        if (!formDate) return modal.alert('Please enter a trip date.');
+        if (!formName) return modal.alert('Please enter a trip name or client.');
         if (!manualMiles || isNaN(Number(manualMiles)) || Number(manualMiles) <= 0)
             return modal.alert('Please enter a valid mileage amount.');
         try {
             const inv = linkedInvoice ? invoicesList.find(i => String(i.id) === linkedInvoice) : null;
             const invRef = inv ? `Invoice #${inv.invoice_number}${inv.clients?.name ? ' — ' + inv.clients.name : ''}` : '';
-            const noteParts = [manualNotes, invRef].filter(Boolean).join(' · ');
+            const noteParts = [formNotes, invRef].filter(Boolean).join(' · ');
             const purpose = noteParts
-                ? `${manualName} | Manual Entry | ${noteParts}`
-                : `${manualName} | Manual Entry`;
-            await apiPost('/mileage', {
-                log_date: manualDate,
+                ? `${formName} | Manual Entry | ${noteParts}`
+                : `${formName} | Manual Entry`;
+            const payload = {
+                log_date: formDate,
                 miles: Math.round(Number(manualMiles) * 10) / 10,
                 purpose,
-            });
-            setManualName(''); setManualMiles(''); setManualNotes(''); setLinkedInvoice('');
-            setManualDate(new Date().toISOString().slice(0, 10));
+            };
+            if (editingId) {
+                await apiPut(`/mileage/${editingId}`, payload);
+            } else {
+                await apiPost('/mileage', payload);
+            }
+            resetForm();
             loadData(true);
         } catch (err) {
-            modal.alert('Failed to log trip: ' + err.message);
+            modal.alert(`Failed to ${editingId ? 'update' : 'log'} trip: ` + err.message);
         }
     };
 
@@ -197,30 +202,30 @@ export default function Mileage() {
 
     const handleAddTrip = async () => {
         if (!calculatedMiles) return modal.alert('Please enter addresses to calculate the distance first.');
-        if (!tripName) return modal.alert('Please enter a trip name or purpose.');
+        if (!formName) return modal.alert('Please enter a trip name or purpose.');
         try {
             const addrA = originRef.current?.value || origin;
             const addrB = waypointRef.current?.value || waypoint;
             const addrC = destinationRef.current?.value || destination;
-            
+
             let routeStr;
             if (addrC && addrC.trim() !== '') {
                 routeStr = `${addrA} → ${addrB} → ${addrC}`;
             } else {
                 routeStr = `${addrA} → ${addrB}`;
             }
-            
+
             if (isRoundTrip) routeStr += ` (Round Trip)`;
-            
+
             const inv = linkedInvoice ? invoicesList.find(i => String(i.id) === linkedInvoice) : null;
             const invRef = inv ? `Invoice #${inv.invoice_number}${inv.clients?.name ? ' — ' + inv.clients.name : ''}` : '';
-            const noteParts = [tripNotes, invRef].filter(Boolean).join(' · ');
+            const noteParts = [formNotes, invRef].filter(Boolean).join(' · ');
             const purpose = noteParts
-                ? `${tripName} | ${routeStr} | ${noteParts}`
-                : `${tripName} | ${routeStr}`;
+                ? `${formName} | ${routeStr} | ${noteParts}`
+                : `${formName} | ${routeStr}`;
 
             await apiPost('/mileage', {
-                log_date: tripDate,
+                log_date: formDate,
                 miles: calculatedMiles,
                 purpose,
             });
@@ -228,8 +233,8 @@ export default function Mileage() {
             setOrigin('');
             setDestination('');
             setWaypoint('');
-            setTripName('');
-            setTripNotes('');
+            setFormName('');
+            setFormNotes('');
             setLinkedInvoice('');
             setIsRoundTrip(false);
             setCalculatedMiles(null);
@@ -254,49 +259,69 @@ export default function Mileage() {
         }
     };
 
-    const handleStartEdit = (m) => {
-        setEditingId(m.id);
-        setEditDate(m.log_date);
-        setEditMiles(m.miles);
-        setEditPurpose(m.purpose);
+    // Shared by Edit and Copy: unpack a trip's purpose string, folding a Maps
+    // Autopilot route into notes (rather than dropping it) since both flows
+    // always land in Manual Entry mode.
+    const unpackTripPurpose = (m) => {
+        const parts = m.purpose?.split(' | ') || [];
+        const name = parts[0] || '';
+        const modeOrRoute = parts[1] || '';
+        const notes = parts[2] || '';
+        const combinedNotes = modeOrRoute && modeOrRoute !== 'Manual Entry'
+            ? `${modeOrRoute}${notes ? ' — ' + notes : ''}`
+            : notes;
+        return { name, notes: combinedNotes };
     };
 
     const handleDuplicateTrip = (m) => {
         setEditingId(null);
         setManualMode(true);
 
-        const parts = m.purpose?.split(' | ') || [];
-        const name = parts[0] || '';
-        const modeOrRoute = parts[1] || '';
-        const notes = parts[2] || '';
-
-        setManualName(name);
-        setManualNotes(
-            modeOrRoute && modeOrRoute !== 'Manual Entry'
-                ? `${modeOrRoute}${notes ? ' — ' + notes : ''}`
-                : notes
-        );
+        const { name, notes } = unpackTripPurpose(m);
+        setFormName(name);
+        setFormNotes(notes);
         setManualMiles(String(m.miles));
-        setManualDate('');
+        setFormDate('');
         setLinkedInvoice('');
 
         logTripCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
 
-    const handleSaveEdit = async () => {
-        if (!editDate || !editMiles || !editPurpose) return modal.alert("All fields are required.");
-        try {
-            await apiPut(`/mileage/${editingId}`, {
-                log_date: editDate,
-                miles: Number(editMiles),
-                purpose: editPurpose
-            });
-            setEditingId(null);
-            loadData(true);
-        } catch (e) {
-            modal.alert('Failed to update trip: ' + e.message);
+    const handleStartEditInForm = (m) => {
+        setManualMode(true);
+
+        const { name, notes } = unpackTripPurpose(m);
+
+        // The trailing note segment may be the app's own "Invoice #N — Name"
+        // marker (see handleSaveManualTrip/handleAddTrip) — try to match it
+        // back to a real invoice so an existing link isn't silently dropped.
+        const noteSegments = notes.split(' · ');
+        const lastSegment = noteSegments[noteSegments.length - 1];
+        let matchedInvoiceId = '';
+        let cleanNotes = notes;
+        if (lastSegment && /^Invoice #/.test(lastSegment)) {
+            const invoiceNumberMatch = lastSegment.match(/^Invoice #(\S+)/);
+            const invoiceNumber = invoiceNumberMatch?.[1];
+            const matched = invoiceNumber
+                ? invoicesList.find(i => String(i.invoice_number) === invoiceNumber)
+                : null;
+            if (matched) {
+                matchedInvoiceId = String(matched.id);
+                cleanNotes = noteSegments.slice(0, -1).join(' · ');
+            }
         }
+
+        setFormName(name);
+        setFormNotes(cleanNotes);
+        setManualMiles(String(m.miles));
+        setFormDate(m.log_date);
+        setLinkedInvoice(matchedInvoiceId);
+        setEditingId(m.id);
+
+        logTripCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
+
+    const handleCancelEdit = () => resetForm();
 
     const handleSyncIRS = async () => {
         setSyncStatus('Checking IRS.gov...');
@@ -372,9 +397,11 @@ export default function Mileage() {
             <div ref={logTripCardRef} className="card" style={{ marginBottom: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
                     <div>
-                        <h2 style={{ margin: 0 }}>Log New Trip</h2>
+                        <h2 style={{ margin: 0 }}>{editingId ? 'Edit Trip' : 'Log New Trip'}</h2>
                         <div className="muted small" style={{ marginTop: '4px' }}>
-                            {manualMode ? 'Enter miles directly — no address needed' : 'Enter your start and end address — miles auto-calculated'}
+                            {editingId
+                                ? `Editing trip #${editingId} — update the details and save.`
+                                : (manualMode ? 'Enter miles directly — no address needed' : 'Enter your start and end address — miles auto-calculated')}
                         </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -382,11 +409,15 @@ export default function Mileage() {
                         <div style={{ display: 'flex', background: 'rgba(255,255,255,0.06)', borderRadius: '10px', padding: '3px', gap: '2px' }}>
                             <button
                                 onClick={() => setManualMode(false)}
+                                disabled={!!editingId}
+                                title={editingId ? 'Finish or cancel editing first' : undefined}
                                 style={{
-                                    padding: '6px 14px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                                    padding: '6px 14px', borderRadius: '8px', border: 'none',
+                                    cursor: editingId ? 'not-allowed' : 'pointer',
                                     fontSize: '11px', fontWeight: 800, letterSpacing: '0.04em',
                                     background: !manualMode ? 'rgba(16,185,129,0.2)' : 'transparent',
                                     color: !manualMode ? '#10b981' : 'rgba(255,255,255,0.4)',
+                                    opacity: editingId ? 0.4 : 1,
                                     transition: 'all 0.15s',
                                 }}
                             >
@@ -424,11 +455,11 @@ export default function Mileage() {
                         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '14px' }}>
                             <div style={{ flex: '0 0 155px' }}>
                                 <label className="muted small" style={{ display: 'block', marginBottom: '6px' }}>Trip Date</label>
-                                <input type="date" value={manualDate} onChange={e => setManualDate(e.target.value)} style={{ width: '100%' }} />
+                                <input type="date" value={formDate} onChange={e => setFormDate(e.target.value)} style={{ width: '100%' }} />
                             </div>
                             <div style={{ flex: 2, minWidth: '200px' }}>
                                 <label className="muted small" style={{ display: 'block', marginBottom: '6px' }}>Trip Name / Client</label>
-                                <input type="text" placeholder="e.g. Miller Wedding Shoot" value={manualName} onChange={e => setManualName(e.target.value)} style={{ width: '100%' }} />
+                                <input type="text" placeholder="e.g. Miller Wedding Shoot" value={formName} onChange={e => setFormName(e.target.value)} style={{ width: '100%' }} />
                             </div>
                             <div style={{ flex: '0 0 130px' }}>
                                 <label className="muted small" style={{ display: 'block', marginBottom: '6px' }}>Miles</label>
@@ -438,7 +469,7 @@ export default function Mileage() {
                         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '14px' }}>
                             <div style={{ flex: 2, minWidth: '200px' }}>
                                 <label className="muted small" style={{ display: 'block', marginBottom: '6px' }}>Notes (optional)</label>
-                                <input type="text" placeholder="e.g. Drove to client location for boudoir session" value={manualNotes} onChange={e => setManualNotes(e.target.value)} style={{ width: '100%' }} />
+                                <input type="text" placeholder="e.g. Drove to client location for boudoir session" value={formNotes} onChange={e => setFormNotes(e.target.value)} style={{ width: '100%' }} />
                             </div>
                             <div style={{ flex: 1, minWidth: '200px' }}>
                                 <label className="muted small" style={{ display: 'block', marginBottom: '6px' }}>Link to Invoice (optional)</label>
@@ -452,7 +483,7 @@ export default function Mileage() {
                                 </select>
                             </div>
                         </div>
-                        {manualMiles && manualName && (
+                        {manualMiles && formName && (
                             <div style={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                                 background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)',
@@ -469,14 +500,25 @@ export default function Mileage() {
                                 </div>
                             </div>
                         )}
-                        <button
-                            className="btn primary glow-blue"
-                            onClick={handleAddManualTrip}
-                            disabled={!manualDate || !manualName || !manualMiles}
-                            style={{ width: '100%', padding: '14px', fontSize: '15px', fontWeight: 800, opacity: (!manualDate || !manualName || !manualMiles) ? 0.4 : 1 }}
-                        >
-                            ✅ Log This Trip
-                        </button>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <button
+                                className="btn primary glow-blue"
+                                onClick={handleSaveManualTrip}
+                                disabled={!formDate || !formName || !manualMiles}
+                                style={{ flex: 1, padding: '14px', fontSize: '15px', fontWeight: 800, opacity: (!formDate || !formName || !manualMiles) ? 0.4 : 1 }}
+                            >
+                                {editingId ? '💾 Save Changes' : '✅ Log This Trip'}
+                            </button>
+                            {editingId && (
+                                <button
+                                    className="btn secondary"
+                                    onClick={handleCancelEdit}
+                                    style={{ padding: '14px 20px', fontSize: '15px', fontWeight: 800 }}
+                                >
+                                    Cancel Edit
+                                </button>
+                            )}
+                        </div>
                     </div>
                 )}
 
@@ -499,8 +541,8 @@ export default function Mileage() {
                                 <label className="muted small" style={{ display: 'block', marginBottom: '6px' }}>Trip Date</label>
                                 <input
                                     type="date"
-                                    value={tripDate}
-                                    onChange={e => setTripDate(e.target.value)}
+                                    value={formDate}
+                                    onChange={e => setFormDate(e.target.value)}
                                     style={{ width: '100%' }}
                                 />
                             </div>
@@ -509,8 +551,8 @@ export default function Mileage() {
                                 <input
                                     type="text"
                                     placeholder="e.g. Miller Wedding Shoot"
-                                    value={tripName}
-                                    onChange={e => setTripName(e.target.value)}
+                                    value={formName}
+                                    onChange={e => setFormName(e.target.value)}
                                     style={{ width: '100%' }}
                                 />
                             </div>
@@ -621,8 +663,8 @@ export default function Mileage() {
                                 <input
                                     type="text"
                                     placeholder="e.g. Picked up rental lens on the way"
-                                    value={tripNotes}
-                                    onChange={e => setTripNotes(e.target.value)}
+                                    value={formNotes}
+                                    onChange={e => setFormNotes(e.target.value)}
                                     style={{ width: '100%' }}
                                 />
                             </div>
@@ -688,8 +730,8 @@ export default function Mileage() {
                         <button
                             className="btn primary glow-blue"
                             onClick={handleAddTrip}
-                            disabled={!calculatedMiles || !tripName}
-                            style={{ width: '100%', padding: '14px', fontSize: '15px', fontWeight: 800, marginTop: '4px', opacity: (!calculatedMiles || !tripName) ? 0.4 : 1 }}
+                            disabled={!calculatedMiles || !formName}
+                            style={{ width: '100%', padding: '14px', fontSize: '15px', fontWeight: 800, marginTop: '4px', opacity: (!calculatedMiles || !formName) ? 0.4 : 1 }}
                         >
                             ✅ Log This Trip
                         </button>
@@ -729,42 +771,19 @@ export default function Mileage() {
                                     return a.id - b.id;
                                 }
                             }).map(m => {
-                                if (editingId === m.id) {
-                                    return (
-                                        <tr key={m.id} style={{ background: 'rgba(99,102,241,0.1)' }}>
-                                            <td style={{ verticalAlign: 'top' }}>
-                                                <input type="date" value={editDate} onChange={e => setEditDate(e.target.value)} style={{ width: '130px', padding: '6px' }} />
-                                            </td>
-                                            <td style={{ verticalAlign: 'top' }}>
-                                                <input type="text" value={editPurpose} onChange={e => setEditPurpose(e.target.value)} style={{ width: '100%', padding: '6px', fontSize: '13px' }} placeholder="Trip / Route / Notes" />
-                                                <div className="muted small" style={{ fontSize: '9px', marginTop: '4px' }}>Edit string directly. Use ' | ' to separate segments.</div>
-                                            </td>
-                                            <td style={{ verticalAlign: 'top' }}>
-                                                <input type="number" step="0.1" value={editMiles} onChange={e => setEditMiles(e.target.value)} style={{ width: '80px', padding: '6px' }} />
-                                            </td>
-                                            <td style={{ textAlign: 'right', verticalAlign: 'top', fontWeight: 800, color: '#4ade80', paddingTop: '12px' }}>
-                                                {formatMoney(Number(editMiles || 0) * currentRate * 100)}
-                                            </td>
-                                            <td style={{ textAlign: 'right', whiteSpace: 'nowrap', verticalAlign: 'top' }}>
-                                                <button className="btn sm ok" onClick={handleSaveEdit} style={{ marginRight: '6px' }}>Save</button>
-                                                <button className="btn sm secondary" onClick={() => setEditingId(null)}>Cancel</button>
-                                            </td>
-                                        </tr>
-                                    );
-                                }
-
                                 const parts = m.purpose?.split(' | ') || [];
                                 const name = parts[0] || m.purpose;
                                 const route = parts[1] || '';
                                 const notes = parts[2] || '';
+                                const isBeingEdited = editingId === m.id;
                                 return (
-                                    <tr key={m.id}>
+                                    <tr key={m.id} style={isBeingEdited ? { background: 'rgba(99,102,241,0.1)' } : undefined}>
                                         <td style={{ fontWeight: 600, whiteSpace: 'nowrap', verticalAlign: 'top', paddingTop: '12px' }}>{m.log_date}</td>
                                         <td style={{ verticalAlign: 'top', paddingTop: '12px' }}>
                                             <div style={{ fontWeight: 700 }}>{name}</div>
                                             {route && <div className="muted small" style={{ fontSize: '11px', marginTop: '2px' }}>{route}</div>}
                                             {notes && <div className="muted small" style={{ fontSize: '10px', fontStyle: 'italic', marginTop: '1px', opacity: 0.6 }}>{notes}</div>}
-                                            <div className="muted small" style={{ fontSize: '9px', marginTop: '2px' }}>IRS Log ID #{m.id}</div>
+                                            <div className="muted small" style={{ fontSize: '9px', marginTop: '2px' }}>IRS Log ID #{m.id}{isBeingEdited ? ' — editing above' : ''}</div>
                                         </td>
                                         <td style={{ textAlign: 'center', verticalAlign: 'top', paddingTop: '12px' }}>
                                             <span className="tag" style={{ background: 'rgba(255,255,255,0.05)', fontWeight: 900 }}>{Number(m.miles).toLocaleString()}</span>
@@ -774,7 +793,7 @@ export default function Mileage() {
                                         </td>
                                         <td style={{ textAlign: 'right', whiteSpace: 'nowrap', verticalAlign: 'top', paddingTop: '12px' }}>
                                             <button className="btn sm secondary" onClick={() => handleDuplicateTrip(m)} style={{ marginRight: '6px' }}>Copy</button>
-                                            <button className="btn sm secondary" onClick={() => handleStartEdit(m)} style={{ marginRight: '6px' }}>Edit</button>
+                                            <button className="btn sm secondary" onClick={() => handleStartEditInForm(m)} style={{ marginRight: '6px' }}>Edit</button>
                                             <button className="btn sm secondary" onClick={() => handleDeleteMileage(m.id)} style={{ color: '#ef4444' }}>×</button>
                                         </td>
                                     </tr>

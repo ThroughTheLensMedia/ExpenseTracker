@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.22.3', date: 'AUG 06, 2026', color: '#94a3b8', items: [
+        '<strong>Fixed:</strong> Switching the Mileage Tracker between Maps Autopilot and Manual Entry no longer clears the date, name, or notes you already typed.',
+        '<strong>Improved:</strong> Editing an existing trip now opens in the main "Log New Trip" form instead of a cramped inline row — so you can attach or change an invoice link while editing, and a previously-linked invoice is automatically re-selected for you.',
+    ]},
     { version: '7.22.2', date: 'AUG 06, 2026', color: '#94a3b8', items: [
         '<strong>New:</strong> "Copy" a trip on the Mileage Tracker to quickly log another day of the same shoot — client, location, and miles carry over, you just fill in the new date.',
     ]},
