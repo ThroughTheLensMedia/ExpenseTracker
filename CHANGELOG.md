@@ -5,6 +5,19 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.23.0] — 2026-08-06
+
+### Added — Dedicated Clients page + hamburger nav link
+
+- **`web-react/src/pages/Clients.jsx`** (new file) — client management gets its own first-class page instead of only living as a tab buried inside the Invoice page. Stat tiles (Total Clients, Lifetime Value, Outstanding), a searchable/sortable table (Name, Email, Phone, Open invoices, Paid invoices, Lifetime Value — sortable, a genuinely new "who are my best clients" view), and row actions: New Invoice, Edit, Email, Merge into..., Delete. A detail drawer shows every invoice for that client with its pipeline status and amount.
+- **`api/routes/invoices.js`** — new `PATCH /invoices/clients/:id`, the first way to actually edit a client's own saved info. Previously the only options were replace-via-new-invoice, merge, or delete — there was no way to just fix a typo'd phone number. Also exposes `address` and `notes` for the first time anywhere in the UI — both were already accepted by the backend `ClientSchema` but had zero UI exposure until now.
+- **`web-react/src/App.jsx`** — "Clients" added to the hamburger menu's Client Work section, routed to `/clients`.
+- **`web-react/src/pages/Invoice.jsx`** — one small additive `useEffect` (new `?newInvoiceClientId=` query param support) so the new page's "New Invoice" button hands off cleanly to the Invoice page's creator drawer, pre-filled for that client. Nothing else in this file changed — the existing Clients tab inside Invoice.jsx stays exactly as it was, by design (kept both surfaces rather than removing the original).
+- **Caught and fixed during testing:** the new `PATCH` endpoint used `.single()`, which throws a raw, confusing Postgrest error on a nonexistent client instead of a clean 404. Switched to `.maybeSingle()`. Verified against real data before and after the fix.
+- Update CHANGELOG.md, ChangeLogModal.jsx, version.json, App.jsx, ROADMAP.md, CLAUDE.md
+
+---
+
 ## [v7.22.3] — 2026-08-06
 
 ### Fixed — Mileage Tracker: mode-switch data loss + Edit moved into main form

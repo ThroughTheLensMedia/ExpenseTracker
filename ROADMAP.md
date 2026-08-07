@@ -1,6 +1,6 @@
 # Lumière Ledger — Master Roadmap
 
-**Version:** v7.22.1 | **Last reviewed:** 2026-08-06  
+**Version:** v7.23.0 | **Last reviewed:** 2026-08-06  
 Source of truth for all sprint work, security status, and product phases.
 
 ---
@@ -145,7 +145,7 @@ Competitive gap analysis vs. QuickBooks Solopreneur / Keeper / Wave / FreshBooks
 | Item | Notes |
 |------|-------|
 | Invoice PDF formatting | Known formatting issues — not blocking launch |
-| Client invoice history | ✅ v7.22.0–v7.22.1 — Clients tab is a sortable/filterable table (name/email/phone/invoice count) with Merge (reassigns invoices + leads, deletes the duplicate), Delete (blocked if invoices are attached), and direct Email actions. Clicking a client name opens a detail drawer showing every invoice's pipeline status (draft/sent/paid) plus lifetime Total Paid and Outstanding stats. Remaining: create-time dedup by email so freehand invoice entry stops creating new duplicates in the first place (see Clean Up below), and full CRM/leads-directory unification — Phase 5. |
+| Client invoice history | ✅ v7.22.0–v7.23.0 — Clients tab (inside Invoicing) is a sortable/filterable table (name/email/phone/invoice count) with Merge (reassigns invoices + leads, deletes the duplicate), Delete (blocked if invoices are attached), and direct Email actions; clicking a client name opens a detail drawer with pipeline status + lifetime Total Paid/Outstanding. v7.23.0 added a **dedicated Clients page** (hamburger menu → Clients) with the same actions plus Open/Paid invoice counts, sortable Lifetime Value, and real edit-in-place (name/email/phone/address/notes — the first way to fix a client's info without deleting and re-adding). The two surfaces are intentionally kept separate, not merged. Remaining: create-time dedup by email so freehand invoice entry stops creating new duplicates in the first place (see Clean Up below), and full CRM/leads-directory unification — Phase 5. |
 | Bank Import UI cleanup | Remove emojis, demote niche banks, surface Rocket Money as recommended |
 | Apple Card CSV via email | Apple Card can't connect via Plaid. Detect `.csv` attachment in `emailInbound.js`, parse Apple Card format, bulk-insert with dedup. Workaround: manual CSV import. Build after email ingestion is stable. |
 | 7-day unmatched receipt digest | Cron/UptimeRobot endpoint — email user list of `pending_receipts` older than 7 days |

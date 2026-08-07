@@ -80,6 +80,27 @@ router.post("/clients", async (req, res) => {
     }
 });
 
+const ClientUpdateSchema = ClientSchema.partial();
+
+router.patch("/clients/:id", async (req, res) => {
+    try {
+        const body = ClientUpdateSchema.parse(req.body);
+        const { data, error } = await req.sb
+            .from("clients")
+            .update(body)
+            .eq("id", req.params.id)
+            .eq("user_id", req.user.id)
+            .select()
+            .maybeSingle();
+        if (error) throw error;
+        if (!data) return res.status(404).json({ error: "Client not found." });
+        res.json(data);
+    } catch (e) {
+        if (e instanceof z.ZodError) return res.status(400).json({ error: e.errors });
+        res.status(400).json({ error: e.message });
+    }
+});
+
 const MergeClientsSchema = z.object({
     source_client_id: z.coerce.number().int(),
     target_client_id: z.coerce.number().int(),

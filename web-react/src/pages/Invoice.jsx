@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { apiGet, apiPost, apiPatch, apiDelete, formatMoney, invalidateExpensesCache, invalidateCache, fetchAllInvoices, fetchAllClients, fetchAllLeads } from '../api';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -397,6 +398,7 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
 
 export default function Invoice() {
     const modal = useModal();
+    const location = useLocation();
     const [view, setView] = useState('invoices');
     const [filterText, setFilterText] = useState('');
     const [invoices, setInvoices] = useState([]);
@@ -531,6 +533,23 @@ export default function Invoice() {
     };
 
     useEffect(() => { load(); }, []);
+
+    // Hand-off from the Clients page's "New Invoice" button: ?newInvoiceClientId=<id>
+    // opens the creator drawer pre-filled for that client, same as clicking a
+    // client card/row does locally. Fires once per navigation.
+    const newInvoicePrefillHandled = useRef(false);
+    useEffect(() => {
+        if (newInvoicePrefillHandled.current) return;
+        const params = new URLSearchParams(location.search);
+        const prefillId = params.get('newInvoiceClientId');
+        if (!prefillId || !clients.length) return;
+        const c = clients.find(cl => String(cl.id) === prefillId);
+        if (c) {
+            setIsCreatorOpen(true);
+            setFormData(prev => ({ ...prev, clientName: c.name || '', clientEmail: c.email || '', clientPhone: c.phone || '', clientId: c.id }));
+        }
+        newInvoicePrefillHandled.current = true;
+    }, [location.search, clients]);
 
     // Refresh when Brain Assistant approves an invoice, transaction, or lead action
     useEffect(() => {

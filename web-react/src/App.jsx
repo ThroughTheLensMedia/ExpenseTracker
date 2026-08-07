@@ -25,6 +25,7 @@ const Home           = lazy(() => import('./pages/Home'));
 const PayInvoice     = lazy(() => import('./pages/PayInvoice'));
 const AddOns         = lazy(() => import('./pages/AddOns'));
 const Accounts       = lazy(() => import('./pages/Accounts'));
+const Clients        = lazy(() => import('./pages/Clients'));
 const AssistantSidebar = lazy(() => import('./components/AssistantSidebar'));
 import ChangeLogModal from './components/control-center/ChangeLogModal.jsx';
 import OnboardingChecklist from './components/OnboardingChecklist.jsx';
@@ -33,7 +34,7 @@ import OnboardingChecklist from './components/OnboardingChecklist.jsx';
 // Single source of truth for the "What's New" badge — the check (useEffect below)
 // and the dismiss handler (handleWhatsNewClick) must read the exact same value,
 // or the badge re-lights immediately after being dismissed.
-const CURRENT_VERSION = "7.22.3";
+const CURRENT_VERSION = "7.23.0";
 
 // Shared route-level loading fallback — matches app's existing spinner style
 function PageSpinner() {
@@ -476,6 +477,9 @@ function AppContent() {
             <NavLink to="/crm/financials" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
               Business Invoicing
             </NavLink>
+            <NavLink to="/clients" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
+              Clients
+            </NavLink>
 
             {/* Settings */}
             <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '10px 12px 6px' }} />
@@ -561,6 +565,7 @@ function AppContent() {
             <Route path="/crm/*" element={<CRM />} />
             <Route path="/import" element={<Import />} />
             <Route path="/accounts" element={<Accounts />} />
+            <Route path="/clients" element={<Clients />} />
             <Route path="/addons" element={<AddOns />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
