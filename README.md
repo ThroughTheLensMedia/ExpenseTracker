@@ -28,7 +28,7 @@ To test changes without affecting the production session:
 1. **Open Terminal** on your Mac.
 2. **Navigate to the web-folder:**
    ```bash
-   cd "/Users/dewey/Downloads/Expense Tracker 2026 v3/web-react"
+   cd "/Users/dewey/Downloads/Lumière Ledger/web-react"
    ```
 3. **Launch the Dev Server:**
    ```bash
