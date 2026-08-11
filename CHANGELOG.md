@@ -5,6 +5,18 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.23.1] — 2026-08-11
+
+### Fixed — Real income silently excluded from weekly digest + dashboard income totals
+
+- **`api/utils/spendCategories.js`** — `NON_SPEND_CATS` conflated two different concepts: real income categories (`Photo Income`, `Freelance Income`, `Reimbursement`, `Refund`, etc.) and pure transfer categories (`Internal Transfer`, `Credit Card Payment`, `Deposit`). Both `api/routes/cron.js` (weekly digest) and `api/routes/metrics.js` (dashboard) used this one set to skip a row entirely — for spend rows that's correct, but for income rows it silently dropped any transaction categorized as real income from `incomeCents`/`ytdIncome`. Confirmed against production data: a Venmo payment (expense id 19503, -$740.63, category `Photo Income`, dated 2026-04-30) was invisible to both the weekly digest and the dashboard because of this.
+- Split into `INCOME_CATS` (real income — never excluded from income totals) and `TRANSFER_CATS` (excluded from both). `NON_SPEND_CATS` (spend-side exclusion) is unchanged — kept as the union for backward compatibility. Added `isNonIncomeRow()` — excludes only real transfers from income rollups.
+- **`api/routes/cron.js`** — `buildWeeklyDigest()`'s `weekIncome`/`ytdIncome` filters now use `isNonIncomeRow()` instead of `NON_SPEND_CATS.has()`. Added `vendor` to the `expenses` select (needed for the vendor-pattern check).
+- **`api/routes/metrics.js`** — the dashboard summary loop now branches: income rows are excluded via `isNonIncomeRow()`, spend rows via `isNonSpendRow()` (previously one check skipped the row before income/spend were even distinguished).
+- Update ChangeLogModal.jsx, version.json, App.jsx
+
+---
+
 ## [v7.23.0] — 2026-08-06
 
 ### Added — Dedicated Clients page + hamburger nav link

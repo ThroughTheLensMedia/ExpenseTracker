@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { isNonSpendRow, KNOWN_SUBSCRIPTION_VENDORS } = require("../utils/spendCategories");
+const { isNonSpendRow, isNonIncomeRow, KNOWN_SUBSCRIPTION_VENDORS } = require("../utils/spendCategories");
 const { deriveCadenceDays, monthlyEquivalentCents } = require("../utils/recurringVendors");
 
 router.get("/summary", async (req, res) => {
@@ -112,13 +112,17 @@ router.get("/summary", async (req, res) => {
         const rawVend = String(row.vendor || '').toLowerCase();
         const vend = vendorAliasMap[rawVend] || rawVend;
 
-        // Skip non-spend rows — shared with cron.js's weekly digest so the
-        // dashboard and email agree on the same YTD totals (v7.14.0 fix).
-        if (isNonSpendRow(row.category, row.vendor)) continue;
-
         const cents = Number(row.amount_cents || 0);
         const isIncome = cents < 0;
         const absValue = Math.abs(cents);
+
+        // Skip non-spend/non-income rows — shared with cron.js's weekly
+        // digest so the dashboard and email agree on the same YTD totals
+        // (v7.14.0 fix). Bug fixed v7.23.1: income rows must only be
+        // excluded for real transfers (isNonIncomeRow), not for real income
+        // categories like "Photo Income" — isNonSpendRow excludes those too,
+        // which was silently dropping real income from every rollup.
+        if (isIncome ? isNonIncomeRow(row.category, row.vendor) : isNonSpendRow(row.category, row.vendor)) continue;
         
         const dateParts = String(row.expense_date || '').split('T')[0].split('-');
         const rowYear = parseInt(dateParts[0], 10);

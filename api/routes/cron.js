@@ -4,7 +4,7 @@ const { supabase } = require("../db");
 const { queueDailyReportEmail, queueMonthlyReportEmail, queueHealthAlertEmail, queueWeeklyDigestEmail, queueReEngagementEmail } = require("../utils/emailQueue");
 const { ADMIN_UUID } = require("../constants");
 const { listAllUsers } = require("../utils/userDirectory");
-const { NON_SPEND_CATS, CC_PAYMENT_PATTERN, KNOWN_SUBSCRIPTION_VENDORS } = require("../utils/spendCategories");
+const { NON_SPEND_CATS, CC_PAYMENT_PATTERN, KNOWN_SUBSCRIPTION_VENDORS, isNonIncomeRow } = require("../utils/spendCategories");
 const { deriveCadenceDays } = require("../utils/recurringVendors");
 
 function isCronAuthorized(req) {
@@ -345,8 +345,8 @@ async function buildWeeklyDigest(supabase, userId, weekStartStr, weekEndStr, tax
     const oneYearAgoStr = oneYearAgo.toISOString().split('T')[0];
 
     const [{ data: weekRows }, { data: yearRows }, { count: missingReceiptCount }, { data: mileageRows }, { data: subRows }] = await Promise.all([
-        supabase.from('expenses').select('amount_cents, category').eq('user_id', userId).gte('expense_date', weekStartStr).lte('expense_date', weekEndStr),
-        supabase.from('expenses').select('amount_cents, category').eq('user_id', userId).gte('expense_date', yearStartStr).lte('expense_date', todayStr),
+        supabase.from('expenses').select('amount_cents, category, vendor').eq('user_id', userId).gte('expense_date', weekStartStr).lte('expense_date', weekEndStr),
+        supabase.from('expenses').select('amount_cents, category, vendor').eq('user_id', userId).gte('expense_date', yearStartStr).lte('expense_date', todayStr),
         supabase.from('expenses').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('tax_deductible', true).is('receipt_link', null).gt('amount_cents', 7500).gte('expense_date', yearStartStr).lte('expense_date', todayStr),
         supabase.from('mileage_logs').select('notes, needs_review').eq('user_id', userId).eq('source', 'ai_brain').gte('log_date', weekStartStr).lte('log_date', weekEndStr),
         supabase.from('expenses').select('vendor, amount_cents, expense_date, is_subscription, billing_cycle').eq('user_id', userId).gt('amount_cents', 0).gte('expense_date', oneYearAgoStr).lte('expense_date', todayStr),
@@ -355,13 +355,13 @@ async function buildWeeklyDigest(supabase, userId, weekStartStr, weekEndStr, tax
     const upcomingRecurringCharges = projectUpcomingSubscriptionCharges(subRows, todayStr, 7);
 
     const weekExpenses = (weekRows || []).filter(r => (r.amount_cents || 0) > 0 && !NON_SPEND_CATS.has(r.category));
-    const weekIncome = (weekRows || []).filter(r => (r.amount_cents || 0) < 0 && !NON_SPEND_CATS.has(r.category));
+    const weekIncome = (weekRows || []).filter(r => (r.amount_cents || 0) < 0 && !isNonIncomeRow(r.category, r.vendor));
     const incomeCents = weekIncome.reduce((s, r) => s + Math.abs(r.amount_cents), 0);
     const spendCents = weekExpenses.reduce((s, r) => s + r.amount_cents, 0);
     const netCents = incomeCents - spendCents;
 
     const ytdExpenses = (yearRows || []).filter(r => (r.amount_cents || 0) > 0 && !NON_SPEND_CATS.has(r.category));
-    const ytdIncome = (yearRows || []).filter(r => (r.amount_cents || 0) < 0 && !NON_SPEND_CATS.has(r.category));
+    const ytdIncome = (yearRows || []).filter(r => (r.amount_cents || 0) < 0 && !isNonIncomeRow(r.category, r.vendor));
     const ytdIncomeCents = ytdIncome.reduce((s, r) => s + Math.abs(r.amount_cents), 0);
     const ytdSpendCents = ytdExpenses.reduce((s, r) => s + r.amount_cents, 0);
     const ytdNetCents = ytdIncomeCents - ytdSpendCents;

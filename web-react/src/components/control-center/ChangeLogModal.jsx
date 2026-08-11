@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.23.1', date: 'AUG 11, 2026', color: '#94a3b8', items: [
+        '<strong>Fixed:</strong> Real income (like a Venmo payment categorized as Photo Income) was being silently excluded from the weekly digest email and dashboard income totals — it now counts correctly.',
+    ]},
     { version: '7.23.0', date: 'AUG 06, 2026', color: '#4c7dff', items: [
         '<strong>New:</strong> Clients now has its own page in the menu — search by name, email, or phone, see open vs. paid invoice counts, and sort by lifetime value to find your best clients.',
         '<strong>New:</strong> Edit a client\'s saved name, email, phone, address, or notes directly — no more needing to delete and re-add to fix a typo.',
