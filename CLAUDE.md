@@ -16,7 +16,7 @@ The world's most elite, AI-driven financial command center for creative professi
 
 | Property | Value |
 |----------|-------|
-| **Version** | v7.23.0 |
+| **Version** | v7.23.1 |
 | **Status** | Active Development — Open Public Launch |
 | **Deploy target** | `www.lumiereledger.com` (primary) — `app.throughthelens.media` 301 redirects to it |
 | **Deployment** | Vercel (auto-deploy on `git push origin main`) |
@@ -400,6 +400,7 @@ Plaid-connected accounts use `source: 'plaid'` regardless of institution. Known 
 | Plaid billing exempt | `PLAID_BILLING_EXEMPT` from `api/constants.js` (single source of truth as of v7.10.11). Joshua + Michelle Gornichec (`fcb92809-70f1-4ae0-b39c-e317378a01a7`). Frontend mirror: `web-react/src/constants/billing.js`. |
 | Dashboard config | `dashboard_config JSONB` on `settings` table. Shape: `{ role, widgets: { invoices, forecast, performance_chart, top_expenses, insights, operational_intelligence } }`. Defaults all-on if null. Widget flag: `!== false`. |
 | Trial signup gate | New `auth.users` rows only get an active `user_subscriptions` row once `email_confirmed_at` is set (v7.10.13). No `profiles` table exists anywhere — use `listAllUsers()` from `api/utils/userDirectory.js` for any "all users" lookup. |
+| Income/spend category exclusion | `api/utils/spendCategories.js` — `INCOME_CATS` (Photo Income, Freelance Income, Reimbursement, Refund, etc.) vs `TRANSFER_CATS` (Internal Transfer, Credit Card Payment, Deposit). `isNonSpendRow()` excludes both from spend totals; `isNonIncomeRow()` excludes only `TRANSFER_CATS` from income totals — real income categories must never be excluded from income (v7.23.1 fix, see Security Rules). |
 
 ---
 
@@ -418,6 +419,7 @@ Plaid-connected accounts use `source: 'plaid'` regardless of institution. Known 
 - **BYOB Gemini keys encrypted at rest (v7.15.0, migration complete v7.15.5):** `settings.gemini_api_key` is encrypted with the same libsodium/`ENCRYPTION_KEY` pattern as Plaid tokens (`api/utils/cryptoUtil.js`). `decryptOrPlain()` is used at every read site so any future legacy plaintext row would keep working. All existing keys were migrated in production (confirmed via direct SQL, 0 plaintext remaining) via a temporary admin route since `ENCRYPTION_KEY` is Sensitive in Vercel and can't be exported for a local script — same pattern as the v7.10.17 Plaid webhook backfill. Route removed after confirming success.
 - **Cross-tenant unique constraints break multi-tenancy (v7.22.0):** `invoices.invoice_number` had a database-wide `UNIQUE` constraint instead of one scoped to the owning user — two completely unrelated accounts could never use the same invoice number, so every new user's suggested first invoice number (`INV-1001`) could only ever belong to one account, total. Found via a real production error (`duplicate key value violates unique constraint`). Fixed with `api/migrations/016_scope_invoice_number_unique_per_user.sql`: dropped the global constraint, replaced with `UNIQUE (user_id, invoice_number)`. General rule: any per-user "unique" field needs the constraint scoped to `user_id` explicitly — a bare `UNIQUE` on a single column is table-wide, not per-tenant.
 - **Model-side numerical aggregation is unreliable (v7.16.1):** the AI Brain's `search_transactions` tool only accepted one category filter, so answering "how much have I paid to credit cards" required Gemini to call it twice (once per category) and manually sum the results in prose — it fabricated plausible-looking numbers that didn't match the real ledger (confirmed via direct SQL). Fixed by accepting a comma-separated category list via a single Supabase `.or()` filter, so totals are computed once in code. General rule: never let the model combine numbers across multiple tool calls when a single deterministic query can express the same filter.
+- **A shared exclusion set silently dropped real income (v7.23.1):** the v7.14.0 dashboard/digest consistency fix created one `NON_SPEND_CATS` set and used it to skip a row entirely wherever it appeared — correct for spend totals, but it also excluded real income categories (`Photo Income`, `Reimbursement`, etc.) from income totals in both `cron.js`'s weekly digest and `metrics.js`'s dashboard summary. Confirmed against production data: a real Venmo payment (expense id 19503, -$740.63, category `Photo Income`) was invisible to both. Root cause traced by reading the actual `expenses`/`pending_receipts` rows via Supabase MCP before writing any fix — not from a hypothesis. Fixed by splitting into `INCOME_CATS` (never excluded from income) and `TRANSFER_CATS` (excluded from both), with a new `isNonIncomeRow()` check for the income side. General rule: an exclusion set built for one direction (spend) is not automatically safe to reuse for the opposite direction (income) — verify against real rows before trusting a shared filter's semantics in a new context.
 
 ---
 
