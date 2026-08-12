@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.23.4', date: 'AUG 12, 2026', color: '#f59e0b', items: [
+        '<strong>Improved:</strong> A negative-amount transaction with no category no longer guesses "Income" — it now shows a "Needs Review" badge so you know to double-check it instead of trusting an automatic label.',
+        '<strong>Fixed:</strong> Widened the credit card payment detection pattern to catch more bank abbreviations (like "PYMT"), so more transfers are automatically excluded from income.',
+    ]},
     { version: '7.23.3', date: 'AUG 12, 2026', color: '#4ade80', items: [
         '<strong>Fixed:</strong> Credit card payments and internal transfers were being mislabeled as income in the monthly email report and on the Transactions ledger — they now show correctly as "Transfer" instead of "Income".',
     ]},

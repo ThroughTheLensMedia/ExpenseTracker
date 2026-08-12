@@ -5,6 +5,17 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.23.4] — 2026-08-12
+
+### Improved — Uncategorized negative transactions show "Needs Review" instead of a guessed label
+
+- **`web-react/src/pages/Transactions.jsx`** — Type column: a negative-amount row with a blank/`Uncategorized` category (and not already identified as a transfer) now shows an orange "Needs Review" badge (`.tag.warn`) instead of confidently labeling it "Income". Prompted by finding real production rows (military retirement pay, VA benefits, EUR transfers) that had sat with blank categories and were only correctly summed as income by luck of the naive check, not by design — the app was guessing and calling it certain.
+- **`api/utils/spendCategories.js`** + **`web-react/src/constants/spendCategories.js`** — widened `CC_PAYMENT_PATTERN` to also match `pymt` (previously only matched `pmt`), closing a real gap found on a second user's account where `CAPITAL ONE MOBILE PYMT` wasn't being caught by the existing pattern and was displaying as income.
+- General approach: rather than only patching the specific vendor strings found during investigation (whack-a-mole), the Needs Review badge makes any future unrecognized negative-amount vendor string visible to the user instead of silently mislabeled, on top of the regex widening.
+- Update ChangeLogModal.jsx, version.json, App.jsx
+
+---
+
 ## [v7.23.3] — 2026-08-12
 
 ### Fixed — Credit card payments mislabeled as income (monthly report + Transactions UI)

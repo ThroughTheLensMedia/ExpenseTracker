@@ -28,7 +28,7 @@ const TRANSFER_CATS = new Set(['Internal Transfer', 'Credit Card Payment', 'Depo
 const NON_SPEND_CATS = new Set([...INCOME_CATS, ...TRANSFER_CATS]);
 
 // Vendor name patterns that indicate a credit card payment or fund transfer.
-const CC_PAYMENT_PATTERN = /\b(autopay|payment|epayment|pmt|e-payment|bill pay|epay|xfer|transfer|apple card|ach|wire)\b/i;
+const CC_PAYMENT_PATTERN = /\b(autopay|payment|epayment|pmt|pymt|e-payment|bill pay|epay|xfer|transfer|apple card|ach|wire)\b/i;
 
 // Vendor substrings that identify a known recurring subscription, used
 // alongside the per-transaction `is_subscription` flag. Shared by

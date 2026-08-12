@@ -938,11 +938,13 @@ export default function Transactions() {
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'nowrap' }}>
                                                 {(() => {
                                                     const isNegative = Number(r.amount_cents || 0) < 0;
+                                                    const isBlankCategory = !r.category || r.category === 'Uncategorized';
                                                     const isTransfer = isNegative && isNonIncomeRow(r.category, r.vendor);
-                                                    const label = isTransfer ? 'Transfer' : isNegative ? 'Income' : 'Expense';
-                                                    const cls = isTransfer ? 'tag' : isNegative ? 'tag ok' : 'tag';
+                                                    const needsReview = isNegative && isBlankCategory && !isTransfer;
+                                                    const label = needsReview ? 'Needs Review' : isTransfer ? 'Transfer' : isNegative ? 'Income' : 'Expense';
+                                                    const cls = needsReview ? 'tag warn' : isTransfer ? 'tag' : isNegative ? 'tag ok' : 'tag';
                                                     return (
-                                                        <span className={cls} style={{ fontSize: '9px', padding: '1px 4px', opacity: isNegative && !isTransfer ? 1 : 0.8 }}>
+                                                        <span className={cls} title={needsReview ? 'Negative amount with no category — could be income or a transfer. Categorize it to be sure.' : undefined} style={{ fontSize: '9px', padding: '1px 4px', opacity: isNegative && !isTransfer ? 1 : 0.8 }}>
                                                             {label}
                                                         </span>
                                                     );

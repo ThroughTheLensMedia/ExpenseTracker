@@ -25,7 +25,7 @@
 export const TRANSFER_CATS = new Set(['Internal Transfer', 'Credit Card Payment', 'Deposit']);
 
 // Vendor name patterns that indicate a credit card payment or fund transfer.
-export const CC_PAYMENT_PATTERN = /\b(autopay|payment|epayment|pmt|e-payment|bill pay|epay|xfer|transfer|apple card|ach|wire)\b/i;
+export const CC_PAYMENT_PATTERN = /\b(autopay|payment|epayment|pmt|pymt|e-payment|bill pay|epay|xfer|transfer|apple card|ach|wire)\b/i;
 
 // True if a row should be excluded from INCOME rollups — only real transfers,
 // never a real income category. Use this instead of a bare amount_cents < 0
