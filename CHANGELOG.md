@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.25.2] — 2026-08-12
+
+### Improved — Filter bar reorder + AND/OR toggle for Category + Notes
+
+- **`web-react/src/pages/Transactions.jsx`** — filter bar reordered to Date Range, Account, Vendor, Category, Notes. Added a compact AND/OR segmented toggle next to the Notes field, shown only when both Category and Notes have a value.
+- **`web-react/src/hooks/useExpenseFilters.js`** — new `categoryNotesMatch` filter option ('and' default, 'or'). Previously Category and Notes always combined as AND (sequential `.filter()` calls) with no way to broaden a search across either field — a lookup like "Apollo" would miss transactions where the pet's name was in Notes but the category wasn't specifically "Pets", or vice versa. Backward-compatible: other callers of the shared hook (Dashboard, Tax) that don't pass `categoryNotesMatch` keep the exact same AND behavior as before.
+- Update ChangeLogModal.jsx, version.json, App.jsx
+
+---
+
 ## [v7.25.1] — 2026-08-12
 
 ### Improved — Transactions filter bar cleanup

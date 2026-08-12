@@ -31,6 +31,7 @@ export default function Transactions() {
     const [searchVendor, setSearchVendor] = useState('');
     const [searchCategory, setSearchCategory] = useState('');
     const [searchNotes, setSearchNotes] = useState('');
+    const [categoryNotesMatch, setCategoryNotesMatch] = useState('and'); // 'and' | 'or' — how Category + Notes combine when both are set
     const [deductOnly, setDeductOnly] = useState(false);
     const [missingReceiptOnly, setMissingReceiptOnly] = useState(false);
     const [searchAccount,    setSearchAccount]    = useState('');
@@ -294,8 +295,8 @@ export default function Transactions() {
     const filters = useMemo(() => isAuditMode ? {} : {
         start, end, vendor: searchVendor, category: searchCategory,
         account: searchAccount, institutionPrefix: institutionFilter, plaidAccountId, plaidSourceKey, notes: searchNotes, deductOnly, missingReceiptOnly,
-        needsCategory: needsCategoryFilter,
-    }, [isAuditMode, start, end, searchVendor, searchCategory, searchAccount, institutionFilter, plaidAccountId, plaidSourceKey, searchNotes, deductOnly, missingReceiptOnly, needsCategoryFilter]);
+        needsCategory: needsCategoryFilter, categoryNotesMatch,
+    }, [isAuditMode, start, end, searchVendor, searchCategory, searchAccount, institutionFilter, plaidAccountId, plaidSourceKey, searchNotes, deductOnly, missingReceiptOnly, needsCategoryFilter, categoryNotesMatch]);
 
 
     const { filtered: filteredBase } = useExpenseFilters(auditBase, filters, sortCol, sortDir);
@@ -338,7 +339,7 @@ export default function Transactions() {
     const clearFilters = () => {
         setStart(daysAgoStr(90)); setEnd(todayStr()); setSearchVendor(''); setSearchCategory('');
         setSearchAccount(''); setInstitutionFilter(''); setPlaidAccountId(''); setPlaidAccountName(''); setPlaidSourceKey('');
-        setSearchNotes(''); setDeductOnly(false); setMissingReceiptOnly(false); setNeedsCategoryFilter(false);
+        setSearchNotes(''); setDeductOnly(false); setMissingReceiptOnly(false); setNeedsCategoryFilter(false); setCategoryNotesMatch('and');
         setToast({ ok: true, msg: 'Filters cleared. Showing last 90 days.' });
         setTimeout(() => setToast(null), 3000);
     };
@@ -585,7 +586,7 @@ export default function Transactions() {
                                     style={{ background:'none', border:'none', color:'rgba(249,115,22,0.6)', cursor:'pointer', fontSize:14, padding:'0 2px', lineHeight:1 }}>✕</button>
                             </div>
                         )}
-                        {/* Row 1: Filters */}
+                        {/* Row 1: Filters — Date Range, Account, Vendor, Category, Notes */}
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', justifyContent: 'center', width: '100%' }}>
                             {/* Date range block: calendar pickers only */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -597,13 +598,28 @@ export default function Transactions() {
                                 </div>
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <small className="muted" style={{ fontWeight: 800 }}>ACCOUNT</small>
+                                <select value={searchAccount} onChange={e => { setSearchAccount(e.target.value); setPlaidAccountId(''); setPlaidSourceKey(''); }} style={{ width: '180px' }}>
+                                    <option value="">All Accounts</option>
+                                    {accountsList
+                                        .filter(a => a.source !== 'plaid')
+                                        .map(a => (
+                                            <option key={a.source} value={a.source}>
+                                                {a.display_name || ACCOUNT_LABELS[a.source] || a.source}
+                                            </option>
+                                        ))
+                                    }
+                                    {/* Legacy sources on transactions not in accounts list */}
+                                    {accountOptions
+                                        .filter(s => s && !accountsList.find(a => a.source === s))
+                                        .map(s => <option key={s} value={s}>{ACCOUNT_LABELS[s] || s}</option>)
+                                    }
+                                </select>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                 <small className="muted" style={{ fontWeight: 800 }}>VENDOR</small>
                                 <input list="vendor-options" value={searchVendor} onChange={e => setSearchVendor(e.target.value)} placeholder="Search..." style={{ width: '180px' }} autoComplete="off" />
                                 <datalist id="vendor-options">{vendorOptions.map(v => <option key={v} value={v} />)}</datalist>
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                <small className="muted" style={{ fontWeight: 800 }}>NOTES</small>
-                                <input value={searchNotes} onChange={e => setSearchNotes(e.target.value)} placeholder="Search notes..." style={{ width: '180px' }} autoComplete="off" />
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                 <small className="muted" style={{ fontWeight: 800 }}>CATEGORY</small>
@@ -642,23 +658,26 @@ export default function Transactions() {
                                 </select>
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                <small className="muted" style={{ fontWeight: 800 }}>ACCOUNT</small>
-                                <select value={searchAccount} onChange={e => { setSearchAccount(e.target.value); setPlaidAccountId(''); setPlaidSourceKey(''); }} style={{ width: '180px' }}>
-                                    <option value="">All Accounts</option>
-                                    {accountsList
-                                        .filter(a => a.source !== 'plaid')
-                                        .map(a => (
-                                            <option key={a.source} value={a.source}>
-                                                {a.display_name || ACCOUNT_LABELS[a.source] || a.source}
-                                            </option>
-                                        ))
-                                    }
-                                    {/* Legacy sources on transactions not in accounts list */}
-                                    {accountOptions
-                                        .filter(s => s && !accountsList.find(a => a.source === s))
-                                        .map(s => <option key={s} value={s}>{ACCOUNT_LABELS[s] || s}</option>)
-                                    }
-                                </select>
+                                <small className="muted" style={{ fontWeight: 800 }}>NOTES</small>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <input value={searchNotes} onChange={e => setSearchNotes(e.target.value)} placeholder="Search notes..." style={{ width: '180px' }} autoComplete="off" />
+                                    {searchCategory && searchNotes && (
+                                        <div style={{ display: 'flex', border: '1px solid #334155', borderRadius: '6px', overflow: 'hidden', flexShrink: 0 }} title="How to combine the Category and Notes filters above">
+                                            {['and', 'or'].map(mode => (
+                                                <button
+                                                    key={mode}
+                                                    onClick={() => setCategoryNotesMatch(mode)}
+                                                    style={{
+                                                        padding: '8px 10px', fontSize: '11px', fontWeight: 800, letterSpacing: '0.03em',
+                                                        border: 'none', cursor: 'pointer', minHeight: '38px',
+                                                        background: categoryNotesMatch === mode ? 'var(--accent)' : '#1e293b',
+                                                        color: categoryNotesMatch === mode ? '#fff' : '#94a3b8',
+                                                    }}
+                                                >{mode.toUpperCase()}</button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
 

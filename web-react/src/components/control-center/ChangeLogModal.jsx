@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.25.2', date: 'AUG 12, 2026', color: '#4c7dff', items: [
+        '<strong>Improved:</strong> Transactions filter bar reordered to Date Range, Account, Vendor, Category, Notes for a cleaner layout.',
+        '<strong>New:</strong> When both Category and Notes are filled in, an AND/OR toggle appears — AND narrows to rows matching both, OR broadens to rows matching either (useful for a lookup like "Apollo" that might only be in the notes, not the category).',
+    ]},
     { version: '7.25.1', date: 'AUG 12, 2026', color: '#4c7dff', items: [
         '<strong>Improved:</strong> Transactions filter bar cleanup — removed the 30d/90d/YTD/All quick buttons (the calendar pickers already cover this) and added a Notes search field, so you can now search vendor, category, and notes together to pull specific items (e.g. every "Apollo" grooming charge across different providers).',
     ]},

@@ -19,6 +19,7 @@ import { formatDate } from '../api';
  * @param {boolean} [filters.missingReceiptOnly] - Deductible + no receipt
  * @param {number|string} [filters.year] - Filter by year
  * @param {string} [filters.taxBucket] - Filter by tax bucket
+ * @param {'and'|'or'} [filters.categoryNotesMatch] - When both category and notes are set, 'and' (default) requires both to match; 'or' matches either — useful for broad lookups like "Apollo" that might only be in one field, not both.
  * @param {string} [sortCol] - Column to sort by
  * @param {string} [sortDir] - 'asc' or 'desc'
  * @returns {{ filtered: Array, totals: { count: number, sum: number } }}
@@ -26,13 +27,12 @@ import { formatDate } from '../api';
 export default function useExpenseFilters(expenses, filters = {}, sortCol = 'expense_date', sortDir = 'desc') {
     const filtered = useMemo(() => {
         let rows = [...expenses];
-        const { start, end, vendor, category, account, plaidAccountId, notes, deductOnly, missingReceiptOnly, year, taxBucket, needsCategory } = filters;
+        const { start, end, vendor, category, account, plaidAccountId, notes, deductOnly, missingReceiptOnly, year, taxBucket, needsCategory, categoryNotesMatch } = filters;
 
         if (year) rows = rows.filter(r => String(r.expense_date || '').startsWith(String(year)));
         if (start) rows = rows.filter(r => formatDate(r.expense_date) >= start);
         if (end) rows = rows.filter(r => formatDate(r.expense_date) <= end);
         if (vendor) rows = rows.filter(r => (r.vendor || '').toLowerCase().includes(vendor.toLowerCase()));
-        if (category) rows = rows.filter(r => (r.category || '').toLowerCase().includes(category.toLowerCase()));
         if (account) rows = rows.filter(r => (r.source || '') === account);
         // institutionPrefix: match all sources that start with the institution name (e.g. "USAA" → USAA Checking + USAA Savings)
         if (filters.institutionPrefix) rows = rows.filter(r => (r.source || '').toLowerCase().startsWith(filters.institutionPrefix.toLowerCase()));
@@ -42,7 +42,22 @@ export default function useExpenseFilters(expenses, filters = {}, sortCol = 'exp
             r.plaid_account_id === plaidAccountId ||
             (!r.plaid_account_id && filters.plaidSourceKey && (r.source || '') === filters.plaidSourceKey)
         );
-        if (notes) rows = rows.filter(r => (r.notes || '').toLowerCase().includes(notes.toLowerCase()));
+
+        // Category + Notes: AND (default) requires both to match when both are set;
+        // OR matches either — lets a search like "Apollo" catch rows where the term
+        // is only in the category OR only in the notes, not necessarily both.
+        const categoryMatches = r => (r.category || '').toLowerCase().includes(category.toLowerCase());
+        const notesMatches = r => (r.notes || '').toLowerCase().includes(notes.toLowerCase());
+        if (category && notes) {
+            rows = categoryNotesMatch === 'or'
+                ? rows.filter(r => categoryMatches(r) || notesMatches(r))
+                : rows.filter(r => categoryMatches(r) && notesMatches(r));
+        } else if (category) {
+            rows = rows.filter(categoryMatches);
+        } else if (notes) {
+            rows = rows.filter(notesMatches);
+        }
+
         if (taxBucket) rows = rows.filter(r => (r.tax_bucket || '') === taxBucket);
         if (needsCategory) rows = rows.filter(r => !r.category || !String(r.category).trim());
         if (deductOnly) rows = rows.filter(r => r.tax_deductible);
