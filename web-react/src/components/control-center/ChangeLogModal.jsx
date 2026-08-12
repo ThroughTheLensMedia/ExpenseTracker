@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.24.0', date: 'AUG 12, 2026', color: '#4c7dff', items: [
+        '<strong>New:</strong> The AI Brain now searches your transaction notes, not just vendor names and categories — so asking about something you only wrote in a note (a pet\'s name, a project, a purpose) will actually find it.',
+    ]},
     { version: '7.23.5', date: 'AUG 12, 2026', color: '#eab308', items: [
         '<strong>Polish:</strong> The "Transfer" badge on the Transactions ledger now shows in yellow, matching the green "Income" and orange "Needs Review" badges for quick visual scanning.',
     ]},

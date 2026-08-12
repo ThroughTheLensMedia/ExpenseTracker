@@ -12,7 +12,7 @@ const BRAIN_TOOLS = [{
     functionDeclarations: [
         {
             name: 'search_transactions',
-            description: 'Search expenses and transactions from the ledger. Use for spending questions, category totals, vendor lookups, date-range queries, tax deduction totals, or payment history. Returns transaction IDs, per-transaction account/source, and an account_breakdown array (account name + total) useful for grouping payments or expenses by card/bank account.',
+            description: 'Search expenses and transactions from the ledger. Use for spending questions, category totals, vendor lookups, date-range queries, tax deduction totals, or payment history. Returns transaction IDs, per-transaction account/source/notes, and an account_breakdown array (account name + total) useful for grouping payments or expenses by card/bank account.',
             parameters: {
                 type: 'OBJECT',
                 properties: {
@@ -20,6 +20,7 @@ const BRAIN_TOOLS = [{
                     start_date:          { type: 'STRING',  description: 'Start date YYYY-MM-DD' },
                     end_date:            { type: 'STRING',  description: 'End date YYYY-MM-DD' },
                     vendor:              { type: 'STRING',  description: 'Vendor name — partial match' },
+                    keyword:             { type: 'STRING',  description: 'Free-text search across BOTH vendor name and notes. Use this instead of (or in addition to) vendor when the user describes something by a name that might only appear in their own notes rather than the vendor field — a pet\'s name, a person, a project, a purpose (e.g. "Apollo", "wedding", "client name"). Vendor names alone often won\'t contain this kind of detail; notes usually will if the user has ever added one.' },
                     tax_deductible:      { type: 'BOOLEAN', description: 'Filter to only tax-deductible expenses' },
                     min_amount_dollars:  { type: 'NUMBER',  description: 'Minimum transaction amount in dollars' },
                     limit:               { type: 'INTEGER', description: 'Max results (default 25, max 100)' }
@@ -196,6 +197,7 @@ async function executeTool(name, args, sb, userId) {
             if (args.start_date)         q = q.gte('expense_date', args.start_date);
             if (args.end_date)           q = q.lte('expense_date', args.end_date);
             if (args.vendor)             q = q.ilike('vendor', `%${args.vendor}%`);
+            if (args.keyword)            q = q.or(`vendor.ilike.%${args.keyword}%,notes.ilike.%${args.keyword}%`);
             if (args.tax_deductible !== undefined) q = q.eq('tax_deductible', args.tax_deductible);
             if (args.min_amount_dollars) q = q.gte('amount_cents', Math.round(args.min_amount_dollars * 100));
             q = q.order('expense_date', { ascending: false }).limit(Math.min(args.limit || 25, 100));
@@ -225,7 +227,8 @@ async function executeTool(name, args, sb, userId) {
                     date: r.expense_date,
                     category: r.category,
                     account: r.source || 'Unknown',
-                    tax_deductible: r.tax_deductible
+                    tax_deductible: r.tax_deductible,
+                    notes: r.notes || null
                 }))
             };
         }
@@ -678,6 +681,7 @@ TRANSACTION RULES:
 - When a user says they have purchased something, spent money, or mentions past expenses, ALWAYS call search_transactions first to check if those records already exist. Only offer create_transaction if the search returns no matching results.
 - To edit an existing transaction (rename vendor, change category, fix notes/date/amount): call search_transactions first to get the UUID, then call update_transaction with only the fields that need changing. Never guess a UUID.
 - If a search returns 0 results, broaden the search — try a different vendor keyword, remove the category filter, or search by date range. Never confidently tell the user they have no spending in a category without trying at least 2 search variations.
+- When the user names something that isn't a vendor or category — a pet, a person, a project, a purpose ("Apollo's bath", "the Henderson wedding", "for the trip") — use the 'keyword' parameter, not 'vendor'. 'keyword' searches both vendor AND notes; 'vendor' only searches the vendor field and will miss anything the user only wrote in a note. If a 'keyword' search returns transactions, check each result's 'notes' field before answering — that's usually where the actual detail (which pet, which client, which trip) lives, not the vendor name. If the user then confirms a match, ask if they want a note added to future similar transactions (via create_transaction's notes field, or update_transaction on an existing one) so the next search is more precise.
 
 MILEAGE RULES:
 - Before calling log_mileage_trip, confirm you have: origin, destination, round-trip yes/no, and date. The exact mile count is calculated automatically from the origin/destination — do NOT ask the user for it upfront. Only pass a miles value yourself if the user volunteers their own exact number.

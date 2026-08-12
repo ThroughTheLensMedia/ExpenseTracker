@@ -5,6 +5,17 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.24.0] — 2026-08-12
+
+### Added — AI Brain now searches transaction notes, not just vendor/category
+
+- **`api/routes/brain.js`** — `search_transactions` gains a new `keyword` parameter that searches BOTH `vendor` AND `notes` in a single `.or()` query (the existing `vendor` param only ever searched the vendor field). Prompted by Joshua asking the Brain about "Apollo's bath" (his pet's grooming) — the Brain could only find transactions by vendor/category match and had no way to know "Apollo" might only exist in a note the user wrote themselves.
+- The `notes` field was already selected from the DB in the query but silently dropped before being returned to the model — added it back to the response so the Brain can actually read what it fetches.
+- Added system-prompt guidance directing the model to use `keyword` (not `vendor`) whenever the user names something that isn't a vendor or category — a pet, a person, a project, a purpose — and to check each result's `notes` field before answering, since that's usually where the real detail lives.
+- Update ChangeLogModal.jsx, version.json, App.jsx
+
+---
+
 ## [v7.23.5] — 2026-08-12
 
 ### Polish — Transfer badge shows yellow text
