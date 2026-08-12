@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.25.3] — 2026-08-12
+
+### Fixed — Filter bar wrapping to two lines; AND/OR toggle not discoverable
+
+- **`web-react/src/pages/Transactions.jsx`** — the v7.25.2 filter bar wrapped to two rows at normal desktop widths (5 blocks × 180px plus gaps exceeded the panel width). Shrunk each field to 140px (date inputs to 132px), tightened gaps, switched the row to `flexWrap: 'nowrap'` with `overflowX: 'auto'` as a fallback for narrower windows instead of wrapping.
+- The AND/OR MATCH toggle only rendered once both Category and Notes had a value, so it was invisible until you already knew to fill in both — not discoverable. Now always rendered (dimmed/disabled at 40% opacity when not yet applicable), in its own MATCH column at the end of the row.
+- Update ChangeLogModal.jsx, version.json, App.jsx
+
+---
+
 ## [v7.25.2] — 2026-08-12
 
 ### Improved — Filter bar reorder + AND/OR toggle for Category + Notes

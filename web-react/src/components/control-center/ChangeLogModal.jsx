@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.25.3', date: 'AUG 12, 2026', color: '#4c7dff', items: [
+        '<strong>Fixed:</strong> Transactions filter bar now fits on one line instead of wrapping to a second row.',
+        '<strong>Fixed:</strong> The AND/OR MATCH toggle for Category + Notes is now always visible (dimmed until both fields have a value) instead of hidden — easier to find.',
+    ]},
     { version: '7.25.2', date: 'AUG 12, 2026', color: '#4c7dff', items: [
         '<strong>Improved:</strong> Transactions filter bar reordered to Date Range, Account, Vendor, Category, Notes for a cleaner layout.',
         '<strong>New:</strong> When both Category and Notes are filled in, an AND/OR toggle appears — AND narrows to rows matching both, OR broadens to rows matching either (useful for a lookup like "Apollo" that might only be in the notes, not the category).',

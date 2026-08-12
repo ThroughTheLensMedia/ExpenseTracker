@@ -586,20 +586,22 @@ export default function Transactions() {
                                     style={{ background:'none', border:'none', color:'rgba(249,115,22,0.6)', cursor:'pointer', fontSize:14, padding:'0 2px', lineHeight:1 }}>✕</button>
                             </div>
                         )}
-                        {/* Row 1: Filters — Date Range, Account, Vendor, Category, Notes */}
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', justifyContent: 'center', width: '100%' }}>
+                        {/* Row 1: Filters — Date Range, Account, Vendor, Category, Notes. Kept on one
+                            line at typical desktop widths; falls back to horizontal scroll rather
+                            than wrapping if the window is narrower than that. */}
+                        <div style={{ display: 'flex', flexWrap: 'nowrap', gap: '10px', width: '100%', overflowX: 'auto', paddingBottom: '2px' }}>
                             {/* Date range block: calendar pickers only */}
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flexShrink: 0 }}>
                                 <small className="muted" style={{ fontWeight: 800 }}>DATE RANGE</small>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <input type="date" value={start} onChange={e => setStart(e.target.value)} style={{ width: '145px' }} />
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <input type="date" value={start} onChange={e => setStart(e.target.value)} style={{ width: '132px' }} />
                                     <span style={{ color: '#475569', fontSize: '13px' }}>→</span>
-                                    <input type="date" value={end} onChange={e => setEnd(e.target.value)} style={{ width: '145px' }} />
+                                    <input type="date" value={end} onChange={e => setEnd(e.target.value)} style={{ width: '132px' }} />
                                 </div>
                             </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flexShrink: 0 }}>
                                 <small className="muted" style={{ fontWeight: 800 }}>ACCOUNT</small>
-                                <select value={searchAccount} onChange={e => { setSearchAccount(e.target.value); setPlaidAccountId(''); setPlaidSourceKey(''); }} style={{ width: '180px' }}>
+                                <select value={searchAccount} onChange={e => { setSearchAccount(e.target.value); setPlaidAccountId(''); setPlaidSourceKey(''); }} style={{ width: '140px' }}>
                                     <option value="">All Accounts</option>
                                     {accountsList
                                         .filter(a => a.source !== 'plaid')
@@ -616,12 +618,12 @@ export default function Transactions() {
                                     }
                                 </select>
                             </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flexShrink: 0 }}>
                                 <small className="muted" style={{ fontWeight: 800 }}>VENDOR</small>
-                                <input list="vendor-options" value={searchVendor} onChange={e => setSearchVendor(e.target.value)} placeholder="Search..." style={{ width: '180px' }} autoComplete="off" />
+                                <input list="vendor-options" value={searchVendor} onChange={e => setSearchVendor(e.target.value)} placeholder="Search..." style={{ width: '140px' }} autoComplete="off" />
                                 <datalist id="vendor-options">{vendorOptions.map(v => <option key={v} value={v} />)}</datalist>
                             </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flexShrink: 0 }}>
                                 <small className="muted" style={{ fontWeight: 800 }}>CATEGORY</small>
                                 <select
                                     value={needsCategoryFilter ? '__uncategorized__' : searchCategory}
@@ -635,7 +637,7 @@ export default function Transactions() {
                                             setSearchCategory(v);
                                         }
                                     }}
-                                    style={{ width: '180px', padding: '8px' }}
+                                    style={{ width: '140px', padding: '8px' }}
                                 >
                                     <option value="">All Categories</option>
                                     <option value="__uncategorized__">Uncategorized</option>
@@ -657,26 +659,29 @@ export default function Transactions() {
                                     })()}
                                 </select>
                             </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flexShrink: 0 }}>
                                 <small className="muted" style={{ fontWeight: 800 }}>NOTES</small>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <input value={searchNotes} onChange={e => setSearchNotes(e.target.value)} placeholder="Search notes..." style={{ width: '180px' }} autoComplete="off" />
-                                    {searchCategory && searchNotes && (
-                                        <div style={{ display: 'flex', border: '1px solid #334155', borderRadius: '6px', overflow: 'hidden', flexShrink: 0 }} title="How to combine the Category and Notes filters above">
-                                            {['and', 'or'].map(mode => (
-                                                <button
-                                                    key={mode}
-                                                    onClick={() => setCategoryNotesMatch(mode)}
-                                                    style={{
-                                                        padding: '8px 10px', fontSize: '11px', fontWeight: 800, letterSpacing: '0.03em',
-                                                        border: 'none', cursor: 'pointer', minHeight: '38px',
-                                                        background: categoryNotesMatch === mode ? 'var(--accent)' : '#1e293b',
-                                                        color: categoryNotesMatch === mode ? '#fff' : '#94a3b8',
-                                                    }}
-                                                >{mode.toUpperCase()}</button>
-                                            ))}
-                                        </div>
-                                    )}
+                                <input value={searchNotes} onChange={e => setSearchNotes(e.target.value)} placeholder="Search notes..." style={{ width: '140px' }} autoComplete="off" />
+                            </div>
+                            {/* Always visible so the AND/OR option is discoverable — only takes
+                                effect once both Category and Notes are filled in. */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flexShrink: 0 }}>
+                                <small className="muted" style={{ fontWeight: 800 }}>MATCH</small>
+                                <div style={{ display: 'flex', border: '1px solid #334155', borderRadius: '6px', overflow: 'hidden', opacity: (searchCategory && searchNotes) ? 1 : 0.4 }}
+                                    title="How Category + Notes combine — only applies when both are filled in">
+                                    {['and', 'or'].map(mode => (
+                                        <button
+                                            key={mode}
+                                            onClick={() => setCategoryNotesMatch(mode)}
+                                            disabled={!(searchCategory && searchNotes)}
+                                            style={{
+                                                padding: '8px 12px', fontSize: '11px', fontWeight: 800, letterSpacing: '0.03em',
+                                                border: 'none', cursor: (searchCategory && searchNotes) ? 'pointer' : 'default', minHeight: '38px', minWidth: '44px',
+                                                background: categoryNotesMatch === mode ? 'var(--accent)' : '#1e293b',
+                                                color: categoryNotesMatch === mode ? '#fff' : '#94a3b8',
+                                            }}
+                                        >{mode.toUpperCase()}</button>
+                                    ))}
                                 </div>
                             </div>
                         </div>
