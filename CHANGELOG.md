@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.23.2] — 2026-08-12
+
+### Added — "Bus Exp" column + green income pill on Transactions ledger
+
+- **`web-react/src/pages/Transactions.jsx`** — new "Bus Exp" column between Category and Amount showing a green ✓ when `tax_deductible` is true, `—` otherwise. Reuses the existing `tax_deductible` field rather than adding a new one.
+- **`web-react/src/pages/Transactions.jsx`** — the Type column's "Income" pill now uses the `tag ok` class (same green styling as the Doc column's "View" receipt link) instead of the neutral `tag` class, so income rows are visually distinct at a glance.
+- Update ChangeLogModal.jsx, version.json, App.jsx
+
+---
+
 ## [v7.23.1] — 2026-08-11
 
 ### Fixed — Real income silently excluded from weekly digest + dashboard income totals

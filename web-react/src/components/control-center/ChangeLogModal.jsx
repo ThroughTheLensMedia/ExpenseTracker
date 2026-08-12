@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.23.2', date: 'AUG 12, 2026', color: '#4ade80', items: [
+        '<strong>New:</strong> Transactions ledger has a new "Bus Exp" column with a green checkmark for transactions flagged as tax-deductible business expenses.',
+        '<strong>Improved:</strong> Income rows in the Type column now show a green pill, matching the Doc column\'s "View" receipt link, so income stands out at a glance.',
+    ]},
     { version: '7.23.1', date: 'AUG 11, 2026', color: '#94a3b8', items: [
         '<strong>Fixed:</strong> Real income (like a Venmo payment categorized as Photo Income) was being silently excluded from the weekly digest email and dashboard income totals — it now counts correctly.',
     ]},

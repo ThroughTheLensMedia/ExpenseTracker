@@ -888,6 +888,7 @@ export default function Transactions() {
                                 <th onClick={() => handleSort('source')} style={{ cursor: 'pointer', width: '13%' }}>Account<SortIcon col="source" /></th>
                                 <th onClick={() => handleSort('vendor')} style={{ cursor: 'pointer', width: '27%' }}>Vendor<SortIcon col="vendor" /></th>
                                 <th onClick={() => handleSort('category')} style={{ cursor: 'pointer', width: '20%' }}>Category<SortIcon col="category" /></th>
+                                <th style={{ textAlign: 'center', width: '7%' }}>Bus Exp</th>
                                 <th onClick={() => handleSort('amount_cents')} style={{ cursor: 'pointer', width: '14%', textAlign: 'right' }}>Amount<SortIcon col="amount_cents" /></th>
                                 <th style={{ textAlign: 'center', width: '8%' }}>Doc</th>
                                 <th style={{ width: '10%' }}>Type</th>
@@ -906,6 +907,9 @@ export default function Transactions() {
                                         <td style={{ fontSize: '11px', fontWeight: 700 }}>{ACCOUNT_LABELS[r.source] || r.source || 'manual'}</td>
                                         <td style={{ fontWeight: 600 }} className="text-truncate" title={r.vendor}>{r.vendor}</td>
                                         <td className="text-truncate" style={{ opacity: 0.9 }} title={r.category}>{r.category || <span className="muted">—</span>}</td>
+                                        <td style={{ textAlign: 'center' }}>
+                                            {r.tax_deductible ? <span style={{ color: '#4ade80', fontWeight: 900 }}>✓</span> : <span className="muted">—</span>}
+                                        </td>
                                         <td style={{ fontWeight: 700, textAlign: 'right' }}>{formatMoney(r.amount_cents)}</td>
                                         <td style={{ textAlign: 'center' }}>
                                             {r.receipt_link ? (
@@ -931,7 +935,7 @@ export default function Transactions() {
                                         </td>
                                         <td>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'nowrap' }}>
-                                                <span className="tag" style={{ fontSize: '9px', padding: '1px 4px', opacity: 0.8 }}>
+                                                <span className={Number(r.amount_cents || 0) < 0 ? 'tag ok' : 'tag'} style={{ fontSize: '9px', padding: '1px 4px', opacity: Number(r.amount_cents || 0) < 0 ? 1 : 0.8 }}>
                                                     {Number(r.amount_cents || 0) < 0 ? 'Income' : 'Expense'}
                                                 </span>
                                                 {r.needs_review && (
