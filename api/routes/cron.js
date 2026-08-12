@@ -179,7 +179,7 @@ async function buildMonthlyReport(supabase, userId, startStr, endStr, avgStartSt
     ]);
 
     const allLastMonth = (lastMonth || []).filter(r => (r.amount_cents || 0) > 0);
-    const income       = (lastMonth || []).filter(r => (r.amount_cents || 0) < 0);
+    const income       = (lastMonth || []).filter(r => (r.amount_cents || 0) < 0 && !isNonIncomeRow(r.category, r.vendor));
 
     // True spending rows — exclude non-spend categories for analysis sections
     const expenses     = allLastMonth.filter(r => !NON_SPEND_CATS.has(r.category));

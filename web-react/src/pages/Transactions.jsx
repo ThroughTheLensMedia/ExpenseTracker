@@ -6,6 +6,7 @@ import { useModal } from '../components/ModalContext.jsx';
 import MergeModal from '../components/MergeModal.jsx';
 import CategorySelect from '../components/CategorySelect.jsx';
 import { ALL_CATEGORIES, CATEGORY_GROUPS } from '../constants/categories.js';
+import { isNonIncomeRow } from '../constants/spendCategories.js';
 import useExpenseFilters, { useFilterOptions } from '../hooks/useExpenseFilters';
 import { Inbox } from 'lucide-react';
 
@@ -935,9 +936,17 @@ export default function Transactions() {
                                         </td>
                                         <td>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'nowrap' }}>
-                                                <span className={Number(r.amount_cents || 0) < 0 ? 'tag ok' : 'tag'} style={{ fontSize: '9px', padding: '1px 4px', opacity: Number(r.amount_cents || 0) < 0 ? 1 : 0.8 }}>
-                                                    {Number(r.amount_cents || 0) < 0 ? 'Income' : 'Expense'}
-                                                </span>
+                                                {(() => {
+                                                    const isNegative = Number(r.amount_cents || 0) < 0;
+                                                    const isTransfer = isNegative && isNonIncomeRow(r.category, r.vendor);
+                                                    const label = isTransfer ? 'Transfer' : isNegative ? 'Income' : 'Expense';
+                                                    const cls = isTransfer ? 'tag' : isNegative ? 'tag ok' : 'tag';
+                                                    return (
+                                                        <span className={cls} style={{ fontSize: '9px', padding: '1px 4px', opacity: isNegative && !isTransfer ? 1 : 0.8 }}>
+                                                            {label}
+                                                        </span>
+                                                    );
+                                                })()}
                                                 {r.needs_review && (
                                                     <button
                                                         onClick={e => { e.stopPropagation(); setReviewingTx(r); }}

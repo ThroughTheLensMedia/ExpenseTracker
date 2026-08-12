@@ -4,6 +4,7 @@ import { apiGet, apiPatch, apiPost, apiUpload, apiDelete } from '../api';
 import { useModal } from './ModalContext.jsx';
 import CategorySelect from './CategorySelect.jsx';
 import { ALL_CATEGORIES, CATEGORY_TAX_BUCKET_MAP } from '../constants/categories.js';
+import { isNonIncomeRow } from '../constants/spendCategories.js';
 
 // ─── Client-side image compression (keeps uploads under Vercel's 4.5MB limit) ─
 // Resizes to max 1920px wide and re-encodes as JPEG at 0.82 quality.
@@ -659,7 +660,7 @@ export default function TransactionDrawer({ transaction, onClose, onSave, onDele
                         <label className="tag" style={{ display: 'flex', gap: '8px', alignItems: 'center', flex: 1, minWidth: 0, opacity: taxBucket ? 1 : 0.4 }}>
                             <input type="checkbox" checked={deduct} onChange={e => field('deduct', e.target.checked)} disabled={!taxBucket} style={{ width: 'auto', margin: 0, flexShrink: 0 }} />
                             <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {Number(amount || 0) < 0 ? 'Biz Income' : 'Tax Deductible'}
+                                {Number(amount || 0) < 0 && !isNonIncomeRow(category, vendor) ? 'Biz Income' : 'Tax Deductible'}
                             </span>
                         </label>
                         <label className="tag" style={{ display: 'flex', gap: '8px', alignItems: 'center', flex: 1, minWidth: 0, background: 'rgba(56, 189, 248, 0.05)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.2)' }}>

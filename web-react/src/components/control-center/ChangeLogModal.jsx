@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.23.3', date: 'AUG 12, 2026', color: '#4ade80', items: [
+        '<strong>Fixed:</strong> Credit card payments and internal transfers were being mislabeled as income in the monthly email report and on the Transactions ledger — they now show correctly as "Transfer" instead of "Income".',
+    ]},
     { version: '7.23.2', date: 'AUG 12, 2026', color: '#4ade80', items: [
         '<strong>New:</strong> Transactions ledger has a new "Bus Exp" column with a green checkmark for transactions flagged as tax-deductible business expenses.',
         '<strong>Improved:</strong> Income rows in the Type column now show a green pill, matching the Doc column\'s "View" receipt link, so income stands out at a glance.',

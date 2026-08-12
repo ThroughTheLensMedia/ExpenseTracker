@@ -5,6 +5,19 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.23.3] — 2026-08-12
+
+### Fixed — Credit card payments mislabeled as income (monthly report + Transactions UI)
+
+- **`api/routes/cron.js`** — `buildMonthlyReport()`'s `income` filter (line 182) was still a bare `(r.amount_cents || 0) < 0`, unlike the weekly digest's `weekIncome`/`ytdIncome` (line 358/364) which were fixed in v7.23.1 to use `isNonIncomeRow()`. The v7.23.1 fix only touched the weekly digest block — the monthly email report kept counting Credit Card Payment / Internal Transfer / Deposit rows as income the entire time. Now uses `isNonIncomeRow(r.category, r.vendor)` like the other two.
+- **`web-react/src/constants/spendCategories.js`** (new file) — frontend mirror of `api/utils/spendCategories.js`'s `TRANSFER_CATS`/`isNonIncomeRow()`, following the same hand-synced pattern as `constants/billing.js`. Created because neither frontend site below had a category-aware check available to import — that's the actual reason they fell back to sign-only logic.
+- **`web-react/src/pages/Transactions.jsx`** — Type column now shows "Transfer" (neutral) instead of "Income" (green) for negative-amount rows in a transfer category. Reported by Joshua: a `-$3,456.26` "AUTOPAY PAYMENT - THANK YOU" row categorized `Credit Card Payment` was showing green "Income."
+- **`web-react/src/components/TransactionDrawer.jsx`** — the deduct checkbox's label ("Biz Income" vs "Tax Deductible") now also checks `isNonIncomeRow()` before showing "Biz Income" for a negative amount.
+- **`CLAUDE.md`** — extended the Data Patterns income/spend row and added a new Security Rules entry documenting why the v7.23.1 fix didn't cover every call site, as a guardrail against the same drift recurring again.
+- Update ChangeLogModal.jsx, version.json, App.jsx
+
+---
+
 ## [v7.23.2] — 2026-08-12
 
 ### Added — "Bus Exp" column + green income pill on Transactions ledger
