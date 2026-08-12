@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.26.1] — 2026-08-12
+
+### Cleanup — Removed dead `GET /expenses/export.csv` endpoint
+
+- **`api/routes/expenses.js`** — deleted the server-side CSV export route. It was orphaned by the v7.25.1 fix that moved Transactions ledger export to client-side generation (so it could respect active search filters); nothing has called this endpoint since. Confirmed zero references anywhere in the codebase before removing, and confirmed `/tax/export.csv` (a separate, still-active endpoint in `tax.js`) was unaffected.
+- Update ChangeLogModal.jsx, version.json, App.jsx
+
+---
+
 ## [v7.26.0] — 2026-08-12
 
 ### Added — Unified bulk edit for selected transactions (Account, Category, Notes)

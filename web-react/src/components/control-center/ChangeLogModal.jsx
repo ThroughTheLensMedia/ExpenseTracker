@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.26.1', date: 'AUG 12, 2026', color: '#94a3b8', items: [
+        '<strong>Cleanup:</strong> Removed a dead backend endpoint left over from the Transactions CSV export fix — no user-facing change.',
+    ]},
     { version: '7.26.0', date: 'AUG 12, 2026', color: '#4c7dff', items: [
         '<strong>New:</strong> Select multiple transactions and use the new "Bulk edit…" menu to reassign Account, reassign Category, or Add Note to all of them at once — one consistent control instead of separate buttons for each.',
         '<strong>Improved:</strong> Bulk notes are appended (not overwritten) with a dated entry, so existing notes on each transaction are preserved as a running history.',

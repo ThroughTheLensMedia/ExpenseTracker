@@ -121,48 +121,6 @@ router.get("/years", async (req, res) => {
   }
 });
 
-// GET /expenses/export.csv
-router.get("/export.csv", async (req, res) => {
-  try {
-    const query = QuerySchema.pick({ start: true, end: true }).parse(req.query);
-    let builder = req.sb.from("expenses").select("*");
-
-    if (query.start) builder = builder.gte("expense_date", query.start);
-    if (query.end) builder = builder.lte("expense_date", query.end);
-
-    const { data, error } = await builder
-      .order("expense_date", { ascending: false })
-      .order("id", { ascending: false });
-
-    if (error) throw error;
-
-    const csvEscape = (v) => {
-      const s = String(v ?? "");
-      if (/[,"\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-      return s;
-    };
-
-    const header = ["date", "vendor", "category", "amount", "currency", "notes", "source", "rm_id", "tax_deductible", "tax_bucket", "business_use_pct", "receipt_link"];
-    const lines = [header.join(",")];
-
-    for (const r of data) {
-      lines.push([
-        csvEscape(r.expense_date), csvEscape(r.vendor), csvEscape(r.category),
-        (Number(r.amount_cents || 0) / 100).toFixed(2), csvEscape(r.currency),
-        csvEscape(r.notes), csvEscape(r.source), csvEscape(r.rm_id || ""),
-        r.tax_deductible ? "1" : "0", csvEscape(r.tax_bucket || ""),
-        String(r.business_use_pct ?? 100), csvEscape(r.receipt_link || "")
-      ].join(","));
-    }
-
-    res.setHeader("Content-Type", "text/csv; charset=utf-8");
-    res.setHeader("Content-Disposition", `attachment; filename="expenses_export.csv"`);
-    res.send(lines.join("\n"));
-  } catch (e) {
-    res.status(500).json({ error: String(e.message || e) });
-  }
-});
-
 // POST /expenses
 router.post("/", async (req, res) => {
   try {
