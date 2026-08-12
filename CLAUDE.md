@@ -16,7 +16,7 @@ The world's most elite, AI-driven financial command center for creative professi
 
 | Property | Value |
 |----------|-------|
-| **Version** | v7.23.4 |
+| **Version** | v7.25.0 |
 | **Status** | Active Development — Open Public Launch |
 | **Deploy target** | `www.lumiereledger.com` (primary) — `app.throughthelens.media` 301 redirects to it |
 | **Deployment** | Vercel (auto-deploy on `git push origin main`) |
@@ -302,7 +302,7 @@ Express 4.19 API (api/)
 
 **Control Center tabs (`web-react/src/components/control-center/`)** — `ProfileTab.jsx`, `IntelligenceTab.jsx` (Gemini key mgmt, repair triggers), `AutomationTab.jsx` (rule CRUD), `CategoriesTab.jsx` (custom categories + orphan import), `InfrastructureTab.jsx` (system health, admin-only), `AdminTab.jsx` (SaaS Mgmt/System Logs/Security sub-nav, admin-only), `SaasTab.jsx` (Active Members/Invite Codes/Engagement Pulse), `SystemLogsTab.jsx`, `SecurityReviewTab.jsx`, `HelpTab.jsx` (FAQ + feedback), `IntegrationTab.jsx` (intake keys), `ChangeLogModal.jsx`.
 
-**Other components** — `AssistantSidebar.jsx` (AI chat panel), `CategorySelect.jsx` (shared category dropdown), `ModalContext.jsx` (branded modal, replaces native confirm/alert).
+**Other components** — `AssistantSidebar.jsx` (AI chat panel — renders GFM markdown tables from Brain responses with a per-message Export CSV button, v7.25.0), `CategorySelect.jsx` (shared category dropdown), `ModalContext.jsx` (branded modal, replaces native confirm/alert).
 
 **Backend routes not in the curated table above (`api/routes/`)** — `import.js` (CSV import engine, 11+ bank parsers), `invoices.js`, `tax.js`, `assets.js`, `mileage.js`, `rules.js`, `receipts.js`, `settings.js`, `subscription.js` (beta code redemption), `activity.js`, `leads.js`, `intake.js` (public, server-to-server, validates `x-intake-secret`), `intake-keys.js` (authenticated CRUD for per-user `ll-` prefixed intake keys), `pwa.js` (quick-snap receipt capture), `cron.js` (daily/monthly reports + watchdog), `brain.js` (AI Brain — 11 agentic tools over Gemini 2.5 Flash, `GET /messages` + `POST /ask` with server-side persistent history in `brain_messages`, `POST /repair-ledger` batch categorization).
 
