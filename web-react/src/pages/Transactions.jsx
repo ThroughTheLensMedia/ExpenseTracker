@@ -24,7 +24,6 @@ export default function Transactions() {
     const daysAgoStr = (n) => {
         const d = new Date(); d.setDate(d.getDate() - n); return d.toISOString().slice(0, 10);
     };
-    const ytdStartStr = () => `${new Date().getFullYear()}-01-01`;
 
     // Filters — default to last 90 days
     const [start, setStart] = useState(() => daysAgoStr(90));
@@ -588,33 +587,23 @@ export default function Transactions() {
                         )}
                         {/* Row 1: Filters */}
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', justifyContent: 'center', width: '100%' }}>
-                            {/* Date range block: pickers + quick buttons grouped together */}
+                            {/* Date range block: calendar pickers only */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                 <small className="muted" style={{ fontWeight: 800 }}>DATE RANGE</small>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <input type="date" value={start} onChange={e => setStart(e.target.value)} style={{ width: '145px' }} />
                                     <span style={{ color: '#475569', fontSize: '13px' }}>→</span>
                                     <input type="date" value={end} onChange={e => setEnd(e.target.value)} style={{ width: '145px' }} />
-                                    <div style={{ display: 'flex', gap: '4px', marginLeft: '4px' }}>
-                                        {[
-                                            { label: '30d',  fn: () => { setStart(daysAgoStr(30));  setEnd(todayStr()); } },
-                                            { label: '90d',  fn: () => { setStart(daysAgoStr(90));  setEnd(todayStr()); } },
-                                            { label: 'YTD',  fn: () => { setStart(ytdStartStr());    setEnd(todayStr()); } },
-                                            { label: 'All',  fn: () => { setStart(''); setEnd(''); } },
-                                        ].map(({ label, fn }) => (
-                                            <button key={label} onClick={fn} style={{
-                                                padding: '6px 10px', fontSize: '12px', borderRadius: '6px',
-                                                border: '1px solid #334155', background: '#1e293b', color: '#94a3b8',
-                                                cursor: 'pointer', whiteSpace: 'nowrap', height: '36px',
-                                            }}>{label}</button>
-                                        ))}
-                                    </div>
                                 </div>
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                 <small className="muted" style={{ fontWeight: 800 }}>VENDOR</small>
                                 <input list="vendor-options" value={searchVendor} onChange={e => setSearchVendor(e.target.value)} placeholder="Search..." style={{ width: '180px' }} autoComplete="off" />
                                 <datalist id="vendor-options">{vendorOptions.map(v => <option key={v} value={v} />)}</datalist>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <small className="muted" style={{ fontWeight: 800 }}>NOTES</small>
+                                <input value={searchNotes} onChange={e => setSearchNotes(e.target.value)} placeholder="Search notes..." style={{ width: '180px' }} autoComplete="off" />
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                 <small className="muted" style={{ fontWeight: 800 }}>CATEGORY</small>

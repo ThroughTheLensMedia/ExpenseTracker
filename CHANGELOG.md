@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.25.1] — 2026-08-12
+
+### Improved — Transactions filter bar cleanup
+
+- **`web-react/src/pages/Transactions.jsx`** — removed the 30d/90d/YTD/All quick-select buttons next to the date range pickers; the calendar inputs already cover this and the buttons were redundant clutter. Removed the now-unused `ytdStartStr()` helper.
+- Added a **Notes** search field (bound to the existing `searchNotes` state, which was already wired into the filter logic via `useExpenseFilters` but had no UI control to actually set it). Vendor, Category, and Notes filters combine (AND) so you can pull specific items — e.g. Category "Pets" + Notes "Apollo" to find every grooming charge for one pet across different providers.
+- Update ChangeLogModal.jsx, version.json, App.jsx
+
+---
+
 ## [v7.25.0] — 2026-08-12
 
 ### Added — AI Brain table rendering + CSV export; fixed Transactions ledger export ignoring search filters

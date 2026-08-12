@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.25.1', date: 'AUG 12, 2026', color: '#4c7dff', items: [
+        '<strong>Improved:</strong> Transactions filter bar cleanup — removed the 30d/90d/YTD/All quick buttons (the calendar pickers already cover this) and added a Notes search field, so you can now search vendor, category, and notes together to pull specific items (e.g. every "Apollo" grooming charge across different providers).',
+    ]},
     { version: '7.25.0', date: 'AUG 12, 2026', color: '#4c7dff', items: [
         '<strong>New:</strong> The AI Brain can now show transaction lists as real tables in chat, with a one-click "Export CSV" button underneath — ask it to compare vendors, list charges, or break something down and pull the data straight into a spreadsheet.',
         '<strong>Fixed:</strong> "Export CSV" on the Transactions ledger now exports whatever you\'ve actually searched/filtered for (vendor, category, account, notes, deduct-only, etc.) — previously it silently ignored every filter except the date range.',
