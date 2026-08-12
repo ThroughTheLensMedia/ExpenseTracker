@@ -1,1 +1,1 @@
-{"version":"7.25.3","release_date":"2026-08-12","codename":"Lumière Ledger","notes":"v7.25.3: Transactions filter bar fits on one line; MATCH toggle always visible"}
+{"version":"7.26.0","release_date":"2026-08-12","codename":"Lumière Ledger","notes":"v7.26.0: Unified bulk edit for selected transactions — reassign Account, reassign Category, or Add Note (appends with date)"}

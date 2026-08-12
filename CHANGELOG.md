@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.26.0] — 2026-08-12
+
+### Added — Unified bulk edit for selected transactions (Account, Category, Notes)
+
+- **`api/routes/expenses.js`** — new `PATCH /expenses/bulk-category` (mirrors the existing `bulk-source` shape exactly — a blind `.update().in()` overwrite, correct for a single-value reassignment field). New `PATCH /expenses/bulk-notes` — appends a dated entry (`[YYYY-MM-DD] note text`) to each selected row's existing notes instead of overwriting. Unlike account/category (one target value replacing another), different selected rows likely already have different notes text, so a blind overwrite across the batch would silently destroy whatever was there — each row is read individually first, then updated with its own computed value.
+- **`web-react/src/pages/Transactions.jsx`** — replaced the single-purpose "Reassign account…" control in the multi-select action bar with one unified Bulk Edit mechanism: a "Bulk edit…" dropdown (Reassign Account / Reassign Category / Add Note) followed by a value control that matches the chosen field (account select, category select, or notes text input), then one shared Apply button. Previously account reassignment had its own dedicated UI with no equivalent for category or notes — this generalizes it to one consistent pattern instead of three different ones, per Joshua's explicit ask to avoid "multiple ways to make changes."
+- Update ChangeLogModal.jsx, version.json, App.jsx
+
+---
+
 ## [v7.25.3] — 2026-08-12
 
 ### Fixed — Filter bar wrapping to two lines; AND/OR toggle not discoverable

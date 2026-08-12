@@ -303,6 +303,69 @@ router.patch("/bulk-source", async (req, res) => {
   }
 });
 
+// PATCH /expenses/bulk-category — same shape as bulk-source: overwrite is correct
+// here because category is a single-value field being reassigned, not accumulated text.
+router.patch("/bulk-category", async (req, res) => {
+  try {
+    const { ids, category } = req.body || {};
+    if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ error: 'ids must be a non-empty array' });
+    if (!category || typeof category !== 'string') return res.status(400).json({ error: 'category is required' });
+    const numericIds = ids.map(Number).filter(n => !isNaN(n) && n > 0);
+    if (!numericIds.length) return res.status(400).json({ error: 'No valid ids' });
+
+    const { error, count } = await req.sb
+      .from('expenses')
+      .update({ category: category.trim() })
+      .in('id', numericIds)
+      .eq('user_id', req.user.id);
+
+    if (error) throw error;
+    res.json({ ok: true, updated: count ?? numericIds.length });
+  } catch (e) {
+    res.status(500).json({ error: String(e.message || e) });
+  }
+});
+
+// PATCH /expenses/bulk-notes — APPENDS a dated entry to each row's existing notes
+// rather than overwriting. Unlike source/category (single current value being
+// reassigned), notes on different selected rows likely already hold different
+// text — a blind overwrite would silently destroy whatever was there. Each row
+// needs its own current value read first, so this can't be a single blind
+// .update().in() like bulk-source/bulk-category; each row is updated individually.
+router.patch("/bulk-notes", async (req, res) => {
+  try {
+    const { ids, note } = req.body || {};
+    if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ error: 'ids must be a non-empty array' });
+    if (!note || typeof note !== 'string' || !note.trim()) return res.status(400).json({ error: 'note is required' });
+    const numericIds = ids.map(Number).filter(n => !isNaN(n) && n > 0);
+    if (!numericIds.length) return res.status(400).json({ error: 'No valid ids' });
+
+    const { data: rows, error: fetchErr } = await req.sb
+      .from('expenses')
+      .select('id, notes')
+      .in('id', numericIds)
+      .eq('user_id', req.user.id);
+    if (fetchErr) throw fetchErr;
+    if (!rows || !rows.length) return res.status(404).json({ error: 'No matching transactions found' });
+
+    const entry = `[${nowIso().slice(0, 10)}] ${note.trim()}`;
+
+    const results = await Promise.all(rows.map(async (row) => {
+      const newNotes = row.notes && row.notes.trim() ? `${row.notes}\n${entry}` : entry;
+      const { error: updErr } = await req.sb
+        .from('expenses')
+        .update({ notes: newNotes })
+        .eq('id', row.id)
+        .eq('user_id', req.user.id);
+      return !updErr;
+    }));
+
+    res.json({ ok: true, updated: results.filter(Boolean).length });
+  } catch (e) {
+    res.status(500).json({ error: String(e.message || e) });
+  }
+});
+
 // PATCH /expenses/:id
 // Fields that trigger vendor rule learning when changed
 const LEARNABLE_FIELDS = new Set(['category', 'tax_deductible', 'business_use_pct', 'tax_bucket']);

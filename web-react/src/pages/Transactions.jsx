@@ -147,25 +147,37 @@ export default function Transactions() {
         }
     };
 
-    // Bulk reassign account
-    const [reassignTarget, setReassignTarget] = useState('');
-    const [reassigning,    setReassigning]    = useState(false);
-    const handleBulkReassign = async () => {
-        if (!reassignTarget || reassigning) return;
-        setReassigning(true);
+    // Bulk edit — one unified mechanism for Account / Category / Notes, so there's
+    // a single consistent way to mass-edit selected transactions instead of a
+    // different control per field. bulkField picks which; bulkValue is its value.
+    const [bulkField, setBulkField] = useState(''); // '' | 'account' | 'category' | 'notes'
+    const [bulkValue, setBulkValue] = useState('');
+    const [bulkApplying, setBulkApplying] = useState(false);
+    const BULK_FIELD_CONFIG = {
+        account:  { endpoint: '/expenses/bulk-source',   bodyKey: 'source',   label: 'Account'  },
+        category: { endpoint: '/expenses/bulk-category', bodyKey: 'category', label: 'Category' },
+        notes:    { endpoint: '/expenses/bulk-notes',     bodyKey: 'note',     label: 'Notes'    },
+    };
+    const handleBulkApply = async () => {
+        if (!bulkField || !bulkValue.trim() || bulkApplying) return;
+        const config = BULK_FIELD_CONFIG[bulkField];
+        setBulkApplying(true);
         try {
-            const r = await apiPatch('/expenses/bulk-source', { ids: [...selectedIds], source: reassignTarget });
+            const r = await apiPatch(config.endpoint, { ids: [...selectedIds], [config.bodyKey]: bulkValue.trim() });
             invalidateExpensesCache();
             await loadData(true);
-            setToast({ ok: true, msg: `${r.updated ?? selectedIds.size} transactions reassigned to ${ACCOUNT_LABELS[reassignTarget] || reassignTarget}.` });
+            const displayValue = bulkField === 'account' ? (ACCOUNT_LABELS[bulkValue] || bulkValue) : bulkValue;
+            const verb = bulkField === 'notes' ? 'noted on' : 'set to';
+            setToast({ ok: true, msg: `${config.label} ${verb} "${displayValue}" for ${r.updated ?? selectedIds.size} transactions.` });
             setTimeout(() => setToast(null), 4000);
             setSelectedIds(new Set());
-            setReassignTarget('');
-        } catch(e) {
-            setToast({ ok: false, msg: `Reassign failed: ${e.message}` });
+            setBulkField('');
+            setBulkValue('');
+        } catch (e) {
+            setToast({ ok: false, msg: `Bulk edit failed: ${e.message}` });
             setTimeout(() => setToast(null), 4000);
         } finally {
-            setReassigning(false);
+            setBulkApplying(false);
         }
     };
 
@@ -1089,28 +1101,79 @@ export default function Transactions() {
                     <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent)' }}>{selectedIds.size} selected</span>
                     <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.15)' }} />
 
-                    {/* Reassign Account */}
+                    {/* Bulk Edit — one mechanism for Account / Category / Notes: pick a field,
+                        fill in the value control that matches it, hit Apply. */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <select
-                            value={reassignTarget}
-                            onChange={e => setReassignTarget(e.target.value)}
-                            style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: reassignTarget ? 'white' : 'rgba(255,255,255,0.45)', fontSize: '12px', fontWeight: 700, padding: '7px 10px', cursor: 'pointer', outline: 'none' }}
+                            value={bulkField}
+                            onChange={e => { setBulkField(e.target.value); setBulkValue(''); }}
+                            style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: bulkField ? 'white' : 'rgba(255,255,255,0.45)', fontSize: '12px', fontWeight: 700, padding: '7px 10px', cursor: 'pointer', outline: 'none' }}
                         >
-                            <option value="">Reassign account…</option>
-                            <option value="manual">Manual Entry</option>
-                            {accountsList.filter(a => a.source !== 'plaid' && a.visible !== false).map(a => (
-                                <option key={a.source} value={a.source}>
-                                    {a.display_name || ACCOUNT_LABELS[a.source] || a.source}
-                                </option>
-                            ))}
+                            <option value="">Bulk edit…</option>
+                            <option value="account">Reassign Account</option>
+                            <option value="category">Reassign Category</option>
+                            <option value="notes">Add Note</option>
                         </select>
-                        {reassignTarget && (
+
+                        {bulkField === 'account' && (
+                            <select
+                                value={bulkValue}
+                                onChange={e => setBulkValue(e.target.value)}
+                                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: bulkValue ? 'white' : 'rgba(255,255,255,0.45)', fontSize: '12px', fontWeight: 700, padding: '7px 10px', cursor: 'pointer', outline: 'none' }}
+                            >
+                                <option value="">Select account…</option>
+                                <option value="manual">Manual Entry</option>
+                                {accountsList.filter(a => a.source !== 'plaid' && a.visible !== false).map(a => (
+                                    <option key={a.source} value={a.source}>
+                                        {a.display_name || ACCOUNT_LABELS[a.source] || a.source}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
+
+                        {bulkField === 'category' && (
+                            <select
+                                value={bulkValue}
+                                onChange={e => setBulkValue(e.target.value)}
+                                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: bulkValue ? 'white' : 'rgba(255,255,255,0.45)', fontSize: '12px', fontWeight: 700, padding: '7px 10px', cursor: 'pointer', outline: 'none' }}
+                            >
+                                <option value="">Select category…</option>
+                                {(() => {
+                                    const customByType = { expense: [], income: [], misc_income: [] };
+                                    for (const c of customCats) {
+                                        if (customByType[c.type]) customByType[c.type].push(c.name);
+                                    }
+                                    const typeMap = { Expenses: 'expense', Income: 'income', 'Misc Income': 'misc_income' };
+                                    return CATEGORY_GROUPS.map(({ group, label, items }) => {
+                                        const extra = customByType[typeMap[group]] || [];
+                                        return (
+                                            <optgroup key={group} label={label}>
+                                                {items.map(item => <option key={item} value={item}>{item}</option>)}
+                                                {extra.map(name => <option key={`custom:${name}`} value={name}>{name} ✦</option>)}
+                                            </optgroup>
+                                        );
+                                    });
+                                })()}
+                            </select>
+                        )}
+
+                        {bulkField === 'notes' && (
+                            <input
+                                value={bulkValue}
+                                onChange={e => setBulkValue(e.target.value)}
+                                placeholder="Note to append…"
+                                autoComplete="off"
+                                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: 'white', fontSize: '12px', fontWeight: 700, padding: '7px 10px', width: '160px' }}
+                            />
+                        )}
+
+                        {bulkField && bulkValue.trim() && (
                             <button
                                 className="btn"
-                                disabled={reassigning}
-                                style={{ fontSize: '12px', padding: '7px 14px', fontWeight: 900, background: 'rgba(56,189,248,0.2)', borderColor: 'rgba(56,189,248,0.6)', color: '#38bdf8', opacity: reassigning ? 0.5 : 1 }}
-                                onClick={handleBulkReassign}
-                            >{reassigning ? 'Saving…' : 'Apply'}</button>
+                                disabled={bulkApplying}
+                                style={{ fontSize: '12px', padding: '7px 14px', fontWeight: 900, background: 'rgba(56,189,248,0.2)', borderColor: 'rgba(56,189,248,0.6)', color: '#38bdf8', opacity: bulkApplying ? 0.5 : 1 }}
+                                onClick={handleBulkApply}
+                            >{bulkApplying ? 'Saving…' : 'Apply'}</button>
                         )}
                     </div>
 
@@ -1140,7 +1203,7 @@ export default function Transactions() {
                     <button
                         className="btn secondary"
                         style={{ fontSize: '12px', padding: '8px 14px' }}
-                        onClick={() => { setSelectedIds(new Set()); setReassignTarget(''); }}
+                        onClick={() => { setSelectedIds(new Set()); setBulkField(''); setBulkValue(''); }}
                     >✕ Clear</button>
                 </div>
             )}

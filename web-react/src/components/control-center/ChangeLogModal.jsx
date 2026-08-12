@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.26.0', date: 'AUG 12, 2026', color: '#4c7dff', items: [
+        '<strong>New:</strong> Select multiple transactions and use the new "Bulk edit…" menu to reassign Account, reassign Category, or Add Note to all of them at once — one consistent control instead of separate buttons for each.',
+        '<strong>Improved:</strong> Bulk notes are appended (not overwritten) with a dated entry, so existing notes on each transaction are preserved as a running history.',
+    ]},
     { version: '7.25.3', date: 'AUG 12, 2026', color: '#4c7dff', items: [
         '<strong>Fixed:</strong> Transactions filter bar now fits on one line instead of wrapping to a second row.',
         '<strong>Fixed:</strong> The AND/OR MATCH toggle for Category + Notes is now always visible (dimmed until both fields have a value) instead of hidden — easier to find.',
