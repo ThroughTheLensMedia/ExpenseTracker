@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.23.5] — 2026-08-12
+
+### Polish — Transfer badge shows yellow text
+
+- **`web-react/src/pages/Transactions.jsx`** — Type column's "Transfer" badge now uses yellow text/border (`#eab308`) instead of the neutral gray `.tag` style, matching the green Income / orange Needs Review treatment so all three states are distinguishable at a glance.
+- Update ChangeLogModal.jsx, version.json, App.jsx
+
+---
+
 ## [v7.23.4] — 2026-08-12
 
 ### Improved — Uncategorized negative transactions show "Needs Review" instead of a guessed label

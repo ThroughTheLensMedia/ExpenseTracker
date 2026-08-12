@@ -943,8 +943,9 @@ export default function Transactions() {
                                                     const needsReview = isNegative && isBlankCategory && !isTransfer;
                                                     const label = needsReview ? 'Needs Review' : isTransfer ? 'Transfer' : isNegative ? 'Income' : 'Expense';
                                                     const cls = needsReview ? 'tag warn' : isTransfer ? 'tag' : isNegative ? 'tag ok' : 'tag';
+                                                    const transferStyle = isTransfer ? { background: 'rgba(234,179,8,0.1)', color: '#eab308', border: '1px solid rgba(234,179,8,0.2)' } : {};
                                                     return (
-                                                        <span className={cls} title={needsReview ? 'Negative amount with no category — could be income or a transfer. Categorize it to be sure.' : undefined} style={{ fontSize: '9px', padding: '1px 4px', opacity: isNegative && !isTransfer ? 1 : 0.8 }}>
+                                                        <span className={cls} title={needsReview ? 'Negative amount with no category — could be income or a transfer. Categorize it to be sure.' : undefined} style={{ fontSize: '9px', padding: '1px 4px', opacity: isNegative && !isTransfer ? 1 : 0.8, ...transferStyle }}>
                                                             {label}
                                                         </span>
                                                     );

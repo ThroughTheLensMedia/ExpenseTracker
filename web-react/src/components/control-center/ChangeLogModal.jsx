@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.23.5', date: 'AUG 12, 2026', color: '#eab308', items: [
+        '<strong>Polish:</strong> The "Transfer" badge on the Transactions ledger now shows in yellow, matching the green "Income" and orange "Needs Review" badges for quick visual scanning.',
+    ]},
     { version: '7.23.4', date: 'AUG 12, 2026', color: '#f59e0b', items: [
         '<strong>Improved:</strong> A negative-amount transaction with no category no longer guesses "Income" — it now shows a "Needs Review" badge so you know to double-check it instead of trusting an automatic label.',
         '<strong>Fixed:</strong> Widened the credit card payment detection pattern to catch more bank abbreviations (like "PYMT"), so more transfers are automatically excluded from income.',
