@@ -5,6 +5,17 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.25.0] — 2026-08-12
+
+### Added — AI Brain table rendering + CSV export; fixed Transactions ledger export ignoring search filters
+
+- **`web-react/src/components/AssistantSidebar.jsx`** — `renderMarkdown()` now parses GFM-style tables (`| Date | Vendor | Amount |` + separator row) and renders real `<table>` HTML instead of falling through to plain-text lines. Added `extractTablesFromText()`/`tablesToCsv()`/`downloadCsv()` — any assistant message containing a table now shows an "Export CSV" button underneath it, client-side only (no backend round-trip, the data's already in the message).
+- **`api/routes/brain.js`** — added a TABLE FORMATTING RULE to the system prompt instructing Gemini to format 3+ transaction results as a markdown table (not prose/bullets) so the app can render and export them. Prompted by Joshua asking about Apollo's (his pet's) grooming charges across providers and wanting the comparison in rows/columns with an export option — the Brain had no way to produce that, only prose.
+- **`web-react/src/pages/Transactions.jsx`** — `exportCsv()` was silently dropping every active filter except start/end date, hitting a server endpoint that only ever accepted those two params. Rebuilt to generate the CSV client-side from `filtered` (the same rows already on screen, post-search) — so "export what I searched for" (vendor, category, account, notes, deduct-only, needs-review, etc.) actually works now, matching the export columns of the old backend endpoint.
+- Update ChangeLogModal.jsx, version.json, App.jsx
+
+---
+
 ## [v7.24.0] — 2026-08-12
 
 ### Added — AI Brain now searches transaction notes, not just vendor/category

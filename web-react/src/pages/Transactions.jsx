@@ -304,11 +304,36 @@ export default function Transactions() {
         needsReviewOnly ? filteredBase.filter(r => r.needs_review) : filteredBase,
     [filteredBase, needsReviewOnly]);
 
+    // Builds the export from `filtered` (the same rows currently on screen) rather
+    // than re-querying the server by date range only — so Export CSV respects
+    // every active search/filter (vendor, category, account, notes, deduct-only,
+    // etc.), not just the date range. Previously it silently dropped every
+    // filter except start/end, so "export what I searched for" didn't work.
     const exportCsv = () => {
-        const qs = new URLSearchParams();
-        if (start) qs.set('start', start);
-        if (end) qs.set('end', end);
-        window.open(`/api/expenses/export.csv${qs.toString() ? '?' + qs.toString() : ''}`, '_blank');
+        const csvEscape = (v) => {
+            const s = String(v ?? '');
+            return /[,"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+        };
+        const header = ['date', 'vendor', 'category', 'amount', 'currency', 'notes', 'source', 'tax_deductible', 'tax_bucket', 'business_use_pct', 'receipt_link'];
+        const lines = [header.join(',')];
+        filtered.forEach(r => {
+            lines.push([
+                csvEscape(r.expense_date), csvEscape(r.vendor), csvEscape(r.category),
+                (Number(r.amount_cents || 0) / 100).toFixed(2), csvEscape(r.currency || 'USD'),
+                csvEscape(r.notes), csvEscape(r.source),
+                r.tax_deductible ? '1' : '0', csvEscape(r.tax_bucket || ''),
+                String(r.business_use_pct ?? 100), csvEscape(r.receipt_link || '')
+            ].join(','));
+        });
+        const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `expenses_export_${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     };
 
     const clearFilters = () => {

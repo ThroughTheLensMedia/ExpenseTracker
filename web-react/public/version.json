@@ -1,1 +1,1 @@
-{"version":"7.24.0","release_date":"2026-08-12","codename":"Lumière Ledger","notes":"v7.24.0: AI Brain now searches transaction notes, not just vendor/category"}
+{"version":"7.25.0","release_date":"2026-08-12","codename":"Lumière Ledger","notes":"v7.25.0: AI Brain can show table results and export to CSV; Transactions ledger export now respects search filters"}

@@ -2,7 +2,70 @@ import React, { useState, useRef, useEffect } from 'react';
 import { apiGet, apiPost, apiPatch } from '../api';
 import { useAuth } from './AuthContext';
 
-// Lightweight markdown renderer — handles bullets, bold, italic, line breaks
+// ── GFM-style markdown table helpers ─────────────────────────────────────
+// Shared by renderMarkdown() (renders tables as HTML) and extractTablesFromText()
+// (pulls the same tables back out as structured data for the Export CSV button).
+function isTableRow(line) {
+    const t = line.trim();
+    return t.startsWith('|') && t.endsWith('|') && t.length > 1;
+}
+function isTableSeparator(line) {
+    const t = line.trim();
+    return /^\|[\s\-:|]+\|$/.test(t) && t.includes('-');
+}
+function splitTableRow(line) {
+    return line.trim().slice(1, -1).split('|').map(c => c.trim());
+}
+function parseTableBlock(lines, startIdx) {
+    const headers = splitTableRow(lines[startIdx]);
+    let idx = startIdx + 2;
+    const rows = [];
+    while (idx < lines.length && isTableRow(lines[idx])) {
+        rows.push(splitTableRow(lines[idx]));
+        idx++;
+    }
+    return { headers, rows, nextIdx: idx };
+}
+
+// Pulls every markdown table out of an assistant message as {headers, rows}[].
+// Used to decide whether to show the Export CSV button and to build the file.
+function extractTablesFromText(text) {
+    if (!text) return [];
+    const lines = text.split('\n');
+    const tables = [];
+    for (let i = 0; i < lines.length - 1; i++) {
+        if (isTableRow(lines[i]) && isTableSeparator(lines[i + 1])) {
+            const { headers, rows, nextIdx } = parseTableBlock(lines, i);
+            if (headers.length && rows.length) tables.push({ headers, rows });
+            i = nextIdx - 1;
+        }
+    }
+    return tables;
+}
+
+function tablesToCsv(tables) {
+    const esc = v => {
+        const s = String(v ?? '');
+        return /[,"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    return tables
+        .map(({ headers, rows }) => [headers, ...rows].map(r => r.map(esc).join(',')).join('\n'))
+        .join('\n\n');
+}
+
+function downloadCsv(csv, filename) {
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// Lightweight markdown renderer — handles bullets, bold, italic, line breaks, tables
 function renderMarkdown(text) {
     if (!text) return { __html: '' };
     const escape = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -15,8 +78,21 @@ function renderMarkdown(text) {
     let html = '';
     let inList = false;
 
-    for (const line of lines) {
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
         const trimmed = line.trim();
+
+        if (isTableRow(line) && i + 1 < lines.length && isTableSeparator(lines[i + 1])) {
+            if (inList) { html += '</ul>'; inList = false; }
+            const { headers, rows, nextIdx } = parseTableBlock(lines, i);
+            html += '<div style="overflow-x:auto;margin:8px 0;"><table style="width:100%;border-collapse:collapse;font-size:13px;">';
+            html += '<thead><tr>' + headers.map(h => `<th style="text-align:left;padding:6px 10px;border-bottom:1px solid rgba(255,255,255,0.2);font-weight:800;white-space:nowrap;">${inline(h)}</th>`).join('') + '</tr></thead>';
+            html += '<tbody>' + rows.map(r => '<tr>' + r.map(c => `<td style="padding:6px 10px;border-bottom:1px solid rgba(255,255,255,0.08);white-space:nowrap;">${inline(c)}</td>`).join('') + '</tr>').join('') + '</tbody>';
+            html += '</table></div>';
+            i = nextIdx - 1;
+            continue;
+        }
+
         const isBullet = /^[\*\-•]\s/.test(trimmed);
 
         if (isBullet) {
@@ -250,22 +326,32 @@ export default function AssistantSidebar() {
 
                 {/* Chat Contents */}
                 {hasKey && <div style={{ flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    {messages.map((m, i) => (
-                        <div key={i} style={{
-                            alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
-                            maxWidth: '85%',
-                            padding: '14px 18px',
-                            background: m.role === 'user' ? 'var(--accent)' : 'rgba(255,255,255,0.05)',
-                            borderRadius: m.role === 'user' ? '18px 18px 2px 18px' : '18px 18px 18px 2px',
-                            fontSize: '14px',
-                            lineHeight: '1.6',
-                            fontWeight: m.role === 'user' ? 700 : 500
-                        }}>
-                            {m.role === 'assistant'
-                                ? <div dangerouslySetInnerHTML={renderMarkdown(m.text)} />
-                                : m.text}
-                        </div>
-                    ))}
+                    {messages.map((m, i) => {
+                        const tables = m.role === 'assistant' ? extractTablesFromText(m.text) : [];
+                        return (
+                            <div key={i} style={{ display: 'flex', flexDirection: 'column', alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '85%' }}>
+                                <div style={{
+                                    padding: '14px 18px',
+                                    background: m.role === 'user' ? 'var(--accent)' : 'rgba(255,255,255,0.05)',
+                                    borderRadius: m.role === 'user' ? '18px 18px 2px 18px' : '18px 18px 18px 2px',
+                                    fontSize: '14px',
+                                    lineHeight: '1.6',
+                                    fontWeight: m.role === 'user' ? 700 : 500
+                                }}>
+                                    {m.role === 'assistant'
+                                        ? <div dangerouslySetInnerHTML={renderMarkdown(m.text)} />
+                                        : m.text}
+                                </div>
+                                {tables.length > 0 && (
+                                    <button
+                                        onClick={() => downloadCsv(tablesToCsv(tables), `lumiere-brain-export-${new Date().toISOString().slice(0, 10)}.csv`)}
+                                        className="btn secondary sm"
+                                        style={{ alignSelf: 'flex-start', marginTop: '8px', padding: '6px 14px', fontSize: '11px', fontWeight: 800, minHeight: '44px', minWidth: '44px' }}
+                                    >⬇ Export CSV</button>
+                                )}
+                            </div>
+                        );
+                    })}
                     {/* Pending Action Confirmation Cards */}
                     {pendingActions.map(action => (
                         <div key={action.id} style={{
