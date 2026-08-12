@@ -1,6 +1,6 @@
 # Lumière Ledger — Master Roadmap
 
-**Version:** v7.25.2 | **Last reviewed:** 2026-08-12  
+**Version:** v7.25.3 | **Last reviewed:** 2026-08-12  
 Source of truth for all sprint work, security status, and product phases.
 
 ---
