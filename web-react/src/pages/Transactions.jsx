@@ -147,14 +147,15 @@ export default function Transactions() {
         }
     };
 
-    // Bulk edit — one unified mechanism for Account / Category / Notes, so there's
-    // a single consistent way to mass-edit selected transactions instead of a
-    // different control per field. bulkField picks which; bulkValue is its value.
-    const [bulkField, setBulkField] = useState(''); // '' | 'account' | 'category' | 'notes'
+    // Bulk edit — one unified mechanism for Account / Vendor / Category / Notes, so
+    // there's a single consistent way to mass-edit selected transactions instead of
+    // a different control per field. bulkField picks which; bulkValue is its value.
+    const [bulkField, setBulkField] = useState(''); // '' | 'account' | 'vendor' | 'category' | 'notes'
     const [bulkValue, setBulkValue] = useState('');
     const [bulkApplying, setBulkApplying] = useState(false);
     const BULK_FIELD_CONFIG = {
         account:  { endpoint: '/expenses/bulk-source',   bodyKey: 'source',   label: 'Account'  },
+        vendor:   { endpoint: '/expenses/bulk-vendor',   bodyKey: 'vendor',   label: 'Vendor'   },
         category: { endpoint: '/expenses/bulk-category', bodyKey: 'category', label: 'Category' },
         notes:    { endpoint: '/expenses/bulk-notes',     bodyKey: 'note',     label: 'Notes'    },
     };
@@ -1111,9 +1112,21 @@ export default function Transactions() {
                         >
                             <option value="">Bulk edit…</option>
                             <option value="account">Reassign Account</option>
+                            <option value="vendor">Rename Vendor</option>
                             <option value="category">Reassign Category</option>
                             <option value="notes">Add Note</option>
                         </select>
+
+                        {bulkField === 'vendor' && (
+                            <input
+                                list="vendor-options"
+                                value={bulkValue}
+                                onChange={e => setBulkValue(e.target.value)}
+                                placeholder="New vendor name…"
+                                autoComplete="off"
+                                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: 'white', fontSize: '12px', fontWeight: 700, padding: '7px 10px', width: '160px' }}
+                            />
+                        )}
 
                         {bulkField === 'account' && (
                             <select

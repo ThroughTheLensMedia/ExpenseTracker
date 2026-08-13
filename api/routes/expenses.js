@@ -261,6 +261,30 @@ router.patch("/bulk-source", async (req, res) => {
   }
 });
 
+// PATCH /expenses/bulk-vendor — same shape as bulk-source/bulk-category: overwrite
+// is correct because vendor is a single value being corrected (e.g. merging
+// "32degrees" and "32 Degrees" into one consistent name), not accumulated text.
+router.patch("/bulk-vendor", async (req, res) => {
+  try {
+    const { ids, vendor } = req.body || {};
+    if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ error: 'ids must be a non-empty array' });
+    if (!vendor || typeof vendor !== 'string') return res.status(400).json({ error: 'vendor is required' });
+    const numericIds = ids.map(Number).filter(n => !isNaN(n) && n > 0);
+    if (!numericIds.length) return res.status(400).json({ error: 'No valid ids' });
+
+    const { error, count } = await req.sb
+      .from('expenses')
+      .update({ vendor: vendor.trim() })
+      .in('id', numericIds)
+      .eq('user_id', req.user.id);
+
+    if (error) throw error;
+    res.json({ ok: true, updated: count ?? numericIds.length });
+  } catch (e) {
+    res.status(500).json({ error: String(e.message || e) });
+  }
+});
+
 // PATCH /expenses/bulk-category — same shape as bulk-source: overwrite is correct
 // here because category is a single-value field being reassigned, not accumulated text.
 router.patch("/bulk-category", async (req, res) => {

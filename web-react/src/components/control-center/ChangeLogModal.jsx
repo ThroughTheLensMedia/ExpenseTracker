@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.27.0', date: 'AUG 12, 2026', color: '#4c7dff', items: [
+        '<strong>New:</strong> Bulk Edit gains "Rename Vendor" — select transactions with a vendor name variant (e.g. "32degrees" and "32 Degrees") and merge them into one consistent name in a single action.',
+    ]},
     { version: '7.26.1', date: 'AUG 12, 2026', color: '#94a3b8', items: [
         '<strong>Cleanup:</strong> Removed a dead backend endpoint left over from the Transactions CSV export fix — no user-facing change.',
     ]},

@@ -5,6 +5,16 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.27.0] — 2026-08-12
+
+### Added — Bulk Edit gains Rename Vendor
+
+- **`api/routes/expenses.js`** — new `PATCH /expenses/bulk-vendor`, mirrors `bulk-source`/`bulk-category` exactly (blind overwrite — correct, since vendor is a single value being corrected, not accumulated text like notes).
+- **`web-react/src/pages/Transactions.jsx`** — added "Rename Vendor" to the Bulk Edit dropdown alongside Account/Category/Notes, with a text input (backed by the existing vendor datalist) as its value control. Prompted by "32 Degrees" vs "32degrees" showing as two separate line items on the ledger — `vendor_aliases` (the existing merge tool) only feeds the Dashboard's Operational Intelligence rollup and doesn't touch the underlying `vendor` field, so it wouldn't have fixed search/filter/dupe-scanning on the Transactions page itself. This rewrites the actual data instead, fixing all of those at once. Deliberately not a replacement for `vendor_aliases` — that tool still has its place when you want to normalize a display name without altering the original imported bank-statement string.
+- Update ChangeLogModal.jsx, version.json, App.jsx
+
+---
+
 ## [v7.26.1] — 2026-08-12
 
 ### Cleanup — Removed dead `GET /expenses/export.csv` endpoint

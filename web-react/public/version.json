@@ -1,1 +1,1 @@
-{"version":"7.26.1","release_date":"2026-08-12","codename":"Lumière Ledger","notes":"v7.26.1: Removed dead GET /expenses/export.csv endpoint (replaced by client-side export in v7.25.1)"}
+{"version":"7.27.0","release_date":"2026-08-12","codename":"Lumière Ledger","notes":"v7.27.0: Bulk Edit gains Rename Vendor — merge vendor name variants (e.g. 32degrees / 32 Degrees) into one"}
