@@ -5,6 +5,17 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.27.1] — 2026-08-23
+
+### Fixed — Receipt upload 413 on Equipment page had no explanation or client-side prevention
+
+- **Root cause:** `POST /receipts/:table/:id` (used by the Equipment/Assets receipt upload) is served by a Vercel serverless function, which hard-caps request bodies around 4.5MB regardless of plan or config. `multer.memoryStorage()` had no `fileSize` limit set, so oversized files reached Vercel's own limit first and came back as a bare `413` with no JSON body — [Assets.jsx](web-react/src/pages/Assets.jsx) rendered it as an opaque `Error: 413`.
+- **`api/routes/receipts.js`** — added `limits: { fileSize: 4MB }` to the shared `multer()` instance (used by `/extract`, `/snap`, and `/:table/:id`), plus a `handleUploadErrors` middleware that converts Multer's `LIMIT_FILE_SIZE` into a clean `413` JSON body (`{ error: "File too large. Max 4MB..." }`) instead of a bare status code.
+- **`web-react/src/pages/Assets.jsx`** — the Receipt (File) input now checks size on selection: images over 4MB are auto-downsized client-side via `<canvas>` (max 2000px dimension, JPEG re-encode stepping quality down until it clears the cap); PDFs over 4MB can't be resized this way, so selection is rejected with an inline message suggesting a smaller file or the Receipt (URL) field instead. A permanent "Max 4MB · images auto-resize, PDFs do not" hint sits under the input so the limit is visible before upload, not just after a failure.
+- Update ChangeLogModal.jsx, version.json, App.jsx
+
+---
+
 ## [v7.27.0] — 2026-08-12
 
 ### Added — Bulk Edit gains Rename Vendor

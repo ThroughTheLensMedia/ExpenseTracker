@@ -55,8 +55,18 @@ function getStoragePath(filename) {
     return `${y}/${m}/${day}/${filename}`;
 }
 
+const MAX_RECEIPT_BYTES = 4 * 1024 * 1024; // 4MB — Vercel serverless functions hard-cap request bodies around 4.5MB
 const storage = multer.memoryStorage();
-const upload = multer({ storage });
+const upload = multer({ storage, limits: { fileSize: MAX_RECEIPT_BYTES } });
+
+// Turns Multer's fileSize overflow into a clean JSON 413 instead of a bare error
+function handleUploadErrors(err, req, res, next) {
+    if (err instanceof multer.MulterError && err.code === "LIMIT_FILE_SIZE") {
+        return res.status(413).json({ error: "File too large. Max 4MB — please resize or compress and try again." });
+    }
+    if (err) return res.status(400).json({ error: err.message || String(err) });
+    next();
+}
 
 /**
  * POST /receipts/extract
@@ -66,7 +76,7 @@ const upload = multer({ storage });
  * This route is intentionally before /:table/:id so Express doesn't treat
  * "extract" as a table name.
  */
-router.post("/extract", upload.single("file"), async (req, res) => {
+router.post("/extract", upload.single("file"), handleUploadErrors, async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ error: "No file provided" });
 
@@ -123,7 +133,7 @@ Example no tip: {"vendor":"Best Buy","date":"${today}","subtotal":null,"tip":nul
 });
 
 // POST /receipts/snap (Quick capture for PWA/Dashboard)
-router.post("/snap", upload.single("file"), async (req, res) => {
+router.post("/snap", upload.single("file"), handleUploadErrors, async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
@@ -198,7 +208,7 @@ router.get("/my-address", async (req, res) => {
 });
 
 // POST /receipts/:table/:id
-router.post("/:table/:id", upload.single("file"), async (req, res) => {
+router.post("/:table/:id", upload.single("file"), handleUploadErrors, async (req, res) => {
     try {
         const { table, id } = req.params;
         const validTables = ["expenses", "equipment_assets"];

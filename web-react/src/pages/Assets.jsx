@@ -19,6 +19,45 @@ function parseDollar(s) {
     return Math.round(parseFloat(String(s || '0').replace(/[$,]/g, '')) * 100);
 }
 
+const MAX_RECEIPT_BYTES = 4 * 1024 * 1024; // matches api/routes/receipts.js MAX_RECEIPT_BYTES
+
+// Downsizes an oversized image client-side (canvas re-encode) so it clears the 4MB upload cap.
+// Non-image files (PDFs) can't be resized this way — caller must reject those directly.
+function downsizeImage(file, maxBytes) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        const objectUrl = URL.createObjectURL(file);
+        img.onload = () => {
+            URL.revokeObjectURL(objectUrl);
+            let { width, height } = img;
+            const MAX_DIM = 2000;
+            if (width > MAX_DIM || height > MAX_DIM) {
+                const scale = MAX_DIM / Math.max(width, height);
+                width = Math.round(width * scale);
+                height = Math.round(height * scale);
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+
+            const tryQuality = (quality) => {
+                canvas.toBlob((blob) => {
+                    if (!blob) return reject(new Error('Image compression failed'));
+                    if (blob.size <= maxBytes || quality <= 0.4) {
+                        resolve(new File([blob], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' }));
+                    } else {
+                        tryQuality(quality - 0.15);
+                    }
+                }, 'image/jpeg', quality);
+            };
+            tryQuality(0.85);
+        };
+        img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('Could not read image')); };
+        img.src = objectUrl;
+    });
+}
+
 const BLANK = {
     purchase_date: '', vendor: '', description: '', category: 'Camera',
     cost_cents: '', serial_number: '', receipt_on_file: false,
@@ -41,6 +80,36 @@ export default function Assets() {
     const [searchTerm, setSearchTerm] = useState('');
     const [receiptFile, setReceiptFile] = useState(null);
     const [showForm, setShowForm] = useState(false);
+    const [receiptFileMsg, setReceiptFileMsg] = useState('');
+
+    const handleReceiptFileChange = async (e) => {
+        const file = e.target.files[0];
+        setReceiptFileMsg('');
+        if (!file) { setReceiptFile(null); return; }
+
+        if (file.size <= MAX_RECEIPT_BYTES) {
+            setReceiptFile(file);
+            return;
+        }
+
+        if (!file.type.startsWith('image/')) {
+            setReceiptFile(null);
+            e.target.value = '';
+            setReceiptFileMsg(`⚠️ File is ${(file.size / 1024 / 1024).toFixed(1)}MB — max is 4MB. PDFs can't be auto-resized; use a smaller file or paste a Receipt URL instead.`);
+            return;
+        }
+
+        setReceiptFileMsg('📐 Resizing image to fit 4MB limit...');
+        try {
+            const resized = await downsizeImage(file, MAX_RECEIPT_BYTES);
+            setReceiptFile(resized);
+            setReceiptFileMsg(`✅ Resized to ${(resized.size / 1024 / 1024).toFixed(1)}MB`);
+        } catch (err) {
+            setReceiptFile(null);
+            e.target.value = '';
+            setReceiptFileMsg(`⚠️ Could not resize image (${err.message}). Try a smaller file.`);
+        }
+    };
 
     const load = async () => {
         setLoading(true);
@@ -87,9 +156,10 @@ export default function Assets() {
                 await apiUpload(`/receipts/equipment_assets/${result.id}`, fd);
             }
 
-            setForm(BLANK); 
-            setEditingAsset(null); 
+            setForm(BLANK);
+            setEditingAsset(null);
             setReceiptFile(null);
+            setReceiptFileMsg('');
             setShowForm(false);
             setMsg('✅ Asset & Receipt Saved'); 
             load();
@@ -386,7 +456,9 @@ export default function Assets() {
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                                 <div>
                                     <small className="muted" style={{ fontSize: '10px', fontWeight: 800 }}>RECEIPT (FILE)</small>
-                                    <input type="file" style={{ fontSize: '11px', padding: '8px' }} onChange={e => setReceiptFile(e.target.files[0])} />
+                                    <input type="file" accept="image/*,application/pdf" style={{ fontSize: '11px', padding: '8px' }} onChange={handleReceiptFileChange} />
+                                    <small className="muted" style={{ fontSize: '9px', display: 'block', marginTop: '4px' }}>Max 4MB &middot; images auto-resize, PDFs do not</small>
+                                    {receiptFileMsg && <small style={{ fontSize: '9px', display: 'block', marginTop: '4px', color: receiptFileMsg.startsWith('✅') ? '#4ade80' : receiptFileMsg.startsWith('⚠️') ? '#f87171' : 'inherit' }}>{receiptFileMsg}</small>}
                                 </div>
                                 <div>
                                     <small className="muted" style={{ fontSize: '10px', fontWeight: 800 }}>RECEIPT (URL)</small>
@@ -404,7 +476,7 @@ export default function Assets() {
                             <button className="btn primary glow-blue" onClick={handleSave} disabled={saving} style={{ padding: '16px', fontSize: '15px', fontWeight: 900 }}>
                                 {saving ? 'SYNCING ASSET...' : editingAsset ? 'UPDATE SYSTEM' : 'ADD TO LOCKER'}
                             </button>
-                            <button className="btn secondary" onClick={() => { setShowForm(false); setEditingAsset(null); setForm(BLANK); }} style={{ padding: '12px', fontSize: '13px' }}>DISCARD CHANGES</button>
+                            <button className="btn secondary" onClick={() => { setShowForm(false); setEditingAsset(null); setForm(BLANK); setReceiptFile(null); setReceiptFileMsg(''); }} style={{ padding: '12px', fontSize: '13px' }}>DISCARD CHANGES</button>
                             {msg && <div className="tag ok" style={{ alignSelf: 'center', fontSize: '11px' }}>{msg}</div>}
                         </div>
                     </div>

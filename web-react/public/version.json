@@ -1,1 +1,1 @@
-{"version":"7.27.0","release_date":"2026-08-12","codename":"Lumière Ledger","notes":"v7.27.0: Bulk Edit gains Rename Vendor — merge vendor name variants (e.g. 32degrees / 32 Degrees) into one"}
+{"version":"7.27.1","release_date":"2026-08-23","codename":"Lumière Ledger","notes":"v7.27.1: Fixed confusing receipt upload 413 error on Equipment page — oversized images now auto-resize before upload, with a 4MB limit hint shown up front"}
