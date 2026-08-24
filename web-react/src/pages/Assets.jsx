@@ -453,6 +453,10 @@ export default function Assets() {
                                     <input style={{ fontSize: '14px', padding: '12px' }} value={form.vendor} onChange={e => setForm({ ...form, vendor: e.target.value })} placeholder="e.g. Adorama" />
                                 </div>
                             </div>
+                            <div>
+                                <small className="muted" style={{ fontSize: '10px', fontWeight: 800 }}>SERIAL NUMBER</small>
+                                <input style={{ fontSize: '14px', padding: '12px' }} value={form.serial_number || ''} onChange={e => setForm({ ...form, serial_number: e.target.value })} placeholder="e.g. 1234567" />
+                            </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                                 <div>
                                     <small className="muted" style={{ fontSize: '10px', fontWeight: 800 }}>RECEIPT (FILE)</small>

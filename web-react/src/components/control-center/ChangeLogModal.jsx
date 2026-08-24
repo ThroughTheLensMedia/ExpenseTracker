@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.27.2', date: 'AUG 23, 2026', color: '#4c7dff', items: [
+        '<strong>New:</strong> Added a Serial Number field to the Equipment form (under Purchase Date / Vendor) — track serials on new gear as you add it.',
+    ]},
     { version: '7.27.1', date: 'AUG 23, 2026', color: '#94a3b8', items: [
         '<strong>Fixed:</strong> Uploading a large receipt photo on the Equipment page failed with a confusing "Error: 413" and no explanation. Oversized images are now automatically resized in your browser before upload, and the file picker shows a "Max 4MB" hint up front so you know the limit before you pick a file.',
     ]},

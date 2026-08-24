@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.27.2] — 2026-08-23
+
+### Added — Serial Number field on Equipment form
+
+- **`web-react/src/pages/Assets.jsx`** — added a Serial Number text input to the Add/Edit Asset form, under Purchase Date/Vendor. The `serial_number` column and backend schema (`api/routes/assets.js`) already existed and were already used for search and CSV export — the form simply had no input for it, so it could only ever be set by editing an old imported record. No backend changes needed.
+- Update ChangeLogModal.jsx, version.json, App.jsx
+
+---
+
 ## [v7.27.1] — 2026-08-23
 
 ### Fixed — Receipt upload 413 on Equipment page had no explanation or client-side prevention
