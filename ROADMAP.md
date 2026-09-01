@@ -1,6 +1,6 @@
 # Lumière Ledger — Master Roadmap
 
-**Version:** v7.27.0 | **Last reviewed:** 2026-08-12  
+**Version:** v7.27.5 | **Last reviewed:** 2026-09-01  
 Source of truth for all sprint work, security status, and product phases.
 
 ---
@@ -67,7 +67,7 @@ Source of truth for all sprint work, security status, and product phases.
 | **Receipt email body parse — re-test** | v7.8.96 hardened the prompt and error logging but the "Total Paid: $XX.XX" case was never re-tested with a live email forward. Send a test and verify System Logs show extracted amount. |
 | **Security Review — dependency tier still overdue** | Weekly, monthly, quarterly, and annual all re-run 2026-07-01 (v7.10.15/19/20/21). Only the dependency tier has never been run once (it's a subset of what quarterly already covers — `npm audit`/`npm audit fix` in both dirs — low urgency). |
 | **Stripe/Plaid ToS review + Google OAuth consent screen check** | Two annual-checklist items that need Joshua's own read, not something verifiable from code: Stripe Services Agreement / Plaid Legal for payment-processor policy changes, and Google Cloud Console → OAuth Consent Screen re-verification status. |
-| **✅ Operational Intelligence accuracy fix — all 3 phases shipped (v7.20.1 → v7.21.0)** | Phase 1: `billing_cycle` column + `vendor_aliases` table. Phase 2: cadence-aware recurring-vendor math shared between the dashboard and weekly digest, `PUT/DELETE /api/vendors/alias`. Phase 3 (v7.21.0): Transaction Drawer "Billing Cycle" select (shown when Recurring is checked); Operational Intelligence table's inline MERGE action. **Still to do (not code — a manual data step):** merge Starlink + Starlink Internet, Apple + Apple Services + Apple iCloud, and set Hover's Billing Cycle to Annual, using the new UI. |
+| **✅ Operational Intelligence accuracy fix — all phases shipped (v7.20.1 → v7.27.5)** | Phase 1: `billing_cycle` column + `vendor_aliases` table. Phase 2: cadence-aware recurring-vendor math shared between the dashboard and weekly digest, `PUT/DELETE /api/vendors/alias`. Phase 3 (v7.21.0): Transaction Drawer "Billing Cycle" select; Operational Intelligence table's inline MERGE action. The manual data step (merge Starlink + Starlink Internet, Apple + Apple Services + Apple iCloud, tag Hover Annual) is done. **v7.27.5 follow-up:** tagging Hover's `billing_cycle` Annual alone wasn't enough — Hover's vendor bucket holds 3 charges (two domains, throughthelens.media + lumiereledger.com) landing ~2 months apart, and dividing their average by 12 silently understated the true monthly cost (Joshua confirmed he's keeping both domains under one "Hover" vendor by choice, since it's the same vendor with two similar products). Fixed by sanity-checking the explicit tag against real charge gaps (falls back to detected cadence when they contradict) and switching the recurring window from calendar-year to a rolling trailing-365-days. See `CLAUDE.md`'s "Recurring vendor cadence" data pattern. Also added: `vendor_review_note` flag on CSV import to catch vendor-name fragmentation (bank-descriptor variants) before it happens again — see `CLAUDE.md`'s "Vendor review flags" data pattern. |
 
 ---
 
