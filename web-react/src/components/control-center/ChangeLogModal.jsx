@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.27.4', date: 'SEP 1, 2026', color: '#4c7dff', items: [
+        '<strong>New:</strong> The Operational Intelligence REVIEW flag can now be cleared. Previously there was no way to dismiss it — hover the REVIEW badge to see why a vendor was flagged (too few charges seen yet to confirm it\'s a real subscription), then click CONFIRM to dismiss it or IGNORE if it isn\'t recurring. Confirmed vendors show a green ✓ CONFIRMED badge with an UNDO option.',
+    ]},
     { version: '7.27.3', date: 'SEP 1, 2026', color: '#4c7dff', items: [
         '<strong>Fixed:</strong> The "Deductions Found" KPI card now fits on the same row as the other 4 dashboard summary cards instead of wrapping to its own row.',
         '<strong>Fixed:</strong> Ignoring or merging a vendor in the Operational Intelligence table no longer jumps you back to the top of the page — you stay right where you were reviewing.',

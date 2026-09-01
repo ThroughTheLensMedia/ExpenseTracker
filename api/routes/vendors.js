@@ -8,11 +8,11 @@ router.get("/settings", async (req, res) => {
     try {
         const { data, error } = await req.sb
             .from("vendor_settings")
-            .select("vendor, is_ignored");
-        
+            .select("vendor, is_ignored, is_reviewed");
+
         if (error) throw error;
-        
-        // Return array of objects { vendor, is_ignored }
+
+        // Return array of objects { vendor, is_ignored, is_reviewed }
         res.json(data || []);
     } catch (e) {
         res.status(500).json({ error: String(e.message || e) });
@@ -20,19 +20,32 @@ router.get("/settings", async (req, res) => {
 });
 
 // POST /api/vendors/settings
-// Upserts a setting for a specific vendor
+// Upserts a setting for a specific vendor. Accepts either flag (or both) —
+// fetches the existing row first and merges so toggling one flag (e.g.
+// is_reviewed) never clobbers the other (e.g. is_ignored) back to its default.
 const VendorSettingSchema = z.object({
     vendor: z.string(),
-    is_ignored: z.boolean()
+    is_ignored: z.boolean().optional(),
+    is_reviewed: z.boolean().optional(),
+}).refine(v => v.is_ignored !== undefined || v.is_reviewed !== undefined, {
+    message: 'At least one of is_ignored or is_reviewed is required',
 });
 
 router.post("/settings", async (req, res) => {
     try {
         const raw = VendorSettingSchema.parse(req.body);
+
+        const { data: existing } = await req.sb
+            .from("vendor_settings")
+            .select("is_ignored, is_reviewed")
+            .eq("vendor", raw.vendor)
+            .maybeSingle();
+
         const data = {
             user_id: req.user.id,
             vendor: raw.vendor,
-            is_ignored: raw.is_ignored
+            is_ignored: raw.is_ignored !== undefined ? raw.is_ignored : (existing?.is_ignored ?? false),
+            is_reviewed: raw.is_reviewed !== undefined ? raw.is_reviewed : (existing?.is_reviewed ?? false),
         };
 
         const { data: inserted, error } = await req.sb

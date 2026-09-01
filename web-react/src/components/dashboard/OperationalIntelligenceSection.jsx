@@ -24,7 +24,7 @@ export default function OperationalIntelligenceSection({ data, onReload }) {
             else if (r.flags?.duplicate) flag = 'duplicate';
             else if (r.flags?.unused) flag = 'unused';
             else if (r.flags?.isSubscription) flag = 'subscription';
-            
+
             return {
                 id: r.vendor + idx,
                 vendor: r.vendor,
@@ -32,6 +32,8 @@ export default function OperationalIntelligenceSection({ data, onReload }) {
                 annual_cost: r.annualProjectedCents || 0,
                 flag: flag,
                 isSubscription: r.flags?.isSubscription || false,
+                reviewed: r.flags?.reviewed || false,
+                reviewMeta: r.reviewMeta || null,
                 cadenceLabel: r.cadenceLabel || 'Unconfirmed',
                 mergedFrom: r.mergedFrom || []
             };
@@ -124,6 +126,17 @@ export default function OperationalIntelligenceSection({ data, onReload }) {
         }
     };
 
+    const handleReviewToggle = async (e, vendor, isCurrentlyReviewed) => {
+        e.stopPropagation();
+        try {
+            await apiPost('/vendors/settings', { vendor, is_reviewed: !isCurrentlyReviewed });
+            if (onReload) await onReload();
+            else window.location.reload();
+        } catch (err) {
+            alert('Failed to update vendor settings: ' + err.message);
+        }
+    };
+
     const handleUnmerge = async (vendorKey) => {
         try {
             await apiDelete(`/vendors/alias/${encodeURIComponent(vendorKey)}`);
@@ -160,7 +173,7 @@ export default function OperationalIntelligenceSection({ data, onReload }) {
                 />
             </div>
 
-            <RecurringVendorsTable rows={filteredRows} onRowClick={handleRowClick} onIgnoreToggle={handleIgnoreToggle} onMerge={handleMerge} onUnmerge={handleUnmerge} />
+            <RecurringVendorsTable rows={filteredRows} onRowClick={handleRowClick} onIgnoreToggle={handleIgnoreToggle} onReviewToggle={handleReviewToggle} onMerge={handleMerge} onUnmerge={handleUnmerge} />
         </div>
     );
 }

@@ -5,6 +5,20 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.27.4] — 2026-09-01
+
+### Added — Way to clear the Operational Intelligence REVIEW flag
+
+`flags.review` in `api/routes/metrics.js` (`data.count < 6 && avgCostPerOccurrence > 2000`) was purely computed at read time — it had no persisted state, so there was no way to dismiss it short of the vendor accumulating 6+ charges on its own. Clicking a REVIEW-flagged row's vendor name only navigated to the transaction ledger filtered by vendor name, where there was nothing to click to clear the flag. Reported by Joshua: clicking into "Hover" (flagged review) had no way to resolve it.
+
+- **`api/migrations/018_add_reviewed_to_vendor_settings.sql`** — adds `vendor_settings.is_reviewed` (boolean, default false). Idempotent. **Not yet applied to production — needs to be run before deploy.**
+- **`api/routes/vendors.js`** — `POST /vendors/settings` now accepts `is_ignored` and/or `is_reviewed` independently; fetches the existing row first and merges so toggling one flag never resets the other back to its default (previously the schema required `is_ignored` on every call, which would have silently un-ignored a vendor the first time `is_reviewed` was set). `GET /vendors/settings` now also returns `is_reviewed`.
+- **`api/routes/metrics.js`** — vendor settings fetch now selects `is_reviewed`; `flags.review` is suppressed once a vendor is in the reviewed list (`flags.reviewed` exposes that state to the UI); added `reviewMeta` (`occurrences`, `avgMonthlyCents`) to each recurring-vendor row so the UI can explain *why* it was flagged.
+- **`web-react/src/components/dashboard/OpIntellComponents.jsx`** — REVIEW badge is now a tooltip explaining the flag (occurrence count + average cost) and Ignore vs Confirm guidance; added a CONFIRM button next to REVIEW-flagged rows and an UNDO button on confirmed rows (green ✓ CONFIRMED badge).
+- **`web-react/src/components/dashboard/OperationalIntelligenceSection.jsx`** — added `handleReviewToggle` (mirrors the existing ignore/merge pattern — in-place `onReload`, no page reload) and passes `reviewed`/`reviewMeta` through to the table.
+
+---
+
 ## [v7.27.3] — 2026-09-01
 
 ### Fixed — Dashboard KPI row wrap + Operational Intelligence scroll jump

@@ -17,7 +17,7 @@ router.get("/summary", async (req, res) => {
         .eq("user_id", req.user.id);
     const vendorSettingsPromise = req.sb
         .from("vendor_settings")
-        .select("vendor, is_ignored")
+        .select("vendor, is_ignored, is_reviewed")
         .eq("user_id", req.user.id)
         .then(r => r).catch(() => ({ data: null }));
     const vendorAliasesPromise = req.sb
@@ -64,9 +64,12 @@ router.get("/summary", async (req, res) => {
     if (expError) throw expError;
     if (invError) throw invError;
 
-    // Build ignored vendors list (safe — vendor_settings table may not exist yet)
+    // Build ignored/reviewed vendor lists (safe — vendor_settings table may not exist yet)
     const ignoredVendorsList = vSettings
         ? vSettings.filter(v => v.is_ignored).map(v => String(v.vendor).toLowerCase())
+        : [];
+    const reviewedVendorsList = vSettings
+        ? vSettings.filter(v => v.is_reviewed).map(v => String(v.vendor).toLowerCase())
         : [];
 
     // Resolve vendor name variants (e.g. "Starlink" + "Starlink Internet") to
@@ -223,6 +226,8 @@ router.get("/summary", async (req, res) => {
             const { cadenceDays, cadenceConfirmed, source } = deriveCadenceDays(data.dates, data.billingCycle);
             const avgMonthlyCents = monthlyEquivalentCents(avgCostPerOccurrence, cadenceDays);
             const isLeakage = leakageWarningKeywords.some(k => vend.includes(k));
+            const needsReview = data.count < 6 && avgCostPerOccurrence > 2000;
+            const isReviewed = reviewedVendorsList.includes(vend);
 
             // Human-readable cadence label so the UI can distinguish a real
             // monthly subscription from an annual/quarterly charge that's
@@ -246,9 +251,11 @@ router.get("/summary", async (req, res) => {
                 cadenceConfirmed,
                 cadenceLabel,
                 mergedFrom: mergedFromMap[vend] || [],
+                reviewMeta: needsReview ? { occurrences: data.count, avgMonthlyCents } : null,
                 flags: {
                     isSubscription: isKnownSub,
-                    review: data.count < 6 && avgCostPerOccurrence > 2000,
+                    review: needsReview && !isReviewed,
+                    reviewed: needsReview && isReviewed,
                     duplicate: false,
                     unused: false,
                     ignored: ignoredVendorsList.includes(vend)

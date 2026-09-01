@@ -96,7 +96,7 @@ export const TopOffendersSnapshot = ({ offenders }) => {
     );
 };
 
-export const RecurringVendorsTable = ({ rows, onRowClick, onIgnoreToggle, onMerge, onUnmerge }) => {
+export const RecurringVendorsTable = ({ rows, onRowClick, onIgnoreToggle, onReviewToggle, onMerge, onUnmerge }) => {
     const [mergingVendor, setMergingVendor] = useState(null);
     const [mergeTarget, setMergeTarget] = useState('');
     const [merging, setMerging] = useState(false);
@@ -196,17 +196,47 @@ export const RecurringVendorsTable = ({ rows, onRowClick, onIgnoreToggle, onMerg
                             <td style={{ padding: '12px 15px', textAlign: 'right' }}>
                                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-end' }}>
                                     {row.isSubscription && <span style={{ color: '#38bdf8', fontSize: '10px', fontWeight: 800 }}>SUB</span>}
-                                    {row.flag === 'review' && <span style={{ color: '#f97316', fontSize: '10px', fontWeight: 800 }}>REVIEW</span>}
+                                    {row.flag === 'review' && (
+                                        <span
+                                            style={{ color: '#f97316', fontSize: '10px', fontWeight: 800, cursor: 'help' }}
+                                            title={row.reviewMeta
+                                                ? `Only ${row.reviewMeta.occurrences} charge${row.reviewMeta.occurrences === 1 ? '' : 's'} seen so far, averaging $${fmtCents(row.reviewMeta.avgMonthlyCents)}/mo — not enough history yet to confirm this is a real recurring subscription. Confirm it if it's legit, or Ignore it if it isn't.`
+                                                : 'Not enough charge history yet to confirm this is a real recurring subscription.'}
+                                        >
+                                            REVIEW
+                                        </span>
+                                    )}
+                                    {row.reviewed && <span style={{ color: '#4ade80', fontSize: '10px', fontWeight: 800 }} title="You confirmed this vendor — review flag dismissed">✓ CONFIRMED</span>}
                                     {row.flag === 'duplicate' && <span style={{ color: '#ef4444', fontSize: '10px', fontWeight: 800 }}>DUPLICATE</span>}
                                     {row.flag === 'unused' && <span style={{ color: '#a855f7', fontSize: '10px', fontWeight: 800 }}>UNUSED</span>}
                                     {row.flag === 'ignored' && <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', fontWeight: 800 }}>IGNORED</span>}
-                                    <button 
+                                    {row.flag === 'review' && onReviewToggle && (
+                                        <button
+                                            className="btn sm"
+                                            style={{ padding: '4px 8px', fontSize: '9px', fontWeight: 900, letterSpacing: '0.05em', background: 'rgba(74, 222, 128, 0.1)', color: '#4ade80', border: 'none', borderRadius: '6px' }}
+                                            onClick={(e) => onReviewToggle(e, row.vendor, false)}
+                                            title="Mark this vendor as reviewed — dismisses the REVIEW flag"
+                                        >
+                                            CONFIRM
+                                        </button>
+                                    )}
+                                    {row.reviewed && onReviewToggle && (
+                                        <button
+                                            className="btn sm secondary"
+                                            style={{ padding: '4px 8px', fontSize: '9px', fontWeight: 900, letterSpacing: '0.05em' }}
+                                            onClick={(e) => onReviewToggle(e, row.vendor, true)}
+                                            title="Put this vendor's REVIEW flag back"
+                                        >
+                                            UNDO
+                                        </button>
+                                    )}
+                                    <button
                                         className="btn sm"
-                                        style={{ 
-                                            padding: '4px 8px', fontSize: '9px', fontWeight: 900, letterSpacing: '0.05em', 
-                                            background: row.flag === 'ignored' ? 'rgba(74, 222, 128, 0.1)' : 'rgba(255,255,255,0.05)', 
-                                            color: row.flag === 'ignored' ? '#4ade80' : 'rgba(255,255,255,0.7)', 
-                                            border: 'none', borderRadius: '6px', marginLeft: '10px' 
+                                        style={{
+                                            padding: '4px 8px', fontSize: '9px', fontWeight: 900, letterSpacing: '0.05em',
+                                            background: row.flag === 'ignored' ? 'rgba(74, 222, 128, 0.1)' : 'rgba(255,255,255,0.05)',
+                                            color: row.flag === 'ignored' ? '#4ade80' : 'rgba(255,255,255,0.7)',
+                                            border: 'none', borderRadius: '6px', marginLeft: '10px'
                                         }}
                                         onClick={(e) => onIgnoreToggle && onIgnoreToggle(e, row.vendor, row.flag === 'ignored')}
                                     >
