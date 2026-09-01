@@ -7,7 +7,7 @@ const { supabase: adminClient } = require('../db'); // service role — needed f
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } }); // 20MB max
 
-const VALID_TYPES = ['general', 'warranty', 'contract', 'insurance', 'loan'];
+const VALID_TYPES = ['general', 'warranty', 'contract', 'insurance', 'loan', 'equipment', 'purchase'];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -58,7 +58,7 @@ router.get('/', async (req, res) => {
     try {
         const { data, error } = await req.sb
             .from('user_documents')
-            .select('id, filename, doc_type, chunk_count, created_at, file_path')
+            .select('id, filename, doc_type, chunk_count, created_at, file_path, notes')
             .eq('user_id', req.user.id)
             .order('created_at', { ascending: false });
         if (error) throw error;
@@ -91,6 +91,40 @@ router.get('/:id/download', async (req, res) => {
         res.json({ url: signedData.signedUrl, filename: doc.filename });
     } catch (e) {
         console.error('[Documents] Download error:', e.message);
+        res.status(500).json({ error: String(e.message || e) });
+    }
+});
+
+// ── PATCH /documents/:id ──────────────────────────────────────────────────────
+// Renames a document and/or updates its note. Does not touch the underlying
+// file or its extracted chunks — display metadata only.
+router.patch('/:id', async (req, res) => {
+    try {
+        const update = {};
+        if (typeof req.body?.filename === 'string') {
+            const trimmed = req.body.filename.trim();
+            if (!trimmed) return res.status(400).json({ error: 'Filename cannot be empty' });
+            update.filename = trimmed;
+        }
+        if (typeof req.body?.notes === 'string') {
+            update.notes = req.body.notes.trim() || null;
+        }
+        if (Object.keys(update).length === 0) {
+            return res.status(400).json({ error: 'Nothing to update' });
+        }
+
+        const { data, error } = await req.sb
+            .from('user_documents')
+            .update(update)
+            .eq('id', req.params.id)
+            .eq('user_id', req.user.id)
+            .select('id, filename, doc_type, chunk_count, created_at, file_path, notes')
+            .maybeSingle();
+
+        if (error) throw error;
+        if (!data) return res.status(404).json({ error: 'Document not found' });
+        res.json(data);
+    } catch (e) {
         res.status(500).json({ error: String(e.message || e) });
     }
 });

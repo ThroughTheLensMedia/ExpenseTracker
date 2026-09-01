@@ -8,6 +8,8 @@ const DOC_TYPES = [
     { value: 'contract',  label: 'Contract' },
     { value: 'insurance', label: 'Insurance' },
     { value: 'loan',      label: 'Loan / Financing' },
+    { value: 'equipment', label: 'Equipment / Camera Gear' },
+    { value: 'purchase',  label: 'Purchase / Receipt' },
 ];
 
 const TYPE_COLORS = {
@@ -15,6 +17,8 @@ const TYPE_COLORS = {
     contract:  '#818cf8',
     insurance: '#f97316',
     loan:      '#fbbf24',
+    equipment: '#38bdf8',
+    purchase:  '#f472b6',
     general:   'rgba(255,255,255,0.4)',
 };
 
@@ -32,6 +36,10 @@ export default function DocumentsTab({ settings }) {
     const [msg, setMsg]             = useState(null); // { text, ok } | null
     const [deleting, setDeleting]   = useState(null);
     const [downloading, setDownloading] = useState(null);
+    const [editingId, setEditingId] = useState(null);
+    const [editFilename, setEditFilename] = useState('');
+    const [editNotes, setEditNotes] = useState('');
+    const [saving, setSaving]       = useState(false);
     const fileRef = useRef(null);
 
     const hasKey = !!settings?.gemini_api_key;
@@ -124,6 +132,43 @@ export default function DocumentsTab({ settings }) {
         }
     };
 
+    const startEdit = (doc) => {
+        setEditingId(doc.id);
+        setEditFilename(doc.filename);
+        setEditNotes(doc.notes || '');
+    };
+
+    const cancelEdit = () => {
+        setEditingId(null);
+        setEditFilename('');
+        setEditNotes('');
+    };
+
+    const saveEdit = async (id) => {
+        const trimmed = editFilename.trim();
+        if (!trimmed) return;
+        setSaving(true);
+        try {
+            const headers = await getFreshHeader();
+            const res = await fetch(`/api/documents/${id}`, {
+                method: 'PATCH',
+                headers: { ...headers, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filename: trimmed, notes: editNotes.trim() }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                setMsg({ text: data.error || 'Update failed', ok: false });
+                return;
+            }
+            setDocs(prev => prev.map(d => d.id === id ? data : d));
+            cancelEdit();
+        } catch (err) {
+            setMsg({ text: `Update failed: ${err.message}`, ok: false });
+        } finally {
+            setSaving(false);
+        }
+    };
+
     const formatDate = (iso) => {
         if (!iso) return '';
         return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -210,44 +255,85 @@ export default function DocumentsTab({ settings }) {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         {docs.map(doc => (
                             <div key={doc.id} style={{
-                                display: 'flex', alignItems: 'center', gap: '14px',
+                                display: 'flex', alignItems: editingId === doc.id ? 'flex-start' : 'center', gap: '14px',
                                 padding: '14px 16px', borderRadius: '12px',
                                 background: 'rgba(255,255,255,0.03)', border: '1px solid var(--line)',
                             }}>
                                 <div style={{
-                                    width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0,
+                                    width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0, marginTop: editingId === doc.id ? '8px' : 0,
                                     background: TYPE_COLORS[doc.doc_type] || TYPE_COLORS.general,
                                 }} />
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ fontWeight: 700, fontSize: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                        {doc.filename}
+                                {editingId === doc.id ? (
+                                    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        <input
+                                            autoFocus
+                                            value={editFilename}
+                                            onChange={e => setEditFilename(e.target.value)}
+                                            placeholder="Filename"
+                                            style={{ padding: '6px 10px', fontSize: '13px', fontWeight: 700 }}
+                                        />
+                                        <textarea
+                                            value={editNotes}
+                                            onChange={e => setEditNotes(e.target.value)}
+                                            placeholder="Add a note — e.g. which lens/camera this receipt covers, warranty end date…"
+                                            rows={2}
+                                            style={{ padding: '6px 10px', fontSize: '12px', resize: 'vertical', fontFamily: 'inherit' }}
+                                        />
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                            <button className="btn sm" style={{ fontSize: '11px', padding: '4px 12px' }} disabled={saving} onClick={() => saveEdit(doc.id)}>
+                                                {saving ? 'Saving…' : 'Save'}
+                                            </button>
+                                            <button className="btn sm secondary" style={{ fontSize: '11px', padding: '4px 12px' }} disabled={saving} onClick={cancelEdit}>
+                                                Cancel
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div className="muted" style={{ fontSize: '11px', marginTop: '2px' }}>
-                                        {DOC_TYPES.find(t => t.value === doc.doc_type)?.label || 'General'}
-                                        {' · '}{doc.chunk_count} section{doc.chunk_count !== 1 ? 's' : ''}
-                                        {' · '}{formatDate(doc.created_at)}
+                                ) : (
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ fontWeight: 700, fontSize: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                            {doc.filename}
+                                        </div>
+                                        <div className="muted" style={{ fontSize: '11px', marginTop: '2px' }}>
+                                            {DOC_TYPES.find(t => t.value === doc.doc_type)?.label || 'General'}
+                                            {' · '}{doc.chunk_count} section{doc.chunk_count !== 1 ? 's' : ''}
+                                            {' · '}{formatDate(doc.created_at)}
+                                        </div>
+                                        {doc.notes && (
+                                            <div style={{ fontSize: '12px', marginTop: '6px', color: 'rgba(255,255,255,0.55)', lineHeight: 1.5 }}>
+                                                {doc.notes}
+                                            </div>
+                                        )}
                                     </div>
-                                </div>
-                                <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
-                                    {doc.file_path && (
+                                )}
+                                {editingId !== doc.id && (
+                                    <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                                        {doc.file_path && (
+                                            <button
+                                                className="btn secondary"
+                                                style={{ fontSize: '11px', padding: '4px 10px', color: '#818cf8', borderColor: 'rgba(129,140,248,0.3)' }}
+                                                disabled={downloading === doc.id}
+                                                onClick={() => handleDownload(doc.id, doc.filename)}
+                                            >
+                                                {downloading === doc.id ? '…' : '📄 View'}
+                                            </button>
+                                        )}
                                         <button
                                             className="btn secondary"
-                                            style={{ fontSize: '11px', padding: '4px 10px', color: '#818cf8', borderColor: 'rgba(129,140,248,0.3)' }}
-                                            disabled={downloading === doc.id}
-                                            onClick={() => handleDownload(doc.id, doc.filename)}
+                                            style={{ fontSize: '11px', padding: '4px 10px' }}
+                                            onClick={() => startEdit(doc)}
                                         >
-                                            {downloading === doc.id ? '…' : '📄 View'}
+                                            ✎ Edit
                                         </button>
-                                    )}
-                                    <button
-                                        className="btn secondary"
-                                        style={{ fontSize: '11px', padding: '4px 10px', color: '#f87171', borderColor: 'rgba(248,113,113,0.3)' }}
-                                        disabled={deleting === doc.id}
-                                        onClick={() => handleDelete(doc.id, doc.filename)}
-                                    >
-                                        {deleting === doc.id ? '…' : 'Remove'}
-                                    </button>
-                                </div>
+                                        <button
+                                            className="btn secondary"
+                                            style={{ fontSize: '11px', padding: '4px 10px', color: '#f87171', borderColor: 'rgba(248,113,113,0.3)' }}
+                                            disabled={deleting === doc.id}
+                                            onClick={() => handleDelete(doc.id, doc.filename)}
+                                        >
+                                            {deleting === doc.id ? '…' : 'Remove'}
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>

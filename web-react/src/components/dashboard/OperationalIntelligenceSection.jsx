@@ -107,8 +107,8 @@ export default function OperationalIntelligenceSection({ data, onReload }) {
         e.stopPropagation();
         try {
             await apiPost('/vendors/settings', { vendor, is_ignored: !isCurrentlyIgnored });
-            // For a smooth experience, aggressively reload so metrics recalculate
-            window.location.reload();
+            if (onReload) await onReload();
+            else window.location.reload();
         } catch(err) {
             alert('Failed to update vendor settings: ' + err.message);
         }

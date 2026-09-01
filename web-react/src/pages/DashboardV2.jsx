@@ -182,7 +182,7 @@ export default function DashboardV2({ apiStatus }) {
             )}
 
             {/* Layer 1: Executive Snapshot - Top KPI Strip */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '20px' }}>
                 <div className="card glass cursor-pointer" onClick={() => navigate('/transactions')} style={{ margin: 0, padding: '24px', position: 'relative', borderTop: '4px solid #4ade80', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
                     <div className="muted" style={{ fontWeight: 800, fontSize: '11px', letterSpacing: '0.05em', marginBottom: '8px' }}>GROSS REVENUE (MTD)</div>
                     <div style={{ fontSize: '2.4rem', fontWeight: 950, color: '#4ade80' }}>

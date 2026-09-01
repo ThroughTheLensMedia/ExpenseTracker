@@ -5,6 +5,23 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.27.3] — 2026-09-01
+
+### Fixed — Dashboard KPI row wrap + Operational Intelligence scroll jump
+
+- **`web-react/src/pages/DashboardV2.jsx`** — Executive Snapshot KPI grid min column width reduced from 220px to 190px so all 5 cards (including Deductions Found) fit on one row within the 1400px container instead of the 5th wrapping to its own row.
+- **`web-react/src/components/dashboard/OperationalIntelligenceSection.jsx`** — `handleIgnoreToggle` was doing a hard `window.location.reload()` on every Ignore/Restore click, which reset scroll to the top of the page. Switched it to use the same `onReload` in-place metrics refetch already used by Merge/Unmerge, so scroll position is preserved.
+
+### Added — Documents nav link + document rename/notes
+
+- **`web-react/src/App.jsx`** — added a "Documents" link under the Operations section of the hamburger menu, pointing to `/StudioControlCenter?tab=documents`.
+- **`api/migrations/017_add_notes_to_documents.sql`** — adds `user_documents.notes` (nullable text). Idempotent (`ADD COLUMN IF NOT EXISTS`). **Not yet applied to production — needs to be run before deploy.**
+- **`api/routes/documents.js`** — added `PATCH /documents/:id` to rename a document and/or set its note (defense-in-depth `.eq('user_id', req.user.id)`); `GET /documents` now also returns `notes`; added `equipment` and `purchase` to `VALID_TYPES` for camera gear/purchase receipts.
+- **`web-react/src/components/control-center/DocumentsTab.jsx`** — added "Equipment / Camera Gear" and "Purchase / Receipt" doc types; added inline Edit mode per document (rename + notes textarea) with Save/Cancel.
+- Update ChangeLogModal.jsx, version.json, App.jsx
+
+---
+
 ## [v7.27.2] — 2026-08-23
 
 ### Added — Serial Number field on Equipment form

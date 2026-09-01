@@ -1,6 +1,12 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.27.3', date: 'SEP 1, 2026', color: '#4c7dff', items: [
+        '<strong>Fixed:</strong> The "Deductions Found" KPI card now fits on the same row as the other 4 dashboard summary cards instead of wrapping to its own row.',
+        '<strong>Fixed:</strong> Ignoring or merging a vendor in the Operational Intelligence table no longer jumps you back to the top of the page — you stay right where you were reviewing.',
+        '<strong>New:</strong> Added a "Documents" link under Operations in the menu, next to Camera Gear.',
+        '<strong>New:</strong> Documents now support "Equipment / Camera Gear" and "Purchase / Receipt" categories, plus rename and note-taking on any uploaded document — add context like which lens a receipt covers or when a warranty expires.',
+    ]},
     { version: '7.27.2', date: 'AUG 23, 2026', color: '#4c7dff', items: [
         '<strong>New:</strong> Added a Serial Number field to the Equipment form (under Purchase Date / Vendor) — track serials on new gear as you add it.',
     ]},

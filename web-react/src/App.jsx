@@ -34,7 +34,7 @@ import OnboardingChecklist from './components/OnboardingChecklist.jsx';
 // Single source of truth for the "What's New" badge — the check (useEffect below)
 // and the dismiss handler (handleWhatsNewClick) must read the exact same value,
 // or the badge re-lights immediately after being dismissed.
-const CURRENT_VERSION = "7.27.2";
+const CURRENT_VERSION = "7.27.3";
 
 // Shared route-level loading fallback — matches app's existing spinner style
 function PageSpinner() {
@@ -466,6 +466,13 @@ function AppContent() {
             </NavLink>
             <NavLink to="/equipment" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
               Camera Gear
+            </NavLink>
+            <NavLink
+                to="/StudioControlCenter?tab=documents"
+                onClick={() => setMobileMenuOpen(false)}
+                className={() => `dropdown-item ${location.pathname === '/StudioControlCenter' && location.search.includes('tab=documents') ? 'active' : ''}`}
+            >
+              Documents
             </NavLink>
 
             {/* Client Work */}
