@@ -10,6 +10,17 @@ router.get("/summary", async (req, res) => {
     const startDate = `${targetYear - 1}-01-01`;
     const endDate = `${targetYear}-12-31`;
 
+    // Recurring-vendor tracking (Operational Intelligence) uses a rolling
+    // trailing-12-months window instead of the calendar-year gate used for
+    // YTD/monthly-performance figures below. Prices drift over 2-3 years —
+    // a vendor's average cost should reflect what it charges NOW, not get
+    // diluted by rates from years ago, and it shouldn't reset to near-empty
+    // every January 1st the way a calendar-year window would.
+    const recurringCutoffDate = new Date();
+    recurringCutoffDate.setDate(recurringCutoffDate.getDate() - 365);
+    const recurringCutoff = recurringCutoffDate.toISOString().slice(0, 10);
+    const isCurrentYearView = Number(targetYear) === new Date().getFullYear();
+
     // Fire invoices and vendor_settings in parallel while paginating expenses
     const invoicesPromise = req.sb
         .from("invoices")
@@ -181,24 +192,31 @@ router.get("/summary", async (req, res) => {
                       categoryBreakdownMonth[rawCat] = (categoryBreakdownMonth[rawCat] || 0) + absValue;
                   }
               }
-
-              // Track vendor hits for recurrence
-              if (vend) {
-                 if (!vendorActivity[vend]) {
-                     vendorActivity[vend] = { count: 0, total: 0, lastDate: row.expense_date, is_sub: false, dates: [], billingCycle: null };
-                 }
-                 vendorActivity[vend].count += 1;
-                 vendorActivity[vend].total += absValue;
-                 vendorActivity[vend].dates.push(row.expense_date);
-                 if (row.is_subscription) vendorActivity[vend].is_sub = true;
-                 if (row.billing_cycle) vendorActivity[vend].billingCycle = row.billing_cycle;
-                 if (row.expense_date > vendorActivity[vend].lastDate) {
-                     vendorActivity[vend].lastDate = row.expense_date;
-                 }
-              }
             }
         }
-        
+
+        // Track vendor hits for recurrence (Operational Intelligence) — a
+        // rolling trailing-12-months window when viewing the current year
+        // (the normal case) so pricing drift and calendar-year rollover
+        // don't skew or reset it; falls back to the calendar-year gate
+        // above for the rare case of viewing a past year.
+        const inRecurringWindow = isCurrentYearView
+            ? String(row.expense_date || '') >= recurringCutoff
+            : rowYear == targetYear;
+        if (!isIncome && vend && inRecurringWindow) {
+            if (!vendorActivity[vend]) {
+                vendorActivity[vend] = { count: 0, total: 0, lastDate: row.expense_date, is_sub: false, dates: [], billingCycle: null };
+            }
+            vendorActivity[vend].count += 1;
+            vendorActivity[vend].total += absValue;
+            vendorActivity[vend].dates.push(row.expense_date);
+            if (row.is_subscription) vendorActivity[vend].is_sub = true;
+            if (row.billing_cycle) vendorActivity[vend].billingCycle = row.billing_cycle;
+            if (row.expense_date > vendorActivity[vend].lastDate) {
+                vendorActivity[vend].lastDate = row.expense_date;
+            }
+        }
+
       }
       
       // Compute Net per month
@@ -231,12 +249,19 @@ router.get("/summary", async (req, res) => {
 
             // Human-readable cadence label so the UI can distinguish a real
             // monthly subscription from an annual/quarterly charge that's
-            // merely been averaged into a monthly-equivalent figure.
+            // merely been averaged into a monthly-equivalent figure. Only
+            // trust the billing_cycle tag's label when it's the cadence
+            // actually used for the math (source === 'explicit') — a
+            // 'detected-override' means the tag didn't match this vendor's
+            // real charge frequency (likely multiple distinct items sharing
+            // one vendor name), so the label should reflect what was
+            // actually used instead of repeating the untrusted tag.
             let cadenceLabel = 'Unconfirmed';
-            if (data.billingCycle === 'annual') cadenceLabel = 'Annual';
-            else if (data.billingCycle === 'quarterly') cadenceLabel = 'Quarterly';
-            else if (data.billingCycle === 'monthly') cadenceLabel = 'Monthly';
-            else if (source === 'detected') {
+            if (source === 'explicit') {
+                if (data.billingCycle === 'annual') cadenceLabel = 'Annual';
+                else if (data.billingCycle === 'quarterly') cadenceLabel = 'Quarterly';
+                else if (data.billingCycle === 'monthly') cadenceLabel = 'Monthly';
+            } else if (source === 'detected' || source === 'detected-override') {
                 if (cadenceDays >= 330) cadenceLabel = 'Annual';
                 else if (cadenceDays >= 80 && cadenceDays <= 100) cadenceLabel = 'Quarterly';
                 else if (cadenceDays >= 25 && cadenceDays <= 35) cadenceLabel = 'Monthly';

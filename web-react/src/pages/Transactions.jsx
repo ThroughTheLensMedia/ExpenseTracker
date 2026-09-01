@@ -357,6 +357,17 @@ export default function Transactions() {
         setTimeout(() => setToast(null), 3000);
     };
 
+    const handleDismissVendorVariant = async (txId) => {
+        try {
+            await apiPatch(`/expenses/${txId}`, { vendor_review_note: null });
+            invalidateExpensesCache();
+            await loadData(true);
+        } catch (e) {
+            setToast({ ok: false, msg: `Dismiss failed: ${e.message}` });
+            setTimeout(() => setToast(null), 4000);
+        }
+    };
+
     const handleResolveReview = async (txId, action) => {
         try {
             await apiPatch(`/expenses/${txId}/resolve-review`, { action });
@@ -892,13 +903,20 @@ export default function Transactions() {
             {/* ─── Mobile View (Cards) ─── */}
             <div className="mobile-only" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {filtered.map(r => (
-                    <div key={r.id} className="card glass" style={{ margin: 0, padding: '16px', maxWidth: '100vw', overflow: 'hidden', position: 'relative', borderLeft: r.needs_review ? '3px solid #f97316' : undefined }} onClick={() => setEditingId(r.id)}>
+                    <div key={r.id} className="card glass" style={{ margin: 0, padding: '16px', maxWidth: '100vw', overflow: 'hidden', position: 'relative', borderLeft: r.needs_review ? '3px solid #f97316' : r.vendor_review_note ? '3px solid #38bdf8' : undefined }} onClick={() => setEditingId(r.id)}>
                         {r.needs_review && (
                             <button
                                 onClick={e => { e.stopPropagation(); setReviewingTx(r); }}
                                 title="Near-duplicate flagged — tap to review"
                                 style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.5)', borderRadius: '6px', padding: '2px 6px', fontSize: '11px', cursor: 'pointer', color: '#f97316', fontWeight: 900, zIndex: 2 }}
                             >🚩</button>
+                        )}
+                        {!r.needs_review && r.vendor_review_note && (
+                            <button
+                                onClick={e => { e.stopPropagation(); setEditingId(r.id); }}
+                                title={r.vendor_review_note}
+                                style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(56,189,248,0.15)', border: '1px solid rgba(56,189,248,0.5)', borderRadius: '6px', padding: '2px 6px', fontSize: '11px', cursor: 'pointer', color: '#38bdf8', fontWeight: 900, zIndex: 2 }}
+                            >🔗</button>
                         )}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
                             <div style={{ minWidth: 0, flex: 1 }}>
@@ -950,14 +968,19 @@ export default function Transactions() {
                             {filtered.slice(0, 1000).map(r => {
                                 const isSelected = selectedIds.has(r.id);
                                 return (
-                                    <tr key={r.id} style={{ background: isSelected ? 'rgba(99,102,241,0.08)' : r.needs_review ? 'rgba(249,115,22,0.04)' : undefined, borderLeft: r.needs_review ? '3px solid #f97316' : undefined }}>
+                                    <tr key={r.id} style={{ background: isSelected ? 'rgba(99,102,241,0.08)' : r.needs_review ? 'rgba(249,115,22,0.04)' : undefined, borderLeft: r.needs_review ? '3px solid #f97316' : r.vendor_review_note ? '3px solid #38bdf8' : undefined }}>
                                         <td style={{ textAlign: 'center' }}>
                                             <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(r.id)} style={{ width: 'auto', cursor: 'pointer' }} onClick={e => e.stopPropagation()} />
                                         </td>
                                         <td><button className="btn secondary" style={{ fontSize: '11px', padding: '4px 8px' }} onClick={() => setEditingId(r.id)}>Edit</button></td>
                                         <td style={{ opacity: 0.8, whiteSpace: 'nowrap' }}>{formatDate(r.expense_date)}</td>
                                         <td style={{ fontSize: '11px', fontWeight: 700 }}>{ACCOUNT_LABELS[r.source] || r.source || 'manual'}</td>
-                                        <td style={{ fontWeight: 600 }} className="text-truncate" title={r.vendor}>{r.vendor}</td>
+                                        <td style={{ fontWeight: 600 }} className="text-truncate" title={r.vendor}>
+                                            {r.vendor}
+                                            {r.vendor_review_note && (
+                                                <span title={r.vendor_review_note} style={{ marginLeft: '6px', color: '#38bdf8', fontSize: '10px', cursor: 'help' }}>🔗</span>
+                                            )}
+                                        </td>
                                         <td className="text-truncate" style={{ opacity: 0.9 }} title={r.category}>{r.category || <span className="muted">—</span>}</td>
                                         <td style={{ textAlign: 'center' }}>
                                             {r.tax_deductible ? <span style={{ color: '#4ade80', fontWeight: 900 }}>✓</span> : <span className="muted">—</span>}
@@ -1007,6 +1030,13 @@ export default function Transactions() {
                                                         title="Near-duplicate flagged — click to review"
                                                         style={{ background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.5)', borderRadius: '4px', padding: '1px 5px', fontSize: '10px', cursor: 'pointer', color: '#f97316', fontWeight: 900, lineHeight: 1.2 }}
                                                     >🚩</button>
+                                                )}
+                                                {!r.needs_review && r.vendor_review_note && (
+                                                    <button
+                                                        onClick={e => { e.stopPropagation(); handleDismissVendorVariant(r.id); }}
+                                                        title={`${r.vendor_review_note}\n\nClick to dismiss, or click Edit to rename.`}
+                                                        style={{ background: 'rgba(56,189,248,0.15)', border: '1px solid rgba(56,189,248,0.5)', borderRadius: '4px', padding: '1px 5px', fontSize: '10px', cursor: 'pointer', color: '#38bdf8', fontWeight: 900, lineHeight: 1.2 }}
+                                                    >🔗 ✕</button>
                                                 )}
                                             </div>
                                         </td>

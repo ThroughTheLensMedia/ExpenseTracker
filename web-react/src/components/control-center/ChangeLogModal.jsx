@@ -1,6 +1,11 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.27.5', date: 'SEP 1, 2026', color: '#4c7dff', items: [
+        '<strong>Fixed:</strong> Recurring-vendor spend (Operational Intelligence) now calculates off a rolling trailing 12 months instead of looking back 2-3 years — prices drift over time, so this keeps the monthly/annual figures reflecting what a vendor charges now.',
+        '<strong>Fixed:</strong> A vendor tagged with a billing cycle (e.g. "Annual") that turns out to be charging far more often than that (a sign it\'s actually two different items sharing one vendor name, like two domain renewals both posting as "Hover") no longer silently understates its true monthly cost.',
+        '<strong>New:</strong> CSV imports now flag a transaction whose vendor name closely resembles one you already track as recurring but doesn\'t exactly match (e.g. a bank descriptor with an address baked in) — a 🔗 badge shows in the Transaction Ledger with a suggested match, before it can quietly fragment your recurring-vendor tracking.',
+    ]},
     { version: '7.27.4', date: 'SEP 1, 2026', color: '#4c7dff', items: [
         '<strong>New:</strong> The Operational Intelligence REVIEW flag can now be cleared. Previously there was no way to dismiss it — hover the REVIEW badge to see why a vendor was flagged (too few charges seen yet to confirm it\'s a real subscription), then click CONFIRM to dismiss it or IGNORE if it isn\'t recurring. Confirmed vendors show a green ✓ CONFIRMED badge with an UNDO option.',
     ]},

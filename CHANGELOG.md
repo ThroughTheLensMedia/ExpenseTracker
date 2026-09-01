@@ -5,6 +5,30 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.27.5] — 2026-09-01
+
+### Fixed — Recurring-vendor math: rolling window + billing-cycle sanity check
+
+Reported by Joshua: Hover showed as $3/mo, $34/yr in Operational Intelligence, tagged "ANNUAL," despite representing two separate domain renewals (throughthelens.media, lumiereledger.com) at real amounts of $1.25/$38.38/$63.19. Confirmed via direct Supabase query: only the most recent of 3 charges had `billing_cycle = 'annual'` set, and that tag was applied to the whole vendor bucket, dividing the *average* of all 3 charges by 12 — i.e. assuming exactly one charge per year, when there were actually 3 in about 4 months. Also confirmed the calc used a calendar-year gate (`rowYear == targetYear`), not a rolling window, meaning it reset near-empty every January and diluted current pricing with years-old data the rest of the year.
+
+- **`api/utils/recurringVendors.js`** — `deriveCadenceDays()` now sanity-checks an explicit `billing_cycle` tag against the vendor's real average charge gap; if charges are coming in much faster than the tag implies (a sign of multiple distinct items sharing one vendor name), it falls back to the detected real cadence instead of trusting the tag. New `source: 'detected-override'`.
+- **`api/routes/metrics.js`** — recurring-vendor tracking (`vendorActivity`) now uses a rolling trailing-365-days window instead of the calendar-year gate, independent of the YTD/monthly-performance figures elsewhere in this endpoint (those are unchanged). `cadenceLabel` now reflects the cadence actually used for the math (only trusts the tag's label when `source === 'explicit'`) instead of always echoing the raw tag.
+- **Data cleanup**: renamed two stray `expenses` rows (ids 13898, 15587) from `HOVER 421-2 DR MARTIN LUTHER K...`/`HOVER 4212 DR MARTIN LUTHER KI...` to plain `Hover` — these were bank-descriptor variants invisible to recurring-vendor tracking because the raw vendor string didn't match. Added `hover` to `VENDOR_NORMALIZE` in `api/routes/import.js` so future CSV imports normalize automatically, same pattern as Amazon/Apple/Google.
+- Note: Hover's two domains still share one vendor bucket, so its dollar figure is now a defensible estimate rather than a precise one — splitting them into two distinct vendor names (Joshua's call, via existing Bulk Edit → Rename Vendor) would let each track its own accurate annual cadence.
+
+### Added — Vendor-name-variant flag at CSV import
+
+Also requested by Joshua: a way to catch a vendor-name fragmentation problem (like Hover's) at import time, before it "gets buried."
+
+- **`api/migrations/019_add_vendor_review_note.sql`** — adds `expenses.vendor_review_note` (nullable text). Idempotent (applied to prod).
+- **`api/utils/vendorVariant.js`** — new `findVendorVariantMatch()`: compares a new vendor string's normalized first word (reusing `vendorRules.js`'s existing `normalizeVendor()`) against established vendors (2+ existing charges) the user already has; flags a near-match that isn't an exact string match.
+- **`api/routes/import.js`** — after dedup/near-duplicate detection, every newly-inserted CSV row is checked against the user's established vendors; a match sets `vendor_review_note` with a human-readable explanation.
+- **`api/routes/expenses.js`** — `vendor_review_note` added to the update schema; `PATCH /:id` auto-clears it whenever `vendor` is explicitly changed (renaming resolves the flag); `PATCH /bulk-vendor` clears it too.
+- **`web-react/src/pages/Transactions.jsx`** — new 🔗 badge (blue, distinct from the existing orange 🚩 near-duplicate badge) on flagged rows, in both the desktop table and mobile cards. Hover/tap shows the suggested existing vendor; clicking opens the edit drawer to rename, or a one-click ✕ dismisses the flag without renaming.
+- Scoped to CSV import only for now (where the reported issue occurred) — Plaid sync could get the same treatment later if it turns out to matter there too.
+
+---
+
 ## [v7.27.4] — 2026-09-01
 
 ### Added — Way to clear the Operational Intelligence REVIEW flag

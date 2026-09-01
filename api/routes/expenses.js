@@ -47,7 +47,8 @@ const ExpenseBaseSchema = z.object({
   business_use_pct: z.coerce.number().min(0).max(100).default(100),
   receipt_link: z.string().trim().optional().nullable(),
   is_subscription: z.boolean().default(false),
-  billing_cycle: z.enum(['monthly', 'quarterly', 'annual']).optional().nullable()
+  billing_cycle: z.enum(['monthly', 'quarterly', 'annual']).optional().nullable(),
+  vendor_review_note: z.string().trim().optional().nullable()
 });
 
 const ExpenseUpdateSchema = ExpenseBaseSchema.partial();
@@ -274,7 +275,7 @@ router.patch("/bulk-vendor", async (req, res) => {
 
     const { error, count } = await req.sb
       .from('expenses')
-      .update({ vendor: vendor.trim() })
+      .update({ vendor: vendor.trim(), vendor_review_note: null })
       .in('id', numericIds)
       .eq('user_id', req.user.id);
 
@@ -363,6 +364,13 @@ router.patch("/:id", async (req, res) => {
       if (!('tax_deductible' in data) || data.tax_deductible !== false) {
         data.tax_deductible = true;
       }
+    }
+
+    // Renaming the vendor resolves the "possible vendor variant" flag —
+    // whether the user renamed it to match the suggested vendor or something
+    // else entirely, they've now consciously reviewed it.
+    if ('vendor' in data && !('vendor_review_note' in data)) {
+      data.vendor_review_note = null;
     }
 
     const { data: updated, error } = await req.sb

@@ -4,6 +4,7 @@ const csvParser = require("csv-parser");
 const fs = require("fs");
 const os = require("os");
 const { decryptOrPlain } = require("../utils/cryptoUtil");
+const { findVendorVariantMatch } = require("../utils/vendorVariant");
 
 const router = express.Router();
 const upload = multer({ dest: os.tmpdir(), limits: { fileSize: 25 * 1024 * 1024 } });
@@ -67,6 +68,7 @@ const VENDOR_NORMALIZE = [
     { pattern: /shell service|shell oil|shell #/i, name: 'Shell' },
     { pattern: /chevron/i, name: 'Chevron' },
     { pattern: /harvest host/i, name: 'Harvest Host' },
+    { pattern: /hover/i, name: 'Hover' },
     { pattern: /the print shop|printshop/i, name: 'The Print Shop' },
     { pattern: /taxact/i, name: 'TaxAct' },
     { pattern: /tnsos|tn secretary of state/i, name: 'TNSOS' },
@@ -500,6 +502,33 @@ async function parseCsvAndImport(sb, filePath, profileKey, res) {
         // Flag existing rows that are part of a near-dup pair
         for (const upd of nearDupFlagUpdates) {
             await sb.from('expenses').update({ needs_review: true, review_pair_id: upd.review_pair_id }).eq('id', upd.id);
+        }
+
+        // ── Vendor Name Variant Detection ─────────────────────────────────────
+        // Catches a bank-descriptor variant of a vendor the user already has
+        // 2+ charges from (e.g. "HOVER 4212 DR MARTIN LUTHER KI..." vs "Hover")
+        // before it fragments into its own invisible vendor bucket and quietly
+        // throws off recurring-vendor math later. Flags for review — never
+        // auto-renames, since a false positive would silently relabel a
+        // genuinely different vendor.
+        if (toInsert.length > 0) {
+            const { data: allVendorRows } = await sb.from('expenses').select('vendor');
+            const vendorCounts = {};
+            for (const row of allVendorRows || []) {
+                const v = row.vendor;
+                if (!v) continue;
+                vendorCounts[v] = (vendorCounts[v] || 0) + 1;
+            }
+            const establishedVendors = Object.entries(vendorCounts)
+                .filter(([, count]) => count >= 2)
+                .map(([vendor, count]) => ({ vendor, count }));
+
+            for (const item of toInsert) {
+                const match = findVendorVariantMatch(item.vendor, establishedVendors);
+                if (match) {
+                    item.vendor_review_note = `Looks similar to your existing vendor "${match.vendor}" (${match.count} charges) — check if this should be renamed to match, so it's tracked as one recurring vendor instead of two.`;
+                }
+            }
         }
 
         // 🧠 AI BRAIN INTERVENTION (Silent Mode) — only on new inserts
