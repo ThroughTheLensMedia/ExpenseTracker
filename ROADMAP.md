@@ -112,6 +112,19 @@ One application and data model with two deliberate experiences. Business remains
 | **D4 — PWA responsive hardening** | Remove confirmed dashboard clipping, simplify the shared login screen, and harden retained Personal screens for narrow PWA layouts plus desktop. | ✅ Shipped v7.28.0; build/static checks and live login visual review passed. |
 | **D5 — Pilot + release** | Apply the additive migration only after approval, review login plus Business and Personal acceptance inventories, then update both changelogs/version files once and deploy with production approval. | ✅ Completed 2026-09-08. Migration, v7.28.0 deploy, API health, login, Business default, Personal dashboard, demo data, and Personal route guard verified in production. |
 
+### Phase E — Business Experience Modernization (approved 2026-09-09)
+
+Improve the existing Business experience in small, reversible releases. Preserve every current route and workflow while replacing technical or product-internal language with clearer owner-operator language. No database, authentication, billing, Plaid, or production-data changes are part of Phase E unless separately approved.
+
+| Gate | Scope | Status |
+|------|-------|--------|
+| **E0 — Baseline and rollback boundary** | Review the authenticated production flow, record the current Git state, preserve D1 in a local checkpoint, and create an isolated implementation worktree. | ✅ Complete 2026-09-09; no push, migration, or deploy. |
+| **E1 — Navigation and terminology** | Organize the menu as Money, Work, Operations, and Settings; replace technical labels with task-oriented business language while preserving paths and Personal-mode guards. | ✅ Implemented locally 2026-09-09; route inventory, mode tests, build, and public-shell render pass. Authenticated preview and release remain unapproved. |
+| **E2 — Dashboard decisions and Assistant trust** | Prioritize next actions, clarify metrics, and reconcile Assistant capability guidance with the tools it can actually use. | Not started |
+| **E3 — Core financial workflows** | Improve transaction review, saved views, account metric clarity, tax guidance, and mileage fallback messaging. | Not started |
+| **E4 — Client and document workflows** | Strengthen the lead-to-client-to-invoice flow and make document organization easier to understand. | Not started |
+| **E5 — Pilot and controlled release** | Run responsive and end-to-end verification, review the diff, update both changelogs and version files, then request separate production approval. | Not started |
+
 ### Design Pass
 
 | Item | Status |

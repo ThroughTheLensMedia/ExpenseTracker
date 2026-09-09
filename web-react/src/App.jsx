@@ -461,8 +461,8 @@ function AppContent() {
               </button>
             )}
 
-            {/* Financials */}
-            <div style={{ padding: '6px 16px 4px', fontSize: '9px', fontWeight: 900, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>Financials</div>
+            {/* Money */}
+            <div style={{ padding: '6px 16px 4px', fontSize: '9px', fontWeight: 900, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>Money</div>
             <NavLink to="/" end onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
               Dashboard
             </NavLink>
@@ -470,27 +470,44 @@ function AppContent() {
               Accounts
             </NavLink>
             <NavLink to="/transactions" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-              Transaction Ledger
+              Transactions
             </NavLink>
             {!isPersonalMode && (
               <NavLink to="/tax" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-                Tax Data / Sch C
+                Tax &amp; Schedule C
               </NavLink>
+            )}
+
+            {!isPersonalMode && (
+              <>
+                {/* Work */}
+                <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '10px 12px 6px' }} />
+                <div style={{ padding: '2px 16px 4px', fontSize: '9px', fontWeight: 900, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>Work</div>
+                <NavLink to="/crm" end onClick={() => { setMobileMenuOpen(false); clearBadge(); }} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
+                  Leads &amp; Projects {newLeadCount > 0 && <span style={{ background: '#ef4444', color: 'white', borderRadius: '50%', fontSize: '9px', fontWeight: 900, padding: '1px 5px', marginLeft: '6px' }}>{newLeadCount > 9 ? '9+' : newLeadCount}</span>}
+                </NavLink>
+                <NavLink to="/crm/financials" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
+                  Invoices
+                </NavLink>
+                <NavLink to="/clients" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
+                  Clients
+                </NavLink>
+              </>
             )}
 
             {/* Operations */}
             <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '10px 12px 6px' }} />
             <div style={{ padding: '2px 16px 4px', fontSize: '9px', fontWeight: 900, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>Operations</div>
             <NavLink to="/import" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-              Bank Import
+              Import Bank Data
             </NavLink>
             {!isPersonalMode && (
               <>
                 <NavLink to="/mileage" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-                  Mileage Log
+                  Mileage
                 </NavLink>
                 <NavLink to="/equipment" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-                  Camera Gear
+                  Equipment
                 </NavLink>
               </>
             )}
@@ -502,23 +519,6 @@ function AppContent() {
               Documents
             </NavLink>
 
-            {!isPersonalMode && (
-              <>
-                {/* Client Work */}
-                <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '10px 12px 6px' }} />
-                <div style={{ padding: '2px 16px 4px', fontSize: '9px', fontWeight: 900, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>Client Work</div>
-                <NavLink to="/crm" end onClick={() => { setMobileMenuOpen(false); clearBadge(); }} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-                  CRM Pipeline {newLeadCount > 0 && <span style={{ background: '#ef4444', color: 'white', borderRadius: '50%', fontSize: '9px', fontWeight: 900, padding: '1px 5px', marginLeft: '6px' }}>{newLeadCount > 9 ? '9+' : newLeadCount}</span>}
-                </NavLink>
-                <NavLink to="/crm/financials" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-                  Business Invoicing
-                </NavLink>
-                <NavLink to="/clients" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-                  Clients
-                </NavLink>
-              </>
-            )}
-
             {/* Settings */}
             <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '10px 12px 6px' }} />
             <div style={{ padding: '2px 16px 4px', fontSize: '9px', fontWeight: 900, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>Settings</div>
@@ -528,7 +528,7 @@ function AppContent() {
                 onClick={() => setMobileMenuOpen(false)}
                 className={({ isActive }) => `dropdown-item ${isActive && !location.search ? 'active' : ''}`}
             >
-              Ledger Control Center
+              Settings &amp; Business Tools
             </NavLink>
             {!isPersonalMode && <NavLink
               to="/StudioControlCenter?tab=profile"
@@ -540,7 +540,7 @@ function AppContent() {
                 onClick={() => setMobileMenuOpen(false)}
                 className={() => `dropdown-item ${location.pathname === '/StudioControlCenter' && location.search.includes('tab=help') ? 'active' : ''}`}
             >
-              Help Center
+              Help
             </NavLink>
             {!localStorage.getItem('ll_onboarding_dismissed_v2') && !settings?.onboarding_dismissed && (
                 <button
@@ -552,14 +552,14 @@ function AppContent() {
                 </button>
             )}
             <NavLink to="/addons" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-              Add-Ons
+              Add-ons
             </NavLink>
             <NavLink
                 to="/StudioControlCenter?tab=billing"
                 onClick={() => setMobileMenuOpen(false)}
                 className={() => `dropdown-item ${location.pathname === '/StudioControlCenter' && location.search.includes('tab=billing') ? 'active' : ''}`}
             >
-              Account Plans
+              Plans &amp; Billing
             </NavLink>
             
             <div style={{ marginTop: '12px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '16px', paddingBottom: '4px' }}>
