@@ -6,7 +6,7 @@ const TURNSTILE_SITE_KEY = '0x4AAAAAADuHLMVjvZq513jg';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, signup, loginWithGoogle, supabase: supabaseClient } = useAuth();
+  const { login, signup, loginWithGoogle } = useAuth();
   const params = new URLSearchParams(window.location.search);
 
   // If a code or ?signup=1 is in the URL, start in signup mode immediately
@@ -17,10 +17,6 @@ export default function Login() {
   const [showForgot, setShowForgot] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
-  const [showRequestForm, setShowRequestForm] = useState(false);
-  const [requestName, setRequestName] = useState('');
-  const [requestEmail, setRequestEmail] = useState('');
-  const [requestSent, setRequestSent] = useState(false);
 
   const [email, setEmail] = useState(params.get('email') || '');
   const [password, setPassword] = useState('');
@@ -179,7 +175,6 @@ export default function Login() {
     if (!withCode) setBetaCode('');
     setError(null);
     setSuccess(null);
-    setShowRequestForm(false);
   };
 
   return (
@@ -192,13 +187,13 @@ export default function Login() {
       padding: '20px'
     }}>
       <div className="card glass glow-blue" style={{
-        maxWidth: '450px',
+        maxWidth: '420px',
         width: '100%',
-        padding: '50px 40px',
+        padding: isLogin ? '32px clamp(22px, 7vw, 34px)' : '36px clamp(22px, 7vw, 34px)',
         textAlign: 'center'
       }}>
-        <div style={{ marginBottom: '40px' }}>
-          <img src="/icon.png" alt="Lumière Ledger Icon" style={{ height: '120px', marginBottom: '20px', borderRadius: '24px', filter: 'drop-shadow(0 0 20px rgba(249, 115, 22, 0.2))' }} />
+        <div style={{ marginBottom: isLogin ? '24px' : '30px' }}>
+          <img src="/icon.png" alt="Lumière Ledger Icon" style={{ height: isLogin ? '76px' : '88px', marginBottom: '14px', borderRadius: '18px', filter: 'drop-shadow(0 0 20px rgba(249, 115, 22, 0.2))' }} />
           <h1 style={{
             fontSize: '1.5rem',
             fontWeight: 900,
@@ -207,17 +202,17 @@ export default function Login() {
             letterSpacing: '0.05em',
             textTransform: 'uppercase'
           }}>Lumière Ledger</h1>
-          <p className="muted" style={{ marginTop: '8px', fontWeight: 600 }}>Financial Intelligence for Freelancers &amp; Creatives</p>
+          <p className="muted" style={{ margin: '8px auto 0', maxWidth: 300, fontWeight: 600, fontSize: '13px', lineHeight: 1.45 }}>Financial clarity for personal life and independent work</p>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: isLogin ? '14px' : '18px' }}>
           <div style={{ textAlign: 'left' }}>
             <label className="muted" style={{ fontSize: '12px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Email Address</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value.trim())}
-              placeholder=" Joshua@studio.com"
+              placeholder="email"
               style={{ marginTop: '8px', width: '100%' }}
               required
             />
@@ -322,15 +317,15 @@ export default function Login() {
           <button
             type="submit"
             className="btn primary glow-orange"
-            style={{ padding: '16px', fontSize: '16px', marginTop: '10px', borderRadius: '12px' }}
+            style={{ padding: '14px', fontSize: '15px', marginTop: '4px', borderRadius: '12px' }}
             disabled={loading || (!isLogin && !turnstileToken)}
           >
-            {loading ? 'PROCESSING...' : isLogin ? 'ENTER LUMIÈRE' : useInviteCode ? 'ACTIVATE & CREATE ACCOUNT' : 'CREATE FREE ACCOUNT'}
+            {loading ? 'PROCESSING...' : isLogin ? 'SIGN IN' : useInviteCode ? 'ACTIVATE & CREATE ACCOUNT' : 'CREATE FREE ACCOUNT'}
           </button>
 
           {isLogin && (
             <>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '15px', margin: '10px 0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '2px 0' }}>
                 <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.05)' }} />
                 <span className="muted" style={{ fontSize: '10px', fontWeight: 900 }}>OR</span>
                 <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.05)' }} />
@@ -349,7 +344,7 @@ export default function Login() {
                 }}
                 className="btn secondary"
                 style={{
-                  padding: '16px',
+                  padding: '13px',
                   fontSize: '14px',
                   borderRadius: '12px',
                   display: 'flex',
@@ -362,104 +357,25 @@ export default function Login() {
                 disabled={loading}
               >
                 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style={{ width: '18px' }} />
-                CONTINUE WITH GOOGLE
+                Continue with Google
               </button>
             </>
           )}
         </form>
 
         {/* Bottom links — login mode */}
-        {isLogin && !showForgot && !showRequestForm && (
-          <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <button
-              onClick={() => { setShowForgot(true); setError(null); setForgotEmail(email); }}
-              style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', fontSize: '12px', fontWeight: 700 }}
-            >
-              Forgot your password?
-            </button>
+        {isLogin && !showForgot && (
+          <div style={{ marginTop: '18px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <button
               onClick={() => switchToSignup(false)}
-              style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: '13px', fontWeight: 800 }}
+              style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: '14px', fontWeight: 850 }}
             >
-              Create a Free Account
+              New to Lumière? Create an account
             </button>
-            <button
-              onClick={() => switchToSignup(true)}
-              style={{ background: 'none', border: 'none', color: '#4ade80', cursor: 'pointer', fontSize: '13px', fontWeight: 800 }}
-            >
-              Have an invite code? Sign Up
-            </button>
-            <button
-              onClick={() => setShowRequestForm(true)}
-              style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', fontSize: '12px', fontWeight: 700 }}
-            >
-              Request access
-            </button>
-          </div>
-        )}
-
-        {/* Account Request Form */}
-        {showRequestForm && !requestSent && (
-          <div style={{ marginTop: '20px', animation: 'fadeIn 0.3s ease-out' }}>
-            <form onSubmit={async (e) => {
-              e.preventDefault();
-              setLoading(true);
-              setError(null);
-              try {
-                const res = await fetch('/api/account-request', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ name: requestName, email: requestEmail })
-                });
-                if (!res.ok) throw new Error('Request failed. Please try again.');
-                setRequestSent(true);
-              } catch (err) {
-                setError(err.message);
-              } finally {
-                setLoading(false);
-              }
-            }} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div style={{ textAlign: 'left' }}>
-                <label className="muted" style={{ fontSize: '12px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Full Name</label>
-                <input
-                  type="text"
-                  value={requestName}
-                  onChange={e => setRequestName(e.target.value)}
-                  placeholder="John Smith"
-                  style={{ marginTop: '8px', width: '100%' }}
-                  required
-                />
-              </div>
-              <div style={{ textAlign: 'left' }}>
-                <label className="muted" style={{ fontSize: '12px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Email Address</label>
-                <input
-                  type="email"
-                  value={requestEmail}
-                  onChange={e => setRequestEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  style={{ marginTop: '8px', width: '100%' }}
-                  required
-                />
-              </div>
-              {error && <div className="tag bad" style={{ padding: '10px', borderRadius: '8px', fontSize: '12px' }}>{error}</div>}
-              <button type="submit" className="btn primary glow-orange" style={{ padding: '14px', borderRadius: '12px' }} disabled={loading}>
-                {loading ? 'SENDING...' : 'REQUEST ACCESS'}
-              </button>
-              <button type="button" onClick={() => { setShowRequestForm(false); setError(null); }} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', fontSize: '12px', fontWeight: 700 }}>
-                ← Back to login
-              </button>
-            </form>
-          </div>
-        )}
-
-        {showRequestForm && requestSent && (
-          <div style={{ marginTop: '20px', textAlign: 'center', animation: 'fadeIn 0.3s ease-out' }}>
-            <div style={{ fontSize: '36px', marginBottom: '12px' }}>✉️</div>
-            <div style={{ fontWeight: 800, marginBottom: '8px', color: '#4ade80' }}>Request Sent!</div>
-            <div className="muted small">We'll review your request and send you an invite code shortly.</div>
-            <button onClick={() => { setShowRequestForm(false); setRequestSent(false); setError(null); }} style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: '13px', fontWeight: 800, marginTop: '16px' }}>
-              ← Back to login
-            </button>
+            <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '6px 16px' }}>
+              <button onClick={() => { setShowForgot(true); setError(null); setForgotEmail(email); }} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.42)', cursor: 'pointer', fontSize: '11px', fontWeight: 700 }}>Forgot password?</button>
+              <button onClick={() => switchToSignup(true)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.42)', cursor: 'pointer', fontSize: '11px', fontWeight: 700 }}>Use invite code</button>
+            </div>
           </div>
         )}
 
@@ -527,12 +443,12 @@ export default function Login() {
           </div>
         )}
 
-        <div className="muted" style={{ marginTop: '40px', fontSize: '10px', fontWeight: 900, textAlign: 'center' }}>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginBottom: '15px' }}>
+        <div className="muted" style={{ marginTop: isLogin ? '24px' : '32px', fontSize: '9px', fontWeight: 800, textAlign: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '18px', marginBottom: '10px' }}>
             <NavLink to="/privacy" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none', letterSpacing: '0.05em', fontWeight: 900 }}>PRIVACY POLICY</NavLink>
             <NavLink to="/terms" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none', letterSpacing: '0.05em', fontWeight: 900 }}>TERMS OF SERVICE</NavLink>
           </div>
-          SECURE ENCRYPTED SESSION • LUMIÈRE LEDGER © 2026 • PROFESSIONAL EDITION
+          SECURE ENCRYPTED SESSION • LUMIÈRE LEDGER © 2026
         </div>
       </div>
     </div>

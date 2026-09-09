@@ -1,10 +1,10 @@
-# Lumière Ledger — Claude Operational Brief
+# Lumière Ledger — Codex Operational Brief
 
 **Read this file first. Then read `ROADMAP.md` and `SERVICES.md` before touching any code.**
 
 > `SERVICES.md` — master list of every connected external service, what it does, its cost model, and dashboard link. Before adding any new service or dependency, check it first. If a service is removed, update it. This is the guardrail against over-engineering.
 
-> **2026-07-01: `SPEC.md` merged into this file and deleted.** It duplicated most of CLAUDE.md's own sections (Tech Stack ≈ Architecture at a Glance, File Map ≈ Key Files Reference, Key Data Patterns ≈ Data Patterns, Mobile/PWA Requirements — verbatim) under a rule that only conditionally required updating it ("if architecture changed"), which is exactly why it silently drifted 7 versions behind. One file, always read first, version bumped on every deploy — no longer possible to update one and forget the other.
+> **2026-07-01: `SPEC.md` merged into this file and deleted.** It duplicated most of AGENTS.md's own sections (Tech Stack ≈ Architecture at a Glance, File Map ≈ Key Files Reference, Key Data Patterns ≈ Data Patterns, Mobile/PWA Requirements — verbatim) under a rule that only conditionally required updating it ("if architecture changed"), which is exactly why it silently drifted 7 versions behind. One file, always read first, version bumped on every deploy — no longer possible to update one and forget the other.
 
 ## Objective
 
@@ -44,7 +44,7 @@ When something is broken or behaving unexpectedly, follow this order. Do not ski
 1. **Read `ROADMAP.md` before every session** — understand what's in scope, what's blocked, and what's next before writing a single line of code.
 2. **Update `CHANGELOG.md` AND `ChangeLogModal.jsx` on every change** — `CHANGELOG.md` is the engineering record; `web-react/src/components/control-center/ChangeLogModal.jsx` is the in-app user-facing changelog. Both must be updated together on every version bump. Add a new entry at the top of the `RELEASES` array in `ChangeLogModal.jsx` with version, date, color, and user-friendly bullet points. No exceptions. No silent commits.
 3. **Check off completed roadmap items** — after any change, update `ROADMAP.md` to mark newly completed items and remove them from the active sprint if done.
-4. **Keep this file (CLAUDE.md) current** — if a change touches architecture, the file map, tech stack, data patterns, or Acceptance Criteria below, update the relevant section in the same commit. This file is read first every session — nothing else is a substitute.
+4. **Keep this file (AGENTS.md) current** — if a change touches architecture, the file map, tech stack, data patterns, or Acceptance Criteria below, update the relevant section in the same commit. This file is read first every session — nothing else is a substitute.
 5. **Only modify files explicitly in scope** — do not touch unrelated files.
 6. **Never guess** — if something is unclear, ask Joshua before proceeding.
 7. **One file per response, max 500 lines** — if output is truncated, wait for "CONTINUE".
@@ -116,7 +116,7 @@ Add the item under the appropriate category in the relevant phase or backlog sec
        git add api/package-lock.json   ← REQUIRED — must be committed with package.json
        Skipping this step = Vercel cache bypass = missing module crash on first request
 3. Update CHANGELOG.md AND ChangeLogModal.jsx (both required — see Rule 2)
-4. Update this file (CLAUDE.md) if architecture/stack/file map changed (Rule 4)
+4. Update this file (AGENTS.md) if architecture/stack/file map changed (Rule 4)
 5. Update version in TWO places (required for user update banner to fire):
    - web-react/public/version.json  → "version": "X.X.X"
    - web-react/src/App.jsx          → CURRENT_VERSION = "X.X.X"  (comment says DEPLOY SOP)
@@ -189,7 +189,7 @@ Express 4.19 API (api/)
   - ⛔ `GOOGLE_MAPS_SERVER_KEY` — **intentionally NOT set (decision confirmed 2026-07-14)** — Google requires enabling billing on the Cloud project to use the Distance Matrix API, and the billing-enabled-project quota request Joshua submitted would require prepaying for the added connections. Not worth the cost for this feature. The AI Brain's `log_mileage_trip` tool fails closed by design when this is unset: it still logs the trip (0 mi, `needs_review = true`) instead of losing it, and the weekly digest email flags it for Joshua to fill in the real mileage by hand. Do not re-enable or chase this without Joshua's explicit direction — this is a deliberate cost tradeoff, not an unfinished setup step.
   - ✅ `ENCRYPTION_KEY` — set, required for Plaid token encryption
   - ✅ `PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENV=production`
-  - ✅ `VITE_SENTRY_DSN` — set, Sentry.io active with Claude API connected
+  - ✅ `VITE_SENTRY_DSN` — set, Sentry.io active with Codex API connected
   - ✅ `RECEIPT_HMAC_SECRET` — set, required for per-user receipt forwarding addresses
   - ⚠️ `REDIS_URL` — **NOT SET** — Bull was removed v7.8.90; direct Resend fallback is intentional. Set only if re-enabling queue layer.
   - ⚠️ `TURNSTILE_SECRET_KEY` — **NOT SET as of v7.10.14** — added to Vercel to activate bot-challenge verification on signup. Site key is already live client-side; server verify route fails open until this is set, so it's safe but currently inert.

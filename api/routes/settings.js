@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { encrypt, decryptOrPlain } = require("../utils/cryptoUtil");
+const { isValidExperienceMode } = require("../constants");
 
 // Get settings - always returns an object even if empty
 router.get("/", async (req, res) => {
@@ -27,6 +28,13 @@ router.post("/", async (req, res) => {
     if (!req.sb || !req.user?.id) return res.status(401).json({ error: "Session required" });
     try {
         const payload = { ...req.body };
+
+        if (
+            Object.prototype.hasOwnProperty.call(payload, 'experience_mode') &&
+            !isValidExperienceMode(payload.experience_mode)
+        ) {
+            return res.status(400).json({ error: "experience_mode must be 'business' or 'personal'" });
+        }
 
         // Aggressively strip system columns that Postgres forbids from being manually updated
         const protectedFields = ['id', 'created_at', 'updated_at'];

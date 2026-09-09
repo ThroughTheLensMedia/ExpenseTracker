@@ -1,6 +1,13 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.28.0', date: 'SEP 8, 2026', color: '#a78bfa', items: [
+        '<strong>New:</strong> Choose Personal or Business in the Control Center. Personal gives everyday users a focused money dashboard and removes Schedule C, mileage, equipment, CRM, invoicing, and client tools without deleting any data.',
+        '<strong>New:</strong> Personal dashboard shows monthly income, spending, cash flow, top categories, and confirmed recurring bills using the same private ledger data.',
+        '<strong>Improved:</strong> Onboarding and the Lumière Assistant now adapt to Personal users instead of assuming everyone owns a photography business.',
+        '<strong>Improved:</strong> The login screen is shorter and clearer, with a generic email field and fewer competing links.',
+        '<strong>Fixed:</strong> Dashboard grids and mobile containers no longer clip against narrow PWA screens.',
+    ]},
     { version: '7.27.5', date: 'SEP 1, 2026', color: '#4c7dff', items: [
         '<strong>Fixed:</strong> Recurring-vendor spend (Operational Intelligence) now calculates off a rolling trailing 12 months instead of looking back 2-3 years — prices drift over time, so this keeps the monthly/annual figures reflecting what a vendor charges now.',
         '<strong>Fixed:</strong> A vendor tagged with a billing cycle (e.g. "Annual") that turns out to be charging far more often than that (a sign it\'s actually two different items sharing one vendor name, like two domain renewals both posting as "Hover") no longer silently understates its true monthly cost.',

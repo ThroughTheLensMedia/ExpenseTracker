@@ -130,3 +130,4 @@
 | 2026-06-06 | Sentry kept for frontend only — React crashes, stack traces from minified bundles. |
 | 2026-07-01 | Added Cloudflare Turnstile for bot signup protection — reused existing Cloudflare zone already proxying the domain rather than adding a new service. |
 | 2026-07-01 | Confirmed self-serve Stripe checkout (no invite code) is an intentional, real flow — not just an invite-only beta. Informs future access-gate changes: don't lock down `licensing.js` further without checking this first. |
+| 2026-09-08 | Personal Experience Mode will reuse the existing React, Express, Supabase, Vercel, Plaid, and Gemini architecture. No separate application or new external service is approved; experience mode changes presentation and navigation only. |

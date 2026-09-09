@@ -5,6 +5,25 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.28.0] — 2026-09-08
+
+### Added — Personal Mode
+
+- Added a reversible Personal/Business experience selector. Existing accounts remain in Business mode unless the user explicitly switches.
+- Personal Mode replaces the business analytics dashboard with a focused money overview: monthly income, spending, cash flow, category totals, and confirmed recurring bills.
+- Personal navigation hides Schedule C, mileage, camera equipment, CRM, invoicing, and clients without deleting or transforming any data. Direct visits to those routes return Personal users to their dashboard.
+- Onboarding now asks whether the user wants Personal or Business, then shows the appropriate setup path.
+- The Lumière Assistant uses personal-finance language in Personal Mode and cannot call CRM, invoice, lead, or mileage tools.
+- Added `api/migrations/020_add_experience_mode_to_settings.sql`, an idempotent Business-default settings migration with a database constraint and matching API validation.
+
+### Improved — Login and PWA layout
+
+- Simplified the shared login screen, replaced the example address with `email`, reduced visual clutter, and removed the redundant Request Access flow while preserving account creation, invite codes, Google login, and password reset.
+- Fixed the dashboard's 400px minimum grid width and mobile viewport-width sizing that could clip content in installed PWA layouts.
+- Tightened localhost authentication safety: the mock-user bypass now requires an explicit `VITE_ENABLE_DEV_BYPASS=true` environment setting in addition to the legacy browser flag.
+
+---
+
 ## [v7.27.5] — 2026-09-01
 
 ### Fixed — Recurring-vendor math: rolling window + billing-cycle sanity check

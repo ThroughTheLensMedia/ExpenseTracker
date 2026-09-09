@@ -77,7 +77,8 @@ export function AuthProvider({ children }) {
     // 0. Developer Bypass (Safe for Localhost)
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     // SECURITY: Use localStorage only — query params appear in browser history and shared links.
-    const hasDevBypass = localStorage.getItem('studio_tracker_dev_mode') === 'true';
+    const hasDevBypass = import.meta.env.VITE_ENABLE_DEV_BYPASS === 'true'
+      && localStorage.getItem('studio_tracker_dev_mode') === 'true';
 
     if (isLocal && hasDevBypass) {
         console.warn("[AUTH] Developer Bypass Enabled");
@@ -227,6 +228,12 @@ export function AuthProvider({ children }) {
     if (user) fetchSubscription(user.id);
   };
 
+  const refreshAccountData = async () => {
+    if (!user) return;
+    subscriptionFetchedRef.current = false;
+    await fetchSubscription(user.id);
+  };
+
   const tier = subscription
     ? deriveTier(subscription.plan_type, subscription.admin_tier)
     : 'free';
@@ -243,7 +250,8 @@ export function AuthProvider({ children }) {
     signup,
     logout,
     loginWithGoogle,
-    refreshSubscription
+    refreshSubscription,
+    refreshAccountData
   };
 
   return (

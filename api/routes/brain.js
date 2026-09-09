@@ -626,6 +626,18 @@ router.post("/ask", async (req, res) => {
         if (!apiKey) return res.status(400).json({ error: "No API Key found. Please set your key in the Control Center." });
 
         const businessName = settings?.business_name || "your studio";
+        const localPreviewMode = process.env.NODE_ENV !== 'production'
+            ? process.env.PREVIEW_EXPERIENCE_MODE
+            : null;
+        const isPersonal = localPreviewMode === 'personal' || settings?.experience_mode === 'personal';
+        const assistantSubject = isPersonal ? 'an individual managing everyday personal finances' : `${businessName}, a professional photography business`;
+        const personalRules = isPersonal ? `
+PERSONAL MODE RULES (override any conflicting business instructions below):
+- Treat the user as an individual managing household or personal finances. Never assume they own a business or are a photographer.
+- Focus on transactions, spending, income, accounts, recurring bills, and uploaded documents.
+- Do not discuss or offer CRM, clients, invoicing, Schedule C, business mileage, camera gear depreciation, receivables, or business tax workflows unless the user explicitly asks how to switch to Business mode.
+- Available write actions are limited to creating and editing ledger transactions, with approval.
+` : '';
         const today = new Date().toISOString().slice(0, 10);
 
         const genAI = require("@google/generative-ai");
@@ -633,7 +645,8 @@ router.post("/ask", async (req, res) => {
         const model = client.getGenerativeModel({
             model: "gemini-2.5-flash",
             generationConfig: { temperature: 0.2 },
-            systemInstruction: `You are the Lumière Assistant — an elite financial AI advisor for ${businessName}, a professional photography business. Today is ${today}. Current view: ${context?.page || "dashboard"}.
+            systemInstruction: `You are the Lumière Assistant — a clear, practical financial AI advisor for ${assistantSubject}. Today is ${today}. Current view: ${context?.page || "dashboard"}.
+${personalRules}
 
 You have live tools to query and update the ledger, invoices, CRM, and metrics.
 
@@ -740,7 +753,11 @@ PURCHASE vs PAYMENT DISTINCTION (critical):
         // Gemini requires history to start with user and alternate — trim leading model messages
         while (geminiHistory.length > 0 && geminiHistory[0].role !== 'user') geminiHistory.shift();
 
-        const chat = model.startChat({ tools: BRAIN_TOOLS, history: geminiHistory });
+        const businessOnlyTools = new Set(['get_invoice_summary', 'get_lead', 'get_invoice', 'update_lead_status', 'link_transaction_to_lead', 'update_invoice_status', 'log_mileage_trip']);
+        const toolsForMode = isPersonal
+            ? [{ functionDeclarations: BRAIN_TOOLS[0].functionDeclarations.filter(tool => !businessOnlyTools.has(tool.name)) }]
+            : BRAIN_TOOLS;
+        const chat = model.startChat({ tools: toolsForMode, history: geminiHistory });
 
         // ── Document context injection ────────────────────────────────────────
         // If the user has indexed documents, inject all text chunks directly into

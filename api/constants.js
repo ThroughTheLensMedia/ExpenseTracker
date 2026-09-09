@@ -15,4 +15,22 @@ const MICHELLE_UUID = 'fcb92809-70f1-4ae0-b39c-e317378a01a7';
 // Everyone else pays. Confirmed 2026-07-01: this list is exactly these two users.
 const PLAID_BILLING_EXEMPT = new Set([ADMIN_UUID, MICHELLE_UUID]);
 
-module.exports = { ADMIN_UUID, MICHELLE_UUID, PLAID_BILLING_EXEMPT };
+// Account-level product experience. Business remains the safe default for every
+// existing account until the user explicitly chooses Personal mode.
+const EXPERIENCE_MODES = Object.freeze({
+    BUSINESS: 'business',
+    PERSONAL: 'personal',
+});
+const VALID_EXPERIENCE_MODES = new Set(Object.values(EXPERIENCE_MODES));
+
+function isValidExperienceMode(value) {
+    return VALID_EXPERIENCE_MODES.has(value);
+}
+
+module.exports = {
+    ADMIN_UUID,
+    MICHELLE_UUID,
+    PLAID_BILLING_EXEMPT,
+    EXPERIENCE_MODES,
+    isValidExperienceMode,
+};

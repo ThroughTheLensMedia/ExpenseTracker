@@ -1,6 +1,6 @@
 # Lumière Ledger — Master Roadmap
 
-**Version:** v7.27.5 | **Last reviewed:** 2026-09-01  
+**Version:** v7.28.0 | **Last reviewed:** 2026-09-08
 Source of truth for all sprint work, security status, and product phases.
 
 ---
@@ -100,6 +100,18 @@ Competitive gap analysis vs. QuickBooks Solopreneur / Keeper / Wave / FreshBooks
 | **C1 — P&L / income-first dashboard view** | Invoices + Plaid deposits + profit line as a first-class view. |
 | **C2 — Receipt auto-match** | Snap/forward a receipt → suggest matching transaction by amount+date, one-tap confirm. |
 
+### Phase D — Personal Experience Mode (approved 2026-09-08)
+
+One application and data model with two deliberate experiences. Business remains the default for every existing account; Personal mode removes business-only navigation and language without deleting or transforming user data. No separate app, new service, household finance, budgeting, savings-goal, net-worth, or credit-score scope.
+
+| Gate | Scope | Status |
+|------|-------|--------|
+| **D1 — Experience foundation** | Add constrained `settings.experience_mode`, strict API validation, centralized frontend mode constants, Business-default compatibility, mode-aware shell navigation, and soft guards for business-only routes. No production migration or deploy in this gate. | ✅ Implemented locally 2026-09-08; tests/build pass. Migration and deploy not applied. |
+| **D2 — Personal shell + onboarding** | Add explicit Personal/Business selection, a focused Personal Control Center, reversible mode switching, and mode-specific onboarding. | ✅ Implemented locally 2026-09-08; release pending. |
+| **D3 — Personal dashboard + Assistant** | Compose a dedicated Personal dashboard from shared metrics; adapt AI context, permitted tools, labels, and empty states without changing Business behavior. | ✅ Implemented locally 2026-09-08; release pending. |
+| **D4 — PWA responsive hardening** | Remove confirmed dashboard clipping, simplify the shared login screen, and harden retained Personal screens for 320/360/375/390/430px plus landscape and desktop. | ✅ Code complete locally 2026-09-08; automated build/static checks and local login visual review pass. Authenticated multi-viewport browser acceptance remains part of D5 pilot. |
+| **D5 — Pilot + release** | Apply the additive migration only after approval, review login plus Business and Personal acceptance inventories, then update both changelogs/version files once and request separate production approval. | ◐ Local authenticated review passed with the fictional Dewey test account; production migration/deploy verification pending. |
+
 ### Design Pass
 
 | Item | Status |
@@ -167,10 +179,11 @@ Competitive gap analysis vs. QuickBooks Solopreneur / Keeper / Wave / FreshBooks
 
 ---
 
-## ✅ Completed This Sprint (v7.7.0 → v7.10.21)
+## ✅ Completed Releases
 
 | Version | What shipped |
 |---------|-------------|
+| v7.28.0 | Personal Mode, dedicated personal dashboard/Assistant behavior, simplified login, and PWA responsive hardening |
 | v7.7.0–7.7.5 | Accounts page full build — groups, live balances, Plaid badge, sort/filter, rename/hide, sync button |
 | v7.7.6 | Live Sync always on top, Unsync button, clickable transaction counts, logout scroll fix |
 | v7.7.7 | Landing page rebuilt to match marketing page |

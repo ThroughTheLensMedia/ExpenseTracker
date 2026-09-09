@@ -2,19 +2,19 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiPost } from '../api';
 import ModalShell from './ModalShell.jsx';
-import { BarChart3, Bot, FileText, Landmark, Camera, Car, Building2, Download, Mail, CreditCard, BookOpen, Laptop, Target, FileSpreadsheet, ClipboardList } from 'lucide-react';
+import { useAuth } from './AuthContext.jsx';
+import { EXPERIENCE_MODES } from '../constants/experienceModes.js';
+import { BarChart3, Bot, FileText, Landmark, Camera, Building2, Download, Mail, CreditCard, BookOpen, Laptop, FileSpreadsheet, ClipboardList } from 'lucide-react';
 
 const STORAGE_KEY   = 'll_onboarding_dismissed_v2'; // bump version to re-show for all users
 const CHECKED_KEY   = 'll_onboarding_checked';
 
 // ─── Content ──────────────────────────────────────────────────────────────────
 const FEATURES = [
-    { icon: BarChart3, label: 'Transaction Ledger',  desc: 'Import & categorize every expense' },
-    { icon: Bot,       label: 'AI Brain',            desc: 'Ask questions about your finances' },
-    { icon: FileText,  label: 'Invoicing',           desc: 'Create & send professional invoices' },
-    { icon: Landmark,  label: 'Bank Sync (Plaid)',   desc: 'Automatic live transaction import' },
-    { icon: Camera,    label: 'Gear Depreciation',   desc: 'Track camera gear & write-offs' },
-    { icon: Car,       label: 'Mileage Log',         desc: 'Auto A→B→A round-trip tracking' },
+    { icon: BarChart3, label: 'Transaction Ledger', desc: 'Import and organize your money activity' },
+    { icon: Bot, label: 'AI Assistant', desc: 'Ask private questions about your finances' },
+    { icon: Landmark, label: 'Bank Connections', desc: 'Import by CSV or optional live sync' },
+    { icon: BookOpen, label: 'Financial Documents', desc: 'Keep important records in one place' },
 ];
 
 const STEPS = [
@@ -76,6 +76,12 @@ const STEPS = [
     },
 ];
 
+const PERSONAL_STEPS = [
+    { id: 'import', icon: Download, title: 'Import Your Transactions', desc: 'Import a bank CSV or connect an account to start your personal money overview.', action: { label: 'Go to Bank Import', path: '/import' }, required: true },
+    { id: 'ai', icon: Bot, title: 'Add Your Gemini API Key', desc: 'Unlock private questions about spending, income, recurring bills, and your documents.', action: { label: 'Set Up AI', path: '/StudioControlCenter?tab=intelligence' }, required: false },
+    { id: 'docs', icon: BookOpen, title: 'Explore the Help Center', desc: 'Learn how to import, review, and organize your financial records.', action: { label: 'Open Help Center', path: '/StudioControlCenter?tab=help' }, required: false },
+];
+
 // ─── Reusable pill ─────────────────────────────────────────────────────────
 function Pill({ children, color = '#f97316' }) {
     return (
@@ -99,11 +105,24 @@ const ROLES = [
     { id: 'photographer', icon: Camera, label: 'Photographer', sub: 'Includes Videographers', accent: '#f97316' },
     { id: 'freelancer',   icon: Laptop, label: 'Freelancer',   sub: 'Consultants, designers, writers', accent: '#38bdf8' },
     { id: 'small_business', icon: Building2, label: 'Small Business', sub: 'Retail, services, agencies', accent: '#10b981' },
-    { id: 'personal',     icon: Target, label: 'Personal / Side Hustle', sub: 'Simple income & expense tracking', accent: '#a78bfa' },
 ];
 
+function PageExperience({ onPersonal, onBusiness, onBack, error }) {
+    return <ModalShell accent="#a78bfa">
+        <div style={{ fontSize: 11, fontWeight: 800, opacity: .4, textTransform: 'uppercase' }}>Step 1 of 3</div>
+        <h2>How will you use Lumière?</h2>
+        <p style={{ color: 'rgba(255,255,255,.55)', lineHeight: 1.6 }}>Choose the simpler personal workspace or the complete business toolkit. This can be changed later without deleting data.</p>
+        {error && <p style={{ color: '#f87171', fontWeight: 700 }}>{error}</p>}
+        <div style={{ display: 'grid', gap: 12, margin: '24px 0' }}>
+            <button onClick={onPersonal} style={{ padding: 20, borderRadius: 14, textAlign: 'left', cursor: 'pointer', color: 'white', background: 'rgba(167,139,250,.12)', border: '1px solid rgba(167,139,250,.4)' }}><strong style={{ fontSize: 16 }}>Personal finances</strong><div style={{ marginTop: 6, opacity: .55 }}>Income, spending, accounts, imports, documents, and AI guidance.</div></button>
+            <button onClick={onBusiness} style={{ padding: 20, borderRadius: 14, textAlign: 'left', cursor: 'pointer', color: 'white', background: 'rgba(249,115,22,.1)', border: '1px solid rgba(249,115,22,.35)' }}><strong style={{ fontSize: 16 }}>Freelance or business</strong><div style={{ marginTop: 6, opacity: .55 }}>Adds taxes, mileage, equipment, clients, CRM, invoicing, and business analytics.</div></button>
+        </div>
+        <button onClick={onBack} style={{ background: 'none', border: 0, color: 'rgba(255,255,255,.5)', cursor: 'pointer' }}>← Back</button>
+    </ModalShell>;
+}
+
 // ─── Page 1: Role Selector ─────────────────────────────────────────────────
-function PageRoleSelector({ onNext, onBack, onSkip }) {
+function PageRoleSelector({ onNext, onBack }) {
     const [selected, setSelected] = useState(null);
     const [saving, setSaving] = useState(false);
 
@@ -180,8 +199,8 @@ function PageWelcome({ onNext, onSkip }) {
                     Welcome to Lumière Ledger
                 </h2>
                 <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: 600, margin: 0, lineHeight: 1.6 }}>
-                    Financial intelligence built for photographers.<br />
-                    Track income, expenses, gear, mileage, and invoices — all in one place.
+                    Clear financial intelligence for personal life or independent work.<br />
+                    Choose the experience that fits how you manage money.
                 </p>
             </div>
 
@@ -210,7 +229,7 @@ function PageWelcome({ onNext, onSkip }) {
 }
 
 // ─── Page 1: How to get data in ────────────────────────────────────────────
-function PageDataImport({ onNext, onBack, onSkip }) {
+function PageDataImport({ onNext, onBack, onSkip, personal }) {
     return (
         <ModalShell accent="#38bdf8">
             <div style={{ marginBottom: 24 }}>
@@ -221,7 +240,7 @@ function PageDataImport({ onNext, onBack, onSkip }) {
                 <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', fontWeight: 600, margin: 0, lineHeight: 1.6 }}>
                     Lumière Ledger works best when your transactions are here. Two ways to do it —
                     and after each import, Lumière shows you your <strong style={{ color: 'rgba(255,255,255,0.7)' }}>Money Story</strong>:
-                    deductions found, subscriptions detected, and anything needing review.
+                    {personal ? ' spending patterns, recurring bills, and anything needing review.' : ' deductions found, subscriptions detected, and anything needing review.'}
                 </p>
             </div>
 
@@ -272,7 +291,7 @@ function PageDataImport({ onNext, onBack, onSkip }) {
 }
 
 // ─── Page 2: Setup checklist ────────────────────────────────────────────────
-function PageChecklist({ onDone, onBack, minimized, onMinimize, onRestore }) {
+function PageChecklist({ onDone, onBack, minimized, onMinimize, onRestore, personal }) {
     const navigate = useNavigate();
     const [checked, setChecked] = useState(() => {
         try { return JSON.parse(localStorage.getItem(CHECKED_KEY) || '{}'); }
@@ -298,9 +317,10 @@ function PageChecklist({ onDone, onBack, minimized, onMinimize, onRestore }) {
         );
     }
 
-    const doneCount   = STEPS.filter(s => checked[s.id]).length;
-    const required    = STEPS.filter(s => s.required);
-    const optional    = STEPS.filter(s => !s.required);
+    const steps = personal ? PERSONAL_STEPS : STEPS;
+    const doneCount   = steps.filter(s => checked[s.id]).length;
+    const required    = steps.filter(s => s.required);
+    const optional    = steps.filter(s => !s.required);
     const reqDone     = required.every(s => checked[s.id]);
 
     return (
@@ -312,13 +332,13 @@ function PageChecklist({ onDone, onBack, minimized, onMinimize, onRestore }) {
                     <h2 style={{ fontSize: 20, fontWeight: 950, letterSpacing: '-0.02em', margin: 0, color: 'white' }}>
                         Setup Checklist
                     </h2>
-                    <span style={{ fontSize: 12, fontWeight: 800, color: doneCount === STEPS.length ? '#10b981' : 'rgba(255,255,255,0.4)' }}>
-                        {doneCount}/{STEPS.length}
+                    <span style={{ fontSize: 12, fontWeight: 800, color: doneCount === steps.length ? '#10b981' : 'rgba(255,255,255,0.4)' }}>
+                        {doneCount}/{steps.length}
                     </span>
                 </div>
                 {/* Progress bar */}
                 <div style={{ height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden' }}>
-                    <div style={{ width: `${(doneCount / STEPS.length) * 100}%`, height: '100%', background: '#a78bfa', borderRadius: 2, transition: 'width 0.4s ease' }} />
+                    <div style={{ width: `${(doneCount / steps.length) * 100}%`, height: '100%', background: '#a78bfa', borderRadius: 2, transition: 'width 0.4s ease' }} />
                 </div>
             </div>
 
@@ -374,6 +394,22 @@ function StepRow({ step, checked, onToggle, onGo, accent }) {
 export default function OnboardingChecklist({ onDismiss, initialPage = 0 }) {
     const [page, setPage] = useState(initialPage);
     const [minimized, setMinimized] = useState(false);
+    const [selectedMode, setSelectedMode] = useState(null);
+    const [modeError, setModeError] = useState('');
+    const { refreshAccountData } = useAuth();
+
+    async function chooseExperience(mode) {
+        setModeError('');
+        try {
+            await apiPost('/settings', { experience_mode: mode });
+            await refreshAccountData();
+            setSelectedMode(mode);
+        } catch (error) {
+            setModeError(error.message || 'Could not save your choice. Please try again.');
+            return;
+        }
+        setPage(mode === EXPERIENCE_MODES.PERSONAL ? 3 : 2);
+    }
 
     function dismiss() {
         localStorage.setItem(STORAGE_KEY, '1');
@@ -381,15 +417,17 @@ export default function OnboardingChecklist({ onDismiss, initialPage = 0 }) {
     }
 
     if (page === 0) return <PageWelcome onNext={() => setPage(1)} onSkip={dismiss} />;
-    if (page === 1) return <PageRoleSelector onNext={() => setPage(2)} onBack={() => setPage(0)} onSkip={() => setPage(2)} />;
-    if (page === 2) return <PageDataImport onNext={() => setPage(3)} onBack={() => setPage(1)} onSkip={dismiss} />;
+    if (page === 1) return <PageExperience error={modeError} onPersonal={() => chooseExperience(EXPERIENCE_MODES.PERSONAL)} onBusiness={() => chooseExperience(EXPERIENCE_MODES.BUSINESS)} onBack={() => setPage(0)} />;
+    if (page === 2) return <PageRoleSelector onNext={() => setPage(3)} onBack={() => setPage(1)} onSkip={() => setPage(3)} />;
+    if (page === 3) return <PageDataImport personal={selectedMode === EXPERIENCE_MODES.PERSONAL} onNext={() => setPage(4)} onBack={() => setPage(1)} onSkip={dismiss} />;
     return (
         <PageChecklist
             onDone={dismiss}
-            onBack={() => setPage(2)}
+            onBack={() => setPage(3)}
             minimized={minimized}
             onMinimize={() => setMinimized(true)}
             onRestore={() => setMinimized(false)}
+            personal={selectedMode === EXPERIENCE_MODES.PERSONAL}
         />
     );
 }

@@ -42,6 +42,9 @@
   box-sizing: border-box;
 }
 
+html, body, #root { max-width: 100%; overflow-x: hidden; }
+.wrap main, .card, .glass { min-width: 0; }
+
 body {
   margin: 0;
   font-family: var(--sans);
@@ -740,12 +743,12 @@ footer {
   
   body, html {
     overflow-x: hidden;
-    width: 100vw;
+    width: 100%;
   }
 
   .wrap {
     overflow-x: hidden;
-    max-width: 100vw;
+    max-width: 100%;
   }
 
   header {

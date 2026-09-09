@@ -903,7 +903,7 @@ export default function Transactions() {
             {/* ─── Mobile View (Cards) ─── */}
             <div className="mobile-only" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {filtered.map(r => (
-                    <div key={r.id} className="card glass" style={{ margin: 0, padding: '16px', maxWidth: '100vw', overflow: 'hidden', position: 'relative', borderLeft: r.needs_review ? '3px solid #f97316' : r.vendor_review_note ? '3px solid #38bdf8' : undefined }} onClick={() => setEditingId(r.id)}>
+                    <div key={r.id} className="card glass" style={{ margin: 0, padding: '16px', maxWidth: '100%', overflow: 'hidden', position: 'relative', borderLeft: r.needs_review ? '3px solid #f97316' : r.vendor_review_note ? '3px solid #38bdf8' : undefined }} onClick={() => setEditingId(r.id)}>
                         {r.needs_review && (
                             <button
                                 onClick={e => { e.stopPropagation(); setReviewingTx(r); }}

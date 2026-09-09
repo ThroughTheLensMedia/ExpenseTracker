@@ -6,10 +6,12 @@ import { BrowserRouter as Router, Routes, Route, NavLink, Navigate, useLocation,
 import { AuthProvider, useAuth, supabase } from './components/AuthContext';
 import { ModalProvider } from './components/ModalContext';
 import ErrorBoundary from './components/ErrorBoundary';
-import { LayoutDashboard, ArrowLeftRight, Car, Users } from 'lucide-react';
+import { LayoutDashboard, ArrowLeftRight, Car, Users, Landmark, Download } from 'lucide-react';
+import { EXPERIENCE_MODES, getExperienceMode } from './constants/experienceModes';
 
 // Code-split every page — only load the chunk when the user navigates to it
 const DashboardV2    = lazy(() => import('./pages/DashboardV2'));
+const PersonalDashboard = lazy(() => import('./pages/PersonalDashboard'));
 const Transactions   = lazy(() => import('./pages/Transactions'));
 const Tax            = lazy(() => import('./pages/Tax'));
 const Backup         = lazy(() => import('./pages/Backup'));
@@ -34,7 +36,7 @@ import OnboardingChecklist from './components/OnboardingChecklist.jsx';
 // Single source of truth for the "What's New" badge — the check (useEffect below)
 // and the dismiss handler (handleWhatsNewClick) must read the exact same value,
 // or the badge re-lights immediately after being dismissed.
-const CURRENT_VERSION = "7.27.5";
+const CURRENT_VERSION = "7.28.0";
 
 // Shared route-level loading fallback — matches app's existing spinner style
 function PageSpinner() {
@@ -67,6 +69,13 @@ function PrivateRoute({ children }) {
   
   if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+  return children;
+}
+
+function BusinessOnlyRoute({ experienceMode, children }) {
+  if (experienceMode === EXPERIENCE_MODES.PERSONAL) {
+    return <Navigate to="/" replace />;
   }
   return children;
 }
@@ -153,7 +162,7 @@ function AppContent() {
   useActivityPulse();
   const { newLeadCount, clearBadge } = useLeadsRealtime();
   const [apiStatus, setApiStatus] = useState('Checking...');
-  const { user, loading, logout, subscription, subscriptionReady, settings, refreshSubscription } = useAuth();
+  const { user, loading, logout, subscription, subscriptionReady, settings, refreshSubscription, refreshAccountData } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [showRedeem, setShowRedeem] = useState(false);
@@ -164,6 +173,8 @@ function AppContent() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const menuRef = useRef(null);
   const reopenOnboarding = useRef(false);
+  const experienceMode = getExperienceMode(settings);
+  const isPersonalMode = experienceMode === EXPERIENCE_MODES.PERSONAL;
 
   // --- Version Check Hook ---
   useEffect(() => {
@@ -209,10 +220,11 @@ function AppContent() {
     });
   };
 
-  const handleOnboardingDismiss = () => {
+  const handleOnboardingDismiss = async () => {
     localStorage.setItem('ll_onboarding_dismissed_v2', '1');
     setShowOnboarding(false);
     persistOnboardingDismissed();
+    await refreshAccountData();
   };
 
   const handleOnboardingGoSetup = () => {
@@ -310,9 +322,16 @@ function AppContent() {
   }
 
   // ── Beta Code Gate ────────────────────────────────────────────────────────
+  // Wait for account settings before rendering mode-aware navigation or routes.
+  // This prevents Personal accounts from briefly seeing Business-only UI while
+  // /api/settings is still resolving on a cold load.
+  if (!subscriptionReady) {
+    return <PageSpinner />;
+  }
+
   // Fires after auth is confirmed but subscription check is complete with no record.
   // Catches Google OAuth users who signed in without entering an invite code.
-  if (subscriptionReady && !subscription && user?.email !== 'joshua.deuermeyer@gmail.com') {
+  if (!subscription && user?.email !== 'joshua.deuermeyer@gmail.com') {
     return <BetaCodeGate email={user.email} onSuccess={refreshSubscription} onLogout={logout} />;
   }
 
@@ -347,7 +366,9 @@ function AppContent() {
             <img src="/icon.png" alt="Lumière Ledger Logo" style={{ width: '40px', height: '40px', borderRadius: '10px' }} />
             <div>
               <div className="header-title">LUMIÈRE LEDGER</div>
-              <div className="muted" style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.05em', marginTop: '2px', opacity: 0.6 }}>INTEL FOR TODAY'S PHOTOGRAPHER</div>
+              <div className="muted" style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.05em', marginTop: '2px', opacity: 0.6 }}>
+                {isPersonalMode ? 'PERSONAL FINANCIAL INTELLIGENCE' : "INTEL FOR TODAY'S PHOTOGRAPHER"}
+              </div>
             </div>
           </div>
         </div>
@@ -451,9 +472,11 @@ function AppContent() {
             <NavLink to="/transactions" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
               Transaction Ledger
             </NavLink>
-            <NavLink to="/tax" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-              Tax Data / Sch C
-            </NavLink>
+            {!isPersonalMode && (
+              <NavLink to="/tax" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
+                Tax Data / Sch C
+              </NavLink>
+            )}
 
             {/* Operations */}
             <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '10px 12px 6px' }} />
@@ -461,12 +484,16 @@ function AppContent() {
             <NavLink to="/import" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
               Bank Import
             </NavLink>
-            <NavLink to="/mileage" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-              Mileage Log
-            </NavLink>
-            <NavLink to="/equipment" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-              Camera Gear
-            </NavLink>
+            {!isPersonalMode && (
+              <>
+                <NavLink to="/mileage" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
+                  Mileage Log
+                </NavLink>
+                <NavLink to="/equipment" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
+                  Camera Gear
+                </NavLink>
+              </>
+            )}
             <NavLink
                 to="/StudioControlCenter?tab=documents"
                 onClick={() => setMobileMenuOpen(false)}
@@ -475,18 +502,22 @@ function AppContent() {
               Documents
             </NavLink>
 
-            {/* Client Work */}
-            <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '10px 12px 6px' }} />
-            <div style={{ padding: '2px 16px 4px', fontSize: '9px', fontWeight: 900, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>Client Work</div>
-            <NavLink to="/crm" end onClick={() => { setMobileMenuOpen(false); clearBadge(); }} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-              CRM Pipeline {newLeadCount > 0 && <span style={{ background: '#ef4444', color: 'white', borderRadius: '50%', fontSize: '9px', fontWeight: 900, padding: '1px 5px', marginLeft: '6px' }}>{newLeadCount > 9 ? '9+' : newLeadCount}</span>}
-            </NavLink>
-            <NavLink to="/crm/financials" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-              Business Invoicing
-            </NavLink>
-            <NavLink to="/clients" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-              Clients
-            </NavLink>
+            {!isPersonalMode && (
+              <>
+                {/* Client Work */}
+                <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '10px 12px 6px' }} />
+                <div style={{ padding: '2px 16px 4px', fontSize: '9px', fontWeight: 900, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>Client Work</div>
+                <NavLink to="/crm" end onClick={() => { setMobileMenuOpen(false); clearBadge(); }} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
+                  CRM Pipeline {newLeadCount > 0 && <span style={{ background: '#ef4444', color: 'white', borderRadius: '50%', fontSize: '9px', fontWeight: 900, padding: '1px 5px', marginLeft: '6px' }}>{newLeadCount > 9 ? '9+' : newLeadCount}</span>}
+                </NavLink>
+                <NavLink to="/crm/financials" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
+                  Business Invoicing
+                </NavLink>
+                <NavLink to="/clients" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
+                  Clients
+                </NavLink>
+              </>
+            )}
 
             {/* Settings */}
             <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '10px 12px 6px' }} />
@@ -499,13 +530,11 @@ function AppContent() {
             >
               Ledger Control Center
             </NavLink>
-            <NavLink
-                to="/StudioControlCenter?tab=profile"
-                onClick={() => setMobileMenuOpen(false)}
-                className={() => `dropdown-item ${location.pathname === '/StudioControlCenter' && location.search.includes('tab=profile') ? 'active' : ''}`}
-            >
-              Profile
-            </NavLink>
+            {!isPersonalMode && <NavLink
+              to="/StudioControlCenter?tab=profile"
+              onClick={() => setMobileMenuOpen(false)}
+              className={() => `dropdown-item ${location.pathname === '/StudioControlCenter' && location.search.includes('tab=profile') ? 'active' : ''}`}
+            >Profile</NavLink>}
             <NavLink
                 to="/StudioControlCenter?tab=help"
                 onClick={() => setMobileMenuOpen(false)}
@@ -562,17 +591,17 @@ function AppContent() {
       <main style={{ marginTop: '16px', minHeight: 'calc(100vh - 160px)', animation: 'fadeIn 0.3s ease-out' }}>
         <Suspense fallback={<PageSpinner />}>
           <Routes>
-            <Route path="/" element={<DashboardV2 apiStatus={apiStatus} />} />
+            <Route path="/" element={isPersonalMode ? <PersonalDashboard /> : <DashboardV2 apiStatus={apiStatus} />} />
             <Route path="/transactions" element={<Transactions />} />
-            <Route path="/tax" element={<Tax />} />
-            <Route path="/mileage" element={<Mileage />} />
-            <Route path="/equipment" element={<Assets />} />
+            <Route path="/tax" element={<BusinessOnlyRoute experienceMode={experienceMode}><Tax /></BusinessOnlyRoute>} />
+            <Route path="/mileage" element={<BusinessOnlyRoute experienceMode={experienceMode}><Mileage /></BusinessOnlyRoute>} />
+            <Route path="/equipment" element={<BusinessOnlyRoute experienceMode={experienceMode}><Assets /></BusinessOnlyRoute>} />
             <Route path="/StudioControlCenter" element={<Backup />} />
             <Route path="/backup" element={<Navigate to="/StudioControlCenter" replace />} />
-            <Route path="/crm/*" element={<CRM />} />
+            <Route path="/crm/*" element={<BusinessOnlyRoute experienceMode={experienceMode}><CRM /></BusinessOnlyRoute>} />
             <Route path="/import" element={<Import />} />
             <Route path="/accounts" element={<Accounts />} />
-            <Route path="/clients" element={<Clients />} />
+            <Route path="/clients" element={<BusinessOnlyRoute experienceMode={experienceMode}><Clients /></BusinessOnlyRoute>} />
             <Route path="/addons" element={<AddOns />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
@@ -586,7 +615,7 @@ function AppContent() {
 
       {showChangelogModal && <ChangeLogModal onClose={() => setShowChangelogModal(false)} />}
       {showOnboarding && (
-        <OnboardingChecklist onDismiss={handleOnboardingDismiss} initialPage={reopenOnboarding.current ? 2 : 0} />
+        <OnboardingChecklist onDismiss={handleOnboardingDismiss} initialPage={reopenOnboarding.current ? 1 : 0} />
       )}
 
       {/* Focused Mobile Navigation */}
@@ -599,21 +628,36 @@ function AppContent() {
           <span className="bottom-nav-icon"><ArrowLeftRight size={20} /></span>
           <span>Ledger</span>
         </NavLink>
-        <NavLink to="/mileage" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
-          <span className="bottom-nav-icon"><Car size={20} /></span>
-          <span>Trips</span>
-        </NavLink>
-        <NavLink to="/crm" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`} onClick={clearBadge}>
-          <span className="bottom-nav-icon" style={{ position: 'relative', display: 'inline-block' }}>
-            <Users size={20} />
-            {newLeadCount > 0 && (
-              <span style={{ position: 'absolute', top: '-6px', right: '-8px', background: '#ef4444', color: 'white', borderRadius: '50%', fontSize: '9px', fontWeight: 900, minWidth: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>
-                {newLeadCount > 9 ? '9+' : newLeadCount}
+        {isPersonalMode ? (
+          <>
+            <NavLink to="/accounts" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+              <span className="bottom-nav-icon"><Landmark size={20} /></span>
+              <span>Accounts</span>
+            </NavLink>
+            <NavLink to="/import" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+              <span className="bottom-nav-icon"><Download size={20} /></span>
+              <span>Import</span>
+            </NavLink>
+          </>
+        ) : (
+          <>
+            <NavLink to="/mileage" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+              <span className="bottom-nav-icon"><Car size={20} /></span>
+              <span>Trips</span>
+            </NavLink>
+            <NavLink to="/crm" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`} onClick={clearBadge}>
+              <span className="bottom-nav-icon" style={{ position: 'relative', display: 'inline-block' }}>
+                <Users size={20} />
+                {newLeadCount > 0 && (
+                  <span style={{ position: 'absolute', top: '-6px', right: '-8px', background: '#ef4444', color: 'white', borderRadius: '50%', fontSize: '9px', fontWeight: 900, minWidth: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>
+                    {newLeadCount > 9 ? '9+' : newLeadCount}
+                  </span>
+                )}
               </span>
-            )}
-          </span>
-          <span>Leads</span>
-        </NavLink>
+              <span>Leads</span>
+            </NavLink>
+          </>
+        )}
       </nav>
     </div>
   );

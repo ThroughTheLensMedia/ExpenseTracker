@@ -1,1 +1,1 @@
-{"version":"7.27.5","release_date":"2026-09-01","codename":"Lumière Ledger","notes":"v7.27.5: Recurring-vendor math now uses trailing 12 months and sanity-checks billing cycle tags; new vendor-variant flag at CSV import"}
+{"version":"7.28.0","release_date":"2026-09-08","codename":"Lumière Ledger","notes":"v7.28.0: Personal Mode, simplified login, and PWA responsive hardening"}

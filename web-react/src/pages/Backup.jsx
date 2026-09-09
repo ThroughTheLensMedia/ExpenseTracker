@@ -13,6 +13,8 @@ import DocumentsTab from '../components/control-center/DocumentsTab.jsx';
 import DashboardTab from '../components/control-center/DashboardTab.jsx';
 import AdminTab from '../components/control-center/AdminTab.jsx';
 import CategoriesTab from '../components/control-center/CategoriesTab.jsx';
+import ExperienceTab from '../components/control-center/ExperienceTab.jsx';
+import { getExperienceMode, EXPERIENCE_MODES } from '../constants/experienceModes';
 
 const DEFAULT_SETTINGS = {
     business_name: '', contact_name: '', website: '', email: '', phone: '', address: '',
@@ -22,7 +24,7 @@ const DEFAULT_SETTINGS = {
 
 export default function Backup() {
     const { user, subscription, refreshSubscription } = useAuth();
-    const [activeTab, setActiveTab] = useState('automation');
+    const [activeTab, setActiveTab] = useState('experience');
 
     // Base state (loaded immediately — lightweight)
     const [settings, setSettings] = useState(DEFAULT_SETTINGS);
@@ -58,7 +60,7 @@ export default function Backup() {
             setActiveTab('help');
             return;
         }
-        if (t && ['automation', 'profile', 'billing', 'infrastructure', 'help', 'intelligence', 'integration', 'documents', 'dashboard', 'admin', 'categories'].includes(t)) {
+        if (t && ['experience', 'automation', 'profile', 'billing', 'infrastructure', 'help', 'intelligence', 'integration', 'documents', 'dashboard', 'admin', 'categories'].includes(t)) {
             setActiveTab(t);
         }
     }, [window.location.search]);
@@ -74,6 +76,9 @@ export default function Backup() {
             setIsMailerReady(!!hlth.mailer);
             setHealthCheckedAt(new Date());
             setSettings(st || {});
+            if (getExperienceMode(st) === EXPERIENCE_MODES.PERSONAL && ['dashboard', 'integration', 'profile'].includes(activeTab)) {
+                setActiveTab('experience');
+            }
         } catch (e) {
             console.error('Base load failed', e);
         } finally {
@@ -151,6 +156,8 @@ export default function Backup() {
         return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     };
 
+    const isPersonal = getExperienceMode(settings) === EXPERIENCE_MODES.PERSONAL;
+
     return (
         <section className="dashboard" style={{ maxWidth: '1400px', margin: '0 auto', paddingBottom: '100px' }}>
             {/* Header */}
@@ -158,20 +165,21 @@ export default function Backup() {
                 <div>
                     <h1 style={{ fontSize: '2.4rem', fontWeight: 950, marginBottom: '6px', color: '#38bdf8' }}>Ledger Control Center</h1>
                     <div className="muted" style={{ fontWeight: 600, fontSize: '15px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
-                        <span>Infrastructure Management & Intelligence Engine</span>
+                        <span>{isPersonal ? 'Personal Preferences & Financial Tools' : 'Infrastructure Management & Intelligence Engine'}</span>
                     </div>
                 </div>
 
                 {/* Pills — alphabetical order */}
                 <nav style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                    <button className={`pill ${activeTab === 'experience' ? 'active' : ''}`} onClick={() => setActiveTab('experience')}>Experience</button>
                     <button className={`pill ${activeTab === 'intelligence' ? 'active' : ''}`} onClick={() => setActiveTab('intelligence')}>AI Intelligence</button>
                     <button className={`pill ${activeTab === 'automation' ? 'active' : ''}`} onClick={() => setActiveTab('automation')}>Automation</button>
                     <button className={`pill ${activeTab === 'categories' ? 'active' : ''}`} onClick={() => setActiveTab('categories')}>Categories</button>
-                    <button className={`pill ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>Dashboard</button>
+                    {!isPersonal && <button className={`pill ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>Dashboard</button>}
                     <button className={`pill ${activeTab === 'documents' ? 'active' : ''}`} onClick={() => setActiveTab('documents')}>Documents</button>
                     <button className={`pill ${activeTab === 'help' ? 'active' : ''}`} onClick={() => setActiveTab('help')}>Help Center</button>
-                    <button className={`pill ${activeTab === 'integration' ? 'active' : ''}`} onClick={() => setActiveTab('integration')}>Integrations</button>
-                    <button className={`pill ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>Profile</button>
+                    {!isPersonal && <button className={`pill ${activeTab === 'integration' ? 'active' : ''}`} onClick={() => setActiveTab('integration')}>Integrations</button>}
+                    {!isPersonal && <button className={`pill ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>Profile</button>}
                     {isAdmin && <button className={`pill ${activeTab === 'infrastructure' ? 'active' : ''}`} onClick={() => setActiveTab('infrastructure')} style={{ position: 'relative' }}>
                         Infrastructure
                         <span style={{ position: 'absolute', top: 3, right: 4, width: 7, height: 7, borderRadius: '50%', background: '#f97316', display: 'inline-block', pointerEvents: 'none' }} />
@@ -234,6 +242,7 @@ export default function Backup() {
                 </div>
             )}
             {!showSkeleton && activeTab === 'profile' && <ProfileTab settings={settings} setSettings={setSettings} onReload={loadData} />}
+            {!showSkeleton && activeTab === 'experience' && <ExperienceTab settings={settings} setSettings={setSettings} />}
             {!showSkeleton && activeTab === 'billing' && <ProfileTab settings={settings} setSettings={setSettings} onReload={loadData} billingOnly />}
             {!showSkeleton && activeTab === 'dashboard' && <DashboardTab settings={settings} setSettings={setSettings} />}
             {!showSkeleton && activeTab === 'intelligence' && <IntelligenceTab settings={settings} setSettings={setSettings} user={user} loading={loading} setLoading={setLoading} onReload={loadData} />}

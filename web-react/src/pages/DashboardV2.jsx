@@ -338,7 +338,7 @@ export default function DashboardV2({ apiStatus }) {
             </div>}
 
             {/* Layer 2 & Layer 3 Container */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 400px), 1fr))', gap: '20px' }}>
                 
                 {/* Layer 2: Core Performance (Revenue vs Expense vs Net) */}
                 {widgets.performance_chart !== false && <div className="card glass" style={{ margin: 0, padding: '30px' }}>
