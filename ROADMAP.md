@@ -119,7 +119,7 @@ Improve the existing Business experience in small, reversible releases. Preserve
 | Gate | Scope | Status |
 |------|-------|--------|
 | **E0 — Baseline and rollback boundary** | Review the authenticated production flow, record the current Git state, preserve D1 in a local checkpoint, and create an isolated implementation worktree. | ✅ Complete 2026-09-09; no push, migration, or deploy. |
-| **E1 — Navigation and terminology** | Organize the menu as Money, Work, Operations, and Settings; replace technical labels with task-oriented business language while preserving paths and Personal-mode guards. | ✅ Implemented locally 2026-09-09; route inventory, mode tests, build, and public-shell render pass. Authenticated preview and release remain unapproved. |
+| **E1 — Navigation and terminology** | Organize the menu as Money, Work, Operations, and Settings; replace technical labels with task-oriented business language while preserving paths and Personal-mode guards. | ✅ Protected preview verified 2026-09-09 in Business and Personal modes at desktop and 390×844 mobile; all destinations, scrolling, route guards, API health, and browser-console checks pass. Production release remains unapproved. |
 | **E2 — Dashboard decisions and Assistant trust** | Prioritize next actions, clarify metrics, and reconcile Assistant capability guidance with the tools it can actually use. | Not started |
 | **E3 — Core financial workflows** | Improve transaction review, saved views, account metric clarity, tax guidance, and mileage fallback messaging. | Not started |
 | **E4 — Client and document workflows** | Strengthen the lead-to-client-to-invoice flow and make document organization easier to understand. | Not started |
