@@ -106,11 +106,11 @@ One application and data model with two deliberate experiences. Business remains
 
 | Gate | Scope | Status |
 |------|-------|--------|
-| **D1 — Experience foundation** | Add constrained `settings.experience_mode`, strict API validation, centralized frontend mode constants, Business-default compatibility, mode-aware shell navigation, and soft guards for business-only routes. No production migration or deploy in this gate. | ✅ Implemented locally 2026-09-08; tests/build pass. Migration and deploy not applied. |
-| **D2 — Personal shell + onboarding** | Add explicit Personal/Business selection, a focused Personal Control Center, reversible mode switching, and mode-specific onboarding. | ✅ Implemented locally 2026-09-08; release pending. |
-| **D3 — Personal dashboard + Assistant** | Compose a dedicated Personal dashboard from shared metrics; adapt AI context, permitted tools, labels, and empty states without changing Business behavior. | ✅ Implemented locally 2026-09-08; release pending. |
-| **D4 — PWA responsive hardening** | Remove confirmed dashboard clipping, simplify the shared login screen, and harden retained Personal screens for 320/360/375/390/430px plus landscape and desktop. | ✅ Code complete locally 2026-09-08; automated build/static checks and local login visual review pass. Authenticated multi-viewport browser acceptance remains part of D5 pilot. |
-| **D5 — Pilot + release** | Apply the additive migration only after approval, review login plus Business and Personal acceptance inventories, then update both changelogs/version files once and request separate production approval. | ◐ Local authenticated review passed with the fictional Dewey test account; production migration/deploy verification pending. |
+| **D1 — Experience foundation** | Add constrained `settings.experience_mode`, strict API validation, centralized frontend mode constants, Business-default compatibility, mode-aware shell navigation, and soft guards for business-only routes. | ✅ Shipped v7.28.0. Production constraint/default verified; all existing accounts remain Business unless explicitly switched. |
+| **D2 — Personal shell + onboarding** | Add explicit Personal/Business selection, a focused Personal Control Center, reversible mode switching, and mode-specific onboarding. | ✅ Shipped v7.28.0. |
+| **D3 — Personal dashboard + Assistant** | Compose a dedicated Personal dashboard from shared metrics; adapt AI context, permitted tools, labels, and empty states without changing Business behavior. | ✅ Shipped v7.28.0; live Personal and Business account checks passed. |
+| **D4 — PWA responsive hardening** | Remove confirmed dashboard clipping, simplify the shared login screen, and harden retained Personal screens for narrow PWA layouts plus desktop. | ✅ Shipped v7.28.0; build/static checks and live login visual review passed. |
+| **D5 — Pilot + release** | Apply the additive migration only after approval, review login plus Business and Personal acceptance inventories, then update both changelogs/version files once and deploy with production approval. | ✅ Completed 2026-09-08. Migration, v7.28.0 deploy, API health, login, Business default, Personal dashboard, demo data, and Personal route guard verified in production. |
 
 ### Design Pass
 

@@ -7,6 +7,7 @@ const RELEASES = [
         '<strong>Improved:</strong> Onboarding and the Lumière Assistant now adapt to Personal users instead of assuming everyone owns a photography business.',
         '<strong>Improved:</strong> The login screen is shorter and clearer, with a generic email field and fewer competing links.',
         '<strong>Fixed:</strong> Dashboard grids and mobile containers no longer clip against narrow PWA screens.',
+        '<strong>Verified:</strong> Production migration plus Business and Personal account behavior passed release checks.',
     ]},
     { version: '7.27.5', date: 'SEP 1, 2026', color: '#4c7dff', items: [
         '<strong>Fixed:</strong> Recurring-vendor spend (Operational Intelligence) now calculates off a rolling trailing 12 months instead of looking back 2-3 years — prices drift over time, so this keeps the monthly/annual figures reflecting what a vendor charges now.',

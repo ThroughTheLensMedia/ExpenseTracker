@@ -21,6 +21,7 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 - Simplified the shared login screen, replaced the example address with `email`, reduced visual clutter, and removed the redundant Request Access flow while preserving account creation, invite codes, Google login, and password reset.
 - Fixed the dashboard's 400px minimum grid width and mobile viewport-width sizing that could clip content in installed PWA layouts.
 - Tightened localhost authentication safety: the mock-user bypass now requires an explicit `VITE_ENABLE_DEV_BYPASS=true` environment setting in addition to the legacy browser flag.
+- Production acceptance verified for the Business-default migration, Personal marketing account, protected routes, simplified login, version endpoint, and API health.
 
 ---
 
