@@ -1,6 +1,6 @@
 # Lumière Ledger — Master Roadmap
 
-**Version:** v7.28.0 | **Last reviewed:** 2026-09-08
+**Version:** v7.28.1 | **Last reviewed:** 2026-09-09
 Source of truth for all sprint work, security status, and product phases.
 
 ---
@@ -183,6 +183,7 @@ One application and data model with two deliberate experiences. Business remains
 
 | Version | What shipped |
 |---------|-------------|
+| v7.28.1 | Added Jason Deuermeyer's verified UUID to the owner-covered Plaid billing exemption across enforcement and admin estimates |
 | v7.28.0 | Personal Mode, dedicated personal dashboard/Assistant behavior, simplified login, and PWA responsive hardening |
 | v7.7.0–7.7.5 | Accounts page full build — groups, live balances, Plaid badge, sort/filter, rename/hide, sync button |
 | v7.7.6 | Live Sync always on top, Unsync button, clickable transaction counts, logout scroll fix |

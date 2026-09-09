@@ -9,11 +9,12 @@
 // Joshua Deuermeyer — owner/admin account. Must match api/constants.js ADMIN_UUID.
 export const ADMIN_UUID = '49e7efcb-6434-4f0c-9563-3151a6d50df9';
 
-// Joshua Deuermeyer (admin) + Michelle Gornichec — comped Plaid billing.
-// Confirmed 2026-07-01: everyone else pays. Must match api/constants.js.
+// Joshua Deuermeyer (admin), Michelle Gornichec, and Jason Deuermeyer are
+// exempt from Plaid billing. Must match api/constants.js.
 export const PLAID_EXEMPT_IDS = [
     ADMIN_UUID,
     'fcb92809-70f1-4ae0-b39c-e317378a01a7',
+    '1fd43a56-7b9d-4928-9b01-236e29753023',
 ];
 
 // Derives effective tier from plan_type + admin_tier override.

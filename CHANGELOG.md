@@ -5,6 +5,15 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.28.1] — 2026-09-09
+
+### Changed — Plaid billing exemption
+
+- Added Jason Deuermeyer's verified Auth UUID to the owner-covered Plaid exemption. Jason can open Plaid Link without a Stripe customer record, receives no Plaid usage invoice items, and shows a $0 Plaid estimate in the admin subscription view.
+- Kept the exemption UUID-based and synchronized between the backend billing enforcement and frontend administrative estimate. No plan, pricing, schema, or general user access behavior changed.
+
+---
+
 ## [v7.28.0] — 2026-09-08
 
 ### Added — Personal Mode

@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.28.1', date: 'SEP 9, 2026', color: '#4c7dff', items: [
+        '<strong>Billing:</strong> Added one owner-covered family account to the Plaid fee exemption. No pricing, plan, or feature access changed for other users.',
+    ]},
     { version: '7.28.0', date: 'SEP 8, 2026', color: '#a78bfa', items: [
         '<strong>New:</strong> Choose Personal or Business in the Control Center. Personal gives everyday users a focused money dashboard and removes Schedule C, mileage, equipment, CRM, invoicing, and client tools without deleting any data.',
         '<strong>New:</strong> Personal dashboard shows monthly income, spending, cash flow, top categories, and confirmed recurring bills using the same private ledger data.',

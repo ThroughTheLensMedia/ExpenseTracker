@@ -100,7 +100,7 @@ router.post("/create-link-token", async (req, res) => {
         }
 
         // Billing gate: all users must have a Stripe customer record before connecting.
-        // Exempt list (PLAID_BILLING_EXEMPT) covers Joshua and Michelle only — no plan-type exceptions.
+        // Exempt list covers only the owner-approved UUIDs — no plan-type exceptions.
         if (!PLAID_BILLING_EXEMPT.has(req.user.id)) {
             const { data: sub } = await req.sb
                 .from('user_subscriptions')

@@ -1,6 +1,6 @@
 # Lumière Ledger — Plaid Usage Billing Specification
 
-**Last updated:** 2026-05-18  
+**Last updated:** 2026-09-09
 **Status:** Design complete — pending Plaid approval + build  
 **Depends on:** `STRIPE_ROADMAP.md` (Stripe must be built first)  
 **Referenced by:** `ROADMAP.md` → Next Sprint
@@ -33,6 +33,10 @@ cost + $0.20/account/month margin. Stripe fees are passed through at cost — ze
 **Admin exemption (Joshua):** The platform owner pays Plaid directly as part of the
 business account. His Lumière Ledger account is bypassed in `buildPlaidInvoiceItems`
 — no Stripe invoice items generated for user_id `49e7efcb-6434-4f0c-9563-3151a6d50df9`.
+
+**Owner-covered accounts:** Michelle Gornichec (`fcb92809-70f1-4ae0-b39c-e317378a01a7`)
+and Jason Deuermeyer (`1fd43a56-7b9d-4928-9b01-236e29753023`) are also exempt from the
+Stripe card-on-file gate and Plaid usage invoice items. Joshua covers their Plaid costs.
 
 **Grandfathered Free members** (free_beta / lifetime) pay $0 platform fee + $0.50/account
 Plaid fee. Connecting 0 accounts = $0 total. Connecting 5 accounts = $2.50 + Stripe fee.
