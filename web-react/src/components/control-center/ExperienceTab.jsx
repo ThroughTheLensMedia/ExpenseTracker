@@ -25,16 +25,48 @@ export default function ExperienceTab({ settings, setSettings }) {
         }
     }
 
-    return <div className="card glass" style={{ padding: 24, maxWidth: 820, margin: '0 auto' }}>
-        <h2 style={{ marginTop: 0 }}>Choose Your Experience</h2>
-        <p className="muted">This changes what Lumière shows—not your data. You can switch back at any time.</p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: 14, margin: '22px 0' }}>
-            {OPTIONS.map(option => <button key={option.id} onClick={() => setSelected(option.id)} style={{ textAlign: 'left', padding: 20, borderRadius: 16, cursor: 'pointer', color: 'white', background: selected === option.id ? 'rgba(76,125,255,.18)' : 'rgba(255,255,255,.03)', border: `1px solid ${selected === option.id ? 'var(--accent)' : 'rgba(255,255,255,.1)'}` }}>
-                <div style={{ fontSize: 17, fontWeight: 900, marginBottom: 8 }}>{option.title}</div>
-                <div className="muted" style={{ fontSize: 13, lineHeight: 1.6 }}>{option.text}</div>
-            </button>)}
-        </div>
-        <button className="btn primary" onClick={save}>Save Experience</button>
-        {status && <p className="muted" style={{ marginBottom: 0 }}>{status}</p>}
-    </div>;
+    return (
+        <section className="card glass" style={{ margin: 0, padding: 'clamp(16px, 3vw, 24px)' }} aria-labelledby="experience-heading">
+            <div style={{ maxWidth: 720 }}>
+                <h2 id="experience-heading" style={{ margin: 0, fontSize: 20 }}>Choose your experience</h2>
+                <p className="muted" style={{ margin: '8px 0 0', fontSize: 14, lineHeight: 1.55 }}>
+                    Choose the workspace that fits how you use Lumière. Your records stay intact, and you can switch back at any time.
+                </p>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 14, margin: '22px 0' }}>
+                {OPTIONS.map(option => {
+                    const isSelected = selected === option.id;
+
+                    return (
+                        <button
+                            key={option.id}
+                            type="button"
+                            aria-pressed={isSelected}
+                            onClick={() => setSelected(option.id)}
+                            style={{
+                                minHeight: 150,
+                                padding: 'clamp(16px, 3vw, 20px)',
+                                border: `1px solid ${isSelected ? 'var(--accent)' : 'var(--line)'}`,
+                                borderRadius: 16,
+                                background: isSelected ? 'rgba(76,125,255,.18)' : 'rgba(255,255,255,.03)',
+                                color: 'var(--text)',
+                                cursor: 'pointer',
+                                textAlign: 'left',
+                                transition: 'background-color .18s ease, border-color .18s ease',
+                            }}
+                        >
+                            <span style={{ display: 'block', marginBottom: 8, fontSize: 17, fontWeight: 900 }}>{option.title}</span>
+                            <span className="muted" style={{ display: 'block', fontSize: 14, lineHeight: 1.55 }}>{option.text}</span>
+                        </button>
+                    );
+                })}
+            </div>
+
+            <div className="controls" style={{ alignItems: 'center' }}>
+                <button type="button" className="btn primary" onClick={save}>Save experience</button>
+                {status && <span className="muted" role="status" aria-live="polite" style={{ fontSize: 13 }}>{status}</span>}
+            </div>
+        </section>
+    );
 }
