@@ -159,34 +159,41 @@ export default function Backup() {
     const isPersonal = getExperienceMode(settings) === EXPERIENCE_MODES.PERSONAL;
 
     return (
-        <section className="dashboard" style={{ maxWidth: '1400px', margin: '0 auto', paddingBottom: '100px' }}>
-            {/* Header */}
-            <div style={{ marginBottom: '30px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', textAlign: 'center' }}>
-                <div>
-                    <h1 style={{ fontSize: '2.4rem', fontWeight: 950, marginBottom: '6px', color: '#38bdf8' }}>Ledger Control Center</h1>
-                    <div className="muted" style={{ fontWeight: 600, fontSize: '15px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
-                        <span>{isPersonal ? 'Personal Preferences & Financial Tools' : 'Infrastructure Management & Intelligence Engine'}</span>
-                    </div>
+        <section className="control-center-shell">
+            <div className="control-center-header">
+                <div className="control-center-heading">
+                    <p className="control-center-eyebrow">Settings &amp; tools</p>
+                    <h1 className="control-center-title">Control Center</h1>
+                    <p className="control-center-subtitle">
+                        {isPersonal
+                            ? 'Manage your preferences, financial tools, documents, and account experience.'
+                            : 'Manage your business workspace, automation, documents, integrations, and account settings.'}
+                    </p>
                 </div>
+            </div>
 
-                {/* Pills — alphabetical order */}
-                <nav style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                    <button className={`pill ${activeTab === 'experience' ? 'active' : ''}`} onClick={() => setActiveTab('experience')}>Experience</button>
-                    <button className={`pill ${activeTab === 'intelligence' ? 'active' : ''}`} onClick={() => setActiveTab('intelligence')}>AI Intelligence</button>
-                    <button className={`pill ${activeTab === 'automation' ? 'active' : ''}`} onClick={() => setActiveTab('automation')}>Automation</button>
-                    <button className={`pill ${activeTab === 'categories' ? 'active' : ''}`} onClick={() => setActiveTab('categories')}>Categories</button>
-                    {!isPersonal && <button className={`pill ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>Dashboard</button>}
-                    <button className={`pill ${activeTab === 'documents' ? 'active' : ''}`} onClick={() => setActiveTab('documents')}>Documents</button>
-                    <button className={`pill ${activeTab === 'help' ? 'active' : ''}`} onClick={() => setActiveTab('help')}>Help Center</button>
-                    {!isPersonal && <button className={`pill ${activeTab === 'integration' ? 'active' : ''}`} onClick={() => setActiveTab('integration')}>Integrations</button>}
-                    {!isPersonal && <button className={`pill ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>Profile</button>}
-                    {isAdmin && <button className={`pill ${activeTab === 'infrastructure' ? 'active' : ''}`} onClick={() => setActiveTab('infrastructure')} style={{ position: 'relative' }}>
+            {/* Tabs remain horizontally accessible on compact desktop and PWA screens. */}
+            <nav className="control-center-nav" aria-label="Control Center sections">
+                <div className="control-center-tabs" role="tablist">
+                    <button type="button" role="tab" aria-selected={activeTab === 'experience'} className={`control-center-tab ${activeTab === 'experience' ? 'active' : ''}`} onClick={() => setActiveTab('experience')}>Experience</button>
+                    <button type="button" role="tab" aria-selected={activeTab === 'intelligence'} className={`control-center-tab ${activeTab === 'intelligence' ? 'active' : ''}`} onClick={() => setActiveTab('intelligence')}>AI Intelligence</button>
+                    <button type="button" role="tab" aria-selected={activeTab === 'automation'} className={`control-center-tab ${activeTab === 'automation' ? 'active' : ''}`} onClick={() => setActiveTab('automation')}>Automation</button>
+                    <button type="button" role="tab" aria-selected={activeTab === 'categories'} className={`control-center-tab ${activeTab === 'categories' ? 'active' : ''}`} onClick={() => setActiveTab('categories')}>Categories</button>
+                    {!isPersonal && <button type="button" role="tab" aria-selected={activeTab === 'dashboard'} className={`control-center-tab ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>Dashboard</button>}
+                    <button type="button" role="tab" aria-selected={activeTab === 'documents'} className={`control-center-tab ${activeTab === 'documents' ? 'active' : ''}`} onClick={() => setActiveTab('documents')}>Documents</button>
+                    <button type="button" role="tab" aria-selected={activeTab === 'help'} className={`control-center-tab ${activeTab === 'help' ? 'active' : ''}`} onClick={() => setActiveTab('help')}>Help Center</button>
+                    {!isPersonal && <button type="button" role="tab" aria-selected={activeTab === 'integration'} className={`control-center-tab ${activeTab === 'integration' ? 'active' : ''}`} onClick={() => setActiveTab('integration')}>Integrations</button>}
+                    {!isPersonal && <button type="button" role="tab" aria-selected={activeTab === 'profile'} className={`control-center-tab ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>Profile</button>}
+                    {isAdmin && <button type="button" role="tab" aria-selected={activeTab === 'infrastructure'} className={`control-center-tab ${activeTab === 'infrastructure' ? 'active' : ''}`} onClick={() => setActiveTab('infrastructure')} style={{ position: 'relative' }}>
                         Infrastructure
                         <span style={{ position: 'absolute', top: 3, right: 4, width: 7, height: 7, borderRadius: '50%', background: '#f97316', display: 'inline-block', pointerEvents: 'none' }} />
                     </button>}
                     {isAdmin && (
                         <button
-                            className={`pill ${activeTab === 'admin' ? 'active' : ''}`}
+                            type="button"
+                            role="tab"
+                            aria-selected={activeTab === 'admin'}
+                            className={`control-center-tab ${activeTab === 'admin' ? 'active' : ''}`}
                             onClick={() => setActiveTab('admin')}
                             style={{ position: 'relative' }}
                         >
@@ -194,8 +201,8 @@ export default function Backup() {
                             <span style={{ position: 'absolute', top: 3, right: 4, width: 7, height: 7, borderRadius: '50%', background: '#f97316', display: 'inline-block', pointerEvents: 'none' }} />
                         </button>
                     )}
-                </nav>
-            </div>
+                </div>
+            </nav>
 
             {/* System Status Panel — admin only */}
             {isAdmin && <div className="card glass" style={{ margin: '0 0 32px', padding: '20px 28px', borderTop: '3px solid rgba(56,189,248,0.4)' }}>
@@ -233,35 +240,36 @@ export default function Backup() {
                 </div>
             </div>}
 
-            {/* Tab Content */}
-            {showSkeleton && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '10px 0' }}>
-                    {[80, 60, 90, 50].map((w, i) => (
-                        <div key={i} style={{ height: '18px', width: `${w}%`, borderRadius: '6px', background: 'rgba(255,255,255,0.06)', animation: 'pulse 1.4s ease-in-out infinite' }} />
-                    ))}
-                </div>
-            )}
-            {!showSkeleton && activeTab === 'profile' && <ProfileTab settings={settings} setSettings={setSettings} onReload={loadData} />}
-            {!showSkeleton && activeTab === 'experience' && <ExperienceTab settings={settings} setSettings={setSettings} />}
-            {!showSkeleton && activeTab === 'billing' && <ProfileTab settings={settings} setSettings={setSettings} onReload={loadData} billingOnly />}
-            {!showSkeleton && activeTab === 'dashboard' && <DashboardTab settings={settings} setSettings={setSettings} />}
-            {!showSkeleton && activeTab === 'intelligence' && <IntelligenceTab settings={settings} setSettings={setSettings} user={user} loading={loading} setLoading={setLoading} onReload={loadData} />}
-            {!showSkeleton && activeTab === 'documents' && <DocumentsTab settings={settings} user={user} />}
-            {!showSkeleton && activeTab === 'automation' && <AutomationTab rules={rules} allExpenses={allExpenses} onReload={loadData} />}
-            {!showSkeleton && activeTab === 'categories' && <CategoriesTab />}
-            {!showSkeleton && activeTab === 'infrastructure' && isAdmin && <InfrastructureTab subscription={subscription} onReload={loadData} />}
-            {!showSkeleton && activeTab === 'integration' && <IntegrationTab />}
-            {!showSkeleton && activeTab === 'help' && <HelpTab user={user} />}
-            {!showSkeleton && activeTab === 'admin' && isAdmin && (
-                <AdminTab
-                    user={user}
-                    allSubscriptions={allSubscriptions}
-                    betaCodes={betaCodes}
-                    dailyStats={dailyStats}
-                    statusMsg={statusMsg}
-                    onReload={loadData}
-                />
-            )}
+            <div className="control-center-content" role="tabpanel">
+                {showSkeleton && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '10px 0' }}>
+                        {[80, 60, 90, 50].map((w, i) => (
+                            <div key={i} style={{ height: '18px', width: `${w}%`, borderRadius: '6px', background: 'rgba(255,255,255,0.06)', animation: 'pulse 1.4s ease-in-out infinite' }} />
+                        ))}
+                    </div>
+                )}
+                {!showSkeleton && activeTab === 'profile' && <ProfileTab settings={settings} setSettings={setSettings} onReload={loadData} />}
+                {!showSkeleton && activeTab === 'experience' && <ExperienceTab settings={settings} setSettings={setSettings} />}
+                {!showSkeleton && activeTab === 'billing' && <ProfileTab settings={settings} setSettings={setSettings} onReload={loadData} billingOnly />}
+                {!showSkeleton && activeTab === 'dashboard' && <DashboardTab settings={settings} setSettings={setSettings} />}
+                {!showSkeleton && activeTab === 'intelligence' && <IntelligenceTab settings={settings} setSettings={setSettings} user={user} loading={loading} setLoading={setLoading} onReload={loadData} />}
+                {!showSkeleton && activeTab === 'documents' && <DocumentsTab settings={settings} user={user} />}
+                {!showSkeleton && activeTab === 'automation' && <AutomationTab rules={rules} allExpenses={allExpenses} onReload={loadData} />}
+                {!showSkeleton && activeTab === 'categories' && <CategoriesTab />}
+                {!showSkeleton && activeTab === 'infrastructure' && isAdmin && <InfrastructureTab subscription={subscription} onReload={loadData} />}
+                {!showSkeleton && activeTab === 'integration' && <IntegrationTab />}
+                {!showSkeleton && activeTab === 'help' && <HelpTab user={user} />}
+                {!showSkeleton && activeTab === 'admin' && isAdmin && (
+                    <AdminTab
+                        user={user}
+                        allSubscriptions={allSubscriptions}
+                        betaCodes={betaCodes}
+                        dailyStats={dailyStats}
+                        statusMsg={statusMsg}
+                        onReload={loadData}
+                    />
+                )}
+            </div>
         </section>
     );
 }
