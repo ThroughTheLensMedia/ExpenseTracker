@@ -3,7 +3,7 @@
 // Mounted at /api/intake-keys (behind authMiddleware)
 
 const express = require('express');
-const { v4: uuidv4 } = require('uuid');
+const { randomBytes } = require('crypto');
 const router = express.Router();
 
 // GET /intake-keys — list all keys for the logged-in user
@@ -27,7 +27,7 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
     try {
         const label = String(req.body?.label || 'Website Integration').trim().slice(0, 80);
-        const key = `ll-${uuidv4().replace(/-/g, '').slice(0, 24)}`;
+        const key = `ll-${randomBytes(12).toString('hex')}`;
 
         const { data, error } = await req.sb
             .from('intake_keys')
