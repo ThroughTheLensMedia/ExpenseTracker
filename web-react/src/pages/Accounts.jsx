@@ -81,7 +81,9 @@ function sortAccounts(list, sortKey) {
 // Formatting
 function fmtMoney(cents) {
     if (cents === null || cents === undefined) return '—';
-    return '$' + Math.abs(cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const amount = Number(cents) / 100;
+    const sign = amount < 0 ? '−' : '';
+    return sign + '$' + Math.abs(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 function fmtBalance(n) {
     if (n === null || n === undefined) return '—';
@@ -902,7 +904,7 @@ export default function Accounts() {
                         </div>
                     ))}
                     <div className="muted" style={{ gridColumn:'1 / -1', fontSize:11, lineHeight:1.5 }}>
-                        These are net ledger totals for the month (expenses minus recorded income), not current bank balances. Live Plaid balances appear inside connected-account cards and may be cached for up to 10 days to limit paid balance calls.
+                        These are net ledger totals for the month, not current bank balances. Positive values are net outflow; negative values mean recorded income exceeded spending. Live Plaid balances appear inside connected-account cards and may be cached for up to 10 days to limit paid balance calls.
                     </div>
                 </div>
             )}
