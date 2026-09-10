@@ -91,6 +91,7 @@ Add the item under the appropriate category in the relevant phase or backlog sec
 10. Show changes — Tell me exactly which files you'll touch.
 11. No acting alone — Never send, post, or publish without my yes.
 12. Think first — Reason step by step before coding.
+13. Make requests unmistakable — When Joshua must act, start with **ACTION REQUIRED** and state whether the request is for approval, review, login, or a decision; name the exact commit, deployment, screen, or setting; explain what the action authorizes and what remains excluded; and provide the exact response or UI action needed. Never bury a required action inside a status update.
 
 ### CODING
 - Always write clean, well-commented code with good variable names.
