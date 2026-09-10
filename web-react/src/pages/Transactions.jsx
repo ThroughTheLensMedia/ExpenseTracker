@@ -2,15 +2,25 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { fetchAllExpenses, formatMoney, formatDate, invalidateExpensesCache, apiGet, apiPost, apiPatch, apiDelete, getExpensesCache } from '../api';
 import TransactionDrawer from '../components/TransactionDrawer';
+import { useAuth } from '../components/AuthContext.jsx';
 import { useModal } from '../components/ModalContext.jsx';
 import MergeModal from '../components/MergeModal.jsx';
 import CategorySelect from '../components/CategorySelect.jsx';
 import { ALL_CATEGORIES, CATEGORY_GROUPS } from '../constants/categories.js';
 import { isNonIncomeRow } from '../constants/spendCategories.js';
 import useExpenseFilters, { useFilterOptions } from '../hooks/useExpenseFilters';
-import { Inbox } from 'lucide-react';
+import {
+    countActiveTransactionFilters,
+    createSavedTransactionView,
+    getQuickTransactionView,
+    getTransactionViewsStorageKey,
+    loadSavedTransactionViews,
+    QUICK_TRANSACTION_VIEWS,
+} from '../utils/transactionViews.js';
+import { BookmarkPlus, Inbox, X } from 'lucide-react';
 
 export default function Transactions() {
+    const { user } = useAuth();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const isAuditMode = searchParams.get('audit') === 'true';
@@ -43,6 +53,13 @@ export default function Transactions() {
     const [customCats, setCustomCats] = useState([]);
     const [sortCol, setSortCol] = useState('expense_date');
     const [sortDir, setSortDir] = useState('desc');
+    const savedViewsStorageKey = getTransactionViewsStorageKey(user?.id);
+    const [savedViews, setSavedViews] = useState(() => {
+        try { return loadSavedTransactionViews(localStorage.getItem(savedViewsStorageKey)); }
+        catch { return []; }
+    });
+    const [savedViewName, setSavedViewName] = useState('');
+    const [activeViewId, setActiveViewId] = useState(null);
 
     // Compute calendar days since the most recent IMPORTED (non-manual) transaction was created.
     // Uses created_at only — expense_date is the transaction date, not the import date.
@@ -302,7 +319,7 @@ export default function Transactions() {
     // Audit mode applies a special pre-filter before the shared hook
     const auditBase = useMemo(() => {
         if (!isAuditMode) return expenses;
-        return expenses.filter(r => Number(r.amount_cents || 0) > 7500 && !r.receipt_link);
+        return expenses.filter(r => r.tax_deductible && Number(r.amount_cents || 0) > 7500 && !r.receipt_link);
     }, [expenses, isAuditMode]);
 
     const filters = useMemo(() => isAuditMode ? {} : {
@@ -316,6 +333,61 @@ export default function Transactions() {
     const filtered = useMemo(() =>
         needsReviewOnly ? filteredBase.filter(r => r.needs_review) : filteredBase,
     [filteredBase, needsReviewOnly]);
+
+    const [defaultFilterSnapshot] = useState(() => ({
+        ...getQuickTransactionView('recent'),
+        start: daysAgoStr(90),
+        end: todayStr(),
+    })); // defaults are intentionally fixed for this mounted session
+
+    const currentFilterSnapshot = useMemo(() => ({
+        start, end, searchVendor, searchCategory, searchNotes, categoryNotesMatch,
+        deductOnly, missingReceiptOnly, searchAccount, plaidAccountId, plaidAccountName,
+        plaidSourceKey, institutionFilter, needsCategoryFilter, needsReviewOnly,
+        sortCol, sortDir,
+    }), [start, end, searchVendor, searchCategory, searchNotes, categoryNotesMatch,
+        deductOnly, missingReceiptOnly, searchAccount, plaidAccountId, plaidAccountName,
+        plaidSourceKey, institutionFilter, needsCategoryFilter, needsReviewOnly, sortCol, sortDir]);
+
+    const activeFilterCount = countActiveTransactionFilters(currentFilterSnapshot, defaultFilterSnapshot);
+    const filterSnapshotMatches = (snapshot) => {
+        const candidate = { ...defaultFilterSnapshot, ...snapshot };
+        return Object.keys(defaultFilterSnapshot).every(key => candidate[key] === currentFilterSnapshot[key]);
+    };
+
+    const applyFilterSnapshot = (snapshot, viewId = null) => {
+        const next = { ...defaultFilterSnapshot, ...snapshot };
+        setStart(next.start); setEnd(next.end); setSearchVendor(next.searchVendor);
+        setSearchCategory(next.searchCategory); setSearchNotes(next.searchNotes);
+        setCategoryNotesMatch(next.categoryNotesMatch); setDeductOnly(next.deductOnly);
+        setMissingReceiptOnly(next.missingReceiptOnly); setSearchAccount(next.searchAccount);
+        setPlaidAccountId(next.plaidAccountId); setPlaidAccountName(next.plaidAccountName);
+        setPlaidSourceKey(next.plaidSourceKey); setInstitutionFilter(next.institutionFilter);
+        setNeedsCategoryFilter(next.needsCategoryFilter); setNeedsReviewOnly(next.needsReviewOnly);
+        setSortCol(next.sortCol); setSortDir(next.sortDir); setSelectedIds(new Set());
+        setActiveViewId(viewId);
+    };
+
+    const persistSavedViews = (views) => {
+        setSavedViews(views);
+        try { localStorage.setItem(savedViewsStorageKey, JSON.stringify(views)); }
+        catch { /* Private browsing or storage policy can disable local storage. */ }
+    };
+
+    const handleSaveView = () => {
+        const view = createSavedTransactionView(savedViewName, currentFilterSnapshot);
+        if (!view) return;
+        persistSavedViews([view, ...savedViews].slice(0, 10));
+        setSavedViewName('');
+        setActiveViewId(view.id);
+        setToast({ ok: true, msg: `Saved view “${view.name}” on this device.` });
+        setTimeout(() => setToast(null), 3000);
+    };
+
+    const handleDeleteSavedView = (viewId) => {
+        persistSavedViews(savedViews.filter(view => view.id !== viewId));
+        if (activeViewId === viewId) setActiveViewId(null);
+    };
 
     // Builds the export from `filtered` (the same rows currently on screen) rather
     // than re-querying the server by date range only — so Export CSV respects
@@ -350,9 +422,7 @@ export default function Transactions() {
     };
 
     const clearFilters = () => {
-        setStart(daysAgoStr(90)); setEnd(todayStr()); setSearchVendor(''); setSearchCategory('');
-        setSearchAccount(''); setInstitutionFilter(''); setPlaidAccountId(''); setPlaidAccountName(''); setPlaidSourceKey('');
-        setSearchNotes(''); setDeductOnly(false); setMissingReceiptOnly(false); setNeedsCategoryFilter(false); setCategoryNotesMatch('and');
+        applyFilterSnapshot(defaultFilterSnapshot);
         setToast({ ok: true, msg: 'Filters cleared. Showing last 90 days.' });
         setTimeout(() => setToast(null), 3000);
     };
@@ -568,6 +638,69 @@ export default function Transactions() {
                     </div>
                 </div>
             </div>
+
+            {!isAuditMode && (
+                <div className="card glass" style={{ margin: 0, padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                        <div>
+                            <div style={{ fontWeight: 900, fontSize: '14px' }}>Review views</div>
+                            <div className="muted" style={{ fontSize: '11px', marginTop: '3px' }}>
+                                Open a common review queue or save the filters you use repeatedly.
+                            </div>
+                        </div>
+                        <div className="tag" style={{ fontSize: '10px' }}>
+                            {activeFilterCount} active filter{activeFilterCount === 1 ? '' : 's'}
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '2px' }}>
+                        {QUICK_TRANSACTION_VIEWS.map(view => (
+                            <button
+                                key={view.id}
+                                className="btn secondary sm"
+                                onClick={() => applyFilterSnapshot(getQuickTransactionView(view.id), `quick:${view.id}`)}
+                                style={{ whiteSpace: 'nowrap', borderColor: activeViewId === `quick:${view.id}` && filterSnapshotMatches(getQuickTransactionView(view.id)) ? 'var(--accent)' : undefined }}
+                            >
+                                {view.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <input
+                            value={savedViewName}
+                            onChange={event => setSavedViewName(event.target.value)}
+                            onKeyDown={event => { if (event.key === 'Enter') handleSaveView(); }}
+                            placeholder="Name this view"
+                            maxLength={40}
+                            style={{ width: '180px', flex: '1 1 180px' }}
+                        />
+                        <button className="btn secondary sm" onClick={handleSaveView} disabled={!savedViewName.trim()}>
+                            <BookmarkPlus size={14} style={{ verticalAlign: '-2px', marginRight: '6px' }} />
+                            Save on this device
+                        </button>
+                        {activeFilterCount > 0 && (
+                            <button className="btn secondary sm" onClick={clearFilters}>Reset view</button>
+                        )}
+                    </div>
+
+                    {savedViews.length > 0 && (
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                            <span className="muted" style={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Saved</span>
+                            {savedViews.map(view => (
+                                <div key={view.id} style={{ display: 'inline-flex', border: `1px solid ${activeViewId === view.id && filterSnapshotMatches(view.filters) ? 'var(--accent)' : 'rgba(255,255,255,0.12)'}`, borderRadius: '8px', overflow: 'hidden' }}>
+                                    <button onClick={() => applyFilterSnapshot(view.filters, view.id)} style={{ border: 0, background: 'rgba(255,255,255,0.04)', color: 'inherit', padding: '7px 10px', cursor: 'pointer', fontSize: '11px', fontWeight: 800 }}>
+                                        {view.name}
+                                    </button>
+                                    <button aria-label={`Delete saved view ${view.name}`} onClick={() => handleDeleteSavedView(view.id)} style={{ border: 0, borderLeft: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.45)', padding: '6px', cursor: 'pointer' }}>
+                                        <X size={12} />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* ─── Filters ─── */}
             <div className="card glass desktop-only" style={{ margin: 0, padding: '24px' }}>
@@ -893,10 +1026,16 @@ export default function Transactions() {
             {!loading && filtered.length === 0 && (
                 <div className="empty-state">
                     <Inbox size={28} />
-                    <span>No transactions here yet.</span>
-                    <button className="btn" style={{ padding: '10px 22px', fontSize: 13 }} onClick={() => navigate('/import')}>
-                        Import a CSV or connect your bank
-                    </button>
+                    <span>{expenses.length ? 'No transactions match this view.' : 'No transactions here yet.'}</span>
+                    {expenses.length || activeFilterCount > 0 || isAuditMode ? (
+                        <button className="btn" style={{ padding: '10px 22px', fontSize: 13 }} onClick={() => isAuditMode ? navigate('/transactions') : clearFilters()}>
+                            Reset view
+                        </button>
+                    ) : (
+                        <button className="btn" style={{ padding: '10px 22px', fontSize: 13 }} onClick={() => navigate('/import')}>
+                            Import a CSV or connect your bank
+                        </button>
+                    )}
                 </div>
             )}
 

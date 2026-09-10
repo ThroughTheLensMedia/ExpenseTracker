@@ -5,6 +5,7 @@ import { useModal } from '../components/ModalContext.jsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useAuth } from '../components/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const SCHEDULE_C_MAPPING = {
     'Advertising': 'Line 8',
@@ -54,6 +55,7 @@ const IRS_GUIDELINES = {
 
 export default function Tax() {
     const { settings } = useAuth();
+    const navigate = useNavigate();
     const [expenses, setExpenses] = useState([]);
     const [selectedYear, setSelectedYear] = useState(2025);
     const modal = useModal();
@@ -159,6 +161,26 @@ export default function Tax() {
             return rowBucket === auditingBucket && String(e.expense_date || '').startsWith(String(selectedYear));
         });
     }, [expenses, auditingBucket, selectedYear]);
+
+    const taxReadiness = useMemo(() => {
+        const unassigned = summary.find(row => row.tax_bucket === 'Unassigned');
+        const missingDocuments = expenses.filter(expense =>
+            String(expense.expense_date || '').startsWith(String(selectedYear)) &&
+            expense.tax_deductible &&
+            Number(expense.amount_cents || 0) > 7500 &&
+            !expense.receipt_link
+        ).length;
+        const deductionsCents = summary.reduce((total, row) => {
+            const scheduleLine = SCHEDULE_C_MAPPING[row.tax_bucket];
+            return total + (scheduleLine?.startsWith('Line') ? Number(row.deductible_cents || 0) : 0);
+        }, 0);
+
+        return {
+            unassignedCount: Number(unassigned?.count || 0),
+            missingDocuments,
+            deductionsCents,
+        };
+    }, [expenses, selectedYear, summary]);
 
     const handleSyncIRS = async () => {
         setSyncStatus('Checking IRS.gov...');
@@ -316,6 +338,31 @@ export default function Tax() {
     return (
         <section style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
+            <div className="card glass" style={{ margin: 0, padding: '20px 24px' }}>
+                <div style={{ marginBottom: '14px' }}>
+                    <h1 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 950 }}>Tax readiness</h1>
+                    <div className="muted" style={{ fontSize: '12px', marginTop: '4px' }}>Resolve incomplete records before exporting your {selectedYear} Schedule C summary.</div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '10px' }}>
+                    <button onClick={() => navigate('/transactions?needs_category=1')} style={{ textAlign: 'left', padding: '14px', borderRadius: '10px', border: `1px solid ${taxReadiness.unassignedCount ? 'rgba(251,191,36,0.35)' : 'rgba(74,222,128,0.25)'}`, background: 'rgba(255,255,255,0.03)', color: 'inherit', cursor: 'pointer' }}>
+                        <div className="muted" style={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase' }}>Needs classification</div>
+                        <div style={{ fontSize: '22px', fontWeight: 950, marginTop: '4px', color: taxReadiness.unassignedCount ? '#fbbf24' : '#4ade80' }}>{taxReadiness.unassignedCount}</div>
+                        <div className="muted" style={{ fontSize: '11px', marginTop: '3px' }}>{taxReadiness.unassignedCount ? 'Open these transactions →' : 'No unassigned tax records'}</div>
+                    </button>
+                    <button onClick={() => navigate('/transactions?audit=true')} style={{ textAlign: 'left', padding: '14px', borderRadius: '10px', border: `1px solid ${taxReadiness.missingDocuments ? 'rgba(239,68,68,0.35)' : 'rgba(74,222,128,0.25)'}`, background: 'rgba(255,255,255,0.03)', color: 'inherit', cursor: 'pointer' }}>
+                        <div className="muted" style={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase' }}>Missing documents over $75</div>
+                        <div style={{ fontSize: '22px', fontWeight: 950, marginTop: '4px', color: taxReadiness.missingDocuments ? '#ef4444' : '#4ade80' }}>{taxReadiness.missingDocuments}</div>
+                        <div className="muted" style={{ fontSize: '11px', marginTop: '3px' }}>{taxReadiness.missingDocuments ? 'Review documentation gaps →' : 'No documentation gaps found'}</div>
+                    </button>
+                    <div style={{ padding: '14px', borderRadius: '10px', border: '1px solid rgba(56,189,248,0.25)', background: 'rgba(255,255,255,0.03)' }}>
+                        <div className="muted" style={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase' }}>Deductions identified</div>
+                        <div style={{ fontSize: '22px', fontWeight: 950, marginTop: '4px', color: '#38bdf8' }}>{formatMoney(taxReadiness.deductionsCents)}</div>
+                        <div className="muted" style={{ fontSize: '11px', marginTop: '3px' }}>Planning estimate from current ledger data</div>
+                    </div>
+                </div>
+                <div className="muted" style={{ fontSize: '10px', lineHeight: 1.5, marginTop: '12px' }}>Review classifications and documentation with your tax professional before filing.</div>
+            </div>
+
             {/* ── Schedule C — Form Card ── */}
             <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
                 {/* Clean Integrated Header */}
@@ -437,7 +484,7 @@ export default function Tax() {
                                                 style={{ width: '160px', fontSize: '13px' }}
                                             />
                                             <span className="muted" style={{ fontSize: '12px' }}>
-                                                e.g. your 1099 total, cash payments, Wise transfers not synced to RM
+                                                Used only in this open report and its export—it does not create or save a ledger transaction.
                                             </span>
                                             {extraIncome > 0 && (
                                                 <span className="tag ok" style={{ fontSize: '12px' }}>+{formatMoney(extraIncome)} added</span>
@@ -816,4 +863,3 @@ export default function Tax() {
         </section>
     );
 }
-

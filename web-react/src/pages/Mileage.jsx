@@ -524,8 +524,14 @@ export default function Mileage() {
 
                 {/* ── Maps Autopilot Form ────────────────────────────── */}
                 {!manualMode && loadError && (
-                    <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '10px', padding: '12px 16px', color: '#ef4444', marginBottom: '16px', fontSize: '13px' }}>
-                        ⚠️ Google Maps failed to load. Check your <code>VITE_GOOGLE_MAPS_API_KEY</code>.
+                    <div style={{ background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.3)', borderRadius: '10px', padding: '16px', marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+                        <div>
+                            <div style={{ color: '#fbbf24', fontWeight: 900, fontSize: '13px' }}>Automatic route calculation is unavailable</div>
+                            <div className="muted" style={{ fontSize: '12px', marginTop: '4px', lineHeight: 1.5 }}>Enter the trip distance manually. The same IRS mileage rate and deduction calculation will still apply.</div>
+                        </div>
+                        <button className="btn secondary sm" onClick={() => setManualMode(true)} style={{ borderColor: 'rgba(251,191,36,0.4)', color: '#fbbf24' }}>
+                            Enter miles manually
+                        </button>
                     </div>
                 )}
 

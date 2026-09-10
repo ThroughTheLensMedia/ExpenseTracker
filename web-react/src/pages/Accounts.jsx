@@ -884,7 +884,7 @@ export default function Accounts() {
                     {refreshing && <span style={{ fontSize:11, color:'rgba(255,255,255,0.25)', fontStyle:'italic', fontWeight:600 }}>Refreshing…</span>}
                 </div>
                 <p style={{ color:'rgba(255,255,255,0.45)', fontSize:13, margin:'4px 0 0', fontWeight:600 }}>
-                    Rename with ✏ · Hide accounts or sub-accounts with 👁 · Sync Plaid with 🔄 · Click any sub-account to view transactions
+                    Review account activity, manage connections, and open any account to inspect its transactions.
                 </p>
             </div>
 
@@ -892,15 +892,18 @@ export default function Accounts() {
             {data && !loading && (
                 <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px, 1fr))', gap:10, marginBottom:16 }}>
                     {[
-                        { label:'Total This Month', value:fmtMoney(totalMonth),    color:'#38bdf8' },
-                        { label:'Bank / Checking',  value:fmtMoney(checkingTotal), color:'#4ade80' },
-                        { label:'Credit Cards',     value:fmtMoney(creditTotal),   color:'#f97316' },
+                        { label:'Transaction Activity This Month', value:fmtMoney(totalMonth),    color:'#38bdf8' },
+                        { label:'Checking Activity',                value:fmtMoney(checkingTotal), color:'#4ade80' },
+                        { label:'Credit Card Activity',             value:fmtMoney(creditTotal),   color:'#f97316' },
                     ].map(s => (
                         <div key={s.label} style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:14, padding:'14px 18px' }}>
                             <div style={{ fontSize:10, fontWeight:800, color:'rgba(255,255,255,0.4)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>{s.label}</div>
                             <div style={{ fontSize:22, fontWeight:900, color:s.color }}>{s.value}</div>
                         </div>
                     ))}
+                    <div className="muted" style={{ gridColumn:'1 / -1', fontSize:11, lineHeight:1.5 }}>
+                        These are net ledger totals for the month (expenses minus recorded income), not current bank balances. Live Plaid balances appear inside connected-account cards and may be cached for up to 10 days to limit paid balance calls.
+                    </div>
                 </div>
             )}
 
