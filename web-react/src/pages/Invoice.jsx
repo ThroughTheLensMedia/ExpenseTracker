@@ -534,22 +534,54 @@ export default function Invoice() {
 
     useEffect(() => { load(); }, []);
 
-    // Hand-off from the Clients page's "New Invoice" button: ?newInvoiceClientId=<id>
-    // opens the creator drawer pre-filled for that client, same as clicking a
-    // client card/row does locally. Fires once per navigation.
+    // Hand-offs from Clients and CRM open the creator with the matching record.
     const newInvoicePrefillHandled = useRef(false);
     useEffect(() => {
         if (newInvoicePrefillHandled.current) return;
         const params = new URLSearchParams(location.search);
-        const prefillId = params.get('newInvoiceClientId');
-        if (!prefillId || !clients.length) return;
-        const c = clients.find(cl => String(cl.id) === prefillId);
-        if (c) {
+        const clientId = params.get('newInvoiceClientId');
+        const leadId = params.get('newInvoiceLeadId');
+        if (!clientId && !leadId) return;
+
+        if (clientId) {
+            if (!clients.length) return;
+            const c = clients.find(cl => String(cl.id) === clientId);
+            if (!c) return;
             setIsCreatorOpen(true);
             setFormData(prev => ({ ...prev, clientName: c.name || '', clientEmail: c.email || '', clientPhone: c.phone || '', clientId: c.id }));
+        } else {
+            if (!leads.length) return;
+            const lead = leads.find(item => String(item.id) === leadId);
+            if (!lead) return;
+            const leadEmail = lead.email?.trim().toLowerCase();
+            const existingClient = leadEmail
+                ? clients.find(c => c.email?.trim().toLowerCase() === leadEmail)
+                : null;
+            setIsCreatorOpen(true);
+            setFormData(prev => ({
+                ...prev,
+                leadId: lead.id,
+                clientId: existingClient?.id || '',
+                clientName: lead.name || '',
+                clientEmail: lead.email || '',
+                clientPhone: lead.phone || '',
+            }));
         }
         newInvoicePrefillHandled.current = true;
-    }, [location.search, clients]);
+    }, [location.search, clients, leads]);
+
+    // A client-history link should open the requested invoice, not just the
+    // general invoice list. Fetching by id also guarantees complete line items.
+    const invoiceLinkHandled = useRef(false);
+    useEffect(() => {
+        if (invoiceLinkHandled.current) return;
+        const invoiceId = new URLSearchParams(location.search).get('invoiceId');
+        if (!invoiceId) return;
+        invoiceLinkHandled.current = true;
+        apiGet(`/invoices/${invoiceId}`)
+            .then(invoice => setPreviewingInvoice(invoice))
+            .catch(err => setStatusMsg({ type: 'bad', text: `Could not open the selected invoice: ${err.message}` }));
+    }, [location.search]);
 
     // Refresh when Brain Assistant approves an invoice, transaction, or lead action
     useEffect(() => {
@@ -754,6 +786,16 @@ export default function Invoice() {
         setLoading(true);
         try {
             let finalClientId = formData.clientId;
+            const normalizedEmail = formData.clientEmail?.trim().toLowerCase();
+            const matchingClient = normalizedEmail
+                ? clients.find(client => client.email?.trim().toLowerCase() === normalizedEmail)
+                : null;
+
+            // Reuse an existing client whenever the email already belongs to
+            // one. This protects freehand invoice creation from duplicates.
+            if (!finalClientId && matchingClient) {
+                finalClientId = matchingClient.id;
+            }
             if (!finalClientId) {
                 const newClient = await apiPost('/invoices/clients', {
                     name: formData.clientName,
