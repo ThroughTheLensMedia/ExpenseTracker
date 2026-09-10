@@ -68,54 +68,54 @@ export default function HelpTab() {
     ];
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '30px', maxWidth: '1400px' }}>
-            <div className="card glass glow-blue" style={{ border: 'none', padding: '40px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px', marginBottom: '10px' }}>
-                    <div>
-                        <h2 style={{ fontSize: '2.2rem', margin: 0 }}>Ledger Onboarding Guide</h2>
-                        <p className="muted" style={{ fontSize: '18px' }}>Follow these steps to transition your business into full automation.</p>
+        <div style={{ display: 'grid', gap: 16 }}>
+            <section className="card glass" style={{ margin: 0, padding: 'clamp(16px, 3vw, 24px)' }} aria-labelledby="help-getting-started-heading">
+                <div className="mobile-break" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 20, marginBottom: 10 }}>
+                    <div style={{ maxWidth: 720 }}>
+                        <h2 id="help-getting-started-heading" style={{ fontSize: 20, margin: 0 }}>Get started with Lumière</h2>
+                        <p className="muted" style={{ margin: '8px 0 0', fontSize: 14, lineHeight: 1.55 }}>Set up the core parts of your business workspace in a practical order.</p>
                     </div>
-                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    <div className="controls" style={{ alignItems: 'center' }}>
                         <button
-                            className="pill"
+                            type="button"
+                            className="btn"
                             onClick={() => window.dispatchEvent(new CustomEvent('ll:reopen-onboarding'))}
-                            style={{ background: 'var(--accent)', color: 'black', fontWeight: 800, border: 'none' }}
                         >
-                            📋 Resume Setup Checklist →
+                            Resume setup checklist
                         </button>
-                        <button className="pill" onClick={() => setShowChangeLog(true)} style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--accent)', border: '1px solid var(--accent)' }}>📙 CHANGE LOG</button>
+                        <button type="button" className="btn secondary" onClick={() => setShowChangeLog(true)}>View change log</button>
                     </div>
                 </div>
 
-                <div style={{ marginTop: '40px', display: 'flex', flexDirection: 'column', gap: '40px' }}>
+                <div style={{ marginTop: 22, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: 12 }}>
                     {steps.map(s => (
-                        <section key={s.num}>
-                            <div style={{ display: 'flex', gap: '15px', alignItems: 'center', marginBottom: '15px' }}>
-                                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--accent)', color: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '950' }}>{s.num}</div>
-                                <h3 style={{ margin: 0, fontSize: '1.4rem' }}>{s.title}</h3>
+                        <section key={s.num} style={{ padding: 16, border: '1px solid var(--line)', borderRadius: 14, background: 'rgba(255,255,255,.02)' }}>
+                            <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 10 }}>
+                                <div className="tag accent" style={{ width: 30, height: 30, justifyContent: 'center', padding: 0 }}>{s.num}</div>
+                                <h3 style={{ margin: 0, fontSize: 16 }}>{s.title}</h3>
                             </div>
-                            <p className="muted" style={{ lineHeight: '1.6' }} dangerouslySetInnerHTML={{ __html: s.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+                            <p className="muted" style={{ margin: 0, fontSize: 13, lineHeight: 1.55 }}>{s.text}</p>
                         </section>
                     ))}
                 </div>
-            </div>
+            </section>
 
-            <div className="card glass" style={{ border: 'none', padding: '40px' }}>
-                <h2 style={{ fontSize: '1.8rem', margin: '0 0 20px 0' }}>Frequently Asked Questions</h2>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
+            <section className="card glass" style={{ margin: 0, padding: 'clamp(16px, 3vw, 24px)' }} aria-labelledby="help-faq-heading">
+                <h2 id="help-faq-heading" style={{ fontSize: 20, margin: '0 0 18px' }}>Frequently asked questions</h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))', gap: 12 }}>
                     {faqs.map((f, i) => (
-                        <div key={i}>
-                            <div style={{ fontWeight: 800, color: 'white', marginBottom: '8px' }}>{f.q}</div>
-                            <div className="muted" style={{ fontSize: '14px' }}>{f.a}</div>
+                        <div key={i} style={{ padding: 16, border: '1px solid var(--line)', borderRadius: 14, background: 'rgba(255,255,255,.02)' }}>
+                            <div style={{ fontWeight: 800, marginBottom: 8 }}>{f.q}</div>
+                            <div className="muted" style={{ fontSize: 13, lineHeight: 1.55 }}>{f.a}</div>
                         </div>
                     ))}
                 </div>
-            </div>
+            </section>
 
             {/* Legal & Compliance */}
-            <div className="card glass" style={{ border: 'none', padding: '40px' }}>
-                <h2 style={{ fontSize: '1.8rem', margin: '0 0 8px 0' }}>Legal &amp; Compliance</h2>
-                <p className="muted" style={{ fontSize: '14px', marginBottom: '28px' }}>
+            <section className="card glass" style={{ margin: 0, padding: 'clamp(16px, 3vw, 24px)' }} aria-labelledby="help-policies-heading">
+                <h2 id="help-policies-heading" style={{ fontSize: 20, margin: 0 }}>Policies and account information</h2>
+                <p className="muted" style={{ maxWidth: 720, fontSize: 14, lineHeight: 1.55, margin: '8px 0 18px' }}>
                     Official policy documents governing how Lumière Ledger handles your data,
                     maintains security, and integrates with financial services.
                 </p>
@@ -141,17 +141,14 @@ export default function HelpTab() {
                         </div>
                         <a
                             href="/security-policy"
-                            className="pill"
+                            className="btn secondary"
                             style={{
-                                background: 'rgba(56,189,248,0.12)',
                                 color: '#38bdf8',
-                                border: '1px solid rgba(56,189,248,0.35)',
-                                textDecoration: 'none',
                                 whiteSpace: 'nowrap',
                                 flexShrink: 0
                             }}
                         >
-                            View ↗
+                            View policy
                         </a>
                     </div>
 
@@ -176,17 +173,13 @@ export default function HelpTab() {
                             href="/privacy"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="pill"
+                            className="btn secondary"
                             style={{
-                                background: 'rgba(255,255,255,0.05)',
-                                color: 'rgba(255,255,255,0.6)',
-                                border: '1px solid rgba(255,255,255,0.12)',
-                                textDecoration: 'none',
                                 whiteSpace: 'nowrap',
                                 flexShrink: 0
                             }}
                         >
-                            View ↗
+                            View policy
                         </a>
                     </div>
 
@@ -211,45 +204,41 @@ export default function HelpTab() {
                             href="/terms"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="pill"
+                            className="btn secondary"
                             style={{
-                                background: 'rgba(255,255,255,0.05)',
-                                color: 'rgba(255,255,255,0.6)',
-                                border: '1px solid rgba(255,255,255,0.12)',
-                                textDecoration: 'none',
                                 whiteSpace: 'nowrap',
                                 flexShrink: 0
                             }}
                         >
-                            View ↗
+                            View policy
                         </a>
                     </div>
                 </div>
-            </div>
+            </section>
 
             {showChangeLog && <ChangeLogModal onClose={() => setShowChangeLog(false)} />}
 
             {/* Feedback Section */}
-            <div className="card glass" style={{ margin: 0, padding: '30px' }}>
-                <h2 style={{ margin: '0 0 6px', fontSize: '1.2rem', fontWeight: 950 }}>💬 Send Feedback</h2>
-                <p className="muted" style={{ margin: '0 0 24px', fontSize: '13px' }}>
-                    Bugs, ideas, or questions — sent directly to Joshua with your context attached.
+            <section className="card glass" style={{ margin: 0, padding: 'clamp(16px, 3vw, 24px)' }} aria-labelledby="help-feedback-heading">
+                <h2 id="help-feedback-heading" style={{ margin: 0, fontSize: 20 }}>Send feedback</h2>
+                <p className="muted" style={{ margin: '8px 0 20px', fontSize: 14, lineHeight: 1.55 }}>
+                    Report a problem, share an idea, or ask a question. Your message goes directly to Lumière Ledger support.
                 </p>
 
                 {fbStatus === 'ok' ? (
                     <div style={{ textAlign: 'center', padding: '24px 0' }}>
-                        <div style={{ fontSize: '32px', marginBottom: '10px' }}>✅</div>
                         <div style={{ fontWeight: 900, fontSize: '15px', marginBottom: '6px' }}>Feedback sent.</div>
-                        <p className="muted" style={{ margin: '0 0 16px', fontSize: '13px' }}>It went straight to Joshua's inbox.</p>
-                        <button className="btn secondary" style={{ fontSize: '13px', padding: '8px 20px' }} onClick={() => setFbStatus(null)}>Send Another</button>
+                        <p className="muted" style={{ margin: '0 0 16px', fontSize: 13 }}>Lumière Ledger support received your message.</p>
+                        <button type="button" className="btn secondary" onClick={() => setFbStatus(null)}>Send another</button>
                     </div>
                 ) : (
-                    <form onSubmit={handleFeedbackSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px', maxWidth: '600px' }}>
+                    <form onSubmit={handleFeedbackSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18, maxWidth: 720 }}>
                         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                             {FB_TYPES.map(t => (
                                 <button
                                     key={t}
                                     type="button"
+                                    aria-pressed={fbType === t}
                                     onClick={() => setFbType(t)}
                                     style={{
                                         padding: '7px 14px', borderRadius: '20px', fontSize: '13px', cursor: 'pointer', fontWeight: fbType === t ? 900 : 600,
@@ -257,11 +246,12 @@ export default function HelpTab() {
                                         background: fbType === t ? 'rgba(99,102,241,0.15)' : 'transparent',
                                         color: fbType === t ? '#818cf8' : 'var(--muted)',
                                     }}
-                                >{FB_META[t].emoji} {t}</button>
+                                ><span aria-hidden="true">{FB_META[t].emoji}</span> {t}</button>
                             ))}
                         </div>
                         <div>
                             <textarea
+                                aria-label="Feedback message"
                                 value={fbMessage}
                                 onChange={e => setFbMessage(e.target.value)}
                                 placeholder={
@@ -274,7 +264,7 @@ export default function HelpTab() {
                                 rows={5}
                                 style={{ width: '100%', resize: 'vertical', fontSize: '14px', lineHeight: 1.6, boxSizing: 'border-box' }}
                             />
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 4 }}>
                                 <span className="muted" style={{ fontSize: '11px' }}>{FB_META[fbType].desc}</span>
                                 <span className="muted" style={{ fontSize: '11px' }}>{fbMessage.length} chars</span>
                             </div>
@@ -282,10 +272,10 @@ export default function HelpTab() {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>
                                 <input type="checkbox" checked={fbDiag} onChange={e => setFbDiag(e.target.checked)} style={{ width: 'auto' }} />
-                                Include diagnostics
+                                Include browser and account diagnostics
                             </label>
                             {fbStatus === 'error' && (
-                                <span style={{ fontSize: '12px', color: '#ff4d4d' }}>❌ {fbError}</span>
+                                <span role="alert" style={{ fontSize: 12, color: 'var(--bad)' }}>{fbError}</span>
                             )}
                             <button
                                 type="submit"
@@ -293,12 +283,12 @@ export default function HelpTab() {
                                 disabled={fbStatus === 'sending' || !fbMessage.trim()}
                                 style={{ fontWeight: 900, fontSize: '13px', padding: '10px 24px', opacity: (!fbMessage.trim() || fbStatus === 'sending') ? 0.6 : 1 }}
                             >
-                                {fbStatus === 'sending' ? 'Sending…' : '📤 Send Feedback'}
+                                {fbStatus === 'sending' ? 'Sending…' : 'Send feedback'}
                             </button>
                         </div>
                     </form>
                 )}
-            </div>
+            </section>
         </div>
     );
 }
