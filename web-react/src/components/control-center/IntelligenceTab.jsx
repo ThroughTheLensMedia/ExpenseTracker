@@ -41,42 +41,44 @@ export default function IntelligenceTab({ settings, setSettings, user, loading, 
     };
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
-            <div className="card glass glow-blue" style={{ border: 'none', padding: '40px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-                    <div>
-                        <h2 style={{ fontSize: '2rem', margin: 0 }}>Brain Connectivity & AI Engine</h2>
-                        <p className="muted" style={{ fontSize: '16px', marginTop: '6px' }}>Power your studio with Google Gemini 2.5 Flash intelligence.</p>
+        <div style={{ display: 'grid', gap: 16 }}>
+            <section className="card glass" style={{ margin: 0, padding: 'clamp(16px, 3vw, 24px)' }} aria-labelledby="ai-connection-heading">
+                <div className="mobile-break" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 22 }}>
+                    <div style={{ maxWidth: 720 }}>
+                        <h2 id="ai-connection-heading" style={{ fontSize: 20, margin: 0 }}>Connect your AI assistant</h2>
+                        <p className="muted" style={{ fontSize: 14, lineHeight: 1.55, margin: '8px 0 0' }}>Add your own Google Gemini API key to enable financial questions, document analysis, and ledger cleanup.</p>
                     </div>
-                    <div className="tag ok" style={{ fontWeight: 800 }}>⚡ Gemini 2.5 Flash</div>
+                    <div className="tag ok" style={{ fontWeight: 800 }}>Gemini 2.5 Flash</div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px' }}>
                     <div>
-                        <small className="muted" style={{ fontWeight: 900 }}>GEMINI AI API KEY</small>
-                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '8px' }}>
+                        <label htmlFor="gemini-api-key" className="muted" style={{ display: 'block', fontSize: 12, fontWeight: 900, letterSpacing: '.06em' }}>GEMINI API KEY</label>
+                        <div className="mobile-break" style={{ display: 'flex', gap: 10, alignItems: 'stretch', marginTop: 8 }}>
                             <input
+                                id="gemini-api-key"
                                 type="password"
                                 value={settings.gemini_api_key || ''}
                                 onChange={e => setSettings(prev => ({ ...prev, gemini_api_key: e.target.value }))}
-                                placeholder="AI_..."
-                                style={{ padding: '15px', flex: 1 }}
+                                placeholder="Enter your Gemini API key"
+                                autoComplete="off"
+                                style={{ minHeight: 48, flex: 1 }}
                             />
-                            <button className="btn primary" onClick={handleSaveKey} style={{ height: '54px' }}>Save Key</button>
+                            <button type="button" className="btn primary" onClick={handleSaveKey} style={{ minHeight: 48, paddingInline: 20 }}>Save key</button>
                         </div>
-                        <div style={{ marginTop: '10px', height: '20px' }}>
-                            {msg && <span className={`${msg.includes('Error') ? 'tag bad' : 'tag ok'}`} style={{ fontWeight: 900, fontSize: '12px' }}>{msg}</span>}
+                        <div role="status" aria-live="polite" style={{ marginTop: 10, minHeight: 20 }}>
+                            {msg && <span className={`tag ${msg.includes('Error') ? 'bad' : 'ok'}`} style={{ fontWeight: 800 }}>{msg}</span>}
                         </div>
-                        <div className="muted extra-small" style={{ marginTop: '10px' }}>
-                            Your key is stored securely in your private studio database and is only used to process your transactions.
+                        <div className="muted" style={{ marginTop: 8, fontSize: 13, lineHeight: 1.5 }}>
+                            Your key is saved to your account and used only when Lumière sends your requests to Gemini.
                         </div>
-                        <div style={{ marginTop: '20px', display: 'flex', gap: '15px' }}>
-                            <a href="https://aistudio.google.com/app/apikey" target="_blank" className="btn sm secondary" style={{ fontSize: '11px', fontWeight: 900 }}>
-                                🗝️ ROTATE KEY
+                        <div className="controls" style={{ alignItems: 'center', marginTop: 16 }}>
+                            <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="btn secondary">
+                                Get or rotate key
                             </a>
                             {isAdmin && (
-                                <a href="https://aistudio.google.com/app/rate-limit?timeRange=last-1-day" target="_blank" className="btn sm secondary" style={{ fontSize: '11px', fontWeight: 900 }}>
-                                    📊 MONITOR QUOTA
+                                <a href="https://aistudio.google.com/app/rate-limit?timeRange=last-1-day" target="_blank" rel="noreferrer" className="btn secondary">
+                                    Monitor quota
                                 </a>
                             )}
                         </div>
@@ -106,85 +108,79 @@ export default function IntelligenceTab({ settings, setSettings, user, loading, 
                                 </div>
                             </div>
                         )}
-                        <p className="muted small" style={{ marginTop: '15px', color: '#f59e0b', fontSize: '11px', lineHeight: '1.5' }}>
-                            <strong>TIP:</strong> If you see a "Rate Limit" or "Limit: 0" error, ensure your Google Cloud project has enabled the <strong>Gemini API</strong> and that your region supports the Free Tier. Linking a billing account (even if not used) often resolves "Limit: 0" issues.
+                        <p className="muted" style={{ marginTop: 16, color: 'var(--warn)', fontSize: 12, lineHeight: 1.5 }}>
+                            If Google reports a rate limit or zero limit, confirm that the Gemini API is enabled for the key's project and that Gemini 2.5 Flash is available in your region.
                         </p>
 
-                        <div style={{ background: 'rgba(56, 189, 248, 0.05)', padding: '25px', borderRadius: '16px', border: '1px solid rgba(56, 189, 248, 0.2)', marginTop: '25px' }}>
-                            <div style={{ fontWeight: 950, color: '#38bdf8', marginBottom: '15px', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <span style={{ fontSize: '24px' }}>🚀</span> STUDIO INTELLIGENCE: 4-STEP SETUP
-                            </div>
+                        <div style={{ background: 'rgba(255,255,255,.02)', padding: 'clamp(14px, 2.5vw, 20px)', borderRadius: 14, border: '1px solid var(--line)', marginTop: 22 }}>
+                            <h3 style={{ margin: '0 0 16px', fontSize: 16 }}>Set up in four steps</h3>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
                                 <div style={{ fontSize: '13px' }}>
-                                    <div style={{ fontWeight: 900, color: 'white', marginBottom: '4px' }}>1. PROVISION KEY</div>
-                                    <div className="muted" style={{ fontSize: '12px' }}>Visit <a href="https://aistudio.google.com/app/apikey" target="_blank" style={{ color: 'var(--accent)' }}>Google AI Studio</a> and generate a free API Key.</div>
+                                    <div style={{ fontWeight: 850, marginBottom: 4 }}>1. Create a key</div>
+                                    <div className="muted" style={{ fontSize: 13, lineHeight: 1.45 }}>Open Google AI Studio and generate an API key.</div>
                                 </div>
                                 <div style={{ fontSize: '13px' }}>
-                                    <div style={{ fontWeight: 900, color: 'white', marginBottom: '4px' }}>2. CONNECT BRAIN</div>
-                                    <div className="muted" style={{ fontSize: '12px' }}>Paste your key into the input above and hit <strong>Save Key</strong>.</div>
+                                    <div style={{ fontWeight: 850, marginBottom: 4 }}>2. Connect Gemini</div>
+                                    <div className="muted" style={{ fontSize: 13, lineHeight: 1.45 }}>Paste the key above and select <strong>Save key</strong>.</div>
                                 </div>
                                 <div style={{ fontSize: '13px' }}>
-                                    <div style={{ fontWeight: 900, color: 'white', marginBottom: '4px' }}>3. SYSTEM WARMUP</div>
-                                    <div className="muted" style={{ fontSize: '12px' }}>Use the <strong>Retroactive Ledger Repair</strong> below to scrub history and fix old entries.</div>
+                                    <div style={{ fontWeight: 850, marginBottom: 4 }}>3. Clean up history</div>
+                                    <div className="muted" style={{ fontSize: 13, lineHeight: 1.45 }}>Use ledger repair when older imports need attention.</div>
                                 </div>
                                 <div style={{ fontSize: '13px' }}>
-                                    <div style={{ fontWeight: 900, color: 'white', marginBottom: '4px' }}>4. CHAT & ANALYZE</div>
-                                    <div className="muted" style={{ fontSize: '12px' }}>Open "Your Assistant" (📸 icon) to ask about your largest purchases or tax burn.</div>
+                                    <div style={{ fontWeight: 850, marginBottom: 4 }}>4. Ask questions</div>
+                                    <div className="muted" style={{ fontSize: 13, lineHeight: 1.45 }}>Open Your Assistant to analyze your finances and documents.</div>
                                 </div>
-                            </div>
-                            <div className="tag extra-small warning" style={{ marginTop: '20px', background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', fontSize: '10px', textAlign: 'center', width: '100%', fontWeight: 900 }}>
-                                ⚠️ EVERY PHOTOGRAPHER "BRINGS THEIR OWN BRAIN"
                             </div>
                         </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginTop: '10px' }}>
-                        <div className="card glass" style={{ margin: 0, padding: '24px', background: 'rgba(255,255,255,0.02)' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: 14, marginTop: 20 }}>
+                        <div style={{ padding: 18, border: '1px solid var(--line)', borderRadius: 14, background: 'rgba(255,255,255,.02)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ fontWeight: 800 }}>🤫 Silent Background Optimizer</div>
+                                <label htmlFor="ai-silent-mode" style={{ fontWeight: 800 }}>Background cleanup</label>
                                 <label className="switch">
-                                    <input type="checkbox" checked={!!settings.ai_silent_mode} onChange={e => handleToggle('ai_silent_mode', e.target.checked)} />
+                                    <input id="ai-silent-mode" type="checkbox" checked={!!settings.ai_silent_mode} onChange={e => handleToggle('ai_silent_mode', e.target.checked)} />
                                     <span className="slider round"></span>
                                 </label>
                             </div>
-                            <p className="muted extra-small" style={{ marginTop: '10px' }}>The Brain works quietly in the background to clean up vendor names and fix missing accounts.</p>
+                            <p className="muted" style={{ margin: '10px 0 0', fontSize: 13, lineHeight: 1.5 }}>Quietly standardize vendor names and repair missing account information.</p>
                         </div>
 
-                        <div className="card glass" style={{ margin: 0, padding: '24px', background: 'rgba(255,255,255,0.02)' }}>
+                        <div style={{ padding: 18, border: '1px solid var(--line)', borderRadius: 14, background: 'rgba(255,255,255,.02)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ fontWeight: 800 }}>🗣️ Active Coaching Mode</div>
+                                <label htmlFor="ai-coaching-mode" style={{ fontWeight: 800 }}>Proactive guidance</label>
                                 <label className="switch">
-                                    <input type="checkbox" checked={!!settings.ai_coaching_mode} onChange={e => handleToggle('ai_coaching_mode', e.target.checked)} />
+                                    <input id="ai-coaching-mode" type="checkbox" checked={!!settings.ai_coaching_mode} onChange={e => handleToggle('ai_coaching_mode', e.target.checked)} />
                                     <span className="slider round"></span>
                                 </label>
                             </div>
-                            <p className="muted extra-small" style={{ marginTop: '10px' }}>The Brain will proactively alert you to over-spending, tax risks, and subscription savings.</p>
+                            <p className="muted" style={{ margin: '10px 0 0', fontSize: 13, lineHeight: 1.5 }}>Surface possible overspending, tax risks, and recurring-charge savings.</p>
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <div className="card glass" style={{ border: 'none', padding: '40px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '20px' }}>
+            <section className="card glass" style={{ margin: 0, padding: 'clamp(16px, 3vw, 24px)' }} aria-labelledby="ledger-repair-heading">
+                <div className="mobile-break" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 20 }}>
                     <div style={{ flex: 1 }}>
-                        <h2 style={{ fontSize: '1.8rem', margin: 0 }}>Retroactive Ledger Repair</h2>
-                        <p className="muted" style={{ fontSize: '15px', marginTop: '10px' }}>
-                            Have messy data from older imports? This tool scans your entire history and uses AI to fix incorrect vendor names and missing accounts.
+                        <h2 id="ledger-repair-heading" style={{ fontSize: 20, margin: 0 }}>Repair historical ledger data</h2>
+                        <p className="muted" style={{ fontSize: 14, lineHeight: 1.55, margin: '8px 0 0' }}>
+                            Scan older imports with Gemini to correct inconsistent vendor names and missing account details in batches of up to 50 transactions.
                         </p>
-                        <div className="tag extra-small warning" style={{ marginTop: '12px', background: 'rgba(245,158,11,0.1)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.2)' }}>
-                            ⚠️ Runs through Gemini 2.5 Flash in batches. May take 10-20 seconds.
-                        </div>
+                        <span className="tag warn" style={{ marginTop: 12 }}>Usually takes 10–20 seconds per batch</span>
                     </div>
                     <button
+                        type="button"
                         className="btn primary glow-blue"
                         onClick={handleRepair}
                         disabled={loading}
-                        style={{ padding: '16px 40px', fontWeight: 950 }}
+                        style={{ minHeight: 48, padding: '12px 20px' }}
                     >
-                        {loading ? '📸 BRAIN SCANNING...' : '🧼 START RETROACTIVE REPAIR'}
+                        {loading ? 'Scanning ledger…' : 'Start ledger repair'}
                     </button>
                 </div>
-            </div>
+            </section>
         </div>
     );
 }
