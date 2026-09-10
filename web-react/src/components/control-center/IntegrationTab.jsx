@@ -14,8 +14,8 @@ function CopyButton({ value, label = 'Copy' }) {
         });
     };
     return (
-        <button onClick={handleCopy} className="btn sm secondary" style={{ fontSize: '11px', minWidth: '70px' }}>
-            {copied ? '✓ Copied' : label}
+        <button type="button" onClick={handleCopy} className="btn sm secondary" style={{ minWidth: 76, fontSize: 12 }}>
+            {copied ? 'Copied' : label}
         </button>
     );
 }
@@ -44,11 +44,11 @@ fetch("https://your-site.com/api/form", {
 // LUMIERE_INTAKE_SECRET = ${intakeKey}`;
 
     return (
-        <div style={{ position: 'relative', background: 'rgba(0,0,0,0.4)', borderRadius: '12px', padding: '16px', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <div style={{ position: 'absolute', top: '12px', right: '12px' }}>
-                <CopyButton value={snippet} label="Copy Snippet" />
+        <div style={{ background: 'rgba(0,0,0,.28)', borderRadius: 12, padding: 16, border: '1px solid var(--line)' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+                <CopyButton value={snippet} label="Copy snippet" />
             </div>
-            <pre style={{ margin: 0, fontSize: '11px', color: 'rgba(255,255,255,0.7)', fontFamily: 'monospace', whiteSpace: 'pre-wrap', lineHeight: 1.6, paddingRight: '90px' }}>
+            <pre style={{ margin: 0, overflowX: 'auto', fontSize: 12, color: 'rgba(255,255,255,.7)', fontFamily: 'var(--mono)', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', lineHeight: 1.6 }}>
                 {snippet}
             </pre>
         </div>
@@ -67,15 +67,15 @@ function EmailReceiptCard() {
     }, []);
 
     return (
-        <div className="card glass" style={{ margin: 0, padding: '28px', borderTop: '4px solid #f59e0b' }}>
-            <div style={{ marginBottom: '16px' }}>
-                <h2 style={{ margin: '0 0 6px', fontSize: '1.4rem', fontWeight: 900 }}>Email Receipt Forwarding</h2>
-                <div className="muted" style={{ fontSize: '13px' }}>
+        <section className="card glass" style={{ margin: 0, padding: 'clamp(16px, 3vw, 24px)' }} aria-labelledby="receipt-forwarding-heading">
+            <div style={{ maxWidth: 760, marginBottom: 16 }}>
+                <h2 id="receipt-forwarding-heading" style={{ margin: 0, fontSize: 20 }}>Email receipt forwarding</h2>
+                <div className="muted" style={{ marginTop: 8, fontSize: 14, lineHeight: 1.55 }}>
                     Forward any receipt email to your personal address below and it will be automatically parsed and attached to the matching transaction. Save it as a contact for quick access.
                 </div>
             </div>
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
-                <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '8px', padding: '10px 16px', fontSize: '13px', fontWeight: 700 }}>
+                <div style={{ maxWidth: '100%', background: 'rgba(245,158,11,.08)', border: '1px solid rgba(245,158,11,.25)', borderRadius: 10, padding: '10px 14px', overflowWrap: 'anywhere', fontSize: 13, fontWeight: 700 }}>
                     {addrLoading ? (
                         <span className="muted" style={{ fontFamily: 'monospace' }}>Loading your address…</span>
                     ) : address ? (
@@ -84,12 +84,12 @@ function EmailReceiptCard() {
                         <span className="muted" style={{ fontFamily: 'monospace' }}>Unavailable — contact support</span>
                     )}
                 </div>
-                {address && <CopyButton value={address} label="Copy Address" />}
+                {address && <CopyButton value={address} label="Copy address" />}
             </div>
             <div className="muted" style={{ fontSize: '12px', marginTop: '12px' }}>
                 This address is unique to your account. Works with JPEG/PNG photo attachments and plain-text receipt emails. Receipts that arrive before the bank transaction posts will match automatically when your bank syncs (1–3 days).
             </div>
-        </div>
+        </section>
     );
 }
 
@@ -145,57 +145,61 @@ export default function IntegrationTab() {
     };
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+        <div style={{ display: 'grid', gap: 16 }}>
 
             {/* Email Receipt Forwarding */}
             <EmailReceiptCard />
 
             {/* Header */}
-            <div className="card glass" style={{ margin: 0, padding: '28px', borderTop: '4px solid #38bdf8' }}>
-                <div style={{ marginBottom: '16px' }}>
-                    <h2 style={{ margin: '0 0 6px', fontSize: '1.4rem', fontWeight: 900 }}>Website Lead Capture</h2>
-                    <div className="muted" style={{ fontSize: '13px' }}>Connect your photography website to route booking requests directly into your CRM pipeline.</div>
+            <section className="card glass" style={{ margin: 0, padding: 'clamp(16px, 3vw, 24px)' }} aria-labelledby="lead-capture-heading">
+                <div style={{ maxWidth: 760, marginBottom: 16 }}>
+                    <h2 id="lead-capture-heading" style={{ margin: 0, fontSize: 20 }}>Website lead capture</h2>
+                    <div className="muted" style={{ marginTop: 8, fontSize: 14, lineHeight: 1.55 }}>Send booking requests from your website directly into the CRM pipeline.</div>
                 </div>
-                <div style={{ display: 'flex', gap: '10px', marginTop: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-                    <div style={{ background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.2)', borderRadius: '8px', padding: '10px 16px', fontSize: '12px', fontWeight: 700 }}>
-                        Intake URL: <span style={{ color: '#38bdf8', fontFamily: 'monospace' }}>{INTAKE_URL}</span>
+                <div className="controls" style={{ alignItems: 'center' }}>
+                    <div style={{ maxWidth: '100%', background: 'rgba(56,189,248,.08)', border: '1px solid rgba(56,189,248,.2)', borderRadius: 10, padding: '10px 14px', overflowWrap: 'anywhere', fontSize: 12, fontWeight: 700 }}>
+                        Intake URL: <span style={{ color: '#38bdf8', fontFamily: 'var(--mono)' }}>{INTAKE_URL}</span>
                     </div>
                     <CopyButton value={INTAKE_URL} label="Copy URL" />
                 </div>
-            </div>
+            </section>
 
             {/* Generate New Key */}
-            <div className="card glass" style={{ margin: 0, padding: '24px' }}>
-                <h3 style={{ margin: '0 0 16px', fontSize: '1rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Generate Integration Key</h3>
-                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <section className="card glass" style={{ margin: 0, padding: 'clamp(16px, 3vw, 24px)' }} aria-labelledby="integration-key-heading">
+                <h2 id="integration-key-heading" style={{ margin: 0, fontSize: 20 }}>Integration keys</h2>
+                <p className="muted" style={{ margin: '8px 0 16px', fontSize: 14, lineHeight: 1.55 }}>Create a separate key for each website so a connection can be revoked without affecting the others.</p>
+                <div className="controls" style={{ alignItems: 'stretch' }}>
                     <input
+                        aria-label="Integration key label"
                         value={newLabel}
                         onChange={e => setNewLabel(e.target.value)}
-                        placeholder="Label (e.g. throughthelens.media)"
-                        style={{ flex: 1, minWidth: '200px', padding: '12px' }}
+                        placeholder="Website name or domain"
+                        style={{ flex: '1 1 240px', minHeight: 48 }}
                         onKeyDown={e => e.key === 'Enter' && handleGenerate()}
                     />
-                    <button className="btn glow-blue" onClick={handleGenerate} disabled={generating} style={{ padding: '12px 24px', fontWeight: 900 }}>
-                        {generating ? 'Generating...' : '+ Generate Key'}
+                    <button type="button" className="btn" onClick={handleGenerate} disabled={generating} style={{ minHeight: 48 }}>
+                        {generating ? 'Generating…' : 'Generate key'}
                     </button>
                 </div>
-            </div>
+            </section>
 
             {/* Keys List */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {loading && <div className="muted" style={{ textAlign: 'center', padding: '40px' }}>Loading keys...</div>}
+            <div style={{ display: 'grid', gap: 12 }}>
+                {loading && <div className="card glass" style={{ margin: 0 }}><div className="empty-state">Loading integration keys…</div></div>}
 
                 {!loading && keys.length === 0 && (
-                    <div className="card glass" style={{ margin: 0, padding: '40px', textAlign: 'center' }}>
-                        <div style={{ fontWeight: 800, marginBottom: '8px' }}>No integration keys yet</div>
-                        <div className="muted" style={{ fontSize: '13px' }}>Generate a key above to connect your website.</div>
+                    <div className="card glass" style={{ margin: 0 }}>
+                        <div className="empty-state">
+                            <strong>No integration keys yet</strong>
+                            <span className="muted">Generate a key above to connect your website.</span>
+                        </div>
                     </div>
                 )}
 
                 {keys.map(k => (
-                    <div key={k.id} className="card glass" style={{ margin: 0, padding: '20px', border: expandedKey === k.id ? '1px solid rgba(56,189,248,0.3)' : undefined }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                            <div style={{ flex: 1 }}>
+                    <section key={k.id} className="card glass" style={{ margin: 0, padding: 'clamp(16px, 3vw, 20px)', border: expandedKey === k.id ? '1px solid rgba(56,189,248,0.3)' : undefined }} aria-label={`Integration key ${k.label}`}>
+                        <div className="mobile-break" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 14 }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
                                 <div style={{ fontWeight: 900, fontSize: '14px' }}>{k.label}</div>
                                 <div style={{ fontFamily: 'monospace', fontSize: '12px', color: '#38bdf8', marginTop: '4px', wordBreak: 'break-all' }}>{k.key}</div>
                                 <div className="muted" style={{ fontSize: '11px', marginTop: '4px' }}>
@@ -203,18 +207,21 @@ export default function IntegrationTab() {
                                     {k.last_used_at && ` · Last used ${new Date(k.last_used_at).toLocaleDateString()}`}
                                 </div>
                             </div>
-                            <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                                <CopyButton value={k.key} label="Copy Key" />
+                            <div className="controls" style={{ alignItems: 'center', flexShrink: 0 }}>
+                                <CopyButton value={k.key} label="Copy key" />
                                 <button
+                                    type="button"
                                     className="btn sm secondary"
                                     onClick={() => setExpandedKey(expandedKey === k.id ? null : k.id)}
                                     style={{ fontSize: '11px' }}
                                 >
-                                    {expandedKey === k.id ? 'Hide Setup' : 'View Setup'}
+                                    {expandedKey === k.id ? 'Hide setup' : 'View setup'}
                                 </button>
                                 <button
+                                    type="button"
+                                    className="btn secondary"
                                     onClick={() => handleRevoke(k.id)}
-                                    style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444', borderRadius: '8px', padding: '6px 12px', cursor: 'pointer', fontSize: '11px', fontWeight: 800 }}
+                                    style={{ borderColor: 'rgba(239,68,68,.25)', color: 'var(--bad)', fontSize: 11 }}
                                 >
                                     Revoke
                                 </button>
@@ -223,28 +230,28 @@ export default function IntegrationTab() {
 
                         {expandedKey === k.id && (
                             <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                                <div style={{ fontWeight: 800, fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px', color: '#a8b6dd' }}>
-                                    Cloudflare / Backend Setup
+                                <div style={{ fontWeight: 800, fontSize: 12, marginBottom: 12, color: 'var(--muted)' }}>
+                                    Cloudflare or backend environment variables
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
                                     {[
                                         { label: 'LUMIERE_INTAKE_URL', value: INTAKE_URL },
                                         { label: 'LUMIERE_INTAKE_SECRET', value: k.key }
                                     ].map(v => (
-                                        <div key={v.label} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(0,0,0,0.3)', borderRadius: '8px', padding: '10px 14px' }}>
-                                            <span style={{ fontFamily: 'monospace', fontSize: '12px', color: '#fbbf24', minWidth: '200px' }}>{v.label}</span>
-                                            <span style={{ fontFamily: 'monospace', fontSize: '12px', color: 'rgba(255,255,255,0.7)', flex: 1, wordBreak: 'break-all' }}>{v.value}</span>
+                                        <div key={v.label} className="mobile-break" style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(0,0,0,.3)', borderRadius: 10, padding: '10px 14px' }}>
+                                            <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: '#fbbf24', minWidth: 200 }}>{v.label}</span>
+                                            <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'rgba(255,255,255,.7)', flex: 1, wordBreak: 'break-all' }}>{v.value}</span>
                                             <CopyButton value={v.value} />
                                         </div>
                                     ))}
                                 </div>
-                                <div style={{ fontWeight: 800, fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px', color: '#a8b6dd' }}>
-                                    Code Snippet
+                                <div style={{ fontWeight: 800, fontSize: 12, marginBottom: 12, color: 'var(--muted)' }}>
+                                    Example implementation
                                 </div>
                                 <CodeSnippet intakeKey={k.key} />
                             </div>
                         )}
-                    </div>
+                    </section>
                 ))}
             </div>
         </div>
