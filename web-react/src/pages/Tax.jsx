@@ -57,7 +57,7 @@ export default function Tax() {
     const { settings } = useAuth();
     const navigate = useNavigate();
     const [expenses, setExpenses] = useState([]);
-    const [selectedYear, setSelectedYear] = useState(2025);
+    const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
     const modal = useModal();
     const [summary, setSummary] = useState([]);
     const [syncStatus, setSyncStatus] = useState('');
