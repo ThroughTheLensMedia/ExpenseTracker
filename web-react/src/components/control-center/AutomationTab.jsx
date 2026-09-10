@@ -37,7 +37,7 @@ export default function AutomationTab({ rules, allExpenses, onReload }) {
     };
 
     const handleDeleteRule = async (id) => {
-        const ok = await modal.confirm("Are you sure?");
+        const ok = await modal.confirm("Delete this automation rule? Existing transactions will keep their current categories.");
         if (!ok) return;
         try { await apiDelete(`/rules/${id}`); onReload(true); } catch (err) { modal.alert(err.message); }
     };
@@ -66,56 +66,81 @@ export default function AutomationTab({ rules, allExpenses, onReload }) {
     };
 
     const handleApplyRules = async () => {
-        setApplying(true); setApplyMsg("Scanning engine...");
+        setApplying(true); setApplyMsg("Reviewing matching transactions…");
         try {
             const res = await apiPost('/rules/apply-all');
-            setApplyMsg(`Success! Built ${res.updatedCount} connections.`);
+            setApplyMsg(`Updated ${res.updatedCount} matching transactions.`);
             onReload(true);
             setTimeout(() => { setApplying(false); setApplyMsg(''); }, 3000);
         } catch (err) { modal.alert(err.message); setApplying(false); }
     };
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
-            <div className="card glass glow-blue" style={{ border: 'none', padding: '30px', margin: 0, display: 'flex', alignItems: 'flex-end', gap: '20px', flexWrap: 'wrap' }}>
-                <div style={{ flex: 1, minWidth: '200px' }}>
-                    <small className="muted" style={{ fontWeight: 900, marginBottom: '8px', display: 'block' }}>VENDOR KEYWORD</small>
-                    <datalist id="vendor-suggestions">
-                        {[...new Set(allExpenses.map(e => e.vendor).filter(Boolean))].sort().map(v => (
-                            <option key={v} value={v} />
-                        ))}
-                    </datalist>
-                    <input value={matchValue} onChange={e => setMatchValue(e.target.value)} placeholder="e.g. Adobe, Starlink..." style={{ padding: '12px' }} list="vendor-suggestions" />
+        <div style={{ display: 'grid', gap: 16 }}>
+            <section className="card glass" style={{ margin: 0, padding: 'clamp(16px, 3vw, 24px)' }} aria-labelledby="automation-builder-heading">
+                <div style={{ maxWidth: 720, marginBottom: 20 }}>
+                    <h2 id="automation-builder-heading" style={{ margin: 0, fontSize: 20 }}>Create a categorization rule</h2>
+                    <p className="muted" style={{ margin: '8px 0 0', fontSize: 14, lineHeight: 1.55 }}>
+                        Automatically categorize transactions when a vendor name contains the keyword you enter.
+                    </p>
                 </div>
-                <div style={{ flex: 1, minWidth: '200px' }}>
-                    <small className="muted" style={{ fontWeight: 900, marginBottom: '8px', display: 'block' }}>ASSIGN CATEGORY</small>
-                    <CategorySelect value={category} onChange={setCategory} />
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: 14, alignItems: 'end' }}>
+                    <div>
+                        <label htmlFor="automation-vendor" className="muted" style={{ display: 'block', marginBottom: 8, fontSize: 12, fontWeight: 900, letterSpacing: '.06em' }}>VENDOR KEYWORD</label>
+                        <datalist id="vendor-suggestions">
+                            {[...new Set(allExpenses.map(e => e.vendor).filter(Boolean))].sort().map(v => (
+                                <option key={v} value={v} />
+                            ))}
+                        </datalist>
+                        <input id="automation-vendor" value={matchValue} onChange={e => setMatchValue(e.target.value)} placeholder="For example: Adobe" list="vendor-suggestions" style={{ minHeight: 48 }} />
+                    </div>
+                    <div>
+                        <span className="muted" style={{ display: 'block', marginBottom: 8, fontSize: 12, fontWeight: 900, letterSpacing: '.06em' }}>ASSIGN CATEGORY</span>
+                        <CategorySelect value={category} onChange={setCategory} />
+                    </div>
+                    <button type="button" className="btn primary" onClick={handleCreateRule} disabled={!matchValue || !category} style={{ minHeight: 48 }}>Save rule</button>
                 </div>
-                <button className="btn primary" onClick={handleCreateRule} disabled={!matchValue || !category} style={{ height: '48px', padding: '0 30px' }}>SAVE RULE</button>
-                <button className="btn glow-green" onClick={handleApplyRules} disabled={applying} style={{ height: '48px', padding: '0 30px' }}>
-                    {applying ? '⏳ SYNCING...' : 'RUN ENGINE NOW'}
-                </button>
-            </div>
 
-            {applyMsg && <div className="tag ok" style={{ alignSelf: 'center', padding: '12px 30px' }}>{applyMsg}</div>}
+                {discoveryVendors.length > 0 && (
+                    <div style={{ marginTop: 18 }}>
+                        <span className="muted" style={{ display: 'block', marginBottom: 10, fontSize: 12, fontWeight: 800 }}>SUGGESTED VENDORS</span>
+                        <div className="controls" style={{ alignItems: 'center' }}>
+                            {discoveryVendors.map(([name, count]) => (
+                                <button key={name} type="button" className="tag secondary" style={{ minHeight: 36, cursor: 'pointer' }} onClick={() => setMatchValue(name)}>
+                                    {name} <span style={{ opacity: 0.65 }}>{count} transactions</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </section>
 
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-                <span className="muted small" style={{ fontWeight: 900 }}>💡 SUGGESTIONS:</span>
-                {discoveryVendors.map(([name, count]) => (
-                    <button key={name} className="pill" style={{ fontSize: '11px', cursor: 'pointer' }} onClick={() => setMatchValue(name)}>
-                        {name} <span style={{ opacity: 0.5, marginLeft: '4px' }}>{count}x</span>
+            <section className="card glass" style={{ margin: 0, padding: 'clamp(16px, 3vw, 24px)' }} aria-labelledby="automation-rules-heading">
+                <div className="mobile-break" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, marginBottom: 18 }}>
+                    <div>
+                        <h2 id="automation-rules-heading" style={{ margin: 0, fontSize: 20 }}>Saved rules</h2>
+                        <p className="muted" style={{ margin: '6px 0 0', fontSize: 13 }}>{rules.length} active {rules.length === 1 ? 'rule' : 'rules'}</p>
+                    </div>
+                    <button type="button" className="btn secondary" onClick={handleApplyRules} disabled={applying} style={{ minHeight: 44 }}>
+                        {applying ? 'Applying rules…' : 'Apply all rules to history'}
                     </button>
-                ))}
-            </div>
+                </div>
 
-            <div className="card glass" style={{ padding: '0', margin: 0, border: 'none', overflow: 'hidden' }}>
-                <div className="tableWrap" style={{ border: 'none' }}>
+                {applyMsg && <div role="status" aria-live="polite" className="tag ok" style={{ marginBottom: 16, padding: '8px 12px' }}>{applyMsg}</div>}
+
+                {rules.length === 0 ? (
+                    <div className="empty-state">
+                        <span>No automation rules yet.</span>
+                        <span className="muted">Add a vendor keyword above to create your first rule.</span>
+                    </div>
+                ) : <div className="tableWrap">
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                         <thead>
                             <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
-                                <th style={{ textAlign: 'left', padding: '20px' }}>Rule Criterion</th>
-                                <th style={{ textAlign: 'left', padding: '20px' }}>Target Assignment</th>
-                                <th style={{ textAlign: 'center', padding: '20px' }}>Optimization</th>
+                                <th style={{ textAlign: 'left', padding: '20px' }}>Vendor contains</th>
+                                <th style={{ textAlign: 'left', padding: '20px' }}>Assigned category</th>
+                                <th style={{ textAlign: 'center', padding: '20px' }}>Historical matches</th>
                                 <th style={{ textAlign: 'right', padding: '20px' }}>Actions</th>
                             </tr>
                         </thead>
@@ -132,23 +157,23 @@ export default function AutomationTab({ rules, allExpenses, onReload }) {
                                                 <span className="tag secondary">{r.assign_category}</span>
                                             </td>
                                             <td style={{ textAlign: 'center', padding: '16px 20px' }}>
-                                                <button className="btn sm secondary" onClick={() => handlePreviewRule(r.id)} disabled={rs.loading}>
-                                                    {rs.loading ? 'Scanning...' : 'Audit Impact'}
+                                                <button type="button" className="btn sm secondary" onClick={() => handlePreviewRule(r.id)} disabled={rs.loading}>
+                                                    {rs.loading ? 'Checking…' : 'Preview matches'}
                                                 </button>
                                             </td>
                                             <td style={{ textAlign: 'right', padding: '16px 20px' }}>
-                                                <button className="btn sm danger" onClick={() => handleDeleteRule(r.id)}>✕</button>
+                                                <button type="button" className="btn sm danger" aria-label={`Delete rule for ${r.match_value}`} onClick={() => handleDeleteRule(r.id)}>Delete</button>
                                             </td>
                                         </tr>
                                         {rs.preview && (
                                             <tr>
                                                 <td colSpan="4" style={{ padding: '0 20px 10px' }}>
-                                                    <div className="card glass" style={{ margin: 0, padding: '12px 20px', background: 'rgba(74, 222, 128, 0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    <div className="mobile-break" style={{ padding: '12px 14px', background: 'rgba(74, 222, 128, 0.05)', border: '1px solid rgba(74, 222, 128, 0.16)', borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
                                                         <span style={{ fontSize: '13px', fontWeight: 800 }}>Found {rs.preview.matchCount} historical matches.</span>
-                                                        <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                                                        <div className="controls" style={{ alignItems: 'center' }}>
                                                             {rs.applyMsg && <span style={{ color: '#4ade80', fontWeight: 900 }}> {rs.applyMsg}</span>}
-                                                            <button className="btn primary sm" onClick={() => handleApplySingleRule(r.id)} disabled={rs.applying}>
-                                                                {rs.applying ? 'Applying...' : 'Apply Correction Now'}
+                                                            <button type="button" className="btn primary sm" onClick={() => handleApplySingleRule(r.id)} disabled={rs.applying}>
+                                                                {rs.applying ? 'Applying…' : 'Apply this rule'}
                                                             </button>
                                                         </div>
                                                     </div>
@@ -160,8 +185,8 @@ export default function AutomationTab({ rules, allExpenses, onReload }) {
                             })}
                         </tbody>
                     </table>
-                </div>
-            </div>
+                </div>}
+            </section>
         </div>
     );
 }
