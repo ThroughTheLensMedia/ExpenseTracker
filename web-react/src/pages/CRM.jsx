@@ -227,11 +227,22 @@ function PipelineView() {
                                                     <div style={{ fontWeight: 900 }}>{lead.name}</div>
                                                     <div style={{ color: col.color }}>{formatMoney(lead.quoted_value_cents)}</div>
                                                 </div>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                                                     <select value={lead.status} onChange={(e) => handleMove(lead, e.target.value)} style={{ fontSize: '11px', background: 'rgba(0,0,0,0.3)' }}>
                                                         {[...ACTIVE_COLUMNS, { id: 'Paid', label: 'Mark as Paid' }, { id: 'Lost', label: 'Archived / Lost' }].map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
                                                     </select>
-                                                    <button onClick={() => openEditor(lead)} className="btn sm secondary" style={{ fontSize: '10px' }}>Edit</button>
+                                                    <div style={{ display: 'flex', gap: '6px', marginLeft: 'auto' }}>
+                                                        {['Quoted', 'Booked'].includes(lead.status) && (
+                                                            <NavLink
+                                                                to={`/crm/financials?newInvoiceLeadId=${encodeURIComponent(lead.id)}`}
+                                                                className="btn sm primary"
+                                                                style={{ fontSize: '10px', textDecoration: 'none', whiteSpace: 'nowrap' }}
+                                                            >
+                                                                Create Invoice
+                                                            </NavLink>
+                                                        )}
+                                                        <button onClick={() => openEditor(lead)} className="btn sm secondary" style={{ fontSize: '10px' }}>Edit</button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))
@@ -370,4 +381,3 @@ export default function CRM() {
         </section>
     );
 }
-
