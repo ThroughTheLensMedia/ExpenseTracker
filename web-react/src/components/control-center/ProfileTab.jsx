@@ -115,12 +115,12 @@ export default function ProfileTab({ settings, setSettings, onReload, billingOnl
     // render, causing React to unmount+remount → produces the 1-frame flash where
     // subscription is null and upgrade cards briefly appear. Inline JSX avoids this.
     const billingEl = !subscriptionReady ? (
-        <div style={{ marginBottom: '36px', padding: '24px 28px', background: 'rgba(255,255,255,0.03)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.07)', minHeight: 80, display: 'flex', alignItems: 'center' }}>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)', fontWeight: 700 }}>Loading subscription…</div>
+        <div style={{ padding: 'clamp(16px, 3vw, 24px)', background: 'rgba(255,255,255,.03)', borderRadius: 16, border: '1px solid var(--line)', minHeight: 80, display: 'flex', alignItems: 'center' }}>
+            <div className="muted" style={{ fontSize: 13, fontWeight: 700 }}>Loading subscription…</div>
         </div>
     ) : (
-        <div style={{ marginBottom: '36px', padding: '24px 28px', background: 'rgba(255,255,255,0.03)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.07)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+        <div style={{ padding: 'clamp(16px, 3vw, 24px)', background: 'rgba(255,255,255,.03)', borderRadius: 16, border: '1px solid var(--line)' }}>
+            <div className="mobile-break" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: 20 }}>
                 <div>
                     <div style={{ fontSize: '11px', fontWeight: 900, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.4)', marginBottom: '8px' }}>SUBSCRIPTION</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -148,8 +148,8 @@ export default function ProfileTab({ settings, setSettings, onReload, billingOnl
                     )}
                 </div>
                 {hasPortal && (
-                    <button onClick={handleManageBilling} disabled={billingLoading === 'portal'} className="btn secondary" style={{ padding: '10px 22px', fontSize: '13px', opacity: billingLoading === 'portal' ? 0.6 : 1 }}>
-                        {billingLoading === 'portal' ? 'Loading...' : 'Manage Billing'}
+                    <button type="button" onClick={handleManageBilling} disabled={billingLoading === 'portal'} className="btn secondary" style={{ fontSize: 13, opacity: billingLoading === 'portal' ? 0.6 : 1 }}>
+                        {billingLoading === 'portal' ? 'Loading…' : 'Manage billing'}
                     </button>
                 )}
             </div>
@@ -160,13 +160,13 @@ export default function ProfileTab({ settings, setSettings, onReload, billingOnl
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
                         <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>{tier === 'sync' ? 'Upgrade your plan' : 'Upgrade your plan'}</div>
                         <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '3px' }}>
-                            <button onClick={() => setBillingAnnual(false)} style={{ padding: '5px 14px', fontSize: '12px', fontWeight: 700, borderRadius: '6px', border: 'none', cursor: 'pointer', background: !billingAnnual ? 'rgba(255,255,255,0.1)' : 'transparent', color: !billingAnnual ? '#fff' : 'rgba(255,255,255,0.4)' }}>Monthly</button>
-                            <button onClick={() => setBillingAnnual(true)} style={{ padding: '5px 14px', fontSize: '12px', fontWeight: 700, borderRadius: '6px', border: 'none', cursor: 'pointer', background: billingAnnual ? 'rgba(56,189,248,0.15)' : 'transparent', color: billingAnnual ? '#38bdf8' : 'rgba(255,255,255,0.4)' }}>
+                            <button type="button" aria-pressed={!billingAnnual} onClick={() => setBillingAnnual(false)} style={{ padding: '7px 14px', fontSize: 12, fontWeight: 700, borderRadius: 6, border: 'none', cursor: 'pointer', background: !billingAnnual ? 'rgba(255,255,255,0.1)' : 'transparent', color: !billingAnnual ? '#fff' : 'rgba(255,255,255,0.4)' }}>Monthly</button>
+                            <button type="button" aria-pressed={billingAnnual} onClick={() => setBillingAnnual(true)} style={{ padding: '7px 14px', fontSize: 12, fontWeight: 700, borderRadius: 6, border: 'none', cursor: 'pointer', background: billingAnnual ? 'rgba(56,189,248,0.15)' : 'transparent', color: billingAnnual ? '#38bdf8' : 'rgba(255,255,255,0.4)' }}>
                                 Annual {billingAnnual && <span style={{ fontSize: '10px' }}>· Save 20%</span>}
                             </button>
                         </div>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: tier === 'sync' ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '12px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: 12 }}>
                         {/* Sync — hidden if already on Sync */}
                         {tier !== 'sync' && <div style={{ padding: '16px 18px', borderRadius: '12px', border: '1px solid rgba(56,189,248,0.2)', background: 'rgba(56,189,248,0.04)' }}>
                             <div style={{ fontWeight: 700, color: '#38bdf8', marginBottom: '4px' }}>Sync</div>
@@ -175,8 +175,8 @@ export default function ProfileTab({ settings, setSettings, onReload, billingOnl
                                 {billingAnnual && <span style={{ fontSize: '10px', fontWeight: 700, color: 'rgba(56,189,248,0.6)', marginLeft: '6px' }}>Save 20%</span>}
                             </div>
                             <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', marginBottom: '14px', lineHeight: 1.5 }}>Live bank sync via Plaid · All accounts included · No per-account fees</div>
-                            <button onClick={() => handleUpgrade(billingAnnual ? 'sync_annual' : 'sync_monthly')} disabled={!!billingLoading} className="btn primary" style={{ width: '100%', padding: '9px', fontSize: '12px', opacity: billingLoading ? 0.6 : 1 }}>
-                                {billingLoading === (billingAnnual ? 'sync_annual' : 'sync_monthly') ? 'Loading...' : 'Get Sync'}
+                            <button type="button" onClick={() => handleUpgrade(billingAnnual ? 'sync_annual' : 'sync_monthly')} disabled={!!billingLoading} className="btn primary" style={{ width: '100%', fontSize: 12, opacity: billingLoading ? 0.6 : 1 }}>
+                                {billingLoading === (billingAnnual ? 'sync_annual' : 'sync_monthly') ? 'Loading…' : 'Get Sync'}
                             </button>
                         </div>}
                         {/* Core */}
@@ -184,8 +184,8 @@ export default function ProfileTab({ settings, setSettings, onReload, billingOnl
                             <div style={{ fontWeight: 700, color: '#f97316', marginBottom: '4px' }}>Core</div>
                             <div style={{ fontSize: '20px', fontWeight: 800, color: '#fff', marginBottom: '6px' }}>{billingAnnual ? '$7.17' : '$9'}<span style={{ fontSize: '11px', fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>/mo</span></div>
                             <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', marginBottom: '14px', lineHeight: 1.5 }}>AI Brain + Sync · Receipt scanner · 2,000 tx/mo · 20 invoices/mo</div>
-                            <button onClick={() => handleUpgrade(billingAnnual ? 'core_annual' : 'core_monthly')} disabled={!!billingLoading} className="btn primary" style={{ width: '100%', padding: '9px', fontSize: '12px', opacity: billingLoading ? 0.6 : 1 }}>
-                                {billingLoading === (billingAnnual ? 'core_annual' : 'core_monthly') ? 'Loading...' : 'Upgrade to Core'}
+                            <button type="button" onClick={() => handleUpgrade(billingAnnual ? 'core_annual' : 'core_monthly')} disabled={!!billingLoading} className="btn primary" style={{ width: '100%', fontSize: 12, opacity: billingLoading ? 0.6 : 1 }}>
+                                {billingLoading === (billingAnnual ? 'core_annual' : 'core_monthly') ? 'Loading…' : 'Upgrade to Core'}
                             </button>
                         </div>
                         {/* Studio */}
@@ -193,8 +193,8 @@ export default function ProfileTab({ settings, setSettings, onReload, billingOnl
                             <div style={{ fontWeight: 700, color: '#a78bfa', marginBottom: '4px' }}>Studio</div>
                             <div style={{ fontSize: '20px', fontWeight: 800, color: '#fff', marginBottom: '6px' }}>{billingAnnual ? '$15.17' : '$19'}<span style={{ fontSize: '11px', fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>/mo</span></div>
                             <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', marginBottom: '14px', lineHeight: 1.5 }}>Everything in Core · Unlimited · Mileage autopilot · Priority</div>
-                            <button onClick={() => handleUpgrade(billingAnnual ? 'studio_annual' : 'studio_monthly')} disabled={!!billingLoading} className="btn primary" style={{ width: '100%', padding: '9px', fontSize: '12px', opacity: billingLoading ? 0.6 : 1 }}>
-                                {billingLoading === (billingAnnual ? 'studio_annual' : 'studio_monthly') ? 'Loading...' : 'Upgrade to Studio'}
+                            <button type="button" onClick={() => handleUpgrade(billingAnnual ? 'studio_annual' : 'studio_monthly')} disabled={!!billingLoading} className="btn primary" style={{ width: '100%', fontSize: 12, opacity: billingLoading ? 0.6 : 1 }}>
+                                {billingLoading === (billingAnnual ? 'studio_annual' : 'studio_monthly') ? 'Loading…' : 'Upgrade to Studio'}
                             </button>
                         </div>
                     </div>
@@ -211,33 +211,37 @@ export default function ProfileTab({ settings, setSettings, onReload, billingOnl
 
     if (billingOnly) {
         return (
-            <div className="card glass glow-blue" style={{ border: 'none', padding: 'clamp(20px, 4vw, 40px)', margin: 0, display: 'flex', flexDirection: 'column', gap: '30px' }}>
-                <h2 style={{ fontSize: '1.5rem', margin: 0 }}>Account Plans</h2>
+            <section className="card glass" style={{ margin: 0, padding: 'clamp(16px, 3vw, 24px)', display: 'grid', gap: 20 }} aria-labelledby="account-plans-heading">
+                <div style={{ maxWidth: 720 }}>
+                    <h2 id="account-plans-heading" style={{ fontSize: 20, margin: 0 }}>Account plans</h2>
+                    <p className="muted" style={{ margin: '8px 0 0', fontSize: 14, lineHeight: 1.55 }}>Review your current access, manage billing, or activate a key.</p>
+                </div>
                 {billingEl}
 
                 {/* License Activation — accessible to all users */}
-                <div style={{ padding: '24px 28px', background: 'rgba(255,255,255,0.03)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.07)' }}>
+                <div style={{ padding: 'clamp(16px, 3vw, 24px)', background: 'rgba(255,255,255,.03)', borderRadius: 16, border: '1px solid var(--line)' }}>
                     <div style={{ fontSize: '11px', fontWeight: 900, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.4)', marginBottom: '8px' }}>LICENSE ACTIVATION</div>
                     <p className="muted" style={{ margin: '0 0 16px', fontSize: '13px' }}>Enter your activation key to extend or upgrade your access.</p>
-                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    <div className="controls" style={{ alignItems: 'stretch' }}>
                         <input
+                            aria-label="Activation key"
                             value={redeemCode}
                             onChange={e => setRedeemCode(e.target.value.toUpperCase())}
                             placeholder="XXXX-XXXX-XXXX"
-                            style={{ padding: '12px', flex: 1, minWidth: '200px' }}
+                            style={{ minHeight: 48, flex: '1 1 220px' }}
                         />
-                        <button className="btn primary" onClick={handleRedeemCode} disabled={redeeming || !redeemCode}>
-                            {redeeming ? 'Activating…' : 'Redeem Key'}
+                        <button type="button" className="btn primary" onClick={handleRedeemCode} disabled={redeeming || !redeemCode}>
+                            {redeeming ? 'Activating…' : 'Redeem key'}
                         </button>
                     </div>
-                    {msg && <div style={{ marginTop: '10px', fontSize: '13px', color: '#10b981' }}>{msg}</div>}
+                    {msg && <div role="status" aria-live="polite" style={{ marginTop: 10, fontSize: 13, color: msg.includes('error') || msg.includes('Invalid') ? 'var(--bad)' : 'var(--ok)' }}>{msg}</div>}
                 </div>
-            </div>
+            </section>
         );
     }
 
     return (
-        <div className="card glass glow-blue" style={{ border: 'none', padding: 'clamp(20px, 4vw, 40px)', margin: 0 }}>
+        <section className="card glass" style={{ margin: 0, padding: 'clamp(16px, 3vw, 24px)' }} aria-labelledby="business-profile-heading">
             <style>{`
                 .profile-form { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
                 .profile-form .f2 { grid-column: span 2; }
@@ -249,21 +253,21 @@ export default function ProfileTab({ settings, setSettings, onReload, billingOnl
                 }
             `}</style>
 
-            {billingEl}
+            <div style={{ marginBottom: 24 }}>{billingEl}</div>
 
             <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '6px' }}>
-                <h2 style={{ fontSize: '1.5rem', margin: 0 }}>Profile Branding</h2>
+                <h2 id="business-profile-heading" style={{ fontSize: 20, margin: 0 }}>Business profile</h2>
             </div>
             <p className="muted" style={{ fontSize: '13px', marginBottom: '24px' }}>
-                Your identity used on invoices and reports. Fill out what you have — save and update anytime.
+                Set the business details used on invoices, reports, payment pages, and client communications.
             </p>
 
             <form onSubmit={handleSaveSettings} className="profile-form">
                 {/* Logo row — upload + preview inline */}
-                <div className="f2" style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                <div className="f2 mobile-break" style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
                     <div style={{ flex: 1 }}>
                         <small className="muted" style={{ fontWeight: 900 }}>LOGO</small>
-                        <label className="btn secondary" style={{ display: 'block', marginTop: '8px', cursor: 'pointer', textAlign: 'center' }}>
+                        <label className="btn secondary" style={{ display: 'block', minHeight: 44, marginTop: 8, cursor: 'pointer', textAlign: 'center' }}>
                             <input type="file" accept="image/*" onChange={handleLogoUpload} style={{ display: 'none' }} />
                             {settings.logo_url ? 'Change Logo' : 'Upload Logo'}
                         </label>
@@ -365,7 +369,7 @@ export default function ProfileTab({ settings, setSettings, onReload, billingOnl
                 {/* Stripe setup guidance */}
                 <div className="f2">
                     <div style={{ padding: '16px 20px', background: 'rgba(99,91,255,0.05)', borderRadius: '14px', border: '1px solid rgba(99,91,255,0.18)' }}>
-                        <div style={{ fontWeight: 950, fontSize: '12px', color: '#a78bfa', marginBottom: '12px', letterSpacing: '0.05em' }}>💳 ENABLE ONLINE INVOICE PAYMENTS (STRIPE)</div>
+                        <div style={{ fontWeight: 900, fontSize: 13, color: '#a78bfa', marginBottom: 12 }}>Enable online invoice payments with Stripe</div>
                         <p style={{ margin: '0 0 12px', fontSize: '12px', color: 'rgba(255,255,255,0.55)', lineHeight: 1.6 }}>
                             Stripe lets your clients pay invoices by credit or debit card. It's free to sign up — Stripe charges a small per-transaction fee (2.9% + 30¢) directly to you. No monthly cost.
                         </p>
@@ -376,7 +380,7 @@ export default function ProfileTab({ settings, setSettings, onReload, billingOnl
                             <li>Paste it into the Stripe Publishable Key field below and save.</li>
                         </ol>
                         <div style={{ fontSize: '11px', color: 'rgba(249,115,22,0.8)', background: 'rgba(249,115,22,0.06)', border: '1px solid rgba(249,115,22,0.15)', borderRadius: '8px', padding: '8px 12px' }}>
-                            ⚠️ Only paste the <strong>Publishable key</strong> here — never your Secret key. The publishable key is safe to store; the secret key is not.
+                            Only paste the <strong>Publishable key</strong> here—never your Secret key.
                         </div>
                     </div>
                 </div>
@@ -384,7 +388,7 @@ export default function ProfileTab({ settings, setSettings, onReload, billingOnl
                 {/* Instant Payment Handles */}
                 <div className="f2">
                     <div style={{ padding: '18px 20px', background: 'rgba(56,189,248,0.04)', borderRadius: '14px', border: '1px solid rgba(56,189,248,0.12)' }}>
-                        <div style={{ fontWeight: 950, fontSize: '12px', color: '#38bdf8', marginBottom: '16px', letterSpacing: '0.05em' }}>⚡ INSTANT PAYMENT HANDLES</div>
+                        <div style={{ fontWeight: 900, fontSize: 13, color: '#38bdf8', marginBottom: 16 }}>Direct payment options</div>
                         <div className="payment-grid">
                             <div>
                                 <small className="muted" style={{ fontWeight: 900 }}>VENMO HANDLE</small>
@@ -408,7 +412,7 @@ export default function ProfileTab({ settings, setSettings, onReload, billingOnl
                             </div>
                         </div>
                         <div className="muted extra-small" style={{ marginTop: '14px', padding: '9px 12px', background: 'rgba(249,115,22,0.06)', borderRadius: '8px', border: '1px solid rgba(249,115,22,0.15)', color: '#f97316' }}>
-                            💡 Shown on your client payment portal when you send an invoice.
+                            These options appear on the client payment page when you send an invoice.
                         </div>
                     </div>
                 </div>
@@ -434,11 +438,11 @@ export default function ProfileTab({ settings, setSettings, onReload, billingOnl
                 </div>
 
                 {/* Save */}
-                <div className="f2" style={{ display: 'flex', gap: '16px', alignItems: 'center', marginTop: '4px' }}>
-                    <button type="submit" className="btn primary glow-blue" style={{ padding: '14px 40px', fontSize: '15px' }}>Save Global Identity</button>
-                    {msg && <span className={`${msg.includes('Error') ? 'tag bad' : 'tag ok'}`} style={{ fontWeight: 900 }}>{msg}</span>}
+                <div className="f2 controls" style={{ alignItems: 'center', marginTop: 4 }}>
+                    <button type="submit" className="btn primary" style={{ minHeight: 48, paddingInline: 24, fontSize: 14 }}>Save business profile</button>
+                    {msg && <span role="status" aria-live="polite" className={`tag ${msg.includes('Error') ? 'bad' : 'ok'}`} style={{ fontWeight: 800 }}>{msg}</span>}
                 </div>
             </form>
-        </div>
+        </section>
     );
 }
