@@ -5,11 +5,15 @@ import App from './App.jsx'
 import './index.css'
 import { ModalProvider } from './components/ModalContext.jsx'
 
+const sentryEnvironment = ['lumiereledger.com', 'www.lumiereledger.com'].includes(window.location.hostname)
+  ? 'production'
+  : import.meta.env.PROD ? 'preview' : 'development'
+
 Sentry.init({
   // DSN is a public key — safe to hardcode. Env var approach unreliable with
   // legacy vercel.json builds config + @vercel/static-build.
   dsn: import.meta.env.VITE_SENTRY_DSN || 'https://70d0432f81cd0a376b0430616469c8c9@o4511515662680064.ingest.us.sentry.io/4511516393406464',
-  environment: import.meta.env.MODE,
+  environment: sentryEnvironment,
   integrations: [Sentry.browserTracingIntegration()],
   tracesSampleRate: 0.1,
   sendDefaultPii: true,
