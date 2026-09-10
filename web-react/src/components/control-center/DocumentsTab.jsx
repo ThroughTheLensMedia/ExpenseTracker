@@ -204,28 +204,28 @@ export default function DocumentsTab({ settings }) {
     };
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ display: 'grid', gap: 16 }}>
 
             {/* Upload card */}
-            <div className="card glass" style={{ padding: '24px 28px' }}>
-                <div style={{ fontWeight: 900, fontSize: '16px', marginBottom: '6px' }}>Add a Document</div>
-                <div className="muted" style={{ fontSize: '13px', marginBottom: '18px', lineHeight: 1.6 }}>
+            <section className="card glass" style={{ margin: 0, padding: 'clamp(16px, 3vw, 24px)' }} aria-labelledby="document-upload-heading">
+                <h2 id="document-upload-heading" style={{ margin: 0, fontSize: 20 }}>Add a document</h2>
+                <p className="muted" style={{ maxWidth: 760, margin: '8px 0 18px', fontSize: 14, lineHeight: 1.55 }}>
                     Choose a document type, then upload a PDF or image. Lumière indexes its text so the Assistant can answer questions about dates, coverage, financing, equipment, and purchase details. The original file remains available here.
-                </div>
+                </p>
 
                 {!hasKey && (
-                    <div style={{ padding: '12px 16px', borderRadius: '10px', background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.3)', fontSize: '13px', color: '#f97316', marginBottom: '16px' }}>
+                    <div style={{ padding: '12px 16px', borderRadius: 12, background: 'rgba(247,185,85,.08)', border: '1px solid rgba(247,185,85,.3)', fontSize: 13, color: 'var(--warn)', marginBottom: 16, lineHeight: 1.5 }}>
                         Set your Gemini API key in the <strong>AI Intelligence</strong> tab before uploading an image. PDFs with selectable text can still be indexed without it.
                     </div>
                 )}
 
-                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-                    <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '180px' }}>
-                        <span className="muted" style={{ fontSize: '11px', fontWeight: 800 }}>DOCUMENT TYPE</span>
+                <div className="controls" style={{ alignItems: 'flex-end' }}>
+                    <label style={{ display: 'flex', flex: '1 1 220px', flexDirection: 'column', gap: 8 }}>
+                        <span className="muted" style={{ fontSize: 12, fontWeight: 800, letterSpacing: '.06em' }}>DOCUMENT TYPE</span>
                         <select
                             value={docType}
                             onChange={e => setDocType(e.target.value)}
-                            style={{ padding: '10px 12px', fontSize: '13px' }}
+                            style={{ minHeight: 48, fontSize: 14 }}
                             disabled={uploading}
                         >
                             {DOC_TYPES.map(t => (
@@ -236,11 +236,11 @@ export default function DocumentsTab({ settings }) {
 
                     <label style={{
                         display: 'inline-flex', alignItems: 'center', gap: '8px',
-                        padding: '10px 18px', borderRadius: '10px', cursor: uploading ? 'not-allowed' : 'pointer',
+                        minHeight: 48, padding: '10px 18px', borderRadius: 12, cursor: uploading ? 'not-allowed' : 'pointer',
                         background: uploading ? 'rgba(255,255,255,0.04)' : 'rgba(129,140,248,0.12)',
                         border: `1px solid ${uploading ? 'rgba(255,255,255,0.1)' : 'rgba(129,140,248,0.4)'}`,
                         color: uploading ? 'rgba(255,255,255,0.3)' : '#818cf8',
-                        fontWeight: 700, fontSize: '13px', userSelect: 'none',
+                        fontWeight: 700, fontSize: 14, userSelect: 'none',
                         opacity: uploading ? 0.6 : 1,
                     }}>
                         {uploading ? `Processing ${uploadingFile}…` : 'Choose PDF or Image'}
@@ -266,26 +266,26 @@ export default function DocumentsTab({ settings }) {
                         <span>{msg.text}</span>
                     </div>
                 )}
-            </div>
+            </section>
 
             {/* Indexed documents list */}
-            <div className="card glass" style={{ padding: '24px 28px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '12px', flexWrap: 'wrap', marginBottom: '16px' }}>
+            <section className="card glass" style={{ margin: 0, padding: 'clamp(16px, 3vw, 24px)' }} aria-labelledby="document-list-heading">
+                <div className="mobile-break" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 16, marginBottom: 18 }}>
                     <div>
-                        <div style={{ fontWeight: 900, fontSize: '16px' }}>My Documents</div>
-                        <div className="muted" style={{ fontSize: '12px', marginTop: '3px' }}>{docs.length} document{docs.length === 1 ? '' : 's'} available</div>
+                        <h2 id="document-list-heading" style={{ margin: 0, fontSize: 20 }}>Your documents</h2>
+                        <div className="muted" style={{ fontSize: 13, marginTop: 5 }}>{docs.length} document{docs.length === 1 ? '' : 's'} available</div>
                     </div>
                     {!!docs.length && (
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        <div className="controls" style={{ alignItems: 'center' }}>
                             <input
                                 type="search"
                                 value={searchText}
                                 onChange={event => setSearchText(event.target.value)}
                                 placeholder="Search name or notes"
                                 aria-label="Search documents"
-                                style={{ width: 'min(240px, 100%)', padding: '9px 11px', fontSize: '13px' }}
+                                style={{ width: 'min(260px, 100%)', minHeight: 44, fontSize: 13 }}
                             />
-                            <select value={typeFilter} onChange={event => setTypeFilter(event.target.value)} aria-label="Filter documents by type" style={{ padding: '9px 11px', fontSize: '13px' }}>
+                            <select value={typeFilter} onChange={event => setTypeFilter(event.target.value)} aria-label="Filter documents by type" style={{ minHeight: 44, width: 'auto', fontSize: 13 }}>
                                 <option value="all">All types</option>
                                 {DOC_TYPES.map(type => <option key={type.value} value={type.value}>{type.label}</option>)}
                             </select>
@@ -294,31 +294,29 @@ export default function DocumentsTab({ settings }) {
                 </div>
 
                 {loading ? (
-                    <div className="muted" style={{ fontSize: '13px', padding: '24px 0' }}>Loading your documents…</div>
+                    <div className="empty-state">Loading your documents…</div>
                 ) : loadError ? (
-                    <div style={{ textAlign: 'center', padding: '32px 0' }}>
-                        <div style={{ fontWeight: 700, marginBottom: '6px', color: '#f87171' }}>Documents could not be loaded</div>
-                        <div className="muted" style={{ fontSize: '13px', marginBottom: '14px' }}>{loadError}</div>
-                        <button className="btn secondary" onClick={loadDocs}>Retry</button>
+                    <div className="empty-state">
+                        <strong style={{ color: 'var(--bad)' }}>Documents could not be loaded</strong>
+                        <span className="muted">{loadError}</span>
+                        <button type="button" className="btn secondary" onClick={loadDocs}>Retry</button>
                     </div>
                 ) : docs.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '32px 0' }}>
-                        <div style={{ fontWeight: 700, marginBottom: '6px' }}>No documents indexed yet</div>
-                        <div className="muted" style={{ fontSize: '13px', lineHeight: 1.6, maxWidth: '340px', margin: '0 auto' }}>
-                            Choose a type above and upload your first PDF or image. It will appear here when processing finishes.
-                        </div>
+                    <div className="empty-state">
+                        <strong>No documents yet</strong>
+                        <span className="muted">Choose a type above and upload your first PDF or image.</span>
                     </div>
                 ) : visibleDocs.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '32px 0' }}>
-                        <div style={{ fontWeight: 700, marginBottom: '6px' }}>No documents match these filters</div>
-                        <button className="btn secondary" onClick={clearFilters} style={{ marginTop: '10px' }}>Clear Filters</button>
+                    <div className="empty-state">
+                        <strong>No documents match these filters</strong>
+                        <button type="button" className="btn secondary" onClick={clearFilters}>Clear filters</button>
                     </div>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         {visibleDocs.map(doc => (
-                            <div key={doc.id} style={{
-                                display: 'flex', alignItems: editingId === doc.id ? 'flex-start' : 'center', gap: '14px',
-                                padding: '14px 16px', borderRadius: '12px',
+                            <div key={doc.id} className="mobile-break" style={{
+                                display: 'flex', alignItems: editingId === doc.id ? 'flex-start' : 'center', gap: 14,
+                                padding: '14px 16px', borderRadius: 12,
                                 background: 'rgba(255,255,255,0.03)', border: '1px solid var(--line)',
                             }}>
                                 <div style={{
@@ -329,30 +327,32 @@ export default function DocumentsTab({ settings }) {
                                     <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                         <input
                                             autoFocus
+                                            aria-label="Document name"
                                             value={editFilename}
                                             onChange={e => setEditFilename(e.target.value)}
                                             placeholder="Filename"
                                             style={{ padding: '6px 10px', fontSize: '13px', fontWeight: 700 }}
                                         />
                                         <textarea
+                                            aria-label="Document notes"
                                             value={editNotes}
                                             onChange={e => setEditNotes(e.target.value)}
                                             placeholder="Add a note — e.g. which lens/camera this receipt covers, warranty end date…"
                                             rows={2}
                                             style={{ padding: '6px 10px', fontSize: '12px', resize: 'vertical', fontFamily: 'inherit' }}
                                         />
-                                        <div style={{ display: 'flex', gap: '8px' }}>
-                                            <button className="btn sm" style={{ fontSize: '11px', padding: '4px 12px' }} disabled={saving} onClick={() => saveEdit(doc.id)}>
+                                        <div className="controls" style={{ alignItems: 'center' }}>
+                                            <button type="button" className="btn sm" style={{ fontSize: 12 }} disabled={saving} onClick={() => saveEdit(doc.id)}>
                                                 {saving ? 'Saving…' : 'Save'}
                                             </button>
-                                            <button className="btn sm secondary" style={{ fontSize: '11px', padding: '4px 12px' }} disabled={saving} onClick={cancelEdit}>
+                                            <button type="button" className="btn sm secondary" style={{ fontSize: 12 }} disabled={saving} onClick={cancelEdit}>
                                                 Cancel
                                             </button>
                                         </div>
                                     </div>
                                 ) : (
                                     <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ fontWeight: 700, fontSize: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        <div style={{ fontWeight: 700, fontSize: 14, overflowWrap: 'anywhere' }}>
                                             {doc.filename}
                                         </div>
                                         <div className="muted" style={{ fontSize: '11px', marginTop: '2px' }}>
@@ -368,27 +368,30 @@ export default function DocumentsTab({ settings }) {
                                     </div>
                                 )}
                                 {editingId !== doc.id && (
-                                    <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                                    <div className="controls" style={{ alignItems: 'center', flexShrink: 0 }}>
                                         {doc.file_path && (
                                             <button
+                                                type="button"
                                                 className="btn secondary"
-                                                style={{ fontSize: '11px', padding: '4px 10px', color: '#818cf8', borderColor: 'rgba(129,140,248,0.3)' }}
+                                                style={{ fontSize: 12, color: '#818cf8', borderColor: 'rgba(129,140,248,0.3)' }}
                                                 disabled={downloading === doc.id}
                                                 onClick={() => handleDownload(doc.id)}
                                             >
-                                                {downloading === doc.id ? 'Opening…' : 'View Original'}
+                                                {downloading === doc.id ? 'Opening…' : 'View original'}
                                             </button>
                                         )}
                                         <button
+                                            type="button"
                                             className="btn secondary"
-                                            style={{ fontSize: '11px', padding: '4px 10px' }}
+                                            style={{ fontSize: 12 }}
                                             onClick={() => startEdit(doc)}
                                         >
-                                            Edit Details
+                                            Edit details
                                         </button>
                                         <button
+                                            type="button"
                                             className="btn secondary"
-                                            style={{ fontSize: '11px', padding: '4px 10px', color: '#f87171', borderColor: 'rgba(248,113,113,0.3)' }}
+                                            style={{ fontSize: 12, color: '#f87171', borderColor: 'rgba(248,113,113,0.3)' }}
                                             disabled={deleting === doc.id}
                                             onClick={() => handleDelete(doc.id, doc.filename)}
                                         >
@@ -400,7 +403,7 @@ export default function DocumentsTab({ settings }) {
                         ))}
                     </div>
                 )}
-            </div>
+            </section>
 
         </div>
     );
