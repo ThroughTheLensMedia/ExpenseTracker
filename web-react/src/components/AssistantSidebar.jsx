@@ -1,7 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { apiGet, apiPost, apiPatch } from '../api';
 import { useAuth } from './AuthContext';
-import { getAssistantExperienceCopy } from '../constants/experienceModes';
+import {
+    EXPERIENCE_MODES,
+    getAssistantExperienceCopy,
+    getExperienceMode,
+} from '../constants/experienceModes';
 
 // ── GFM-style markdown table helpers ─────────────────────────────────────
 // Shared by renderMarkdown() (renders tables as HTML) and extractTablesFromText()
@@ -114,6 +118,7 @@ function renderMarkdown(text) {
 
 export default function AssistantSidebar() {
     const { settings, user } = useAuth();
+    const isPersonal = getExperienceMode(settings) === EXPERIENCE_MODES.PERSONAL;
     const experienceCopy = getAssistantExperienceCopy(settings);
 
     // Derive first name: contact_name → business_name → email prefix
