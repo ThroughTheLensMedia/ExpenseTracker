@@ -43,11 +43,13 @@ export default function DashboardTab({ settings, setSettings }) {
     const [currentRole, setCurrentRole] = useState(config.role || null);
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
+    const [saveError, setSaveError] = useState('');
     const [confirmRole, setConfirmRole] = useState(null);
 
     async function save(newWidgets, newRole) {
         setSaving(true);
         setSaved(false);
+        setSaveError('');
         try {
             const updated = await apiPost('/settings', {
                 dashboard_config: {
@@ -59,7 +61,9 @@ export default function DashboardTab({ settings, setSettings }) {
             setSettings?.(s => ({ ...s, dashboard_config: updated?.dashboard_config }));
             setSaved(true);
             setTimeout(() => setSaved(false), 2000);
-        } catch {} finally {
+        } catch (error) {
+            setSaveError(error?.message || 'Dashboard preferences could not be saved.');
+        } finally {
             setSaving(false);
         }
     }
@@ -79,86 +83,94 @@ export default function DashboardTab({ settings, setSettings }) {
     }
 
     return (
-        <div style={{ maxWidth: 600, padding: '8px 0' }}>
+        <div style={{ display: 'grid', gap: 16 }}>
             {/* Role Selector */}
-            <div style={{ marginBottom: 32 }}>
-                <div style={{ fontSize: 13, fontWeight: 900, color: 'white', marginBottom: 4 }}>Business Type</div>
-                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: 600, marginBottom: 16 }}>
-                    Sets default widget visibility. You can still override individual widgets below.
+            <section className="card glass" style={{ margin: 0, padding: 'clamp(16px, 3vw, 24px)' }} aria-labelledby="dashboard-role-heading">
+                <div style={{ maxWidth: 720, marginBottom: 18 }}>
+                    <h2 id="dashboard-role-heading" style={{ margin: 0, fontSize: 20 }}>Choose your business type</h2>
+                    <p className="muted" style={{ margin: '8px 0 0', fontSize: 14, lineHeight: 1.55 }}>
+                        Start with a recommended dashboard layout. You can adjust individual sections below at any time.
+                    </p>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: 10 }}>
                     {ROLES.map(role => (
                         <button
                             key={role.id}
+                            type="button"
+                            aria-pressed={currentRole === role.id}
                             onClick={() => role.id !== currentRole && setConfirmRole(role.id)}
                             style={{
                                 display: 'flex', alignItems: 'center', gap: 12,
-                                background: currentRole === role.id ? 'rgba(249,115,22,0.1)' : 'rgba(255,255,255,0.03)',
-                                border: `1px solid ${currentRole === role.id ? 'rgba(249,115,22,0.4)' : 'rgba(255,255,255,0.08)'}`,
-                                borderRadius: 12, padding: '12px 14px', cursor: 'pointer', textAlign: 'left',
+                                minHeight: 72,
+                                background: currentRole === role.id ? 'rgba(76,125,255,.14)' : 'rgba(255,255,255,.03)',
+                                border: `1px solid ${currentRole === role.id ? 'var(--accent)' : 'var(--line)'}`,
+                                borderRadius: 12, padding: '12px 14px', color: 'var(--text)', cursor: 'pointer', textAlign: 'left',
                             }}
                         >
-                            <span style={{ fontSize: 22, flexShrink: 0 }}>{role.icon}</span>
+                            <span aria-hidden="true" style={{ fontSize: 22, flexShrink: 0 }}>{role.icon}</span>
                             <div>
-                                <div style={{ fontSize: 13, fontWeight: 900, color: currentRole === role.id ? '#f97316' : 'white' }}>{role.label}</div>
-                                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', fontWeight: 600, marginTop: 2 }}>{role.sub}</div>
+                                <div style={{ fontSize: 14, fontWeight: 850 }}>{role.label}</div>
+                                <div className="muted" style={{ fontSize: 12, marginTop: 3 }}>{role.sub}</div>
                             </div>
-                            {currentRole === role.id && <span style={{ marginLeft: 'auto', color: '#f97316', fontSize: 14 }}>✓</span>}
+                            {currentRole === role.id && <span aria-hidden="true" style={{ marginLeft: 'auto', color: 'var(--accent)', fontSize: 14 }}>✓</span>}
                         </button>
                     ))}
                 </div>
 
                 {/* Role change confirmation */}
                 {confirmRole && (
-                    <div style={{ marginTop: 12, padding: '14px 16px', background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.25)', borderRadius: 10 }}>
-                        <div style={{ fontSize: 13, fontWeight: 800, color: 'white', marginBottom: 8 }}>
+                    <div role="alert" style={{ marginTop: 14, padding: 16, background: 'rgba(76,125,255,.08)', border: '1px solid rgba(76,125,255,.25)', borderRadius: 12 }}>
+                        <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 10 }}>
                             Switch to {ROLES.find(r => r.id === confirmRole)?.label}? This will reset your widget preferences to the default for that role.
                         </div>
-                        <div style={{ display: 'flex', gap: 8 }}>
-                            <button onClick={() => applyRole(confirmRole)} style={{ padding: '8px 16px', borderRadius: 8, background: '#f97316', border: 'none', color: 'white', fontWeight: 900, fontSize: 12, cursor: 'pointer' }}>
-                                Yes, switch
+                        <div className="controls" style={{ alignItems: 'center' }}>
+                            <button type="button" className="btn" onClick={() => applyRole(confirmRole)}>
+                                Apply recommended layout
                             </button>
-                            <button onClick={() => setConfirmRole(null)} style={{ padding: '8px 16px', borderRadius: 8, background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', fontWeight: 800, fontSize: 12, cursor: 'pointer' }}>
+                            <button type="button" className="btn secondary" onClick={() => setConfirmRole(null)}>
                                 Cancel
                             </button>
                         </div>
                     </div>
                 )}
-            </div>
+            </section>
 
             {/* Widget Toggles */}
-            <div>
-                <div style={{ fontSize: 13, fontWeight: 900, color: 'white', marginBottom: 4 }}>Dashboard Sections</div>
-                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: 600, marginBottom: 16 }}>
-                    Toggle which sections appear on your dashboard. KPI tiles (Revenue, Expense, Profit) are always shown.
+            <section className="card glass" style={{ margin: 0, padding: 'clamp(16px, 3vw, 24px)' }} aria-labelledby="dashboard-sections-heading">
+                <div style={{ maxWidth: 720, marginBottom: 18 }}>
+                    <h2 id="dashboard-sections-heading" style={{ margin: 0, fontSize: 20 }}>Choose dashboard sections</h2>
+                    <p className="muted" style={{ margin: '8px 0 0', fontSize: 14, lineHeight: 1.55 }}>
+                        Show the information you use most. Revenue, expenses, and profit remain visible in every layout.
+                    </p>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: 10 }}>
                     {WIDGET_LABELS.map(({ key, label, desc }) => (
                         <label
                             key={key}
-                            style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', transition: 'background 0.15s' }}
+                            style={{ display: 'flex', alignItems: 'center', gap: 14, minHeight: 72, padding: '12px 14px', borderRadius: 12, background: 'rgba(255,255,255,.02)', border: '1px solid var(--line)', cursor: 'pointer' }}
                         >
                             <input
                                 type="checkbox"
                                 checked={widgets[key] !== false}
                                 onChange={() => toggleWidget(key)}
-                                style={{ accentColor: '#f97316', width: 16, height: 16, flexShrink: 0 }}
+                                disabled={saving}
+                                style={{ accentColor: 'var(--accent)', width: 18, height: 18, flexShrink: 0 }}
                             />
                             <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: 13, fontWeight: 800, color: widgets[key] !== false ? 'white' : 'rgba(255,255,255,0.3)' }}>{label}</div>
-                                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', fontWeight: 600, marginTop: 2 }}>{desc}</div>
+                                <div style={{ fontSize: 14, fontWeight: 800, color: widgets[key] !== false ? 'var(--text)' : 'var(--muted)' }}>{label}</div>
+                                <div className="muted" style={{ fontSize: 12, lineHeight: 1.4, marginTop: 3 }}>{desc}</div>
                             </div>
-                            <span style={{ fontSize: 11, fontWeight: 800, color: widgets[key] !== false ? '#4ade80' : 'rgba(255,255,255,0.2)', flexShrink: 0 }}>
-                                {widgets[key] !== false ? 'ON' : 'OFF'}
+                            <span style={{ fontSize: 11, fontWeight: 800, color: widgets[key] !== false ? 'var(--ok)' : 'var(--muted)', flexShrink: 0 }}>
+                                {widgets[key] !== false ? 'Shown' : 'Hidden'}
                             </span>
                         </label>
                     ))}
                 </div>
-            </div>
+            </section>
 
             {/* Save status */}
-            <div style={{ marginTop: 16, fontSize: 12, fontWeight: 700, color: saved ? '#4ade80' : 'transparent', transition: 'color 0.3s' }}>
-                ✓ Saved
+            <div role="status" aria-live="polite" style={{ minHeight: 20, fontSize: 13, fontWeight: 700, color: saveError ? 'var(--bad)' : saved ? 'var(--ok)' : 'transparent' }}>
+                {saveError || (saved ? 'Dashboard preferences saved.' : '')}
             </div>
         </div>
     );
