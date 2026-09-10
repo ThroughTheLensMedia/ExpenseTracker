@@ -29,18 +29,19 @@ function AddCategoryForm({ type, onSaved }) {
     };
 
     return (
-        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '8px' }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginTop: 10 }}>
             <input
                 value={name}
                 onChange={e => { setName(e.target.value); setErr(''); }}
-                placeholder="New category name…"
-                style={{ flex: 1, fontSize: '13px' }}
+                aria-label={`New ${TYPE_LABEL[type].toLowerCase()} category name`}
+                placeholder="Add a custom category"
+                style={{ flex: '1 1 180px', minHeight: 42, fontSize: 13 }}
                 onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}
             />
-            <button className="btn" onClick={handleSave} disabled={saving || !name.trim()} style={{ fontSize: '12px', padding: '6px 14px', whiteSpace: 'nowrap' }}>
-                {saving ? 'Saving…' : '+ Add'}
+            <button type="button" className="btn" onClick={handleSave} disabled={saving || !name.trim()} style={{ minHeight: 42, fontSize: 13, whiteSpace: 'nowrap' }}>
+                {saving ? 'Saving…' : 'Add category'}
             </button>
-            {err && <span style={{ color: '#f87171', fontSize: '12px' }}>{err}</span>}
+            {err && <span role="alert" style={{ flexBasis: '100%', color: '#f87171', fontSize: 12 }}>{err}</span>}
         </div>
     );
 }
@@ -86,49 +87,54 @@ function CustomCategoryRow({ cat, onRenamed, onDeleted }) {
 
     if (confirmDelete) {
         return (
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', padding: '8px 10px', borderRadius: '8px', background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.25)' }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', padding: 10, borderRadius: 10, background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.25)' }}>
                 <span style={{ flex: 1, fontSize: '13px', color: '#f87171' }}>
                     {confirmDelete.count} transaction{confirmDelete.count === 1 ? '' : 's'} use <strong>{cat.name}</strong>. Delete anyway?
                 </span>
-                <button className="btn" onClick={() => handleDelete(true)} disabled={deleting} style={{ fontSize: '12px', padding: '4px 10px', background: 'rgba(248,113,113,0.2)', color: '#f87171', borderColor: 'rgba(248,113,113,0.4)' }}>
+                <button type="button" className="btn" onClick={() => handleDelete(true)} disabled={deleting} style={{ fontSize: 12, background: 'rgba(248,113,113,0.2)', color: '#f87171', borderColor: 'rgba(248,113,113,0.4)' }}>
                     {deleting ? 'Deleting…' : 'Delete'}
                 </button>
-                <button className="btn secondary" onClick={() => setConfirmDelete(null)} style={{ fontSize: '12px', padding: '4px 10px' }}>Cancel</button>
+                <button type="button" className="btn secondary" onClick={() => setConfirmDelete(null)} style={{ fontSize: 12 }}>Cancel</button>
             </div>
         );
     }
 
     if (editing) {
         return (
-            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                 <input
                     value={editName}
                     onChange={e => setEditName(e.target.value)}
-                    style={{ flex: 1, fontSize: '13px' }}
+                    aria-label={`Rename ${cat.name}`}
+                    style={{ flex: '1 1 160px', minHeight: 40, fontSize: 13 }}
                     autoFocus
                     onKeyDown={e => { if (e.key === 'Enter') handleRename(); if (e.key === 'Escape') setEditing(false); }}
                 />
-                <button className="btn" onClick={handleRename} disabled={saving} style={{ fontSize: '12px', padding: '4px 10px' }}>
+                <button type="button" className="btn" onClick={handleRename} disabled={saving} style={{ fontSize: 12 }}>
                     {saving ? '…' : 'Save'}
                 </button>
-                <button className="btn secondary" onClick={() => { setEditing(false); setEditName(cat.name); }} style={{ fontSize: '12px', padding: '4px 10px' }}>Cancel</button>
+                <button type="button" className="btn secondary" onClick={() => { setEditing(false); setEditName(cat.name); }} style={{ fontSize: 12 }}>Cancel</button>
             </div>
         );
     }
 
     return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 10px', borderRadius: '8px', background: 'rgba(56,189,248,0.05)', border: '1px solid rgba(56,189,248,0.12)' }}>
-            <span style={{ flex: 1, fontSize: '13px', fontWeight: 600 }}>{cat.name} <span style={{ fontSize: '11px', color: '#38bdf8' }}>✦ Custom</span></span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', padding: '8px 10px', borderRadius: 10, background: 'rgba(56,189,248,0.05)', border: '1px solid rgba(56,189,248,0.12)' }}>
+            <span style={{ flex: '1 1 140px', fontSize: 13, fontWeight: 650 }}>{cat.name} <span style={{ fontSize: 11, color: 'var(--accent)' }}>Custom</span></span>
             <button
+                type="button"
                 onClick={() => { setEditing(true); setEditName(cat.name); }}
-                style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: 'rgba(255,255,255,0.5)', fontSize: '11px', padding: '3px 8px', cursor: 'pointer' }}
+                className="btn secondary"
+                style={{ fontSize: 11, padding: '6px 9px' }}
             >
                 Rename
             </button>
             <button
+                type="button"
                 onClick={() => handleDelete(false)}
                 disabled={deleting}
-                style={{ background: 'none', border: '1px solid rgba(248,113,113,0.3)', borderRadius: '6px', color: '#f87171', fontSize: '11px', padding: '3px 8px', cursor: 'pointer' }}
+                className="btn secondary"
+                style={{ borderColor: 'rgba(248,113,113,0.3)', color: '#f87171', fontSize: 11, padding: '6px 9px' }}
             >
                 {deleting ? '…' : 'Delete'}
             </button>
@@ -257,27 +263,27 @@ export default function CategoriesTab() {
         if (catsByType[c.type]) catsByType[c.type].push(c);
     }
 
-    if (loading) return <div className="muted" style={{ padding: '40px', textAlign: 'center' }}>Loading…</div>;
+    if (loading) return <div className="card glass"><div className="empty-state">Loading categories…</div></div>;
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-            <div>
-                <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '6px' }}>Categories</h2>
-                <p className="muted" style={{ fontSize: '13px', marginBottom: 0 }}>
-                    Built-in categories are read-only. Add your own to any group — they'll appear in all dropdowns marked with ✦.
+        <div style={{ display: 'grid', gap: 16 }}>
+            <div style={{ maxWidth: 720 }}>
+                <h2 style={{ margin: 0, fontSize: 20 }}>Manage categories</h2>
+                <p className="muted" style={{ margin: '8px 0 0', fontSize: 14, lineHeight: 1.55 }}>
+                    Built-in categories remain consistent for reporting. Add custom categories when your work needs more detail.
                 </p>
             </div>
 
             {/* Import result toast */}
             {importResult && (
-                <div style={{ padding: '12px 16px', borderRadius: '8px', background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.3)', fontSize: '13px', color: '#4ade80', fontWeight: 600 }}>
-                    ✓ Imported {importResult.imported} categor{importResult.imported === 1 ? 'y' : 'ies'}{importResult.skipped > 0 ? ` · ${importResult.skipped} skipped` : ''}
+                <div role="status" aria-live="polite" style={{ padding: '12px 16px', borderRadius: 12, background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.3)', fontSize: 13, color: '#4ade80', fontWeight: 650 }}>
+                    Imported {importResult.imported} categor{importResult.imported === 1 ? 'y' : 'ies'}{importResult.skipped > 0 ? ` · ${importResult.skipped} skipped` : ''}
                 </div>
             )}
 
             {/* Orphan review banner */}
             {orphanCats.length > 0 && !showReview && (
-                <div className="card glass" style={{ padding: '16px 20px', border: '1px solid rgba(251,191,36,0.25)', background: 'rgba(251,191,36,0.06)' }}>
+                <div className="card glass" style={{ margin: 0, padding: '16px 20px', border: '1px solid rgba(251,191,36,0.25)', background: 'rgba(251,191,36,0.06)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                         <div style={{ flex: 1 }}>
                             <div style={{ fontWeight: 700, color: '#fbbf24', fontSize: '13px', marginBottom: '2px' }}>Unrecognized categories found</div>
@@ -286,8 +292,8 @@ export default function CategoriesTab() {
                                 <em>{orphanCats.slice(0, 5).join(', ')}{orphanCats.length > 5 ? `, +${orphanCats.length - 5} more` : ''}</em>
                             </div>
                         </div>
-                        <button className="btn" onClick={() => setShowReview(true)} style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>
-                            Review &amp; Import
+                        <button type="button" className="btn" onClick={() => setShowReview(true)} style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
+                            Review categories
                         </button>
                     </div>
                 </div>
@@ -295,17 +301,17 @@ export default function CategoriesTab() {
 
             {/* Orphan review panel */}
             {showReview && (
-                <div className="card glass" style={{ padding: '20px 24px', border: '1px solid rgba(251,191,36,0.25)', background: 'rgba(251,191,36,0.04)' }}>
+                <div className="card glass" style={{ margin: 0, padding: 'clamp(16px, 3vw, 24px)', border: '1px solid rgba(251,191,36,0.25)', background: 'rgba(251,191,36,0.04)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', gap: '12px', flexWrap: 'wrap' }}>
                         <div>
                             <div style={{ fontWeight: 800, color: '#fbbf24', fontSize: '14px', marginBottom: '2px' }}>Review Unrecognized Categories</div>
                             <div className="muted" style={{ fontSize: '12px' }}>Edit names or types before importing. Uncheck any you want to skip. {toImport} of {reviewItems.length} selected.</div>
                         </div>
-                        <button className="btn secondary" onClick={() => setShowReview(false)} style={{ fontSize: '12px' }}>Cancel</button>
+                        <button type="button" className="btn secondary" onClick={() => setShowReview(false)} style={{ fontSize: 12 }}>Cancel</button>
                     </div>
 
                     {/* Column headers */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px 60px', gap: '8px', padding: '0 4px 8px', borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: '8px' }}>
+                    <div className="mobile-hide" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(100px, 140px) 52px', gap: 8, padding: '0 4px 8px', borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: 8 }}>
                         <div style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Category Name</div>
                         <div style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Type</div>
                         <div style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'center' }}>Import</div>
@@ -313,14 +319,16 @@ export default function CategoriesTab() {
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '360px', overflowY: 'auto', marginBottom: '16px' }}>
                         {reviewItems.map((item, i) => (
-                            <div key={item.name} style={{ display: 'grid', gridTemplateColumns: '1fr 140px 60px', gap: '8px', alignItems: 'center', opacity: item.include ? 1 : 0.5, transition: 'opacity 0.15s' }}>
+                            <div key={item.name} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(100px, 140px) 52px', gap: 8, alignItems: 'center', opacity: item.include ? 1 : 0.5, transition: 'opacity 0.15s' }}>
                                 <input
+                                    aria-label={`Category name for ${item.name}`}
                                     value={item.editName}
                                     onChange={e => updateItem(i, { editName: e.target.value })}
                                     disabled={!item.include}
                                     style={{ fontSize: '13px', padding: '5px 8px' }}
                                 />
                                 <select
+                                    aria-label={`Category type for ${item.name}`}
                                     value={item.type}
                                     onChange={e => updateItem(i, { type: e.target.value })}
                                     disabled={!item.include}
@@ -330,7 +338,7 @@ export default function CategoriesTab() {
                                     <option value="income">Income</option>
                                     <option value="misc_income">Misc Income</option>
                                 </select>
-                                <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                                <label aria-label={`Import ${item.name}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                                     <input
                                         type="checkbox"
                                         checked={item.include}
@@ -342,9 +350,10 @@ export default function CategoriesTab() {
                         ))}
                     </div>
 
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <div className="controls" style={{ alignItems: 'center' }}>
                         {/* Delete unchecked — far left */}
                         <button
+                            type="button"
                             className="btn secondary"
                             onClick={handleDeleteUnchecked}
                             disabled={deletingOrphan === '__bulk__' || uncheckedCount === 0}
@@ -352,9 +361,9 @@ export default function CategoriesTab() {
                         >
                             {deletingOrphan === '__bulk__' ? 'Deleting…' : `Delete Unchecked${uncheckedCount > 0 ? ` (${uncheckedCount})` : ''}`}
                         </button>
-                        <button className="btn secondary" onClick={() => setReviewItems(prev => prev.map(it => ({ ...it, include: false })))} style={{ fontSize: '12px' }}>Deselect All</button>
-                        <button className="btn secondary" onClick={() => setReviewItems(prev => prev.map(it => ({ ...it, include: true })))} style={{ fontSize: '12px' }}>Select All</button>
-                        <button className="btn" onClick={handleImportSelected} disabled={importing || toImport === 0} style={{ fontSize: '12px' }}>
+                        <button type="button" className="btn secondary" onClick={() => setReviewItems(prev => prev.map(it => ({ ...it, include: false })))} style={{ fontSize: 12 }}>Deselect all</button>
+                        <button type="button" className="btn secondary" onClick={() => setReviewItems(prev => prev.map(it => ({ ...it, include: true })))} style={{ fontSize: 12 }}>Select all</button>
+                        <button type="button" className="btn" onClick={handleImportSelected} disabled={importing || toImport === 0} style={{ fontSize: 12 }}>
                             {importing ? 'Importing…' : `Import ${toImport}`}
                         </button>
                     </div>
@@ -363,7 +372,7 @@ export default function CategoriesTab() {
 
             {/* Skipped orphans — delete from transactions */}
             {skippedOrphans.length > 0 && (
-                <div className="card glass" style={{ padding: '20px 24px', border: '1px solid rgba(248,113,113,0.2)', background: 'rgba(248,113,113,0.04)' }}>
+                <div className="card glass" style={{ margin: 0, padding: 'clamp(16px, 3vw, 24px)', border: '1px solid rgba(248,113,113,0.2)', background: 'rgba(248,113,113,0.04)' }}>
                     <div style={{ fontWeight: 700, fontSize: '13px', color: '#f87171', marginBottom: '4px' }}>Skipped categories</div>
                     <div className="muted" style={{ fontSize: '12px', marginBottom: '14px' }}>
                         These weren't imported. Delete them to clear the category from all matching transactions, or leave them and they'll reappear next time.
@@ -373,6 +382,7 @@ export default function CategoriesTab() {
                             <div key={name} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 10px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)' }}>
                                 <span style={{ flex: 1, fontSize: '13px' }}>{name}</span>
                                 <button
+                                    type="button"
                                     onClick={() => handleDeleteOrphan(name)}
                                     disabled={deletingOrphan === name}
                                     style={{ background: 'none', border: '1px solid rgba(248,113,113,0.35)', borderRadius: '6px', color: '#f87171', fontSize: '11px', padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}
@@ -386,14 +396,14 @@ export default function CategoriesTab() {
             )}
 
             {/* One section per group */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: 16 }}>
                 {CATEGORY_GROUPS.map(({ group, items }) => {
                     const typeKey = GROUP_TYPE[group];
                     const myCustom = catsByType[typeKey] || [];
                     return (
-                        <div key={group} className="card glass" style={{ padding: '20px 24px' }}>
+                        <section key={group} className="card glass" style={{ margin: 0, padding: 'clamp(16px, 3vw, 20px)' }} aria-labelledby={`category-group-${typeKey}`}>
                             <div style={{ fontWeight: 800, fontSize: '14px', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                {group}
+                                <span id={`category-group-${typeKey}`}>{group}</span>
                                 <span style={{ fontSize: '11px', fontWeight: 600, color: 'rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.06)', borderRadius: '4px', padding: '2px 6px' }}>
                                     {items.length + myCustom.length} total
                                 </span>
@@ -418,7 +428,7 @@ export default function CategoriesTab() {
                             )}
 
                             <AddCategoryForm type={typeKey} onSaved={load} />
-                        </div>
+                        </section>
                     );
                 })}
             </div>
