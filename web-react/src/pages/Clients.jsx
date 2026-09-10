@@ -126,7 +126,12 @@ export default function Clients() {
     }, [clients, filterText, sortConfig, statsByClient]);
 
     const goToNewInvoice = (client) => {
-        navigate(`/crm/financials?newInvoiceClientId=${client.id}`);
+        navigate(`/crm/financials?newInvoiceClientId=${encodeURIComponent(client.id)}`);
+    };
+
+    const goToInvoice = (invoice) => {
+        setViewingClient(null);
+        navigate(`/crm/financials?invoiceId=${encodeURIComponent(invoice.id)}`);
     };
 
     const handleDeleteClient = async (client) => {
@@ -213,7 +218,10 @@ export default function Clients() {
             <div className="card glass" style={{ padding: '24px', margin: 0 }}>
                 {statusMsg && (
                     <div className={`tag ${statusMsg.type === 'ok' ? 'ok' : 'bad'}`} style={{ marginBottom: '16px', justifyContent: 'center', width: '100%', padding: '12px' }}>
-                        {statusMsg.text}
+                        <span>{statusMsg.text}</span>
+                        {statusMsg.type === 'bad' && (
+                            <button className="btn sm secondary" onClick={load} style={{ marginLeft: '10px' }}>Retry</button>
+                        )}
                     </div>
                 )}
 
@@ -294,7 +302,23 @@ export default function Clients() {
                                         </tr>
                                     );
                                 })}
-                                {!visibleClients.length && <tr><td colSpan="7" className="muted center" style={{ padding: '60px' }}>No clients found.</td></tr>}
+                                {!visibleClients.length && (
+                                    <tr>
+                                        <td colSpan="7" className="muted center" style={{ padding: '60px' }}>
+                                            {clients.length ? (
+                                                <>
+                                                    No clients match “{filterText}”.
+                                                    <button className="btn sm secondary" onClick={() => setFilterText('')} style={{ marginLeft: '10px' }}>Clear Search</button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    No clients yet. Your first client will be created when you save an invoice.
+                                                    <button className="btn sm primary" onClick={() => navigate('/crm/financials')} style={{ marginLeft: '10px' }}>Create Invoice</button>
+                                                </>
+                                            )}
+                                        </td>
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
                     )}
@@ -333,10 +357,12 @@ export default function Clients() {
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             {viewingClientInvoices.map(inv => (
-                                <div
+                                <button
+                                    type="button"
                                     key={inv.id}
-                                    onClick={() => navigate('/crm/financials')}
-                                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer' }}
+                                    onClick={() => goToInvoice(inv)}
+                                    aria-label={`Open invoice ${inv.invoice_number}`}
+                                    style={{ width: '100%', color: 'inherit', textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer' }}
                                 >
                                     <div>
                                         <div style={{ fontWeight: 800, color: BRAND_ORANGE }}>#{inv.invoice_number}</div>
@@ -346,7 +372,7 @@ export default function Clients() {
                                         <div style={{ fontWeight: 900 }}>{formatMoney(inv.total)}</div>
                                         <span className={`tag ${inv.status === 'paid' ? 'ok' : 'warn'}`}>{inv.status}</span>
                                     </div>
-                                </div>
+                                </button>
                             ))}
                             {!viewingClientInvoices.length && <div className="muted small" style={{ padding: '20px 0', textAlign: 'center' }}>No invoices yet.</div>}
                         </div>
