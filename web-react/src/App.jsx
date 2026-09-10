@@ -8,6 +8,7 @@ import { ModalProvider } from './components/ModalContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import { LayoutDashboard, ArrowLeftRight, Car, Users, Landmark, Download } from 'lucide-react';
 import { EXPERIENCE_MODES, getExperienceMode } from './constants/experienceModes';
+import { getSubscriptionStatusLabel } from './utils/dashboardPriorities';
 
 // Code-split every page — only load the chunk when the user navigates to it
 const DashboardV2    = lazy(() => import('./pages/DashboardV2'));
@@ -567,8 +568,8 @@ function AppContent() {
                   <div className="muted" style={{ fontWeight: 950, fontSize: '9px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', marginBottom: '6px', letterSpacing: '0.05em' }}>Ledger Session</div>
                   <div style={{ fontWeight: 800, fontSize: '13px', color: 'white' }}>{identityName}</div>
                   {identityTitle && <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.6)', fontWeight: 700 }}>{identityTitle}</div>}
-                  <div style={{ fontSize: '10px', color: (daysLeft === null || daysLeft <= 7) ? '#f59e0b' : '#10b981', fontWeight: 900, marginTop: '4px' }}>
-                    {subscription ? `${subscription.plan_type?.toUpperCase()} • ${daysLeft}D LEFT` : 'INVITE REQUIRED'}
+                  <div style={{ fontSize: '10px', color: daysLeft === null ? '#10b981' : daysLeft <= 0 ? '#ef4444' : daysLeft <= 7 ? '#f59e0b' : '#10b981', fontWeight: 900, marginTop: '4px' }}>
+                    {getSubscriptionStatusLabel(subscription, daysLeft)}
                   </div>
                 </div>
                 <button onClick={logout} className="btn sm secondary" style={{ 

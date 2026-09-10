@@ -4,6 +4,7 @@ import OperationalIntelligenceSection from '../components/dashboard/OperationalI
 import TaxSetAsideWidget from '../components/dashboard/TaxSetAsideWidget.jsx';
 import SubscriptionsRadarWidget from '../components/dashboard/SubscriptionsRadarWidget.jsx';
 import { fetchDashboardMetrics, getDashboardMetricsCache, apiGet, apiPost, apiPut } from '../api';
+import { getDashboardPriorities } from '../utils/dashboardPriorities';
 
 const DEFAULT_WIDGETS = {
     invoices: true,
@@ -16,7 +17,7 @@ const DEFAULT_WIDGETS = {
     subscriptions_radar: true,
 };
 
-export default function DashboardV2({ apiStatus }) {
+export default function DashboardV2({ apiStatus, isPersonalMode = false }) {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -41,6 +42,7 @@ export default function DashboardV2({ apiStatus }) {
     const projectedRev = metrics ? metrics.snapshot.ytdIncome + ((avgMonthlyRev * growthAssump) * moRemaining) : 0;
     const projectedExp = metrics ? metrics.snapshot.ytdSpend + ((avgMonthlyExp * expenseAssump) * moRemaining) : 0;
     const projectedNet = projectedRev - projectedExp;
+    const priorities = isPersonalMode ? [] : getDashboardPriorities(metrics, taxRate);
 
     const targetYear = new Date().getFullYear();
 
@@ -181,10 +183,36 @@ export default function DashboardV2({ apiStatus }) {
                 </div>
             )}
 
+            {!loading && !error && priorities.length > 0 && (
+                <div className="card glass" style={{ margin: 0, padding: '24px 28px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                    <div style={{ marginBottom: '16px' }}>
+                        <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900 }}>What needs your attention</h2>
+                        <div className="muted" style={{ fontSize: '12px', fontWeight: 700, marginTop: '4px' }}>Prioritized from the financial data already in your ledger</div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '12px' }}>
+                        {priorities.map(priority => {
+                            const toneColor = priority.tone === 'risk' ? '#ef4444' : priority.tone === 'watch' ? '#f59e0b' : '#10b981';
+                            return (
+                                <div key={`${priority.title}-${priority.path}`} style={{ padding: '16px', borderRadius: '12px', background: `${toneColor}0d`, border: `1px solid ${toneColor}40`, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    <div style={{ color: toneColor, fontSize: '10px', fontWeight: 900, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                                        {priority.tone === 'risk' ? 'Act now' : priority.tone === 'watch' ? 'Review' : 'On track'}
+                                    </div>
+                                    <div style={{ fontWeight: 900, fontSize: '15px' }}>{priority.title}</div>
+                                    <div className="muted" style={{ fontSize: '12px', lineHeight: 1.5, flex: 1 }}>{priority.detail}</div>
+                                    <button className="btn sm secondary" onClick={() => navigate(priority.path)} style={{ alignSelf: 'flex-start', marginTop: '4px' }}>
+                                        {priority.action} →
+                                    </button>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
             {/* Layer 1: Executive Snapshot - Top KPI Strip */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '20px' }}>
                 <div className="card glass cursor-pointer" onClick={() => navigate('/transactions')} style={{ margin: 0, padding: '24px', position: 'relative', borderTop: '4px solid #4ade80', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-                    <div className="muted" style={{ fontWeight: 800, fontSize: '11px', letterSpacing: '0.05em', marginBottom: '8px' }}>GROSS REVENUE (MTD)</div>
+                    <div className="muted" style={{ fontWeight: 800, fontSize: '11px', letterSpacing: '0.05em', marginBottom: '8px' }}>REVENUE THIS MONTH</div>
                     <div style={{ fontSize: '2.4rem', fontWeight: 950, color: '#4ade80' }}>
                         {loading ? '---' : formatMoney(metrics?.snapshot?.mtdIncome)}
                     </div>
@@ -194,7 +222,7 @@ export default function DashboardV2({ apiStatus }) {
                 </div>
 
                 <div className="card glass cursor-pointer" onClick={() => navigate('/transactions')} style={{ margin: 0, padding: '24px', position: 'relative', borderTop: '4px solid #f97316', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-                    <div className="muted" style={{ fontWeight: 800, fontSize: '11px', letterSpacing: '0.05em', marginBottom: '8px' }}>OPERATING EXPENSE (MTD)</div>
+                    <div className="muted" style={{ fontWeight: 800, fontSize: '11px', letterSpacing: '0.05em', marginBottom: '8px' }}>SPENDING THIS MONTH</div>
                     <div style={{ fontSize: '2.4rem', fontWeight: 950, color: '#f97316' }}>
                         {loading ? '---' : formatMoney(metrics?.snapshot?.mtdSpend)}
                     </div>
@@ -204,7 +232,7 @@ export default function DashboardV2({ apiStatus }) {
                 </div>
 
                 <div className="card glass cursor-pointer" onClick={() => navigate('/transactions')} style={{ margin: 0, padding: '24px', position: 'relative', borderTop: '4px solid #38bdf8', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-                    <div className="muted" style={{ fontWeight: 800, fontSize: '11px', letterSpacing: '0.05em', marginBottom: '8px' }}>NET PROFIT (MTD)</div>
+                    <div className="muted" style={{ fontWeight: 800, fontSize: '11px', letterSpacing: '0.05em', marginBottom: '8px' }}>PROFIT THIS MONTH</div>
                     <div style={{ fontSize: '2.4rem', fontWeight: 950, color: '#38bdf8' }}>
                         {loading ? '---' : formatMoney(metrics?.snapshot?.mtdNet)}
                     </div>
@@ -214,7 +242,7 @@ export default function DashboardV2({ apiStatus }) {
                 </div>
 
                 <div className="card glass cursor-pointer" onClick={() => navigate('/crm')} style={{ margin: 0, padding: '24px', position: 'relative', borderTop: '4px solid #fcd34d', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-                    <div className="muted" style={{ fontWeight: 800, fontSize: '11px', letterSpacing: '0.05em', marginBottom: '8px' }}>OPEN RECEIVABLES</div>
+                    <div className="muted" style={{ fontWeight: 800, fontSize: '11px', letterSpacing: '0.05em', marginBottom: '8px' }}>UNPAID INVOICES</div>
                     <div style={{ fontSize: '2.4rem', fontWeight: 950, color: '#fcd34d' }}>
                         {loading ? '---' : formatMoney(metrics?.snapshot?.openReceivablesCents)}
                     </div>

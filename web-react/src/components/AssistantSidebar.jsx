@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { apiGet, apiPost, apiPatch } from '../api';
 import { useAuth } from './AuthContext';
-import { getExperienceMode, EXPERIENCE_MODES } from '../constants/experienceModes';
+import { getAssistantExperienceCopy } from '../constants/experienceModes';
 
 // ── GFM-style markdown table helpers ─────────────────────────────────────
 // Shared by renderMarkdown() (renders tables as HTML) and extractTablesFromText()
@@ -114,13 +114,14 @@ function renderMarkdown(text) {
 
 export default function AssistantSidebar() {
     const { settings, user } = useAuth();
-    const isPersonal = getExperienceMode(settings) === EXPERIENCE_MODES.PERSONAL;
+    const experienceCopy = getAssistantExperienceCopy(settings);
 
     // Derive first name: contact_name → business_name → email prefix
     const rawName = settings?.contact_name || settings?.business_name || user?.email || '';
     const firstName = rawName.split(/[\s@.]/)[0];
-    const capabilityText = isPersonal ? 'your transactions, accounts, spending, and documents' : 'your ledger, invoices, and CRM';
-    const greeting = `Hello${firstName ? `, ${firstName.charAt(0).toUpperCase() + firstName.slice(1)}` : ''}! I'm your Lumière Assistant — I have live access to ${capabilityText}. Ask me anything, or say **"what can you do?"** to see a full list of capabilities.`;
+    const greeting = firstName
+        ? `Hello, ${firstName.charAt(0).toUpperCase() + firstName.slice(1)}! I'm your Lumière Assistant — I have live access to ${experienceCopy.dataScope}. Ask me anything, or say **"what can you do?"** to see a full list of capabilities.`
+        : `Hello! I'm your Lumière Assistant — I have live access to ${experienceCopy.dataScope}. Ask me anything, or say **"what can you do?"** to see a full list of capabilities.`;
 
     const [isOpen, setIsOpen] = useState(false);
     const [query, setQuery] = useState('');
@@ -130,6 +131,19 @@ export default function AssistantSidebar() {
     const [loading, setLoading] = useState(false);
     const [pendingActions, setPendingActions] = useState([]);
     const endRef = useRef(null);
+    const greetingRef = useRef(greeting);
+
+    // Settings can resolve after the sidebar mounts. Keep the untouched welcome
+    // message aligned with the active experience without rewriting real history.
+    useEffect(() => {
+        const previousGreeting = greetingRef.current;
+        greetingRef.current = greeting;
+        setMessages(previous => previous.length === 1
+            && previous[0].role === 'assistant'
+            && previous[0].text === previousGreeting
+            ? [{ role: 'assistant', text: greeting }]
+            : previous);
+    }, [greeting]);
 
     // Hydrate from persisted server-side history on mount — greeting only shows for a new user
     useEffect(() => {
@@ -320,19 +334,7 @@ export default function AssistantSidebar() {
                         <div style={{ fontSize: '13px', opacity: 0.5, lineHeight: '1.7' }}>
                             <strong style={{ opacity: 1 }}>Once connected, you can ask:</strong>
                             <ul style={{ margin: '8px 0 0 0', paddingLeft: '18px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                <li>"How much did I spend on travel this quarter?"</li>
-                                <li>"What's my top spending category this year?"</li>
-                                {isPersonal ? (
-                                    <>
-                                        <li>"Which bills repeat every month?"</li>
-                                        <li>"How has my spending changed since June?"</li>
-                                    </>
-                                ) : (
-                                    <>
-                                        <li>"Mark invoice #0428 as paid"</li>
-                                        <li>"Move the FotoFetch lead to Booked"</li>
-                                    </>
-                                )}
+                                {experienceCopy.examples.map(example => <li key={example}>"{example}"</li>)}
                             </ul>
                         </div>
                     </div>
