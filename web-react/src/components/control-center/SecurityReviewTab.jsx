@@ -1,6 +1,7 @@
 // SecurityReviewTab.jsx — Admin-only security review cadence tracker
 import React, { useState, useEffect, useCallback } from 'react';
 import { apiGet, apiPost } from '../../api';
+import { useModal } from '../ModalContext.jsx';
 
 const TYPE_LABELS = {
     weekly:     'Weekly Check',
@@ -128,6 +129,7 @@ function fmtDue(nextDue, lastCompleted) {
 }
 
 export default function SecurityReviewTab() {
+    const modal = useModal();
     const [reviews, setReviews]         = useState([]);
     const [history, setHistory]         = useState([]);
     const [loading, setLoading]         = useState(true);
@@ -164,22 +166,22 @@ export default function SecurityReviewTab() {
             setNoteInput('');
             await load();
         } catch (e) {
-            alert('Failed to mark complete: ' + e.message);
+            modal.alert('Failed to mark complete: ' + e.message);
         } finally {
             setCompleting(null);
         }
     };
 
-    if (loading) return <div style={{ padding: '40px', textAlign: 'center', color: 'rgba(255,255,255,0.4)' }}>Loading security reviews…</div>;
+    if (loading) return <div className="card glass muted" role="status" style={{ margin: 0, padding: 40, textAlign: 'center' }}>Loading security reviews…</div>;
 
     if (error) return (
-        <div style={{ padding: '40px', color: '#f87171', fontSize: '14px', lineHeight: 1.6 }}>
-            ⚠️ {error}
+        <div className="card glass" role="alert" style={{ margin: 0, padding: 24, color: 'var(--bad)', border: '1px solid rgba(239,68,68,.35)', fontSize: 14, lineHeight: 1.6 }}>
+            {error}
         </div>
     );
 
     if (reviews.length === 0) return (
-        <div style={{ padding: '40px', color: 'rgba(255,255,255,0.4)', fontSize: '14px', textAlign: 'center' }}>
+        <div className="card glass muted" style={{ margin: 0, padding: 40, fontSize: 14, textAlign: 'center' }}>
             No review data found. Run the <code>security_reviews</code> migration in Supabase to initialize this tab.
         </div>
     );
@@ -187,25 +189,25 @@ export default function SecurityReviewTab() {
     const overdueCount = reviews.filter(r => statusBadge(r.nextDue).label !== 'OK').length;
 
     return (
-        <div style={{ padding: '24px', maxWidth: '860px', margin: '0 auto' }}>
+        <div style={{ display: 'grid', gap: 16 }}>
 
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
-                <div>
-                    <h2 style={{ margin: '0 0 4px', fontSize: '1.4rem', fontWeight: 900 }}>Security Review Cadence</h2>
-                    <div className="muted" style={{ fontSize: '12px' }}>
+            <section className="card glass" style={{ margin: 0, padding: 'clamp(16px, 3vw, 24px)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }} aria-labelledby="security-review-heading">
+                <div style={{ flex: '1 1 360px', minWidth: 0 }}>
+                    <h2 id="security-review-heading" style={{ margin: 0, fontSize: 20 }}>Security review cadence</h2>
+                    <div className="muted" style={{ marginTop: 8, fontSize: 12 }}>
                         Last refreshed: {lastRefresh ? lastRefresh.toLocaleTimeString() : '—'}
                     </div>
                 </div>
                 {overdueCount > 0 && (
-                    <div style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', padding: '8px 14px', fontSize: '13px', fontWeight: 700, color: '#ef4444' }}>
-                        ⚠️ {overdueCount} review{overdueCount > 1 ? 's' : ''} overdue
+                    <div role="status" style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 700, color: 'var(--bad)' }}>
+                        {overdueCount} review{overdueCount > 1 ? 's' : ''} overdue
                     </div>
                 )}
-            </div>
+            </section>
 
             {/* Review cards */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'grid', gap: 12 }}>
                 {reviews.map(r => {
                     const badge = statusBadge(r.nextDue);
                     const isExpanded = expandedType === r.type;
@@ -214,7 +216,7 @@ export default function SecurityReviewTab() {
                     const checklist = TYPE_CHECKLIST[r.type] || [];
 
                     return (
-                        <div key={r.type} className="card glass" style={{ margin: 0, padding: '20px', border: `1px solid ${badge.color}30` }}>
+                        <section key={r.type} className="card glass" style={{ margin: 0, padding: 'clamp(16px, 3vw, 22px)', border: `1px solid ${badge.color}30` }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                                 <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
@@ -241,7 +243,7 @@ export default function SecurityReviewTab() {
                                         onClick={() => { setConfirmType(isConfirming ? null : r.type); setExpandedType(null); setNoteInput(''); }}
                                         style={{ fontSize: '12px', background: '#4ade8020', border: '1px solid #4ade8050', color: '#4ade80' }}
                                     >
-                                        Mark Done ✓
+                                        Mark complete
                                     </button>
                                 </div>
                             </div>
@@ -262,7 +264,7 @@ export default function SecurityReviewTab() {
                                                             <div key={j}>
                                                                 {sub.cmd && (
                                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                                        <code style={{ flex: 1, background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '5px', padding: '5px 10px', fontSize: '12px', color: '#a5f3fc', fontFamily: 'monospace', whiteSpace: 'pre' }}>{sub.cmd}</code>
+                                                                        <code style={{ flex: 1, minWidth: 0, overflowX: 'auto', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '7px 10px', fontSize: 12, color: '#a5f3fc', fontFamily: 'monospace', whiteSpace: 'pre' }}>{sub.cmd}</code>
                                                                         <button
                                                                             onClick={() => navigator.clipboard.writeText(sub.cmd)}
                                                                             style={{ flexShrink: 0, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '5px', color: 'rgba(255,255,255,0.5)', fontSize: '11px', padding: '4px 8px', cursor: 'pointer', whiteSpace: 'nowrap' }}
@@ -307,28 +309,29 @@ export default function SecurityReviewTab() {
                                             disabled={isCompleting}
                                             style={{ fontSize: '12px', background: '#4ade80', color: '#000', fontWeight: 700 }}
                                         >
-                                            {isCompleting ? 'Saving…' : '✓ Confirm Complete'}
+                                            {isCompleting ? 'Saving…' : 'Confirm completion'}
                                         </button>
                                         <button className="btn sm secondary" onClick={() => setConfirmType(null)} style={{ fontSize: '12px' }}>Cancel</button>
                                     </div>
                                 </div>
                             )}
-                        </div>
+                        </section>
                     );
                 })}
             </div>
 
             {/* History section */}
-            <div style={{ marginTop: '28px' }}>
+            <section className="card glass" style={{ margin: 0, padding: 'clamp(16px, 3vw, 24px)' }} aria-labelledby="security-history-heading">
+                <h3 id="security-history-heading" style={{ margin: '0 0 12px', fontSize: 18 }}>Completion history</h3>
                 <button
                     className="btn sm secondary"
                     onClick={() => setShowHistory(v => !v)}
                     style={{ fontSize: '12px', marginBottom: '12px' }}
                 >
-                    {showHistory ? 'Hide History ▲' : `Completion History (${history.length}) ▼`}
+                    {showHistory ? 'Hide history' : `Show history (${history.length})`}
                 </button>
                 {showHistory && (
-                    <div className="card glass" style={{ margin: 0, padding: '16px' }}>
+                    <div style={{ overflowX: 'auto' }}>
                         {history.length === 0 ? (
                             <div className="muted" style={{ fontSize: '13px' }}>No completions recorded yet.</div>
                         ) : (
@@ -353,7 +356,7 @@ export default function SecurityReviewTab() {
                         )}
                     </div>
                 )}
-            </div>
+            </section>
         </div>
     );
 }
