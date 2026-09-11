@@ -9,9 +9,9 @@ const STRIPE_FEE_PCT = 0.029;
 const STRIPE_FEE_FLAT = 0.30;
 
 const VIEWS = [
-    { key: 'members', label: '👥  Active Members' },
-    { key: 'invites', label: '🔑  Invite Codes' },
-    { key: 'pulse',   label: '📈  Engagement Pulse' },
+    { key: 'members', label: 'Active members' },
+    { key: 'invites', label: 'Invite codes' },
+    { key: 'pulse',   label: 'Engagement pulse' },
 ];
 
 export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats, statusMsg, onReload }) {
@@ -78,14 +78,14 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
 
     if (!isAdmin) {
         return (
-            <div className="card glass" style={{ textAlign: 'center', padding: '100px 40px' }}>
-                <div style={{ fontSize: '3rem', marginBottom: '20px' }}>🔒</div>
-                <h2 style={{ fontSize: '2rem' }}>Administrative Hub</h2>
-                <p className="muted" style={{ maxWidth: '500px', margin: '0 auto', lineHeight: '1.6' }}>
+            <section className="card glass" style={{ margin: 0, textAlign: 'center', padding: 'clamp(32px, 8vw, 72px)' }} aria-labelledby="admin-restricted-heading">
+                <div aria-hidden="true" style={{ fontSize: 36, marginBottom: 16 }}>🔒</div>
+                <h2 id="admin-restricted-heading" style={{ margin: 0, fontSize: 20 }}>Administrative hub</h2>
+                <p className="muted" style={{ maxWidth: 560, margin: '10px auto 0', fontSize: 14, lineHeight: 1.6 }}>
                     The SaaS Ledger Management suite is restricted to the administrator account (<strong>Joshua Deuermeyer</strong>).
                     Users with <strong>Beta</strong> or <strong>Professional</strong> access can manage their own ledger settings in the <strong>Business Profile</strong> tab.
                 </p>
-            </div>
+            </section>
         );
     }
 
@@ -108,24 +108,25 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
     const TIER_COLORS = { free: 'secondary', sync: 'accent', core: 'warn', studio: 'ok' };
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', maxWidth: '100%', boxSizing: 'border-box' }}>
+        <div style={{ display: 'grid', gap: 16, maxWidth: '100%', boxSizing: 'border-box' }}>
             {statusMsg && statusMsg.type === 'bad' && (
-                <div className="card glass" style={{ border: '1px solid #ff4d4d', padding: '15px 20px', background: 'rgba(255, 77, 77, 0.05)', fontSize: '12px', margin: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ color: '#ff4d4d', fontWeight: 900 }}>⚠️ ADMIN DATA ACCESS PARTIAL FAILURE: {statusMsg.text}</div>
-                    <button className="btn sm secondary" onClick={() => onReload()}>RETRY SYNC</button>
+                <div className="card glass" role="alert" style={{ border: '1px solid rgba(239,68,68,.45)', padding: '14px 16px', background: 'rgba(239,68,68,.06)', fontSize: 12, margin: 0, display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ color: 'var(--bad)', fontWeight: 800 }}>Admin data access is incomplete: {statusMsg.text}</div>
+                    <button className="btn sm secondary" onClick={() => onReload()}>Retry sync</button>
                 </div>
             )}
 
-            {/* View Toggle — same pattern as System Logs' Receipt Sessions / All Events tabs */}
-            <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '2px' }}>
+            <div role="tablist" aria-label="SaaS management sections" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {VIEWS.map(({ key, label }) => (
-                    <button key={key} onClick={() => setView(key)} style={{
-                        background: 'none', border: 'none', cursor: 'pointer',
-                        padding: '8px 16px', fontSize: '12px', fontWeight: 800,
-                        color: view === key ? '#38bdf8' : 'rgba(255,255,255,0.35)',
-                        borderBottom: view === key ? '2px solid #38bdf8' : '2px solid transparent',
-                        marginBottom: '-2px', transition: 'color 0.15s',
-                    }}>
+                    <button
+                        key={key}
+                        type="button"
+                        role="tab"
+                        aria-selected={view === key}
+                        onClick={() => setView(key)}
+                        className={`btn sm ${view === key ? 'primary' : 'secondary'}`}
+                        style={{ minHeight: 38 }}
+                    >
                         {label}
                     </button>
                 ))}
@@ -133,8 +134,8 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
 
             {/* Ledger Access Keys */}
             {view === 'invites' && (<>
-            <div className="card glass" style={{ padding: '30px' }}>
-                <h3 style={{ margin: '0 0 15px 0', fontSize: '1.2rem' }}>Ledger Access Keys</h3>
+            <section className="card glass" style={{ margin: 0, padding: 'clamp(16px, 3vw, 24px)' }} aria-labelledby="ledger-access-keys-heading">
+                <h3 id="ledger-access-keys-heading" style={{ margin: '0 0 16px', fontSize: 18 }}>Create an access key</h3>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '15px', alignItems: 'flex-end' }}>
                     <div>
                         <small className="muted" style={{ fontWeight: 900, marginBottom: '6px', display: 'block', fontSize: '10px' }}>NAME</small>
@@ -152,7 +153,7 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
                             </select>
                         </div>
                         <button className="btn primary" onClick={handleGenerateBetaCode} disabled={genCodeLoading} style={{ height: '44px', padding: '0 25px', fontSize: '13px', fontWeight: 900, borderRadius: '12px' }}>
-                            {genCodeLoading ? '...' : 'GENERATE KEY'}
+                            {genCodeLoading ? 'Generating…' : 'Generate key'}
                         </button>
                     </div>
                     <div style={{ gridColumn: '1 / -1' }}>
@@ -160,11 +161,11 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
                         <textarea value={inviteNotes} onChange={e => setInviteNotes(e.target.value)} placeholder="Who is this person? How did you meet them?" rows={2} style={{ padding: '10px 12px', fontSize: '13px', width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', color: 'white', resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box' }} />
                     </div>
                 </div>
-            </div>
+            </section>
 
             {/* Access Inventory */}
-            <div className="card glass" style={{ margin: 0, padding: '20px' }}>
-                <h3 style={{ fontSize: '1.2rem', marginBottom: '15px' }}>Access Inventory</h3>
+            <section className="card glass" style={{ margin: 0, padding: 'clamp(16px, 3vw, 24px)' }} aria-labelledby="access-inventory-heading">
+                <h3 id="access-inventory-heading" style={{ margin: '0 0 16px', fontSize: 18 }}>Access inventory</h3>
                 <div className="tableWrap" style={{ border: 'none', maxHeight: '300px', overflowY: 'auto' }}>
                     <table style={{ width: '100%' }}>
                         <thead>
@@ -202,13 +203,13 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
                         </tbody>
                     </table>
                 </div>
-            </div>
+            </section>
             </>)}
 
             {/* Active Ledger Members */}
             {view === 'members' && (
-            <div className="card glass" style={{ padding: '30px' }}>
-                <h3 style={{ fontSize: '1.2rem', marginBottom: '15px' }}>Active Ledger Members</h3>
+            <section className="card glass" style={{ margin: 0, padding: 'clamp(16px, 3vw, 24px)' }} aria-labelledby="active-members-heading">
+                <h3 id="active-members-heading" style={{ margin: '0 0 16px', fontSize: 18 }}>Active ledger members</h3>
                 <div className="tableWrap" style={{ border: 'none', maxHeight: '500px', overflowY: 'auto' }}>
                     <table style={{ width: '100%', minWidth: '1100px' }}>
                         <thead>
@@ -279,14 +280,14 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
                         </tbody>
                     </table>
                 </div>
-            </div>
+            </section>
             )}
 
             {/* Engagement Pulse */}
             {view === 'pulse' && (
-            <div className="card glass" style={{ margin: 0, padding: '20px' }}>
+            <section className="card glass" style={{ margin: 0, padding: 'clamp(16px, 3vw, 24px)' }} aria-labelledby="engagement-pulse-heading">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                    <h3 style={{ margin: 0, fontSize: '1.2rem' }}>Engagement Pulse</h3>
+                    <h3 id="engagement-pulse-heading" style={{ margin: 0, fontSize: 18 }}>Engagement pulse</h3>
                     <span className="tag secondary" style={{ fontSize: '10px', padding: '4px 10px' }}>LAST 7 DAYS</span>
                 </div>
                 <div className="tableWrap" style={{ border: 'none', maxHeight: '300px', overflowY: 'auto' }}>
@@ -312,14 +313,14 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
                         </tbody>
                     </table>
                 </div>
-            </div>
+            </section>
             )}
 
             {/* Edit Invite Modal */}
             {editingInvite && (
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)', zIndex: 30000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-                    <div className="card glass glow-blue" style={{ width: '100%', maxWidth: '400px', padding: '30px' }}>
-                        <h3 style={{ marginBottom: '20px' }}>Edit Access Key</h3>
+                    <div className="card glass" role="dialog" aria-modal="true" aria-labelledby="edit-access-key-heading" style={{ width: '100%', maxWidth: 440, padding: 'clamp(18px, 4vw, 28px)' }}>
+                        <h3 id="edit-access-key-heading" style={{ margin: '0 0 20px' }}>Edit access key</h3>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                             <div><small className="muted" style={{ fontWeight: 900, marginBottom: '5px', display: 'block' }}>NAME</small><input value={editInviteData.name} onChange={e => setEditInviteData({ ...editInviteData, name: e.target.value })} style={{ padding: '12px' }} /></div>
                             <div><small className="muted" style={{ fontWeight: 900, marginBottom: '5px', display: 'block' }}>EMAIL</small><input value={editInviteData.email} onChange={e => setEditInviteData({ ...editInviteData, email: e.target.value })} style={{ padding: '12px' }} /></div>
@@ -330,8 +331,8 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
                                 </select>
                             </div>
                             <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                                <button className="btn primary" onClick={() => handleUpdateInvite(editingInvite)} style={{ flex: 1 }}>SAVE CHANGES</button>
-                                <button className="btn secondary" onClick={() => setEditingInvite(null)} style={{ flex: 1 }}>CANCEL</button>
+                                <button className="btn primary" onClick={() => handleUpdateInvite(editingInvite)} style={{ flex: 1 }}>Save changes</button>
+                                <button className="btn secondary" onClick={() => setEditingInvite(null)} style={{ flex: 1 }}>Cancel</button>
                             </div>
                         </div>
                     </div>
@@ -341,8 +342,8 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
             {/* Edit Session Modal */}
             {editingSession && (
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)', zIndex: 30000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-                    <div className="card glass glow-blue" style={{ width: '100%', maxWidth: '400px', padding: '30px' }}>
-                        <h3 style={{ marginBottom: '20px' }}>Edit Ledger Member</h3>
+                    <div className="card glass" role="dialog" aria-modal="true" aria-labelledby="edit-ledger-member-heading" style={{ width: '100%', maxWidth: 440, padding: 'clamp(18px, 4vw, 28px)' }}>
+                        <h3 id="edit-ledger-member-heading" style={{ margin: '0 0 20px' }}>Edit ledger member</h3>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                             <div><small className="muted" style={{ fontWeight: 900, marginBottom: '5px', display: 'block' }}>DISPLAY NAME</small><input value={editSessionData.name} onChange={e => setEditSessionData({ ...editSessionData, name: e.target.value })} style={{ padding: '12px' }} /></div>
                             <div>
@@ -356,8 +357,8 @@ export default function SaasTab({ user, allSubscriptions, betaCodes, dailyStats,
                                 <textarea value={editSessionData.notes} onChange={e => setEditSessionData({ ...editSessionData, notes: e.target.value })} style={{ padding: '12px', width: '100%', minHeight: '72px', background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit', fontSize: '13px' }} placeholder="Who is this person, why did they get access..." />
                             </div>
                             <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                                <button className="btn primary" onClick={() => handleUpdateSession(editingSession)} style={{ flex: 1 }}>UPDATE MEMBER</button>
-                                <button className="btn secondary" onClick={() => setEditingSession(null)} style={{ flex: 1 }}>CANCEL</button>
+                                <button className="btn primary" onClick={() => handleUpdateSession(editingSession)} style={{ flex: 1 }}>Update member</button>
+                                <button className="btn secondary" onClick={() => setEditingSession(null)} style={{ flex: 1 }}>Cancel</button>
                             </div>
                         </div>
                     </div>
