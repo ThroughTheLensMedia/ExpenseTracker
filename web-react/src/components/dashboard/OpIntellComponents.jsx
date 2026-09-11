@@ -86,10 +86,15 @@ export const TopOffendersSnapshot = ({ offenders }) => {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', alignItems: 'center' }}>
             <span className="muted" style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Top Spend</span>
             {offenders.map(o => (
-                <div key={o.id} style={{ display: 'flex', alignItems: 'baseline', gap: '6px', background: 'rgba(255,255,255,0.03)', padding: '4px 12px', borderRadius: '12px' }}>
-                    <span style={{ fontSize: '12px', fontWeight: 800, textTransform: 'capitalize' }}>{o.vendor}</span>
+                <div key={o.id} style={{ display: 'flex', alignItems: 'baseline', gap: '6px', background: 'rgba(255,255,255,0.03)', padding: '4px 12px', borderRadius: '12px', maxWidth: '100%' }}>
+                    <span
+                        title={o.vendor}
+                        style={{ fontSize: '12px', fontWeight: 800, textTransform: 'capitalize', maxWidth: 'min(220px, 55vw)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                    >
+                        {o.vendor}
+                    </span>
                     <span style={{ fontSize: '12px', fontWeight: 700, color: 'rgba(255,255,255,0.5)' }}>—</span>
-                    <span className="money" style={{ fontSize: '12px', fontWeight: 900, color: '#38bdf8' }}>${fmtCents(o.monthly_cost)}/mo</span>
+                    <span className="money" style={{ fontSize: '12px', fontWeight: 900, color: '#38bdf8', whiteSpace: 'nowrap' }}>${fmtCents(o.monthly_cost)}/mo</span>
                 </div>
             ))}
         </div>
@@ -124,7 +129,7 @@ export const RecurringVendorsTable = ({ rows, onRowClick, onIgnoreToggle, onRevi
             <table style={{ width: '100%', minWidth: '550px', borderCollapse: 'collapse', fontSize: '12px' }}>
                 <thead>
                     <tr style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                        <th style={{ padding: '12px 15px', textAlign: 'left', fontWeight: 800, color: 'rgba(255,255,255,0.5)', width: '25%' }}>VENDOR</th>
+                        <th style={{ padding: '12px 15px', textAlign: 'left', fontWeight: 800, color: 'rgba(255,255,255,0.5)', width: '25%', position: 'sticky', left: 0, background: 'var(--bg)', zIndex: 1 }}>VENDOR</th>
                         <th style={{ padding: '12px 15px', textAlign: 'right', fontWeight: 800, color: 'rgba(255,255,255,0.5)', width: '20%' }}>EST. MONTHLY</th>
                         <th style={{ padding: '12px 15px', textAlign: 'right', fontWeight: 800, color: 'rgba(255,255,255,0.5)', width: '20%' }}>PROJECTED ANNUAL</th>
                         <th style={{ padding: '12px 15px', textAlign: 'right', fontWeight: 800, color: 'rgba(255,255,255,0.5)' }}>FLAGS</th>
@@ -136,7 +141,7 @@ export const RecurringVendorsTable = ({ rows, onRowClick, onIgnoreToggle, onRevi
                     ) : null}
                     {rows.map((row, idx) => (
                         <tr onClick={() => onRowClick && onRowClick(row.vendor)} key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', cursor: 'pointer' }} className="table-row-hover">
-                            <td style={{ padding: '12px 15px', fontWeight: 800, textTransform: 'capitalize' }}>
+                            <td style={{ padding: '12px 15px', fontWeight: 800, textTransform: 'capitalize', position: 'sticky', left: 0, background: 'var(--bg)', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: mergingVendor === row.vendor ? 'normal' : 'nowrap' }} title={mergingVendor === row.vendor ? undefined : row.vendor}>
                                 {mergingVendor === row.vendor ? (
                                     <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }} onClick={e => e.stopPropagation()}>
                                         <input
