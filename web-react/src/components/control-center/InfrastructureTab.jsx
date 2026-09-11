@@ -33,33 +33,40 @@ export default function InfrastructureTab({ subscription, onReload }) {
     };
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
-            <div className="grid two">
-                <div className="card glass glow-blue" style={{ margin: 0, padding: '30px', border: 'none' }} id="redeem">
-                    <h2>License Activation</h2>
-                    <p className="muted">Enter your activation key to extend or upgrade your access.</p>
-                    <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-                        <input value={betaCode} onChange={e => setBetaCode(e.target.value.toUpperCase())} placeholder="XXXX-XXXX-XXXX" style={{ padding: '12px' }} />
+        <div style={{ display: 'grid', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: 16 }}>
+                <section className="card glass" style={{ margin: 0, padding: 'clamp(16px, 3vw, 24px)' }} id="redeem" aria-labelledby="license-activation-heading">
+                    <h2 id="license-activation-heading" style={{ margin: 0, fontSize: 20 }}>License activation</h2>
+                    <p className="muted" style={{ margin: '8px 0 18px', fontSize: 14, lineHeight: 1.55 }}>Enter an activation key to extend or upgrade account access.</p>
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                        <input
+                            value={betaCode}
+                            onChange={e => setBetaCode(e.target.value.toUpperCase())}
+                            placeholder="XXXX-XXXX-XXXX"
+                            aria-label="Activation key"
+                            style={{ padding: 12, flex: '1 1 200px', minWidth: 0 }}
+                        />
                         <button className="btn primary" onClick={handleRedeemCode} disabled={redeeming || !betaCode}>
-                            {redeeming ? 'Activating...' : 'Redeem Key'}
+                            {redeeming ? 'Activating…' : 'Redeem key'}
                         </button>
                     </div>
-                    <div className="muted small" style={{ marginTop: '10px' }}>
-                        Current Plan: <span style={{ fontWeight: 800, color: 'var(--accent)' }}>{subscription?.plan_type?.toUpperCase()}</span>
+                    <div className="muted small" style={{ marginTop: 12 }}>
+                        Current plan: <span style={{ fontWeight: 800, color: 'var(--accent)' }}>{subscription?.plan_type?.toUpperCase() || 'UNKNOWN'}</span>
                     </div>
-                </div>
-                <div className="card glass" style={{ margin: 0, padding: '30px' }}>
-                    <h2>Edge Network Purge</h2>
-                    <p className="muted">Force-clear stagnant cache on global edge nodes. Useful if UI data feels delayed.</p>
-                    <button className="btn secondary" onClick={handlePurge} style={{ width: '100%', marginTop: '20px', height: '50px' }}>{purging ? 'Purging Nodes...' : 'Execute Purge'}</button>
-                    {msg && <div className="tag ok" style={{ marginTop: '15px', width: '100%', justifyContent: 'center' }}>{msg}</div>}
-                </div>
+                </section>
+
+                <section className="card glass" style={{ margin: 0, padding: 'clamp(16px, 3vw, 24px)' }} aria-labelledby="edge-purge-heading">
+                    <h2 id="edge-purge-heading" style={{ margin: 0, fontSize: 20 }}>Edge network purge</h2>
+                    <p className="muted" style={{ margin: '8px 0 18px', fontSize: 14, lineHeight: 1.55 }}>Force-clear stagnant cache on global edge nodes when interface data appears delayed.</p>
+                    <button className="btn secondary" onClick={handlePurge} style={{ width: '100%', minHeight: 46 }}>{purging ? 'Purging nodes…' : 'Execute purge'}</button>
+                    {msg && <div className="tag ok" role="status" style={{ marginTop: 12, width: '100%', justifyContent: 'center' }}>{msg}</div>}
+                </section>
             </div>
 
-            <div className="card glass" style={{ margin: 0, padding: '30px' }}>
-                <h2>Restore Hub</h2>
-                <p className="muted">Upload a ledger archive (.json) to restore a previous system state.</p>
-                <label className="btn secondary" style={{ width: '100%', marginTop: '20px', cursor: 'pointer', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <section className="card glass" style={{ margin: 0, padding: 'clamp(16px, 3vw, 24px)' }} aria-labelledby="restore-hub-heading">
+                <h2 id="restore-hub-heading" style={{ margin: 0, fontSize: 20 }}>Restore hub</h2>
+                <p className="muted" style={{ margin: '8px 0 18px', fontSize: 14, lineHeight: 1.55 }}>Upload a Lumière Ledger archive (.json) to restore a previous system state.</p>
+                <label className="btn secondary" style={{ width: '100%', cursor: 'pointer', minHeight: 46, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <input type="file" accept=".json" onChange={async (e) => {
                         const file = e.target.files[0]; if (!file) return; setRestoring(true);
                         const reader = new FileReader(); reader.onload = async (ev) => {
@@ -72,25 +79,25 @@ export default function InfrastructureTab({ subscription, onReload }) {
                             finally { setRestoring(false); }
                         }; reader.readAsText(file);
                     }} style={{ display: 'none' }} />
-                    {restoring ? 'Restoring Archive...' : 'Upload & Restore Snapshot'}
+                    {restoring ? 'Restoring archive…' : 'Upload and restore snapshot'}
                 </label>
-            </div>
+            </section>
 
-            <div className="card glass glow-blue" style={{ border: 'none', padding: '50px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '30px' }}>
-                <div style={{ flex: 1, minWidth: '300px' }}>
-                    <h2 style={{ fontSize: '2rem', margin: 0 }}>Cloud Database Portal</h2>
-                    <p className="muted" style={{ fontSize: '16px', marginTop: '10px' }}>Access your secure Supabase environment to manage raw data, run SQL, or view infrastructure health.</p>
+            <section className="card glass" style={{ margin: 0, padding: 'clamp(16px, 3vw, 24px)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 18 }} aria-labelledby="cloud-database-heading">
+                <div style={{ flex: '1 1 360px', minWidth: 0 }}>
+                    <h2 id="cloud-database-heading" style={{ margin: 0, fontSize: 20 }}>Cloud database portal</h2>
+                    <p className="muted" style={{ margin: '8px 0 0', fontSize: 14, lineHeight: 1.55 }}>Open the secure Supabase environment to manage raw data, run SQL, or view infrastructure health.</p>
                 </div>
-                <a href="https://supabase.com/dashboard/projects" target="_blank" rel="noopener noreferrer" className="btn primary" style={{ padding: '20px 50px', fontSize: '18px', fontWeight: 900 }}>OPEN CLOUD CONSOLE</a>
-            </div>
+                <a href="https://supabase.com/dashboard/projects" target="_blank" rel="noopener noreferrer" className="btn primary">Open cloud console</a>
+            </section>
 
-            <div className="card glass" style={{ border: 'none', padding: '50px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '30px' }}>
-                <div style={{ flex: 1, minWidth: '300px' }}>
-                    <h2 style={{ fontSize: '1.8rem', margin: 0 }}>Master Business Download</h2>
-                    <p className="muted" style={{ fontSize: '16px', marginTop: '10px' }}>Download your complete ledger — transactions, gear, CRM, and invoices — for archival or tax purposes.</p>
+            <section className="card glass" style={{ margin: 0, padding: 'clamp(16px, 3vw, 24px)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 18 }} aria-labelledby="business-download-heading">
+                <div style={{ flex: '1 1 360px', minWidth: 0 }}>
+                    <h2 id="business-download-heading" style={{ margin: 0, fontSize: 20 }}>Master business download</h2>
+                    <p className="muted" style={{ margin: '8px 0 0', fontSize: 14, lineHeight: 1.55 }}>Download the complete ledger — transactions, equipment, CRM, and invoices — for archival or tax purposes.</p>
                 </div>
-                <a href="/api/admin/export-all" download className="btn secondary" style={{ padding: '20px 50px', fontSize: '16px', fontWeight: 900 }}>DOWNLOAD ARCHIVE</a>
-            </div>
+                <a href="/api/admin/export-all" download className="btn secondary">Download archive</a>
+            </section>
 
         </div>
     );
