@@ -126,12 +126,12 @@ export const RecurringVendorsTable = ({ rows, onRowClick, onIgnoreToggle, onRevi
 
     return (
         <div style={{ background: 'rgba(255,255,255,0.01)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-            <table style={{ width: '100%', minWidth: '550px', borderCollapse: 'collapse', fontSize: '12px' }}>
+            <table className="op-intel-table" style={{ width: '100%', minWidth: '550px', borderCollapse: 'collapse', fontSize: '12px' }}>
                 <thead>
                     <tr style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                         <th style={{ padding: '12px 15px', textAlign: 'left', fontWeight: 800, color: 'rgba(255,255,255,0.5)', width: '25%', position: 'sticky', left: 0, background: 'var(--bg)', zIndex: 1 }}>VENDOR</th>
                         <th style={{ padding: '12px 15px', textAlign: 'right', fontWeight: 800, color: 'rgba(255,255,255,0.5)', width: '20%' }}>EST. MONTHLY</th>
-                        <th style={{ padding: '12px 15px', textAlign: 'right', fontWeight: 800, color: 'rgba(255,255,255,0.5)', width: '20%' }}>PROJECTED ANNUAL</th>
+                        <th className="hide-narrow" style={{ padding: '12px 15px', textAlign: 'right', fontWeight: 800, color: 'rgba(255,255,255,0.5)', width: '20%' }}>PROJECTED ANNUAL</th>
                         <th style={{ padding: '12px 15px', textAlign: 'right', fontWeight: 800, color: 'rgba(255,255,255,0.5)' }}>FLAGS</th>
                     </tr>
                 </thead>
@@ -197,7 +197,7 @@ export const RecurringVendorsTable = ({ rows, onRowClick, onIgnoreToggle, onRevi
                                     </div>
                                 )}
                             </td>
-                            <td className="money" style={{ padding: '12px 15px', textAlign: 'right', color: 'rgba(255,255,255,0.6)' }}>${fmtCents(row.annual_cost)}/yr</td>
+                            <td className="money hide-narrow" style={{ padding: '12px 15px', textAlign: 'right', color: 'rgba(255,255,255,0.6)' }}>${fmtCents(row.annual_cost)}/yr</td>
                             <td style={{ padding: '12px 15px', textAlign: 'right' }}>
                                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-end' }}>
                                     {row.isSubscription && <span style={{ color: '#38bdf8', fontSize: '10px', fontWeight: 800 }}>SUB</span>}

@@ -671,6 +671,14 @@ footer {
 }
 
 @media (max-width: 640px) {
+  .hide-narrow {
+    display: none !important;
+  }
+
+  .op-intel-table {
+    min-width: 0 !important;
+  }
+
   .invoice-item-row {
     grid-template-columns: 1fr;
     gap: 8px;

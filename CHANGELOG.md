@@ -15,7 +15,8 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 - Added account metrics, sharper tax guidance, and a safer mileage fallback path when automated distance lookup can't run.
 - Improved client/invoice handoffs and the document upload/review workflow.
 - Applied a consistent, responsive layout pattern across every Control Center tab (Experience, AI Intelligence, Automation, Categories, Dashboard, Documents, Help Center, Integrations, Profile, Infrastructure, Admin) — desktop and installed-PWA widths verified.
-- Fixed a pre-existing readability issue on the dashboard's Operational Intelligence "Top Spend" panel and Recurring Vendors table: long vendor names now truncate with a tooltip, and the vendor column stays visible (sticky) while scrolling the table horizontally on narrow/PWA screens.
+- Fixed a pre-existing readability issue on the dashboard's Operational Intelligence "Top Spend" panel and Recurring Vendors table: long vendor names now truncate with a tooltip, the vendor column stays visible (sticky) while scrolling the table horizontally, and the Projected Annual column hides below 640px so Vendor + Est. Monthly fit on screen without scrolling on narrow/PWA widths.
+- Fixed a deprecated `apple-mobile-web-app-capable` console warning by adding the standard `mobile-web-app-capable` meta tag alongside it.
 - `api/routes/intake-keys.js`: replaced the `uuid` package call with Node's built-in `crypto.randomBytes` for intake-key generation — no behavior change, no new dependency.
 - No database, authentication, billing, or Plaid behavior changed in this release.
 
