@@ -1,6 +1,15 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.29.0', date: 'SEP 10, 2026', color: '#4c7dff', items: [
+        '<strong>Improved:</strong> Business navigation and terminology refreshed for clarity across the app.',
+        '<strong>Improved:</strong> Your dashboard now leads with what actually needs attention — overdue invoices, missing deductions, and vendors due for a recurring-charge review — and the Assistant\'s guidance follows the same priorities.',
+        '<strong>New:</strong> Save your favorite Transaction filters as views, plus quick one-click views for common review states.',
+        '<strong>Improved:</strong> Account metrics, tax guidance, and mileage logging (with a safer fallback when automatic distance lookup can\'t run) are clearer and more useful.',
+        '<strong>Improved:</strong> Smoother handoffs between Clients, Invoices, and the Documents workflow.',
+        '<strong>Improved:</strong> Every Control Center tab now shares one consistent, responsive layout on desktop and mobile/PWA.',
+        '<strong>Fixed:</strong> Long vendor names on the dashboard\'s Top Spend panel and Recurring Vendors table no longer overflow illegibly on narrow screens — names truncate with a tooltip, and the vendor column stays visible while scrolling the table.',
+    ]},
     { version: '7.28.1', date: 'SEP 9, 2026', color: '#4c7dff', items: [
         '<strong>Billing:</strong> Added one owner-covered family account to the Plaid fee exemption. No pricing, plan, or feature access changed for other users.',
     ]},

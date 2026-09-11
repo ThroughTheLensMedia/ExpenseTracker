@@ -37,7 +37,7 @@ import OnboardingChecklist from './components/OnboardingChecklist.jsx';
 // Single source of truth for the "What's New" badge — the check (useEffect below)
 // and the dismiss handler (handleWhatsNewClick) must read the exact same value,
 // or the badge re-lights immediately after being dismissed.
-const CURRENT_VERSION = "7.28.1";
+const CURRENT_VERSION = "7.29.0";
 
 // Shared route-level loading fallback — matches app's existing spinner style
 function PageSpinner() {

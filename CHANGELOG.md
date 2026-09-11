@@ -5,6 +5,22 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.29.0] — 2026-09-10
+
+### Changed — Business Experience modernization (E5 pilot release)
+
+- Modernized Business navigation and terminology across the app shell for consistency with the new Experience model.
+- Reworked dashboard priorities to surface overdue invoices, missing deductions, and recurring-vendor reviews first, with matching Assistant guidance tuned to what's actually urgent.
+- Improved transaction review workflow: saved views, quick views, and an active-filter count so recurring review patterns (e.g. "needs receipt", "flagged vendors") can be revisited in one click.
+- Added account metrics, sharper tax guidance, and a safer mileage fallback path when automated distance lookup can't run.
+- Improved client/invoice handoffs and the document upload/review workflow.
+- Applied a consistent, responsive layout pattern across every Control Center tab (Experience, AI Intelligence, Automation, Categories, Dashboard, Documents, Help Center, Integrations, Profile, Infrastructure, Admin) — desktop and installed-PWA widths verified.
+- Fixed a pre-existing readability issue on the dashboard's Operational Intelligence "Top Spend" panel and Recurring Vendors table: long vendor names now truncate with a tooltip, and the vendor column stays visible (sticky) while scrolling the table horizontally on narrow/PWA screens.
+- `api/routes/intake-keys.js`: replaced the `uuid` package call with Node's built-in `crypto.randomBytes` for intake-key generation — no behavior change, no new dependency.
+- No database, authentication, billing, or Plaid behavior changed in this release.
+
+---
+
 ## [v7.28.1] — 2026-09-09
 
 ### Changed — Plaid billing exemption
