@@ -585,70 +585,52 @@ export default function SystemLogsTab() {
     const fmtRefreshed = d => d ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—';
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div style={{ display: 'grid', gap: 16 }}>
 
             {/* ── Page Header ── */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
-                <div>
-                    <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900 }}>System Logs</h2>
-                    <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>
+            <section className="card glass" style={{ margin: 0, padding: 'clamp(16px, 3vw, 24px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }} aria-labelledby="system-logs-heading">
+                <div style={{ flex: '1 1 360px', minWidth: 0 }}>
+                    <h2 id="system-logs-heading" style={{ margin: 0, fontSize: 20 }}>System logs</h2>
+                    <p className="muted" style={{ margin: '8px 0 0', fontSize: 14, lineHeight: 1.55 }}>
                         Live backend event stream — email processing, errors, Plaid sync, and more.
                     </p>
                 </div>
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '7px', cursor: 'pointer', fontSize: '12px', fontWeight: 700, color: autoRefresh ? '#4ade80' : 'rgba(255,255,255,0.4)' }}>
-                        <div onClick={() => setAutoRefresh(a => !a)} style={{
-                            width: '32px', height: '18px', borderRadius: '9px', position: 'relative', cursor: 'pointer',
-                            background: autoRefresh ? 'rgba(74,222,128,0.3)' : 'rgba(255,255,255,0.1)',
-                            border: autoRefresh ? '1px solid rgba(74,222,128,0.5)' : '1px solid rgba(255,255,255,0.15)',
-                            transition: 'all 0.2s',
-                        }}>
-                            <div style={{
-                                width: '12px', height: '12px', borderRadius: '50%',
-                                background: autoRefresh ? '#4ade80' : 'rgba(255,255,255,0.4)',
-                                position: 'absolute', top: '2px', left: autoRefresh ? '16px' : '2px',
-                                transition: 'all 0.2s',
-                            }} />
-                        </div>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12, fontWeight: 700, color: autoRefresh ? 'var(--ok)' : 'var(--muted)' }}>
+                        <input type="checkbox" checked={autoRefresh} onChange={e => setAutoRefresh(e.target.checked)} style={{ accentColor: 'var(--ok)', width: 18, height: 18 }} />
                         Live (30s)
                     </label>
                     <button className="btn secondary" onClick={fetchLogs} disabled={loading}
                         style={{ fontSize: '11px', padding: '6px 14px', fontWeight: 800 }}>
-                        {loading ? 'Loading…' : '🔄 Refresh'}
+                        {loading ? 'Loading…' : 'Refresh'}
                     </button>
                 </div>
-            </div>
+            </section>
 
             {/* ── View Toggle ── */}
-            <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '2px' }}>
+            <div role="tablist" aria-label="System log views" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                 {[
-                    { key: 'receipts', label: `📨  Receipt Email Sessions (${receiptSessions.length})` },
-                    { key: 'all',      label: `📋  All Events (${filtered.length})` },
+                    { key: 'receipts', label: `Receipt email sessions (${receiptSessions.length})` },
+                    { key: 'all',      label: `All events (${filtered.length})` },
                 ].map(({ key, label }) => (
-                    <button key={key} onClick={() => setView(key)} style={{
-                        background: 'none', border: 'none', cursor: 'pointer',
-                        padding: '8px 16px', fontSize: '12px', fontWeight: 800,
-                        color: view === key ? '#38bdf8' : 'rgba(255,255,255,0.35)',
-                        borderBottom: view === key ? '2px solid #38bdf8' : '2px solid transparent',
-                        marginBottom: '-2px', transition: 'color 0.15s',
-                    }}>
+                    <button key={key} type="button" role="tab" aria-selected={view === key} onClick={() => setView(key)} className={`btn sm ${view === key ? 'primary' : 'secondary'}`} style={{ minHeight: 38 }}>
                         {label}
                     </button>
                 ))}
-                <div style={{ marginLeft: 'auto', fontSize: '11px', color: 'rgba(255,255,255,0.2)', fontWeight: 600, alignSelf: 'center' }}>
-                    {autoRefresh ? '🟢 Live · ' : ''}Last updated {fmtRefreshed(lastRefreshed)}
+                <div className="muted" role="status" style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 600 }}>
+                    {autoRefresh ? 'Live · ' : ''}Last updated {fmtRefreshed(lastRefreshed)}
                 </div>
             </div>
 
             {/* ── Loading / Error ── */}
             {loading && (
-                <div style={{ padding: '40px', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: '13px', fontWeight: 600 }}>
+                <div className="card glass muted" role="status" style={{ margin: 0, padding: 40, textAlign: 'center', fontSize: 13, fontWeight: 600 }}>
                     Loading logs…
                 </div>
             )}
             {!loading && error && (
-                <div style={{ padding: '20px', color: '#ef4444', fontSize: '13px', fontWeight: 700 }}>
-                    ⚠ Failed to load logs: {error}
+                <div className="card glass" role="alert" style={{ margin: 0, padding: 20, color: 'var(--bad)', border: '1px solid rgba(239,68,68,.35)', fontSize: 13, fontWeight: 700 }}>
+                    Failed to load logs: {error}
                 </div>
             )}
 
@@ -656,10 +638,10 @@ export default function SystemLogsTab() {
             {/* VIEW: RECEIPT EMAIL SESSIONS                                        */}
             {/* ═══════════════════════════════════════════════════════════════════ */}
             {!loading && !error && view === 'receipts' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div role="tabpanel" style={{ display: 'grid', gap: 12 }}>
 
                     {/* Time filter for sessions */}
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div className="card glass" style={{ margin: 0, padding: '14px 16px', display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                             <label style={{ fontSize: '10px', fontWeight: 900, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.06em' }}>TIME WINDOW</label>
                             <select value={since} onChange={e => setSince(e.target.value)} style={{ fontSize: '12px', padding: '6px 10px', minWidth: '140px' }}>
@@ -704,7 +686,7 @@ export default function SystemLogsTab() {
             {/* VIEW: ALL EVENTS (RAW LOG TABLE)                                    */}
             {/* ═══════════════════════════════════════════════════════════════════ */}
             {!loading && !error && view === 'all' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div role="tabpanel" style={{ display: 'grid', gap: 16 }}>
 
                     {/* Filters */}
                     <div className="card glass" style={{ margin: 0, padding: '16px 20px' }}>
