@@ -241,9 +241,9 @@ export default function PayInvoice() {
                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '8px', color: '#635bff' }}>
                                             <CreditCard size={22} />
                                         </div>
-                                        <div style={{ ...styles.handleLabel, color: '#635bff' }}>Credit / Debit Card</div>
-                                        <div style={{ ...styles.handleValue, color: '#635bff', fontWeight: 800 }}>
-                                            {checkoutLoading ? 'Opening Stripe…' : 'Pay Online with Card →'}
+                                        <div style={{ ...styles.handleLabel, color: '#635bff', whiteSpace: 'nowrap' }}>Credit / Debit Card</div>
+                                        <div style={{ ...styles.handleValue, color: '#635bff', fontWeight: 800, whiteSpace: 'nowrap' }}>
+                                            {checkoutLoading ? 'Opening Stripe…' : 'Pay with Card →'}
                                         </div>
                                     </button>
                                 )}
@@ -512,9 +512,9 @@ const styles = {
     sigBadge: { marginTop: '16px', padding: '10px 16px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', fontSize: '13px', fontWeight: 700, color: '#16a34a', textAlign: 'center' },
     sectionLabel: { fontSize: '11px', fontWeight: 900, color: '#f97316', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '16px' },
     paymentBox: { marginTop: '24px', padding: '20px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' },
-    handleGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '12px' },
-    handleCard: { display: 'block', textDecoration: 'none', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', textAlign: 'center', cursor: 'pointer', transition: 'box-shadow 0.2s', color: 'inherit' },
+    handleGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px', marginBottom: '12px' },
+    handleCard: { display: 'block', textDecoration: 'none', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px 12px', textAlign: 'center', cursor: 'pointer', transition: 'box-shadow 0.2s', color: 'inherit' },
     handleLabel: { fontSize: '11px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' },
-    handleValue: { fontSize: '14px', fontWeight: 700, color: '#1e293b', wordBreak: 'break-all' },
+    handleValue: { fontSize: '14px', fontWeight: 700, color: '#1e293b', wordBreak: 'break-word', overflowWrap: 'anywhere' },
     referenceNote: { fontSize: '13px', color: '#475569', textAlign: 'center', marginTop: '12px' },
 };

@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.29.4', date: 'SEP 17, 2026', color: '#635bff', items: [
+        '<strong>Fixed:</strong> Payment card button layout — prevented text wrapping on "Pay with Card →" button to ensure clean, single-line presentation.',
+    ]},
     { version: '7.29.3', date: 'SEP 17, 2026', color: '#635bff', items: [
         '<strong>Improved:</strong> Linear invoice approval workflow — clients must review terms and submit their electronic signature before payment methods and checkout options become active.',
         '<strong>Improved:</strong> Direct access for approved invoices — clients who have already signed can re-open their link at any time to view their payment options or complete card checkout.',

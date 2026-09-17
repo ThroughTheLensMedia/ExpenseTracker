@@ -3,6 +3,14 @@
 All notable changes to this project are documented here.
 Format: `[vX.X.X] — YYYY-MM-DD`
 
+## [v7.29.4] — 2026-09-17
+
+### Fixed — Single-line card button typography on invoice payment page
+
+- **`web-react/src/pages/PayInvoice.jsx`** — fixed text wrapping on the "Pay with Card →" button by setting `whiteSpace: nowrap`, adjusting minimum column widths, and replacing `wordBreak: break-all` with `wordBreak: break-word` and `overflowWrap: anywhere`.
+
+---
+
 ## [v7.29.3] — 2026-09-17
 
 ### Changed — Linear invoice approval workflow & streamlined client payment experience
