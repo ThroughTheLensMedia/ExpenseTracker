@@ -1,6 +1,11 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.29.3', date: 'SEP 17, 2026', color: '#635bff', items: [
+        '<strong>Improved:</strong> Linear invoice approval workflow — clients must review terms and submit their electronic signature before payment methods and checkout options become active.',
+        '<strong>Improved:</strong> Direct access for approved invoices — clients who have already signed can re-open their link at any time to view their payment options or complete card checkout.',
+        '<strong>Design:</strong> Clean, professional invoice payment interface with modern typography, crisp Lucide icons, and zero visual clutter.',
+    ]},
     { version: '7.29.2', date: 'SEP 17, 2026', color: '#635bff', items: [
         '<strong>New:</strong> Dynamic Stripe Checkout on client invoices — clients can click "Pay with Stripe" to instantly pay the exact invoice total via credit card, debit card, Apple Pay, or Google Pay.',
         '<strong>New:</strong> Automated payment verification — upon successful Stripe payment, the invoice is automatically marked as paid and e-signed, and an approval notification is dispatched to the studio.',

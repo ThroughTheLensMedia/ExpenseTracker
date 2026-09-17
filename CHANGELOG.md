@@ -3,6 +3,16 @@
 All notable changes to this project are documented here.
 Format: `[vX.X.X] — YYYY-MM-DD`
 
+## [v7.29.3] — 2026-09-17
+
+### Changed — Linear invoice approval workflow & streamlined client payment experience
+
+- **`web-react/src/pages/PayInvoice.jsx`** — enforced linear customer approval workflow: clients review line items and submit their full name (e-signature agreement) first before payment options become active.
+- **`web-react/src/pages/PayInvoice.jsx`** — removed active payment handles from the unpaid review screen to prevent clients from bypassing e-signature.
+- **`web-react/src/pages/PayInvoice.jsx`** — streamlined transition to "Invoice Approved" state upon agreement submission, displaying active payment cards (Stripe Card Checkout, Venmo, Zelle, CashApp) and reference notes.
+- **`web-react/src/pages/PayInvoice.jsx`** — cleaned up interface styling, removed casual emojis, and standardized on crisp typography and Lucide icons.
+- **`api/routes/pay.js`** — streamlined checkout verification and public invoice retrieval to allow signed clients to view payment options and complete Stripe Checkout seamlessly.
+
 ---
 
 ## [v7.29.2] — 2026-09-17

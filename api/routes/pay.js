@@ -25,12 +25,9 @@ router.get('/:token', async (req, res) => {
             return res.status(404).json({ error: 'Invoice not found or payment link has expired.' });
         }
 
-        // Don't allow paying a voided invoice
+        // Don't allow viewing a voided invoice
         if (invoice.status === 'void') {
             return res.status(410).json({ error: 'This invoice has been voided.' });
-        }
-        if (invoice.customer_signed_at) {
-            return res.status(409).json({ error: 'This invoice has already been approved.', signed_at: invoice.customer_signed_at });
         }
 
         // Fetch photographer's settings (payment handles, business name, email)
@@ -113,8 +110,8 @@ router.post('/:token/checkout', async (req, res) => {
         if (invoice.status === 'void') {
             return res.status(410).json({ error: 'This invoice has been voided.' });
         }
-        if (invoice.status === 'paid' || invoice.customer_signed_at) {
-            return res.status(409).json({ error: 'This invoice has already been approved and paid.' });
+        if (invoice.status === 'paid') {
+            return res.status(409).json({ error: 'This invoice has already been paid in full.' });
         }
 
         // Fetch photographer's Stripe key from settings

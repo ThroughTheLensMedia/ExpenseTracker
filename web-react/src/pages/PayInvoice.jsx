@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Ban, CheckCircle2, AlertTriangle, FileText, PenLine } from 'lucide-react';
+import { Ban, CheckCircle2, AlertTriangle, FileText, PenLine, CreditCard } from 'lucide-react';
 
 function formatMoney(cents) {
     return '$' + (cents / 100).toFixed(2);
@@ -67,7 +67,12 @@ export default function PayInvoice() {
                     }
                 }
 
-                setState('ready');
+                // If invoice has already been signed/approved, directly transition to signed view
+                if (json.invoice?.customer_signed_at) {
+                    setState('signed');
+                } else {
+                    setState('ready');
+                }
             } catch (e) {
                 setError('Network error. Please check your connection and try again.');
                 setState('error');
@@ -115,6 +120,14 @@ export default function PayInvoice() {
                 setSigError(json.error || 'Submission failed. Please try again.');
                 return;
             }
+            setData(prev => prev ? ({
+                ...prev,
+                invoice: {
+                    ...prev.invoice,
+                    customer_signed_at: json.signed_at || new Date().toISOString(),
+                    customer_signature: signature.trim()
+                }
+            }) : prev);
             setState('signed');
         } catch (e) {
             setSigError('Network error. Please try again.');
@@ -157,7 +170,7 @@ export default function PayInvoice() {
                 <div style={styles.card}>
                     <div style={styles.iconLarge}><Ban size={44} style={{ color: '#ef4444' }} /></div>
                     <h1 style={styles.h1}>Invoice Voided</h1>
-                    <p style={styles.muted}>This invoice has been voided by the photographer and is no longer valid.</p>
+                    <p style={styles.muted}>This invoice has been voided by the business and is no longer valid.</p>
                 </div>
             </div>
         );
@@ -189,7 +202,7 @@ export default function PayInvoice() {
         );
     }
 
-    // ── Signed confirmation ───────────────────────────────────────────────────
+    // ── Signed confirmation & Payment Options ──────────────────────────────────
     if (state === 'signed') {
         const { invoice, studio } = data;
         const hasPaymentMethods = Boolean(studio.has_stripe || studio.venmo_handle || studio.zelle_handle || studio.cashapp_tag);
@@ -199,21 +212,23 @@ export default function PayInvoice() {
         return (
             <div style={styles.page}>
                 <div style={styles.card}>
-                    <div style={styles.iconLarge}>🎉</div>
+                    <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+                        <CheckCircle2 size={48} style={{ color: '#16a34a', margin: '0 auto' }} />
+                    </div>
                     <h1 style={{ ...styles.h1, color: '#16a34a' }}>
-                        {isPaidInFull ? 'Invoice Paid & Approved!' : 'Invoice Approved!'}
+                        {isPaidInFull ? 'Invoice Paid & Approved' : 'Invoice Approved'}
                     </h1>
                     <p style={styles.muted}>
-                        Thank you, <strong>{clientDisplayName}</strong>. You've approved Invoice #{invoice.invoice_number} from {studio.business_name}.
-                        {isPaidInFull ? ' Your payment has been confirmed.' : ' Your photographer has been notified.'}
+                        Thank you, <strong>{clientDisplayName}</strong>. You have approved Invoice #{invoice.invoice_number} from {studio.business_name}.
+                        {isPaidInFull ? ' Your payment has been confirmed.' : ' Your business contact has been notified.'}
                     </p>
 
                     {/* Payment instructions if not yet paid */}
                     {hasPaymentMethods && !isPaidInFull && (
                         <div style={styles.paymentBox}>
                             <div style={styles.sectionLabel}>Complete Your Payment</div>
-                            <p style={{ fontSize: '14px', color: '#475569', margin: '0 0 16px' }}>
-                                Send your payment using one of the options below. Use the invoice number as your payment reference.
+                            <p style={{ fontSize: '14px', color: '#475569', margin: '0 0 16px', lineHeight: 1.5 }}>
+                                Please submit payment of <strong style={{ color: '#f97316' }}>{formatMoney(totals?.totalCents || 0)}</strong> using one of the approved options below. Include your invoice number in the memo or reference field.
                             </p>
                             <div style={styles.handleGrid}>
                                 {studio.has_stripe && (
@@ -223,31 +238,33 @@ export default function PayInvoice() {
                                         disabled={checkoutLoading}
                                         style={{ ...styles.handleCard, border: '1.5px solid #635bff', background: '#fafaff', width: '100%', outline: 'none' }}
                                     >
-                                        <div style={styles.handleIcon}>💳</div>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '8px', color: '#635bff' }}>
+                                            <CreditCard size={22} />
+                                        </div>
                                         <div style={{ ...styles.handleLabel, color: '#635bff' }}>Credit / Debit Card</div>
                                         <div style={{ ...styles.handleValue, color: '#635bff', fontWeight: 800 }}>
-                                            {checkoutLoading ? 'Opening Stripe…' : 'Pay with Stripe →'}
+                                            {checkoutLoading ? 'Opening Stripe…' : 'Pay Online with Card →'}
                                         </div>
                                     </button>
                                 )}
                                 {studio.venmo_handle && (
                                     <a href={`https://venmo.com/${studio.venmo_handle.replace('@', '')}`} target="_blank" rel="noreferrer" style={styles.handleCard}>
-                                        <div style={styles.handleIcon}>💜</div>
-                                        <div style={styles.handleLabel}>Venmo</div>
+                                        <div style={{ fontSize: '11px', fontWeight: 800, color: '#008cff', letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: '6px' }}>Venmo</div>
+                                        <div style={styles.handleLabel}>Account</div>
                                         <div style={styles.handleValue}>{studio.venmo_handle}</div>
                                     </a>
                                 )}
                                 {studio.zelle_handle && (
                                     <div style={styles.handleCard}>
-                                        <div style={styles.handleIcon}>💙</div>
-                                        <div style={styles.handleLabel}>Zelle</div>
+                                        <div style={{ fontSize: '11px', fontWeight: 800, color: '#7414ca', letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: '6px' }}>Zelle</div>
+                                        <div style={styles.handleLabel}>Account</div>
                                         <div style={styles.handleValue}>{studio.zelle_handle}</div>
                                     </div>
                                 )}
                                 {studio.cashapp_tag && (
                                     <a href={`https://cash.app/${studio.cashapp_tag.replace('$', '')}`} target="_blank" rel="noreferrer" style={styles.handleCard}>
-                                        <div style={styles.handleIcon}>💚</div>
-                                        <div style={styles.handleLabel}>CashApp</div>
+                                        <div style={{ fontSize: '11px', fontWeight: 800, color: '#00d632', letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: '6px' }}>CashApp</div>
+                                        <div style={styles.handleLabel}>Account</div>
                                         <div style={styles.handleValue}>{studio.cashapp_tag.startsWith('$') ? studio.cashapp_tag : `$${studio.cashapp_tag}`}</div>
                                     </a>
                                 )}
@@ -267,7 +284,7 @@ export default function PayInvoice() {
         );
     }
 
-    // ── Main pay page ─────────────────────────────────────────────────────────
+    // ── Main pay page (Approval required first) ───────────────────────────────
     const { invoice, studio } = data;
     const inv = invoice;
     const billedItems = (inv.items || []).filter(it => it.quantity > 0);
@@ -377,7 +394,7 @@ export default function PayInvoice() {
                     </div>
                 )}
 
-                {/* Photographer signed badge */}
+                {/* Business signed badge */}
                 {inv.photographer_signed && (
                     <div style={styles.sigBadge}>
                         <PenLine size={13} style={{ verticalAlign: '-2px', marginRight: 4 }} />Signed by {studio.business_name}
@@ -385,23 +402,23 @@ export default function PayInvoice() {
                 )}
             </div>
 
-            {/* E-Signature section */}
+            {/* E-Signature / Approval section */}
             <div style={{ ...styles.card, marginTop: 0 }}>
                 <div style={styles.sectionLabel}>Approve This Invoice</div>
                 <p style={{ fontSize: '14px', color: '#475569', margin: '0 0 16px', lineHeight: 1.6 }}>
                     By typing your full name below and clicking <strong>I Agree & Submit</strong>, you confirm that you have reviewed
-                    this invoice and authorize payment of <strong style={{ color: '#f97316' }}>{formatMoney(totals.totalCents)}</strong> to {studio.business_name}.
+                    this invoice and agree to the total balance of <strong style={{ color: '#f97316' }}>{formatMoney(totals.totalCents)}</strong>.
                 </p>
 
                 {/* Payment terms */}
                 <div style={{ background: '#fef9f5', border: '1px solid #fed7aa', borderRadius: '10px', padding: '16px 18px', marginBottom: '20px' }}>
-                    <div style={{ fontSize: '12px', fontWeight: 800, color: '#ea580c', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '10px' }}>Payment Information</div>
+                    <div style={{ fontSize: '12px', fontWeight: 800, color: '#ea580c', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '10px' }}>Payment Information & Terms</div>
                     <ul style={{ margin: '0 0 12px', padding: '0 0 0 18px', fontSize: '14px', color: '#475569', lineHeight: 1.7 }}>
-                        <li>A <strong>50% deposit</strong> is required to secure your date.</li>
-                        <li>The remaining balance is due <strong>before the session</strong> (or on the day of the session).</li>
+                        <li>A <strong>50% deposit</strong> is required to secure your booking date.</li>
+                        <li>The remaining balance is due <strong>on or before the project date</strong>.</li>
                         {(() => {
                             const methods = [];
-                            if (studio.has_stripe) methods.push('Card (Stripe)');
+                            if (studio.has_stripe) methods.push('Card');
                             if (studio.venmo_handle) methods.push('Venmo');
                             if (studio.zelle_handle) methods.push('Zelle');
                             if (studio.cashapp_tag) methods.push('CashApp');
@@ -412,12 +429,12 @@ export default function PayInvoice() {
                                 ? `${methods[0]} or ${methods[1]}`
                                 : `${methods.slice(0, -1).join(', ')}, or ${methods[methods.length - 1]}`;
                             return (
-                                <li>Payment via <strong>{formatted}</strong> {methods.length > 1 ? 'are' : 'is'} acceptable.</li>
+                                <li>Accepted payment methods: <strong>{formatted}</strong>.</li>
                             );
                         })()}
                     </ul>
                     <p style={{ margin: 0, fontSize: '14px', color: '#475569', lineHeight: 1.6 }}>
-                        Once I receive your deposit, I will send a confirmation email with your booked date and time. Thank you! Looking forward to working with you.
+                        Payment details and checkout options will be provided immediately upon submitting your approval.
                     </p>
                 </div>
 
@@ -453,62 +470,13 @@ export default function PayInvoice() {
                         transition: 'background 0.2s', letterSpacing: '0.02em'
                     }}
                 >
-                    {submitting ? '⏳ Submitting…' : 'I Agree & Submit →'}
+                    {submitting ? 'Submitting…' : 'I Agree & Submit →'}
                 </button>
 
                 <p style={{ fontSize: '11px', color: '#94a3b8', textAlign: 'center', margin: '12px 0 0 0' }}>
                     Your typed name serves as your electronic signature and agreement to this invoice.
                 </p>
             </div>
-
-            {/* Payment handles */}
-            {(() => {
-                const hasPaymentMethods = Boolean(studio.has_stripe || studio.venmo_handle || studio.zelle_handle || studio.cashapp_tag);
-                if (!hasPaymentMethods) return null;
-                return (
-                    <div style={{ ...styles.card, marginTop: 0 }}>
-                        <div style={styles.sectionLabel}>Payment Options</div>
-                        <div style={styles.handleGrid}>
-                            {studio.has_stripe && (
-                                <button
-                                    type="button"
-                                    onClick={handleCardCheckout}
-                                    disabled={checkoutLoading}
-                                    style={{ ...styles.handleCard, border: '1.5px solid #635bff', background: '#fafaff', width: '100%', outline: 'none' }}
-                                >
-                                    <div style={styles.handleIcon}>💳</div>
-                                    <div style={{ ...styles.handleLabel, color: '#635bff' }}>Credit / Debit Card</div>
-                                    <div style={{ ...styles.handleValue, color: '#635bff', fontWeight: 800 }}>
-                                        {checkoutLoading ? 'Opening Stripe…' : 'Pay with Stripe →'}
-                                    </div>
-                                </button>
-                            )}
-                            {studio.venmo_handle && (
-                                <a href={`https://venmo.com/${studio.venmo_handle.replace('@', '')}`} target="_blank" rel="noreferrer" style={styles.handleCard}>
-                                    <div style={styles.handleIcon}>💜</div>
-                                    <div style={styles.handleLabel}>Venmo</div>
-                                    <div style={styles.handleValue}>{studio.venmo_handle}</div>
-                                </a>
-                            )}
-                            {studio.zelle_handle && (
-                                <div style={styles.handleCard}>
-                                    <div style={styles.handleIcon}>💙</div>
-                                    <div style={styles.handleLabel}>Zelle</div>
-                                    <div style={styles.handleValue}>{studio.zelle_handle}</div>
-                                </div>
-                            )}
-                            {studio.cashapp_tag && (
-                                <a href={`https://cash.app/${studio.cashapp_tag.replace('$', '')}`} target="_blank" rel="noreferrer" style={styles.handleCard}>
-                                    <div style={styles.handleIcon}>💚</div>
-                                    <div style={styles.handleLabel}>CashApp</div>
-                                    <div style={styles.handleValue}>{studio.cashapp_tag.startsWith('$') ? studio.cashapp_tag : `$${studio.cashapp_tag}`}</div>
-                                </a>
-                            )}
-                        </div>
-                        {checkoutError && <div style={{ color: '#ef4444', fontSize: '13px', marginTop: '8px', textAlign: 'center' }}>{checkoutError}</div>}
-                    </div>
-                );
-            })()}
 
             {/* Footer */}
             <div style={{ textAlign: 'center', padding: '24px 0 40px', fontSize: '12px', color: '#cbd5e1' }}>
@@ -529,7 +497,7 @@ const styles = {
     studioName: { fontSize: '22px', fontWeight: 900, color: '#1e293b', letterSpacing: '-0.02em' },
     headerDivider: { width: '40px', height: '2px', background: '#f97316', margin: '12px auto 0' },
     card: { maxWidth: '640px', margin: '20px auto', background: '#fff', borderRadius: '16px', padding: '28px', boxShadow: '0 2px 16px rgba(0,0,0,0.07)' },
-    iconLarge: { fontSize: '48px', textAlign: 'center', marginBottom: '16px' },
+    iconLarge: { textAlign: 'center', marginBottom: '16px' },
     h1: { fontSize: '24px', fontWeight: 900, margin: '0 0 12px', textAlign: 'center' },
     muted: { fontSize: '15px', color: '#64748b', textAlign: 'center', lineHeight: 1.6, margin: 0 },
     invoiceMeta: { display: 'flex', justifyContent: 'space-between', marginBottom: '24px', paddingBottom: '20px', borderBottom: '2px solid #f1f5f9' },
@@ -546,7 +514,6 @@ const styles = {
     paymentBox: { marginTop: '24px', padding: '20px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' },
     handleGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '12px' },
     handleCard: { display: 'block', textDecoration: 'none', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', textAlign: 'center', cursor: 'pointer', transition: 'box-shadow 0.2s', color: 'inherit' },
-    handleIcon: { fontSize: '24px', marginBottom: '6px' },
     handleLabel: { fontSize: '11px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' },
     handleValue: { fontSize: '14px', fontWeight: 700, color: '#1e293b', wordBreak: 'break-all' },
     referenceNote: { fontSize: '13px', color: '#475569', textAlign: 'center', marginTop: '12px' },
