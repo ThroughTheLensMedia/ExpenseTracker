@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Ban, CheckCircle2, AlertTriangle, FileText, PenLine } from 'lucide-react';
 
-const APP_URL = import.meta.env.VITE_APP_URL || 'https://app.throughthelens.media';
-
 function formatMoney(cents) {
     return '$' + (cents / 100).toFixed(2);
 }
@@ -13,29 +11,24 @@ function formatDate(d) {
     return isNaN(date) ? d : date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 }
 
-function getStripeUrl(link) {
-    if (!link) return null;
-    const trimmed = String(link).trim();
-    if (!trimmed) return null;
-    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
-    if (trimmed.startsWith('buy.stripe.com') || trimmed.startsWith('checkout.stripe.com') || trimmed.includes('.')) {
-        return `https://${trimmed}`;
-    }
-    return null;
-}
-
 export default function PayInvoice() {
     const { token } = useParams();
-    const [state, setState] = useState('loading'); // loading | ready | signing | signed | error | voided | already_signed
+    const [state, setState] = useState('loading'); // loading | ready | signing | signed | error | voided | already_signed | verifying_payment
     const [data, setData] = useState(null);
     const [error, setError] = useState('');
     const [signature, setSignature] = useState('');
     const [sigError, setSigError] = useState('');
     const [submitting, setSubmitting] = useState(false);
+    const [checkoutLoading, setCheckoutLoading] = useState(false);
+    const [checkoutError, setCheckoutError] = useState('');
 
     useEffect(() => {
         async function load() {
             try {
+                const searchParams = new URLSearchParams(window.location.search);
+                const sessionId = searchParams.get('session_id');
+                const isPaidParam = searchParams.get('paid');
+
                 const res = await fetch(`/api/pay/${token}`);
                 const json = await res.json();
                 if (!res.ok) {
@@ -45,6 +38,35 @@ export default function PayInvoice() {
                     return setState('error');
                 }
                 setData(json);
+
+                // If returning from Stripe Checkout with session_id
+                if (sessionId && isPaidParam) {
+                    setState('verifying_payment');
+                    try {
+                        const verifyRes = await fetch(`/api/pay/${token}/verify-session`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ session_id: sessionId })
+                        });
+                        const verifyJson = await verifyRes.json();
+                        if (verifyRes.ok && (verifyJson.ok || verifyJson.already_signed)) {
+                            // Update local data with paid status
+                            setData(prev => prev ? ({
+                                ...prev,
+                                invoice: {
+                                    ...prev.invoice,
+                                    status: 'paid',
+                                    customer_signed_at: verifyJson.signed_at || new Date().toISOString(),
+                                }
+                            }) : prev);
+                            setState('signed');
+                            return;
+                        }
+                    } catch (err) {
+                        console.error('Session verification failed:', err);
+                    }
+                }
+
                 setState('ready');
             } catch (e) {
                 setError('Network error. Please check your connection and try again.');
@@ -53,6 +75,27 @@ export default function PayInvoice() {
         }
         load();
     }, [token]);
+
+    const handleCardCheckout = async () => {
+        setCheckoutLoading(true);
+        setCheckoutError('');
+        try {
+            const res = await fetch(`/api/pay/${token}/checkout`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const json = await res.json();
+            if (!res.ok || !json.url) {
+                setCheckoutError(json.error || 'Failed to start Stripe checkout. Please try again.');
+                setCheckoutLoading(false);
+                return;
+            }
+            window.location.href = json.url;
+        } catch (e) {
+            setCheckoutError('Network error. Please try again.');
+            setCheckoutLoading(false);
+        }
+    };
 
     const handleSign = async () => {
         if (signature.trim().length < 2) {
@@ -93,13 +136,15 @@ export default function PayInvoice() {
         return { subtotalCents, taxCents, discountCents, totalCents };
     }, [data]);
 
-    // ── Loading ───────────────────────────────────────────────────────────────
-    if (state === 'loading') {
+    // ── Loading or Verifying ──────────────────────────────────────────────────
+    if (state === 'loading' || state === 'verifying_payment') {
         return (
             <div style={styles.page}>
                 <div style={styles.center}>
                     <div style={styles.spinner} />
-                    <div style={styles.loadingText}>Loading your invoice…</div>
+                    <div style={styles.loadingText}>
+                        {state === 'verifying_payment' ? 'Confirming payment with Stripe…' : 'Loading your invoice…'}
+                    </div>
                 </div>
             </div>
         );
@@ -147,32 +192,43 @@ export default function PayInvoice() {
     // ── Signed confirmation ───────────────────────────────────────────────────
     if (state === 'signed') {
         const { invoice, studio } = data;
-        const signedStripeUrl = getStripeUrl(studio.stripe_payment_link || studio.stripe_publishable_key);
-        const hasPaymentMethods = Boolean(signedStripeUrl || studio.venmo_handle || studio.zelle_handle || studio.cashapp_tag);
+        const hasPaymentMethods = Boolean(studio.has_stripe || studio.venmo_handle || studio.zelle_handle || studio.cashapp_tag);
+        const clientDisplayName = signature || invoice.customer_signature || 'Client';
+        const isPaidInFull = invoice.status === 'paid';
+
         return (
             <div style={styles.page}>
                 <div style={styles.card}>
                     <div style={styles.iconLarge}>🎉</div>
-                    <h1 style={{ ...styles.h1, color: '#16a34a' }}>Invoice Approved!</h1>
+                    <h1 style={{ ...styles.h1, color: '#16a34a' }}>
+                        {isPaidInFull ? 'Invoice Paid & Approved!' : 'Invoice Approved!'}
+                    </h1>
                     <p style={styles.muted}>
-                        Thank you, <strong>{signature}</strong>. You've approved Invoice #{invoice.invoice_number} from {studio.business_name}.
-                        Your photographer has been notified.
+                        Thank you, <strong>{clientDisplayName}</strong>. You've approved Invoice #{invoice.invoice_number} from {studio.business_name}.
+                        {isPaidInFull ? ' Your payment has been confirmed.' : ' Your photographer has been notified.'}
                     </p>
 
-                    {/* Payment instructions */}
-                    {hasPaymentMethods && (
+                    {/* Payment instructions if not yet paid */}
+                    {hasPaymentMethods && !isPaidInFull && (
                         <div style={styles.paymentBox}>
                             <div style={styles.sectionLabel}>Complete Your Payment</div>
                             <p style={{ fontSize: '14px', color: '#475569', margin: '0 0 16px' }}>
                                 Send your payment using one of the options below. Use the invoice number as your payment reference.
                             </p>
                             <div style={styles.handleGrid}>
-                                {signedStripeUrl && (
-                                    <a href={signedStripeUrl} target="_blank" rel="noreferrer" style={{ ...styles.handleCard, border: '1.5px solid #635bff', background: '#fafaff' }}>
+                                {studio.has_stripe && (
+                                    <button
+                                        type="button"
+                                        onClick={handleCardCheckout}
+                                        disabled={checkoutLoading}
+                                        style={{ ...styles.handleCard, border: '1.5px solid #635bff', background: '#fafaff', width: '100%', outline: 'none' }}
+                                    >
                                         <div style={styles.handleIcon}>💳</div>
                                         <div style={{ ...styles.handleLabel, color: '#635bff' }}>Credit / Debit Card</div>
-                                        <div style={{ ...styles.handleValue, color: '#635bff', fontWeight: 800 }}>Pay with Stripe →</div>
-                                    </a>
+                                        <div style={{ ...styles.handleValue, color: '#635bff', fontWeight: 800 }}>
+                                            {checkoutLoading ? 'Opening Stripe…' : 'Pay with Stripe →'}
+                                        </div>
+                                    </button>
                                 )}
                                 {studio.venmo_handle && (
                                     <a href={`https://venmo.com/${studio.venmo_handle.replace('@', '')}`} target="_blank" rel="noreferrer" style={styles.handleCard}>
@@ -196,6 +252,7 @@ export default function PayInvoice() {
                                     </a>
                                 )}
                             </div>
+                            {checkoutError && <div style={{ color: '#ef4444', fontSize: '13px', marginTop: '8px', textAlign: 'center' }}>{checkoutError}</div>}
                             <div style={styles.referenceNote}>
                                 Reference: <strong>Invoice #{invoice.invoice_number}</strong>
                             </div>
@@ -343,9 +400,8 @@ export default function PayInvoice() {
                         <li>A <strong>50% deposit</strong> is required to secure your date.</li>
                         <li>The remaining balance is due <strong>before the session</strong> (or on the day of the session).</li>
                         {(() => {
-                            const stripeUrl = getStripeUrl(studio.stripe_payment_link || studio.stripe_publishable_key);
                             const methods = [];
-                            if (stripeUrl) methods.push('Card (Stripe)');
+                            if (studio.has_stripe) methods.push('Card (Stripe)');
                             if (studio.venmo_handle) methods.push('Venmo');
                             if (studio.zelle_handle) methods.push('Zelle');
                             if (studio.cashapp_tag) methods.push('CashApp');
@@ -407,19 +463,25 @@ export default function PayInvoice() {
 
             {/* Payment handles */}
             {(() => {
-                const stripeUrl = getStripeUrl(studio.stripe_payment_link || studio.stripe_publishable_key);
-                const hasPaymentMethods = Boolean(stripeUrl || studio.venmo_handle || studio.zelle_handle || studio.cashapp_tag);
+                const hasPaymentMethods = Boolean(studio.has_stripe || studio.venmo_handle || studio.zelle_handle || studio.cashapp_tag);
                 if (!hasPaymentMethods) return null;
                 return (
                     <div style={{ ...styles.card, marginTop: 0 }}>
                         <div style={styles.sectionLabel}>Payment Options</div>
                         <div style={styles.handleGrid}>
-                            {stripeUrl && (
-                                <a href={stripeUrl} target="_blank" rel="noreferrer" style={{ ...styles.handleCard, border: '1.5px solid #635bff', background: '#fafaff' }}>
+                            {studio.has_stripe && (
+                                <button
+                                    type="button"
+                                    onClick={handleCardCheckout}
+                                    disabled={checkoutLoading}
+                                    style={{ ...styles.handleCard, border: '1.5px solid #635bff', background: '#fafaff', width: '100%', outline: 'none' }}
+                                >
                                     <div style={styles.handleIcon}>💳</div>
                                     <div style={{ ...styles.handleLabel, color: '#635bff' }}>Credit / Debit Card</div>
-                                    <div style={{ ...styles.handleValue, color: '#635bff', fontWeight: 800 }}>Pay with Stripe →</div>
-                                </a>
+                                    <div style={{ ...styles.handleValue, color: '#635bff', fontWeight: 800 }}>
+                                        {checkoutLoading ? 'Opening Stripe…' : 'Pay with Stripe →'}
+                                    </div>
+                                </button>
                             )}
                             {studio.venmo_handle && (
                                 <a href={`https://venmo.com/${studio.venmo_handle.replace('@', '')}`} target="_blank" rel="noreferrer" style={styles.handleCard}>
@@ -443,6 +505,7 @@ export default function PayInvoice() {
                                 </a>
                             )}
                         </div>
+                        {checkoutError && <div style={{ color: '#ef4444', fontSize: '13px', marginTop: '8px', textAlign: 'center' }}>{checkoutError}</div>}
                     </div>
                 );
             })()}

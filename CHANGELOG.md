@@ -5,9 +5,21 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 
 ---
 
+## [v7.29.2] — 2026-09-17
+
+### Added — Dynamic Stripe Checkout for client invoices & universal payment support
+
+- **`api/routes/pay.js`** — added `POST /api/pay/:token/checkout` to create a dynamic Stripe Checkout Session with line items, tax, discount, and exact total cents using the photographer's encrypted Stripe key; added `POST /api/pay/:token/verify-session` to verify completed sessions, set invoice status to `paid`, record customer e-signature timestamp, and send confirmation emails to the studio.
+- **`web-react/src/pages/PayInvoice.jsx`** — connected "Pay with Stripe" button to dynamic checkout; auto-verifies session upon return with `?session_id=...&paid=1`; updated payment options to render cards for Card (Stripe), Venmo (`@handle`), Zelle (`phone/email`), and CashApp (`$cashtag`); dynamically formats payment terms list.
+- **`web-react/src/components/control-center/ProfileTab.jsx`** — streamlined Stripe setup instructions with 5-step universal directions for generating a Restricted Key (`rk_live_...`) with Checkout Sessions: Write access (or Secret Key `sk_live_...`); masked password input with encryption at rest note.
+- **`api/routes/settings.js`** — encrypted `stripe_publishable_key` with libsodium before storing in database settings.
+- **`ROADMAP.md`** — added *Option 2: Dynamic Stripe Checkout via Stripe Connect* to the product roadmap for future OAuth-based studio onboarding.
+
+---
+
 ## [v7.29.1] — 2026-09-17
 
-### Added — Stripe Payment Link support for client invoice payments
+### Added — Stripe payment support for client invoice payments
 
 - **`web-react/src/pages/PayInvoice.jsx`** — client payment approval page now renders a dedicated **Credit / Debit Card (Stripe)** card in the Payment Options grid when the photographer has configured a Stripe Payment Link.
 - **`web-react/src/pages/PayInvoice.jsx`** — dynamic payment information terms: the accepted payment methods bullet in the invoice terms box now dynamically lists only methods configured by the studio (`Card (Stripe)`, `Venmo`, `Zelle`, `CashApp`, `Cash`), preventing display mismatches.

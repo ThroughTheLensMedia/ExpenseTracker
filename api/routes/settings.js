@@ -20,6 +20,9 @@ router.get("/", async (req, res) => {
     if (row?.gemini_api_key) {
         row.gemini_api_key = await decryptOrPlain(row.gemini_api_key);
     }
+    if (row?.stripe_publishable_key) {
+        row.stripe_publishable_key = await decryptOrPlain(row.stripe_publishable_key);
+    }
     res.json(row);
 });
 
@@ -40,9 +43,12 @@ router.post("/", async (req, res) => {
         const protectedFields = ['id', 'created_at', 'updated_at'];
         protectedFields.forEach(f => delete payload[f]);
 
-        // Encrypt the BYOB Gemini key at rest (v7.15.0) — matches Plaid token handling.
+        // Encrypt the BYOB Gemini key and Stripe key at rest — matches Plaid token handling.
         if (typeof payload.gemini_api_key === 'string' && payload.gemini_api_key.length > 0) {
             payload.gemini_api_key = await encrypt(payload.gemini_api_key);
+        }
+        if (typeof payload.stripe_publishable_key === 'string' && payload.stripe_publishable_key.length > 0) {
+            payload.stripe_publishable_key = await encrypt(payload.stripe_publishable_key);
         }
 
         const { data, error } = await req.sb
@@ -54,6 +60,9 @@ router.post("/", async (req, res) => {
         if (error) throw error;
         if (data?.gemini_api_key) {
             data.gemini_api_key = await decryptOrPlain(data.gemini_api_key);
+        }
+        if (data?.stripe_publishable_key) {
+            data.stripe_publishable_key = await decryptOrPlain(data.stripe_publishable_key);
         }
         res.json(data);
     } catch (e) {

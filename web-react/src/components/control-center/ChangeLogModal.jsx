@@ -1,8 +1,14 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.29.2', date: 'SEP 17, 2026', color: '#635bff', items: [
+        '<strong>New:</strong> Dynamic Stripe Checkout on client invoices — clients can click "Pay with Stripe" to instantly pay the exact invoice total via credit card, debit card, Apple Pay, or Google Pay.',
+        '<strong>New:</strong> Automated payment verification — upon successful Stripe payment, the invoice is automatically marked as paid and e-signed, and an approval notification is dispatched to the studio.',
+        '<strong>Improved:</strong> Added support for all universal payment options on invoice approval pages: Card (Stripe), Venmo, Zelle, and CashApp.',
+        '<strong>Improved:</strong> Profile tab now features clear, universal setup instructions for connecting Stripe Restricted or Secret API keys with encryption at rest.',
+    ]},
     { version: '7.29.1', date: 'SEP 17, 2026', color: '#635bff', items: [
-        '<strong>New:</strong> Stripe Payment Link support for invoices — add your Stripe Payment Link in Business Profile settings to give clients a direct "Pay with Stripe" button on your invoice approval pages.',
+        '<strong>New:</strong> Stripe payment support for invoices — add your Stripe key in Business Profile settings to give clients a direct card payment option on your invoice approval pages.',
         '<strong>Improved:</strong> Invoice payment terms now dynamically list only the payment options you have actually configured (Stripe, Venmo, Zelle, CashApp, Cash), eliminating confusion.',
     ]},
     { version: '7.29.0', date: 'SEP 10, 2026', color: '#4c7dff', items: [

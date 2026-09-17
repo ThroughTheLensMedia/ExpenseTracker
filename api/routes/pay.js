@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { supabase } = require('../db');
 const { sendInvoiceApprovalEmail } = require('../utils/mailer');
+const { decryptOrPlain } = require('../utils/cryptoUtil');
+const Stripe = require('stripe');
 
 /**
  * GET /api/pay/:token
@@ -23,7 +25,7 @@ router.get('/:token', async (req, res) => {
             return res.status(404).json({ error: 'Invoice not found or payment link has expired.' });
         }
 
-        // Don't allow paying a voided or already-signed invoice
+        // Don't allow paying a voided invoice
         if (invoice.status === 'void') {
             return res.status(410).json({ error: 'This invoice has been voided.' });
         }
@@ -32,14 +34,13 @@ router.get('/:token', async (req, res) => {
         }
 
         // Fetch photographer's settings (payment handles, business name, email)
-        // We find the settings row belonging to the invoice owner (user_id)
         const { data: settings } = await supabase
             .from('settings')
             .select('business_name, email, venmo_handle, zelle_handle, cashapp_tag, stripe_publishable_key, logo_url, phone, website')
             .eq('user_id', invoice.user_id)
             .maybeSingle();
 
-        // Return safe public payload — no secret keys, no internal IDs beyond what's needed
+        // Return safe public payload — no secret keys exposed to browser
         res.json({
             invoice: {
                 id: invoice.id,
@@ -71,8 +72,7 @@ router.get('/:token', async (req, res) => {
                 venmo_handle: settings?.venmo_handle || null,
                 zelle_handle: settings?.zelle_handle || null,
                 cashapp_tag: settings?.cashapp_tag || null,
-                stripe_payment_link: settings?.stripe_publishable_key || null,
-                stripe_publishable_key: settings?.stripe_publishable_key || null,
+                has_stripe: Boolean(settings?.stripe_publishable_key && settings.stripe_publishable_key.trim().length > 0),
             }
         });
 
@@ -83,9 +83,210 @@ router.get('/:token', async (req, res) => {
 });
 
 /**
+ * POST /api/pay/:token/checkout
+ * Public — creates a dynamic Stripe Checkout Session for the exact invoice balance.
+ */
+router.post('/:token/checkout', async (req, res) => {
+    try {
+        const { token } = req.params;
+
+        const { data: invoice, error } = await supabase
+            .from('invoices')
+            .select('*, clients(*), invoice_items(*)')
+            .eq('payment_token', token)
+            .single();
+
+        if (error || !invoice) {
+            return res.status(404).json({ error: 'Invoice not found.' });
+        }
+        if (invoice.status === 'void') {
+            return res.status(410).json({ error: 'This invoice has been voided.' });
+        }
+        if (invoice.status === 'paid' || invoice.customer_signed_at) {
+            return res.status(409).json({ error: 'This invoice has already been approved and paid.' });
+        }
+
+        // Fetch photographer's Stripe key from settings
+        const { data: settings } = await supabase
+            .from('settings')
+            .select('business_name, email, stripe_publishable_key')
+            .eq('user_id', invoice.user_id)
+            .maybeSingle();
+
+        if (!settings?.stripe_publishable_key) {
+            return res.status(400).json({ error: 'Online card payments are not configured for this business.' });
+        }
+
+        const stripeKey = await decryptOrPlain(settings.stripe_publishable_key);
+        if (!stripeKey || (!stripeKey.startsWith('rk_') && !stripeKey.startsWith('sk_'))) {
+            return res.status(400).json({ error: 'Stripe is not fully configured. Please ensure a valid Stripe Secret or Restricted Key is saved in Studio Settings.' });
+        }
+
+        const userStripe = new Stripe(stripeKey, { apiVersion: '2024-06-20' });
+
+        // Calculate totals
+        const billedItems = (invoice.invoice_items || []).filter(it => it.quantity > 0);
+        const subtotalCents = billedItems.reduce((s, it) => s + (it.unit_price_cents * it.quantity), 0);
+        const taxCents = Math.round(subtotalCents * ((invoice.tax_percent || 0) / 100));
+        const discountPct = (invoice.discount_cents || 0) / 10000;
+        const discountAmt = Math.round(subtotalCents * discountPct);
+        const totalCents = subtotalCents + taxCents - discountAmt;
+
+        if (totalCents <= 0) {
+            return res.status(400).json({ error: 'Invoice total must be greater than $0 to pay online.' });
+        }
+
+        const appUrl = process.env.APP_URL || 'https://www.lumiereledger.com';
+        const lineItemSummary = billedItems.map(it => `${it.quantity}x ${it.description} ($${(it.unit_price_cents * it.quantity / 100).toFixed(2)})`).join(' • ');
+
+        // Create Checkout Session directly in the photographer's Stripe account
+        const session = await userStripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            mode: 'payment',
+            customer_email: invoice.clients?.email || undefined,
+            client_reference_id: invoice.id,
+            metadata: {
+                invoice_id: invoice.id,
+                invoice_number: String(invoice.invoice_number),
+                payment_token: token,
+            },
+            line_items: [
+                {
+                    price_data: {
+                        currency: 'usd',
+                        product_data: {
+                            name: `Invoice #${invoice.invoice_number} — ${settings.business_name || 'Services'}`,
+                            description: lineItemSummary || `Invoice balance for ${invoice.clients?.name || 'client'}`,
+                        },
+                        unit_amount: totalCents,
+                    },
+                    quantity: 1,
+                }
+            ],
+            success_url: `${appUrl}/pay/${token}?session_id={CHECKOUT_SESSION_ID}&paid=1`,
+            cancel_url: `${appUrl}/pay/${token}`,
+        });
+
+        res.json({ url: session.url });
+
+    } catch (e) {
+        console.error('[PAY] Stripe checkout error:', e);
+        res.status(500).json({ error: e.message || 'Failed to initialize card checkout.' });
+    }
+});
+
+/**
+ * POST /api/pay/:token/verify-session
+ * Public — verifies Stripe payment upon client return, marks invoice as paid, and notifies photographer.
+ */
+router.post('/:token/verify-session', async (req, res) => {
+    try {
+        const { token } = req.params;
+        const { session_id } = req.body;
+
+        if (!session_id) {
+            return res.status(400).json({ error: 'Session ID is required.' });
+        }
+
+        const { data: invoice, error } = await supabase
+            .from('invoices')
+            .select('*, clients(*), invoice_items(*)')
+            .eq('payment_token', token)
+            .single();
+
+        if (error || !invoice) {
+            return res.status(404).json({ error: 'Invoice not found.' });
+        }
+
+        // If already marked signed & paid, return success idempotently
+        if (invoice.customer_signed_at) {
+            return res.json({ ok: true, already_signed: true, signed_at: invoice.customer_signed_at });
+        }
+
+        const { data: settings } = await supabase
+            .from('settings')
+            .select('business_name, email, stripe_publishable_key')
+            .eq('user_id', invoice.user_id)
+            .maybeSingle();
+
+        const stripeKey = await decryptOrPlain(settings?.stripe_publishable_key);
+        if (!stripeKey) {
+            return res.status(400).json({ error: 'Studio payment configuration missing.' });
+        }
+
+        const userStripe = new Stripe(stripeKey, { apiVersion: '2024-06-20' });
+        const session = await userStripe.checkout.sessions.retrieve(session_id);
+
+        if (session.payment_status !== 'paid') {
+            return res.status(400).json({ error: 'Payment has not been completed.' });
+        }
+
+        const signedAt = new Date().toISOString();
+        const customerName = session.customer_details?.name || invoice.clients?.name || 'Client';
+
+        // Update invoice to paid
+        const { error: updateError } = await supabase
+            .from('invoices')
+            .update({
+                customer_signature: customerName,
+                customer_signed_at: signedAt,
+                status: 'paid',
+                updated_at: signedAt,
+            })
+            .eq('id', invoice.id);
+
+        if (updateError) throw updateError;
+
+        // Calculate totals for email
+        const subtotalCents = (invoice.invoice_items || []).reduce(
+            (s, it) => s + (it.unit_price_cents * it.quantity), 0
+        );
+        const taxCents = Math.round(subtotalCents * ((invoice.tax_percent || 0) / 100));
+        const discountPct = (invoice.discount_cents || 0) / 10000;
+        const discountAmt = Math.round(subtotalCents * discountPct);
+        const totalCents = subtotalCents + taxCents - discountAmt;
+
+        if (settings?.email) {
+            let extEventName = '';
+            const displayNotes = invoice.notes || '';
+            const metaMatch = displayNotes.match(/---METADATA---\nEventName: (.*)\nEventType: (.*)/);
+            if (metaMatch) {
+                extEventName = metaMatch[1];
+            }
+
+            await sendInvoiceApprovalEmail({
+                to: settings.email,
+                studioName: settings.business_name || 'Lumière Ledger',
+                clientName: invoice.clients?.name || customerName,
+                clientEmail: invoice.clients?.email || session.customer_details?.email || '',
+                invoiceNumber: invoice.invoice_number,
+                eventName: extEventName,
+                totalCents,
+                signedAt,
+                customerSignature: `${customerName} (Paid via Stripe)`,
+                paymentHandles: {
+                    stripe: 'Paid with Card via Stripe Checkout',
+                },
+                invoiceId: invoice.id,
+            });
+        }
+
+        res.json({
+            ok: true,
+            message: 'Payment received and verified successfully.',
+            signed_at: signedAt,
+            customer_signature: customerName,
+        });
+
+    } catch (e) {
+        console.error('[PAY] verify-session error:', e);
+        res.status(500).json({ error: e.message || 'Failed to verify payment session.' });
+    }
+});
+
+/**
  * POST /api/pay/:token
- * Public — no auth required.
- * Accepts customer e-signature. Stores signature and notifies photographer.
+ * Public — manual customer e-signature approval for peer-to-peer / cash payments.
  */
 router.post('/:token', async (req, res) => {
     try {
@@ -115,7 +316,7 @@ router.post('/:token', async (req, res) => {
 
         const signedAt = new Date().toISOString();
 
-        // Save signature to invoice — status remains 'sent' (photographer confirms manually)
+        // Save signature to invoice — status remains 'sent' (photographer confirms manual payments)
         const { error: updateError } = await supabase
             .from('invoices')
             .update({
@@ -132,7 +333,6 @@ router.post('/:token', async (req, res) => {
             (s, it) => s + (it.unit_price_cents * it.quantity), 0
         );
         const taxCents = Math.round(subtotalCents * ((invoice.tax_percent || 0) / 100));
-        // discount_cents stores percent×100 (e.g. 500 = 5%). Divide by 10000 to get fraction.
         const discountPct = (invoice.discount_cents || 0) / 10000;
         const discountAmt = Math.round(subtotalCents * discountPct);
         const totalCents = subtotalCents + taxCents - discountAmt;
@@ -168,7 +368,7 @@ router.post('/:token', async (req, res) => {
                     venmo: settings?.venmo_handle,
                     zelle: settings?.zelle_handle,
                     cashapp: settings?.cashapp_tag,
-                    stripe: settings?.stripe_publishable_key,
+                    stripe: settings?.stripe_publishable_key ? 'Online Card Payments (Stripe)' : null,
                 },
                 invoiceId: invoice.id,
             });

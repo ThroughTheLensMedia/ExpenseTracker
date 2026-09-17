@@ -369,19 +369,19 @@ export default function ProfileTab({ settings, setSettings, onReload, billingOnl
                 {/* Stripe setup guidance */}
                 <div className="f2">
                     <div style={{ padding: '16px 20px', background: 'rgba(99,91,255,0.05)', borderRadius: '14px', border: '1px solid rgba(99,91,255,0.18)' }}>
-                        <div style={{ fontWeight: 900, fontSize: 13, color: '#a78bfa', marginBottom: 12 }}>Enable online invoice payments with Stripe</div>
-                        <p style={{ margin: '0 0 12px', fontSize: '12px', color: 'rgba(255,255,255,0.55)', lineHeight: 1.6 }}>
-                            Stripe lets your clients pay invoices by credit or debit card. It's free to sign up — Stripe charges a standard per-transaction fee (2.9% + 30¢) directly to you. No monthly fee.
+                        <div style={{ fontWeight: 900, fontSize: 13, color: '#a78bfa', marginBottom: 12 }}>Accept Credit & Debit Card Payments on Invoices (via Stripe)</div>
+                        <p style={{ margin: '0 0 12px', fontSize: '12px', color: 'rgba(255,255,255,0.65)', lineHeight: 1.6 }}>
+                            Enable automatic, exact-dollar online invoice checkout with Stripe. Clients can pay with credit card, debit card, Apple Pay, or Google Pay directly on your invoice page. Stripe charges standard transaction fees (2.9% + 30¢) directly to your Stripe account. No monthly fee.
                         </p>
-                        <ol style={{ margin: '0 0 12px', padding: '0 0 0 18px', fontSize: '12px', color: 'rgba(255,255,255,0.5)', lineHeight: 2, fontWeight: 600 }}>
+                        <ol style={{ margin: '0 0 12px', padding: '0 0 0 18px', fontSize: '12px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.8, fontWeight: 600 }}>
                             <li>Log into your Stripe account at <a href="https://dashboard.stripe.com" target="_blank" rel="noreferrer" style={{ color: '#a78bfa' }}>dashboard.stripe.com</a>.</li>
-                            <li>Go to <a href="https://dashboard.stripe.com/payment-links" target="_blank" rel="noreferrer" style={{ color: '#a78bfa' }}>Payments → Payment Links</a> and click <strong>+ New</strong>.</li>
-                            <li>Create a reusable payment link for your services or retainers.</li>
-                            <li>Copy your <strong style={{ color: 'white' }}>Payment link URL</strong> (e.g. <code style={{ color: '#a78bfa' }}>https://buy.stripe.com/...</code>).</li>
-                            <li>Paste it into the <strong>Stripe Payment Link</strong> field below and save.</li>
+                            <li>Go to <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noreferrer" style={{ color: '#a78bfa' }}>Developers → API keys</a>.</li>
+                            <li>Under <strong>Restricted keys</strong>, click <strong>+ Create restricted key</strong>. Name it <code style={{ color: '#a78bfa' }}>Lumiere Ledger Invoices</code>.</li>
+                            <li>Set <strong>Checkout Sessions</strong> permission to <strong>Write</strong> (or you can use your standard <strong>Secret key</strong> <code style={{ color: '#a78bfa' }}>sk_live_...</code>).</li>
+                            <li>Copy your key (<code style={{ color: '#a78bfa' }}>rk_live_...</code> or <code style={{ color: '#a78bfa' }}>sk_live_...</code>) and paste it into the field below.</li>
                         </ol>
                         <div style={{ fontSize: '11px', color: 'rgba(56,189,248,0.9)', background: 'rgba(56,189,248,0.06)', border: '1px solid rgba(56,189,248,0.15)', borderRadius: '8px', padding: '8px 12px' }}>
-                            💡 Clients clicking Stripe on your invoice will be taken directly to your secure Stripe checkout link to pay with card.
+                            🔒 <strong>Encrypted at rest:</strong> Your key is stored securely using sodium encryption and is never exposed in the browser. Lumière Ledger uses it server-side to generate exact-dollar checkout sessions for your clients.
                         </div>
                     </div>
                 </div>
@@ -404,11 +404,18 @@ export default function ProfileTab({ settings, setSettings, onReload, billingOnl
                                 <input value={settings.cashapp_tag || ''} onChange={e => field('cashapp_tag', e.target.value)} placeholder="$YourCashTag" style={{ marginTop: '8px', padding: '11px' }} />
                             </div>
                             <div>
-                                <small className="muted" style={{ fontWeight: 900 }}>STRIPE PAYMENT LINK</small>
-                                <input type="text" value={settings.stripe_publishable_key || ''} onChange={e => field('stripe_publishable_key', e.target.value)} placeholder="https://buy.stripe.com/..." style={{ marginTop: '8px', padding: '11px' }} />
+                                <small className="muted" style={{ fontWeight: 900 }}>STRIPE API KEY (RESTRICTED OR SECRET)</small>
+                                <input
+                                    type="password"
+                                    value={settings.stripe_publishable_key || ''}
+                                    onChange={e => field('stripe_publishable_key', e.target.value)}
+                                    placeholder="rk_live_... or sk_live_..."
+                                    autoComplete="new-password"
+                                    style={{ marginTop: '8px', padding: '11px' }}
+                                />
                                 <div className="muted extra-small" style={{ marginTop: '5px' }}>
-                                    Payment link or checkout URL.{' '}
-                                    <a href="https://dashboard.stripe.com/payment-links" target="_blank" rel="noreferrer" style={{ color: '#38bdf8', textDecoration: 'none' }}>Get link in Stripe →</a>
+                                    Encrypted at rest. Generates dynamic invoice card checkout.{' '}
+                                    <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noreferrer" style={{ color: '#38bdf8', textDecoration: 'none' }}>Get API key →</a>
                                 </div>
                             </div>
                         </div>
