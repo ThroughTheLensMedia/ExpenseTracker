@@ -44,11 +44,17 @@ router.post("/", async (req, res) => {
         protectedFields.forEach(f => delete payload[f]);
 
         // Encrypt the BYOB Gemini key and Stripe key at rest — matches Plaid token handling.
-        if (typeof payload.gemini_api_key === 'string' && payload.gemini_api_key.length > 0) {
-            payload.gemini_api_key = await encrypt(payload.gemini_api_key);
+        if (typeof payload.gemini_api_key === 'string') {
+            payload.gemini_api_key = payload.gemini_api_key.trim();
+            if (payload.gemini_api_key.length > 0) {
+                payload.gemini_api_key = await encrypt(payload.gemini_api_key);
+            }
         }
-        if (typeof payload.stripe_publishable_key === 'string' && payload.stripe_publishable_key.length > 0) {
-            payload.stripe_publishable_key = await encrypt(payload.stripe_publishable_key);
+        if (typeof payload.stripe_publishable_key === 'string') {
+            payload.stripe_publishable_key = payload.stripe_publishable_key.trim();
+            if (payload.stripe_publishable_key.length > 0) {
+                payload.stripe_publishable_key = await encrypt(payload.stripe_publishable_key);
+            }
         }
 
         const { data, error } = await req.sb

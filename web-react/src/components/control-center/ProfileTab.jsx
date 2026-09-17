@@ -26,6 +26,7 @@ const VITE_PRICE = {
 
 export default function ProfileTab({ settings, setSettings, onReload, billingOnly = false }) {
     const [msg, setMsg] = useState('');
+    const [showStripeKey, setShowStripeKey] = useState(false);
     const { tier, subscription, subscriptionReady } = useAuth();
     const [billingAnnual, setBillingAnnual] = useState(false);
     const [billingLoading, setBillingLoading] = useState(null);
@@ -405,17 +406,43 @@ export default function ProfileTab({ settings, setSettings, onReload, billingOnl
                             </div>
                             <div>
                                 <small className="muted" style={{ fontWeight: 900 }}>STRIPE API KEY (RESTRICTED OR SECRET)</small>
-                                <input
-                                    type="password"
-                                    value={settings.stripe_publishable_key || ''}
-                                    onChange={e => field('stripe_publishable_key', e.target.value)}
-                                    placeholder="rk_live_... or sk_live_..."
-                                    autoComplete="new-password"
-                                    style={{ marginTop: '8px', padding: '11px' }}
-                                />
-                                <div className="muted extra-small" style={{ marginTop: '5px' }}>
-                                    Encrypted at rest. Generates dynamic invoice card checkout.{' '}
-                                    <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noreferrer" style={{ color: '#38bdf8', textDecoration: 'none' }}>Get API key →</a>
+                                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '8px' }}>
+                                    <input
+                                        type={showStripeKey ? "text" : "password"}
+                                        value={settings.stripe_publishable_key || ''}
+                                        onChange={e => field('stripe_publishable_key', e.target.value.trim())}
+                                        placeholder="rk_live_... or sk_live_..."
+                                        autoComplete="off"
+                                        spellCheck="false"
+                                        style={{ flex: 1, padding: '11px', fontFamily: 'monospace', fontSize: '13px' }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowStripeKey(!showStripeKey)}
+                                        className="btn secondary"
+                                        style={{ padding: '8px 12px', fontSize: '12px', minHeight: '42px' }}
+                                        title={showStripeKey ? "Hide key" : "Show key"}
+                                    >
+                                        {showStripeKey ? "Hide" : "Show"}
+                                    </button>
+                                </div>
+                                <div className="muted extra-small" style={{ marginTop: '6px' }}>
+                                    {(() => {
+                                        const k = (settings.stripe_publishable_key || '').trim();
+                                        if (!k) return <span style={{ opacity: 0.6 }}>Not configured</span>;
+                                        if (k.startsWith('rk_') || k.startsWith('sk_')) {
+                                            return <span style={{ color: '#10b981', fontWeight: 700 }}>✓ Key detected ({k.slice(0, 7)}...)</span>;
+                                        }
+                                        if (k.startsWith('pk_')) {
+                                            return <span style={{ color: '#ef4444', fontWeight: 700 }}>⚠️ This is a publishable key (pk_...). Please use a Restricted key (rk_live_...) or Secret key.</span>;
+                                        }
+                                        if (k.startsWith('http')) {
+                                            return <span style={{ color: '#ef4444', fontWeight: 700 }}>⚠️ This is a URL. Please paste your API key (rk_live_... or sk_live_...).</span>;
+                                        }
+                                        return <span style={{ color: '#f59e0b', fontWeight: 700 }}>⚠️ Key should start with rk_live_... or sk_live_...</span>;
+                                    })()}
+                                    {' · '}
+                                    <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noreferrer" style={{ color: '#38bdf8', textDecoration: 'none' }}>Get API key in Stripe →</a>
                                 </div>
                             </div>
                         </div>

@@ -42,8 +42,13 @@ router.get('/:token', async (req, res) => {
 
         let hasStripe = false;
         if (settings?.stripe_publishable_key) {
-            const stripeKey = await decryptOrPlain(settings.stripe_publishable_key);
-            hasStripe = Boolean(stripeKey && (stripeKey.startsWith('rk_') || stripeKey.startsWith('sk_')));
+            try {
+                const rawKey = await decryptOrPlain(settings.stripe_publishable_key);
+                const stripeKey = typeof rawKey === 'string' ? rawKey.trim() : '';
+                hasStripe = Boolean(stripeKey && (stripeKey.startsWith('rk_') || stripeKey.startsWith('sk_')));
+            } catch (err) {
+                console.error('[PAY] Stripe key decrypt error:', err);
+            }
         }
 
         // Return safe public payload — no secret keys exposed to browser
