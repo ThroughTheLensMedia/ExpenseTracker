@@ -405,7 +405,7 @@ export default function ProfileTab({ settings, setSettings, onReload, billingOnl
                             </div>
                             <div>
                                 <small className="muted" style={{ fontWeight: 900 }}>STRIPE PAYMENT LINK</small>
-                                <input type="text" value={settings.stripe_payment_link || settings.stripe_publishable_key || ''} onChange={e => { field('stripe_payment_link', e.target.value); field('stripe_publishable_key', e.target.value); }} placeholder="https://buy.stripe.com/..." style={{ marginTop: '8px', padding: '11px' }} />
+                                <input type="text" value={settings.stripe_publishable_key || ''} onChange={e => field('stripe_publishable_key', e.target.value)} placeholder="https://buy.stripe.com/..." style={{ marginTop: '8px', padding: '11px' }} />
                                 <div className="muted extra-small" style={{ marginTop: '5px' }}>
                                     Payment link or checkout URL.{' '}
                                     <a href="https://dashboard.stripe.com/payment-links" target="_blank" rel="noreferrer" style={{ color: '#38bdf8', textDecoration: 'none' }}>Get link in Stripe →</a>

@@ -12,9 +12,8 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 - **`web-react/src/pages/PayInvoice.jsx`** — client payment approval page now renders a dedicated **Credit / Debit Card (Stripe)** card in the Payment Options grid when the photographer has configured a Stripe Payment Link.
 - **`web-react/src/pages/PayInvoice.jsx`** — dynamic payment information terms: the accepted payment methods bullet in the invoice terms box now dynamically lists only methods configured by the studio (`Card (Stripe)`, `Venmo`, `Zelle`, `CashApp`, `Cash`), preventing display mismatches.
 - **`web-react/src/components/control-center/ProfileTab.jsx`** — updated Stripe setup instructions and input field to **Stripe Payment Link** (`https://buy.stripe.com/...`), with direct dashboard links to create reusable payment links.
-- **`api/routes/pay.js`** — `GET /api/pay/:token` and `POST /api/pay/:token` now fetch and pass `stripe_payment_link` to client payload and approval notification emails.
+- **`api/routes/pay.js`** — `GET /api/pay/:token` and `POST /api/pay/:token` now pass the Stripe payment link to client payload and approval notification emails safely.
 - **`api/utils/mailer.js`** — photographer approval email notification includes Stripe / Card link in payment options shown to client.
-- **`api/migrations/021_add_stripe_payment_link_to_settings.sql`** — adds `settings.stripe_payment_link` (text, nullable, idempotent).
 
 ---
 
