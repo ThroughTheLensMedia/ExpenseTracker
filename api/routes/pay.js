@@ -40,6 +40,12 @@ router.get('/:token', async (req, res) => {
             .eq('user_id', invoice.user_id)
             .maybeSingle();
 
+        let hasStripe = false;
+        if (settings?.stripe_publishable_key) {
+            const stripeKey = await decryptOrPlain(settings.stripe_publishable_key);
+            hasStripe = Boolean(stripeKey && (stripeKey.startsWith('rk_') || stripeKey.startsWith('sk_')));
+        }
+
         // Return safe public payload — no secret keys exposed to browser
         res.json({
             invoice: {
@@ -72,7 +78,7 @@ router.get('/:token', async (req, res) => {
                 venmo_handle: settings?.venmo_handle || null,
                 zelle_handle: settings?.zelle_handle || null,
                 cashapp_tag: settings?.cashapp_tag || null,
-                has_stripe: Boolean(settings?.stripe_publishable_key && settings.stripe_publishable_key.trim().length > 0),
+                has_stripe: hasStripe,
             }
         });
 
