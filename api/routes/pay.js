@@ -148,7 +148,50 @@ router.post('/:token/checkout', async (req, res) => {
         }
 
         const appUrl = process.env.APP_URL || 'https://www.lumiereledger.com';
-        const lineItemSummary = billedItems.map(it => `${it.quantity}x ${it.description} ($${(it.unit_price_cents * it.quantity / 100).toFixed(2)})`).join(' • ');
+
+        // Clean itemized breakdown for Stripe Checkout
+        let line_items = [];
+        if (discountAmt > 0) {
+            // When a discount is applied, lump sum with itemized description guarantees penny-perfect balance
+            line_items = [
+                {
+                    price_data: {
+                        currency: 'usd',
+                        product_data: {
+                            name: `Invoice #${invoice.invoice_number} — ${settings.business_name || 'Services'}`,
+                            description: billedItems.map(it => `${it.quantity}x ${it.description}`).join(' • ') + (taxCents > 0 ? ` + Tax (${invoice.tax_percent}%)` : '') + ` (Discount applied)`,
+                        },
+                        unit_amount: totalCents,
+                    },
+                    quantity: 1,
+                }
+            ];
+        } else {
+            // Full professional line-item breakdown
+            line_items = billedItems.map(it => ({
+                price_data: {
+                    currency: 'usd',
+                    product_data: {
+                        name: it.description || 'Service item',
+                    },
+                    unit_amount: it.unit_price_cents,
+                },
+                quantity: it.quantity,
+            }));
+
+            if (taxCents > 0) {
+                line_items.push({
+                    price_data: {
+                        currency: 'usd',
+                        product_data: {
+                            name: `Sales Tax (${invoice.tax_percent}%)`,
+                        },
+                        unit_amount: taxCents,
+                    },
+                    quantity: 1,
+                });
+            }
+        }
 
         // Create Checkout Session directly in the photographer's Stripe account
         const session = await userStripe.checkout.sessions.create({
@@ -161,19 +204,7 @@ router.post('/:token/checkout', async (req, res) => {
                 invoice_number: String(invoice.invoice_number),
                 payment_token: token,
             },
-            line_items: [
-                {
-                    price_data: {
-                        currency: 'usd',
-                        product_data: {
-                            name: `Invoice #${invoice.invoice_number} — ${settings.business_name || 'Services'}`,
-                            description: lineItemSummary || `Invoice balance for ${invoice.clients?.name || 'client'}`,
-                        },
-                        unit_amount: totalCents,
-                    },
-                    quantity: 1,
-                }
-            ],
+            line_items,
             success_url: `${appUrl}/pay/${token}?session_id={CHECKOUT_SESSION_ID}&paid=1`,
             cancel_url: `${appUrl}/pay/${token}`,
         });
