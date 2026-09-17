@@ -367,24 +367,54 @@ export default function ProfileTab({ settings, setSettings, onReload, billingOnl
                     <textarea value={settings.payment_methods || ''} onChange={e => field('payment_methods', e.target.value)} placeholder="e.g. Payment due within 14 days. Checks payable to..." style={{ marginTop: '8px', padding: '13px', minHeight: '65px', resize: 'vertical' }} />
                 </div>
 
-                {/* Stripe setup guidance */}
+                {/* Stripe Setup & Branding Guide */}
                 <div className="f2">
-                    <div style={{ padding: '16px 20px', background: 'rgba(99,91,255,0.05)', borderRadius: '14px', border: '1px solid rgba(99,91,255,0.18)' }}>
-                        <div style={{ fontWeight: 900, fontSize: 13, color: '#a78bfa', marginBottom: 12 }}>Accept Credit & Debit Card Payments on Invoices (via Stripe)</div>
-                        <p style={{ margin: '0 0 12px', fontSize: '12px', color: 'rgba(255,255,255,0.65)', lineHeight: 1.6 }}>
-                            Enable automatic, exact-dollar online invoice checkout with Stripe. Clients can pay with credit card, debit card, Apple Pay, or Google Pay directly on your invoice page. Stripe charges standard transaction fees (2.9% + 30¢) directly to your Stripe account. No monthly fee.
-                        </p>
-                        <ol style={{ margin: '0 0 12px', padding: '0 0 0 18px', fontSize: '12px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.8, fontWeight: 600 }}>
-                            <li>Log into your Stripe account at <a href="https://dashboard.stripe.com" target="_blank" rel="noreferrer" style={{ color: '#a78bfa' }}>dashboard.stripe.com</a>.</li>
-                            <li>Go to <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noreferrer" style={{ color: '#a78bfa' }}>Developers → API keys</a>.</li>
-                            <li>Under <strong>Restricted keys</strong>, click <strong>+ Create restricted key</strong>. Name it <code style={{ color: '#a78bfa' }}>Lumiere Ledger Invoices</code>.</li>
-                            <li>Set <strong>Checkout Sessions</strong> permission to <strong>Write</strong> (or you can use your standard <strong>Secret key</strong> <code style={{ color: '#a78bfa' }}>sk_live_...</code>).</li>
-                            <li>Copy your key (<code style={{ color: '#a78bfa' }}>rk_live_...</code> or <code style={{ color: '#a78bfa' }}>sk_live_...</code>) and paste it into the field below.</li>
-                        </ol>
-                        <div style={{ fontSize: '11px', color: 'rgba(56,189,248,0.9)', background: 'rgba(56,189,248,0.06)', border: '1px solid rgba(56,189,248,0.15)', borderRadius: '8px', padding: '8px 12px' }}>
-                            🔒 <strong>Encrypted at rest:</strong> Your key is stored securely using sodium encryption and is never exposed in the browser. Lumière Ledger uses it server-side to generate exact-dollar checkout sessions for your clients.
+                    <details style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '14px 18px' }}>
+                        <summary style={{ cursor: 'pointer', fontWeight: 800, fontSize: '13px', color: '#a78bfa', outline: 'none' }}>
+                            Stripe account setup and checkout branding guide
+                        </summary>
+                        <div style={{ marginTop: '16px', display: 'grid', gap: '16px', fontSize: '12px', color: 'rgba(255,255,255,0.7)', lineHeight: 1.6 }}>
+                            <div>
+                                <div style={{ fontWeight: 800, color: '#fff', marginBottom: '4px' }}>1. API Key Setup (Invoice Checkout)</div>
+                                <ol style={{ margin: '0 0 6px', padding: '0 0 0 16px', lineHeight: 1.8 }}>
+                                    <li>Open <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noreferrer" style={{ color: '#38bdf8' }}>Developers → API keys</a> in Stripe.</li>
+                                    <li>Under <strong>Restricted keys</strong>, click <strong>+ Create restricted key</strong> and name it <code>Lumiere Ledger Invoices</code>.</li>
+                                    <li>Set <strong>Checkout Sessions</strong> permission to <strong>Write</strong> (or use your standard Secret key <code>sk_live_...</code>).</li>
+                                    <li>Copy your key (starts with <code>rk_live_...</code>) and paste it into the Stripe field below.</li>
+                                </ol>
+                            </div>
+
+                            <div>
+                                <div style={{ fontWeight: 800, color: '#fff', marginBottom: '4px' }}>2. Studio Branding & Logo</div>
+                                <p style={{ margin: '0 0 6px' }}>
+                                    Customize the look of your client checkout page in <a href="https://dashboard.stripe.com/settings/branding" target="_blank" rel="noreferrer" style={{ color: '#38bdf8' }}>Settings → Branding</a>:
+                                </p>
+                                <ul style={{ margin: 0, padding: '0 0 0 16px', lineHeight: 1.8 }}>
+                                    <li><strong>Square icon:</strong> Upload a square logo (at least 512×512px) to replace the default store icon on Checkout and Apple Pay.</li>
+                                    <li><strong>Brand logo:</strong> Upload your studio's horizontal logo.</li>
+                                    <li><strong>Brand colors:</strong> Set your primary brand color to match your studio.</li>
+                                </ul>
+                            </div>
+
+                            <div>
+                                <div style={{ fontWeight: 800, color: '#fff', marginBottom: '4px' }}>3. Bank Account & Payouts</div>
+                                <p style={{ margin: 0 }}>
+                                    Confirm your checking account and payout schedule in <a href="https://dashboard.stripe.com/settings/payouts" target="_blank" rel="noreferrer" style={{ color: '#38bdf8' }}>Settings → Payouts</a>. Standard automatic payouts deposit client invoice payments into your bank account on a daily rolling 2-day basis.
+                                </p>
+                            </div>
+
+                            <div>
+                                <div style={{ fontWeight: 800, color: '#fff', marginBottom: '4px' }}>4. Public Statement Descriptor</div>
+                                <p style={{ margin: 0 }}>
+                                    In <a href="https://dashboard.stripe.com/settings/public" target="_blank" rel="noreferrer" style={{ color: '#38bdf8' }}>Settings → Public Details</a>, set your business name and statement descriptor (e.g. <code>THROUGH THE LENS MEDIA</code>) so clients easily recognize charges on their card statements.
+                                </p>
+                            </div>
+
+                            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '10px' }}>
+                                Encrypted at rest: Your API key is stored securely using sodium encryption and is used server-side only.
+                            </div>
                         </div>
-                    </div>
+                    </details>
                 </div>
 
                 {/* Instant Payment Handles */}
@@ -431,15 +461,15 @@ export default function ProfileTab({ settings, setSettings, onReload, billingOnl
                                         const k = (settings.stripe_publishable_key || '').trim();
                                         if (!k) return <span style={{ opacity: 0.6 }}>Not configured</span>;
                                         if (k.startsWith('rk_') || k.startsWith('sk_')) {
-                                            return <span style={{ color: '#10b981', fontWeight: 700 }}>✓ Key detected ({k.slice(0, 7)}...)</span>;
+                                            return <span style={{ color: '#10b981', fontWeight: 700 }}>Key connected ({k.slice(0, 7)}...)</span>;
                                         }
                                         if (k.startsWith('pk_')) {
-                                            return <span style={{ color: '#ef4444', fontWeight: 700 }}>⚠️ This is a publishable key (pk_...). Please use a Restricted key (rk_live_...) or Secret key.</span>;
+                                            return <span style={{ color: '#ef4444', fontWeight: 700 }}>Publishable key detected — Restricted key (rk_live_...) required</span>;
                                         }
                                         if (k.startsWith('http')) {
-                                            return <span style={{ color: '#ef4444', fontWeight: 700 }}>⚠️ This is a URL. Please paste your API key (rk_live_... or sk_live_...).</span>;
+                                            return <span style={{ color: '#ef4444', fontWeight: 700 }}>URL detected — API key (rk_live_...) required</span>;
                                         }
-                                        return <span style={{ color: '#f59e0b', fontWeight: 700 }}>⚠️ Key should start with rk_live_... or sk_live_...</span>;
+                                        return <span style={{ color: '#f59e0b', fontWeight: 700 }}>Key should start with rk_live_... or sk_live_...</span>;
                                     })()}
                                     {' · '}
                                     <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noreferrer" style={{ color: '#38bdf8', textDecoration: 'none' }}>Get API key in Stripe →</a>
