@@ -346,6 +346,7 @@ Full inventory: `api/routes/brain.js` (11 tools — 6 read, 5 write, all writes 
 
 - [x] **Plaid Live Bank Sync** ✅ Live v7.6.8 — billing gate, encryption, per-sub-account tagging
 - [x] **Stripe Billing end-to-end** ✅ Live v7.8.27 — checkout, webhooks, subscription lifecycle, Customer Portal
+- [ ] **Dynamic Stripe Checkout via Stripe Connect (Invoicing)** — Connect photographer Stripe accounts via OAuth / Stripe Connect to auto-generate exact-balance Stripe Checkout Sessions on invoice pages and auto-reconcile invoice status to `paid` upon card charge completion via webhooks.
 - [ ] **User-Defined Accounts** — named accounts with type, institution, last 4
 
 ---

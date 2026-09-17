@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.29.1', date: 'SEP 17, 2026', color: '#635bff', items: [
+        '<strong>New:</strong> Stripe Payment Link support for invoices — add your Stripe Payment Link in Business Profile settings to give clients a direct "Pay with Stripe" button on your invoice approval pages.',
+        '<strong>Improved:</strong> Invoice payment terms now dynamically list only the payment options you have actually configured (Stripe, Venmo, Zelle, CashApp, Cash), eliminating confusion.',
+    ]},
     { version: '7.29.0', date: 'SEP 10, 2026', color: '#4c7dff', items: [
         '<strong>Improved:</strong> Business navigation and terminology refreshed for clarity across the app.',
         '<strong>Improved:</strong> Your dashboard now leads with what actually needs attention — overdue invoices, missing deductions, and vendors due for a recurring-charge review — and the Assistant\'s guidance follows the same priorities.',

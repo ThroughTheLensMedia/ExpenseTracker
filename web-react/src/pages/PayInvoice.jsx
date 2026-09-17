@@ -13,6 +13,17 @@ function formatDate(d) {
     return isNaN(date) ? d : date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 }
 
+function getStripeUrl(link) {
+    if (!link) return null;
+    const trimmed = String(link).trim();
+    if (!trimmed) return null;
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
+    if (trimmed.startsWith('buy.stripe.com') || trimmed.startsWith('checkout.stripe.com') || trimmed.includes('.')) {
+        return `https://${trimmed}`;
+    }
+    return null;
+}
+
 export default function PayInvoice() {
     const { token } = useParams();
     const [state, setState] = useState('loading'); // loading | ready | signing | signed | error | voided | already_signed
@@ -136,6 +147,8 @@ export default function PayInvoice() {
     // ── Signed confirmation ───────────────────────────────────────────────────
     if (state === 'signed') {
         const { invoice, studio } = data;
+        const signedStripeUrl = getStripeUrl(studio.stripe_payment_link || studio.stripe_publishable_key);
+        const hasPaymentMethods = Boolean(signedStripeUrl || studio.venmo_handle || studio.zelle_handle || studio.cashapp_tag);
         return (
             <div style={styles.page}>
                 <div style={styles.card}>
@@ -147,13 +160,20 @@ export default function PayInvoice() {
                     </p>
 
                     {/* Payment instructions */}
-                    {(studio.venmo_handle || studio.zelle_handle || studio.cashapp_tag) && (
+                    {hasPaymentMethods && (
                         <div style={styles.paymentBox}>
                             <div style={styles.sectionLabel}>Complete Your Payment</div>
                             <p style={{ fontSize: '14px', color: '#475569', margin: '0 0 16px' }}>
                                 Send your payment using one of the options below. Use the invoice number as your payment reference.
                             </p>
                             <div style={styles.handleGrid}>
+                                {signedStripeUrl && (
+                                    <a href={signedStripeUrl} target="_blank" rel="noreferrer" style={{ ...styles.handleCard, border: '1.5px solid #635bff', background: '#fafaff' }}>
+                                        <div style={styles.handleIcon}>💳</div>
+                                        <div style={{ ...styles.handleLabel, color: '#635bff' }}>Credit / Debit Card</div>
+                                        <div style={{ ...styles.handleValue, color: '#635bff', fontWeight: 800 }}>Pay with Stripe →</div>
+                                    </a>
+                                )}
                                 {studio.venmo_handle && (
                                     <a href={`https://venmo.com/${studio.venmo_handle.replace('@', '')}`} target="_blank" rel="noreferrer" style={styles.handleCard}>
                                         <div style={styles.handleIcon}>💜</div>
@@ -169,10 +189,10 @@ export default function PayInvoice() {
                                     </div>
                                 )}
                                 {studio.cashapp_tag && (
-                                    <a href={`https://cash.app/${studio.cashapp_tag}`} target="_blank" rel="noreferrer" style={styles.handleCard}>
+                                    <a href={`https://cash.app/${studio.cashapp_tag.replace('$', '')}`} target="_blank" rel="noreferrer" style={styles.handleCard}>
                                         <div style={styles.handleIcon}>💚</div>
                                         <div style={styles.handleLabel}>CashApp</div>
-                                        <div style={styles.handleValue}>{studio.cashapp_tag}</div>
+                                        <div style={styles.handleValue}>{studio.cashapp_tag.startsWith('$') ? studio.cashapp_tag : `$${studio.cashapp_tag}`}</div>
                                     </a>
                                 )}
                             </div>
@@ -322,7 +342,23 @@ export default function PayInvoice() {
                     <ul style={{ margin: '0 0 12px', padding: '0 0 0 18px', fontSize: '14px', color: '#475569', lineHeight: 1.7 }}>
                         <li>A <strong>50% deposit</strong> is required to secure your date.</li>
                         <li>The remaining balance is due <strong>before the session</strong> (or on the day of the session).</li>
-                        <li>Payment via <strong>Cash, Stripe, Venmo, or Zelle</strong> are acceptable.</li>
+                        {(() => {
+                            const stripeUrl = getStripeUrl(studio.stripe_payment_link || studio.stripe_publishable_key);
+                            const methods = [];
+                            if (stripeUrl) methods.push('Card (Stripe)');
+                            if (studio.venmo_handle) methods.push('Venmo');
+                            if (studio.zelle_handle) methods.push('Zelle');
+                            if (studio.cashapp_tag) methods.push('CashApp');
+                            methods.push('Cash');
+                            const formatted = methods.length === 1
+                                ? methods[0]
+                                : methods.length === 2
+                                ? `${methods[0]} or ${methods[1]}`
+                                : `${methods.slice(0, -1).join(', ')}, or ${methods[methods.length - 1]}`;
+                            return (
+                                <li>Payment via <strong>{formatted}</strong> {methods.length > 1 ? 'are' : 'is'} acceptable.</li>
+                            );
+                        })()}
                     </ul>
                     <p style={{ margin: 0, fontSize: '14px', color: '#475569', lineHeight: 1.6 }}>
                         Once I receive your deposit, I will send a confirmation email with your booked date and time. Thank you! Looking forward to working with you.
@@ -370,34 +406,46 @@ export default function PayInvoice() {
             </div>
 
             {/* Payment handles */}
-            {(studio.venmo_handle || studio.zelle_handle || studio.cashapp_tag) && (
-                <div style={{ ...styles.card, marginTop: 0 }}>
-                    <div style={styles.sectionLabel}>Payment Options</div>
-                    <div style={styles.handleGrid}>
-                        {studio.venmo_handle && (
-                            <a href={`https://venmo.com/${studio.venmo_handle.replace('@', '')}`} target="_blank" rel="noreferrer" style={styles.handleCard}>
-                                <div style={styles.handleIcon}>💜</div>
-                                <div style={styles.handleLabel}>Venmo</div>
-                                <div style={styles.handleValue}>{studio.venmo_handle}</div>
-                            </a>
-                        )}
-                        {studio.zelle_handle && (
-                            <div style={styles.handleCard}>
-                                <div style={styles.handleIcon}>💙</div>
-                                <div style={styles.handleLabel}>Zelle</div>
-                                <div style={styles.handleValue}>{studio.zelle_handle}</div>
-                            </div>
-                        )}
-                        {studio.cashapp_tag && (
-                            <a href={`https://cash.app/${studio.cashapp_tag}`} target="_blank" rel="noreferrer" style={styles.handleCard}>
-                                <div style={styles.handleIcon}>💚</div>
-                                <div style={styles.handleLabel}>CashApp</div>
-                                <div style={styles.handleValue}>{studio.cashapp_tag}</div>
-                            </a>
-                        )}
+            {(() => {
+                const stripeUrl = getStripeUrl(studio.stripe_payment_link || studio.stripe_publishable_key);
+                const hasPaymentMethods = Boolean(stripeUrl || studio.venmo_handle || studio.zelle_handle || studio.cashapp_tag);
+                if (!hasPaymentMethods) return null;
+                return (
+                    <div style={{ ...styles.card, marginTop: 0 }}>
+                        <div style={styles.sectionLabel}>Payment Options</div>
+                        <div style={styles.handleGrid}>
+                            {stripeUrl && (
+                                <a href={stripeUrl} target="_blank" rel="noreferrer" style={{ ...styles.handleCard, border: '1.5px solid #635bff', background: '#fafaff' }}>
+                                    <div style={styles.handleIcon}>💳</div>
+                                    <div style={{ ...styles.handleLabel, color: '#635bff' }}>Credit / Debit Card</div>
+                                    <div style={{ ...styles.handleValue, color: '#635bff', fontWeight: 800 }}>Pay with Stripe →</div>
+                                </a>
+                            )}
+                            {studio.venmo_handle && (
+                                <a href={`https://venmo.com/${studio.venmo_handle.replace('@', '')}`} target="_blank" rel="noreferrer" style={styles.handleCard}>
+                                    <div style={styles.handleIcon}>💜</div>
+                                    <div style={styles.handleLabel}>Venmo</div>
+                                    <div style={styles.handleValue}>{studio.venmo_handle}</div>
+                                </a>
+                            )}
+                            {studio.zelle_handle && (
+                                <div style={styles.handleCard}>
+                                    <div style={styles.handleIcon}>💙</div>
+                                    <div style={styles.handleLabel}>Zelle</div>
+                                    <div style={styles.handleValue}>{studio.zelle_handle}</div>
+                                </div>
+                            )}
+                            {studio.cashapp_tag && (
+                                <a href={`https://cash.app/${studio.cashapp_tag.replace('$', '')}`} target="_blank" rel="noreferrer" style={styles.handleCard}>
+                                    <div style={styles.handleIcon}>💚</div>
+                                    <div style={styles.handleLabel}>CashApp</div>
+                                    <div style={styles.handleValue}>{studio.cashapp_tag.startsWith('$') ? studio.cashapp_tag : `$${studio.cashapp_tag}`}</div>
+                                </a>
+                            )}
+                        </div>
                     </div>
-                </div>
-            )}
+                );
+            })()}
 
             {/* Footer */}
             <div style={{ textAlign: 'center', padding: '24px 0 40px', fontSize: '12px', color: '#cbd5e1' }}>

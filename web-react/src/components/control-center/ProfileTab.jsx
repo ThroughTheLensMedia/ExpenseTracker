@@ -371,16 +371,17 @@ export default function ProfileTab({ settings, setSettings, onReload, billingOnl
                     <div style={{ padding: '16px 20px', background: 'rgba(99,91,255,0.05)', borderRadius: '14px', border: '1px solid rgba(99,91,255,0.18)' }}>
                         <div style={{ fontWeight: 900, fontSize: 13, color: '#a78bfa', marginBottom: 12 }}>Enable online invoice payments with Stripe</div>
                         <p style={{ margin: '0 0 12px', fontSize: '12px', color: 'rgba(255,255,255,0.55)', lineHeight: 1.6 }}>
-                            Stripe lets your clients pay invoices by credit or debit card. It's free to sign up — Stripe charges a small per-transaction fee (2.9% + 30¢) directly to you. No monthly cost.
+                            Stripe lets your clients pay invoices by credit or debit card. It's free to sign up — Stripe charges a standard per-transaction fee (2.9% + 30¢) directly to you. No monthly fee.
                         </p>
                         <ol style={{ margin: '0 0 12px', padding: '0 0 0 18px', fontSize: '12px', color: 'rgba(255,255,255,0.5)', lineHeight: 2, fontWeight: 600 }}>
-                            <li>Create a free account at <a href="https://stripe.com" target="_blank" rel="noreferrer" style={{ color: '#a78bfa' }}>stripe.com</a> using your business name and email.</li>
-                            <li>Go to <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noreferrer" style={{ color: '#a78bfa' }}>Dashboard → Developers → API Keys</a>.</li>
-                            <li>Copy your <strong style={{ color: 'white' }}>Publishable key</strong> (starts with <code style={{ color: '#a78bfa' }}>pk_live_</code>).</li>
-                            <li>Paste it into the Stripe Publishable Key field below and save.</li>
+                            <li>Log into your Stripe account at <a href="https://dashboard.stripe.com" target="_blank" rel="noreferrer" style={{ color: '#a78bfa' }}>dashboard.stripe.com</a>.</li>
+                            <li>Go to <a href="https://dashboard.stripe.com/payment-links" target="_blank" rel="noreferrer" style={{ color: '#a78bfa' }}>Payments → Payment Links</a> and click <strong>+ New</strong>.</li>
+                            <li>Create a reusable payment link for your services or retainers.</li>
+                            <li>Copy your <strong style={{ color: 'white' }}>Payment link URL</strong> (e.g. <code style={{ color: '#a78bfa' }}>https://buy.stripe.com/...</code>).</li>
+                            <li>Paste it into the <strong>Stripe Payment Link</strong> field below and save.</li>
                         </ol>
-                        <div style={{ fontSize: '11px', color: 'rgba(249,115,22,0.8)', background: 'rgba(249,115,22,0.06)', border: '1px solid rgba(249,115,22,0.15)', borderRadius: '8px', padding: '8px 12px' }}>
-                            Only paste the <strong>Publishable key</strong> here—never your Secret key.
+                        <div style={{ fontSize: '11px', color: 'rgba(56,189,248,0.9)', background: 'rgba(56,189,248,0.06)', border: '1px solid rgba(56,189,248,0.15)', borderRadius: '8px', padding: '8px 12px' }}>
+                            💡 Clients clicking Stripe on your invoice will be taken directly to your secure Stripe checkout link to pay with card.
                         </div>
                     </div>
                 </div>
@@ -403,11 +404,11 @@ export default function ProfileTab({ settings, setSettings, onReload, billingOnl
                                 <input value={settings.cashapp_tag || ''} onChange={e => field('cashapp_tag', e.target.value)} placeholder="$YourCashTag" style={{ marginTop: '8px', padding: '11px' }} />
                             </div>
                             <div>
-                                <small className="muted" style={{ fontWeight: 900 }}>STRIPE PUBLISHABLE KEY</small>
-                                <input type="password" value={settings.stripe_publishable_key || ''} onChange={e => field('stripe_publishable_key', e.target.value)} placeholder="pk_live_..." style={{ marginTop: '8px', padding: '11px' }} />
+                                <small className="muted" style={{ fontWeight: 900 }}>STRIPE PAYMENT LINK</small>
+                                <input type="text" value={settings.stripe_payment_link || settings.stripe_publishable_key || ''} onChange={e => { field('stripe_payment_link', e.target.value); field('stripe_publishable_key', e.target.value); }} placeholder="https://buy.stripe.com/..." style={{ marginTop: '8px', padding: '11px' }} />
                                 <div className="muted extra-small" style={{ marginTop: '5px' }}>
-                                    Publishable key only — never your secret key.{' '}
-                                    <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noreferrer" style={{ color: '#38bdf8', textDecoration: 'none' }}>Get it at dashboard.stripe.com →</a>
+                                    Payment link or checkout URL.{' '}
+                                    <a href="https://dashboard.stripe.com/payment-links" target="_blank" rel="noreferrer" style={{ color: '#38bdf8', textDecoration: 'none' }}>Get link in Stripe →</a>
                                 </div>
                             </div>
                         </div>

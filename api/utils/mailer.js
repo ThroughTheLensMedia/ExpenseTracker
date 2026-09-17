@@ -362,6 +362,7 @@ async function sendInvoiceApprovalEmail({
 
         // Build payment handles list
         const handles = [];
+        if (paymentHandles?.stripe)  handles.push(`<strong>Stripe / Card:</strong> ${paymentHandles.stripe}`);
         if (paymentHandles?.venmo)   handles.push(`<strong>Venmo:</strong> ${paymentHandles.venmo}`);
         if (paymentHandles?.zelle)   handles.push(`<strong>Zelle:</strong> ${paymentHandles.zelle}`);
         if (paymentHandles?.cashapp) handles.push(`<strong>CashApp:</strong> ${paymentHandles.cashapp}`);

@@ -35,7 +35,7 @@ router.get('/:token', async (req, res) => {
         // We find the settings row belonging to the invoice owner (user_id)
         const { data: settings } = await supabase
             .from('settings')
-            .select('business_name, email, venmo_handle, zelle_handle, cashapp_tag, stripe_publishable_key, logo_url, phone, website')
+            .select('business_name, email, venmo_handle, zelle_handle, cashapp_tag, stripe_payment_link, stripe_publishable_key, logo_url, phone, website')
             .eq('user_id', invoice.user_id)
             .maybeSingle();
 
@@ -71,6 +71,7 @@ router.get('/:token', async (req, res) => {
                 venmo_handle: settings?.venmo_handle || null,
                 zelle_handle: settings?.zelle_handle || null,
                 cashapp_tag: settings?.cashapp_tag || null,
+                stripe_payment_link: settings?.stripe_payment_link || settings?.stripe_publishable_key || null,
                 stripe_publishable_key: settings?.stripe_publishable_key || null,
             }
         });
@@ -139,7 +140,7 @@ router.post('/:token', async (req, res) => {
         // Fetch photographer's business email + payment handles for notification
         const { data: settings } = await supabase
             .from('settings')
-            .select('business_name, email, venmo_handle, zelle_handle, cashapp_tag')
+            .select('business_name, email, venmo_handle, zelle_handle, cashapp_tag, stripe_payment_link, stripe_publishable_key')
             .eq('user_id', invoice.user_id)
             .maybeSingle();
 
@@ -167,6 +168,7 @@ router.post('/:token', async (req, res) => {
                     venmo: settings?.venmo_handle,
                     zelle: settings?.zelle_handle,
                     cashapp: settings?.cashapp_tag,
+                    stripe: settings?.stripe_payment_link || settings?.stripe_publishable_key,
                 },
                 invoiceId: invoice.id,
             });
