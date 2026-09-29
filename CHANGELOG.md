@@ -3,6 +3,23 @@
 All notable changes to this project are documented here.
 Format: `[vX.X.X] — YYYY-MM-DD`
 
+## [v7.29.6] — 2026-09-29
+
+### Fixed — Photographer approval gate now enforced before an invoice can be emailed
+
+- `api/routes/invoices.js` — `PATCH /invoices/:id` rejects `status: 'sent'` unless the invoice is photographer-approved (stored, or supplied in the same request), returning "Approve this invoice before sending it to the client." The check runs before the invoice is updated or any email is queued. Invoices already marked sent can still be resent; Save Draft and Save & Mark Paid are unchanged. Root cause: the "I authorize this invoice" checkbox was never enforced anywhere, and `POST /invoices` (Zod) silently stripped `photographer_signed`, so approval was never stored on new invoices.
+- `api/routes/invoices.js` — `InvoiceSchema` now accepts `photographer_signed` (default `false`) so approval persists on create.
+- `Invoice.jsx` — Save & Send and the list/preview Send/Resend paths show the branded modal when the invoice is unapproved, before anything is saved or dispatched. Cloning an invoice no longer copies approval to the new draft.
+
+### Added — Photographer copied on invoice emails
+
+- `api/utils/mailer.js` — `sendInvoiceEmail` accepts an optional `cc`.
+- `api/utils/invoiceCc.js` — `photographerCc()` returns the Profile Email (`settings.email`) as CC on invoice send and resend. Skipped when missing, not a single valid address, or the same as the client's (case-insensitive). Client stays the primary `to`; Reply-To unchanged. The general client-email route is not CC'd.
+- Client approval before payment, Stripe checkout, totals, and payment verification are unchanged. No migration, no new dependency.
+- Validation: `api/tests/invoice-approval-cc.test.js` (16) and extended `invoice-payment-presentation.test.js` (9); mocked routes only — no real email sent, no real payment made.
+
+---
+
 ## [v7.29.5] — 2026-09-29
 
 ### Improved — Customer invoice PDF presentation

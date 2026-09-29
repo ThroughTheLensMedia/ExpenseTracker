@@ -5,6 +5,9 @@ const { randomUUID } = require('crypto');
 const router = express.Router();
 const { queueInvoiceEmail } = require("../utils/emailQueue");
 const { combineInvoiceNotes } = require("../utils/invoiceNotes");
+const { photographerCc } = require("../utils/invoiceCc");
+
+const APPROVAL_REQUIRED_MESSAGE = 'Approve this invoice before sending it to the client.';
 
 const ClientSchema = z.object({
     name: z.string().trim().min(1),
@@ -30,6 +33,8 @@ const InvoiceSchema = z.object({
     tax_percent: z.number().min(0).max(100).default(0),
     discount_cents: z.number().int().default(0),
     lead_id: z.coerce.number().int().optional().nullable(),
+    // Without this key Zod strips the field and approval is never stored on create.
+    photographer_signed: z.boolean().default(false),
     items: z.array(InvoiceItemSchema).min(1),
 });
 
@@ -384,6 +389,27 @@ router.patch("/:id", async (req, res) => {
             return res.status(400).json({ error: "Malicious URL schemes in notes are not allowed." });
         }
 
+        // Photographer approval gate — runs before anything is written or queued.
+        // Invoices already marked sent can be resent; everything else needs approval,
+        // either stored on the invoice or supplied in this same request.
+        if (invoiceData.status === 'sent') {
+            const { data: current, error: currentError } = await req.sb
+                .from("invoices")
+                .select("status, photographer_signed")
+                .eq("id", req.params.id)
+                .eq("user_id", req.user.id)
+                .maybeSingle();
+            if (currentError) throw currentError;
+            if (!current) return res.status(404).json({ error: "Invoice not found" });
+
+            const approved = invoiceData.photographer_signed !== undefined
+                ? invoiceData.photographer_signed === true
+                : current.photographer_signed === true;
+            if (current.status !== 'sent' && !approved) {
+                return res.status(400).json({ error: APPROVAL_REQUIRED_MESSAGE });
+            }
+        }
+
         // 1. Update Invoice Metadata
         const { data: invoice, error: invError } = await req.sb
             .from("invoices")
@@ -612,7 +638,8 @@ router.patch("/:id", async (req, res) => {
                     body: emailBody,
                     attachments: emailAttachments,
                     fromName: studioName,
-                    replyTo: studioEmail
+                    replyTo: studioEmail,
+                    cc: photographerCc(studioEmail, fullInvoice.clients.email)
                 }).catch(err => {
                     console.error("[INVOICE EMAIL QUEUE] Failed to enqueue:", err);
                     // Request continues; Bull will retry the job

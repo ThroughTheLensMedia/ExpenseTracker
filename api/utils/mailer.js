@@ -18,7 +18,7 @@ function getResend() {
     return resendClient;
 }
 
-async function sendInvoiceEmail({ to, subject, body, attachments, fromName, replyTo }) {
+async function sendInvoiceEmail({ to, subject, body, attachments, fromName, replyTo, cc }) {
     console.log(`[MAILER] Preparing email to ${to}...`);
     console.log(`[MAILER] Subject: ${subject}`);
 
@@ -43,6 +43,10 @@ async function sendInvoiceEmail({ to, subject, body, attachments, fromName, repl
         
         if (replyTo) {
             payload.reply_to = replyTo;
+        }
+
+        if (cc) {
+            payload.cc = [cc];
         }
 
         if (attachments && Array.isArray(attachments)) {

@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.29.6', date: 'SEP 29, 2026', color: '#635bff', items: [
+        '<strong>Fixed:</strong> Invoices must now be approved by you before they can be emailed. If you try to send one without approving it, you will see a reminder — drafts can still be saved any time.',
+        '<strong>New:</strong> You now receive a copy of every invoice email sent to your client, at the Email address in your Profile.',
+    ]},
     { version: '7.29.5', date: 'SEP 29, 2026', color: '#635bff', items: [
         '<strong>Improved:</strong> Compact, branded invoice PDFs with borderless line items, centered quantity and price columns, and automatic pagination for longer invoices.',
         '<strong>New:</strong> Invoice PDFs are named with the client and invoice number. Choose whether to include Profile Terms in each PDF output.',

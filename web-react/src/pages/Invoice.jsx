@@ -44,6 +44,8 @@ function InvoiceItemRow({ item, index, onChange, onRemove }) {
     );
 }
 
+const APPROVAL_REQUIRED_MESSAGE = 'Approve this invoice before sending it to the client.';
+
 function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
     const modal = useModal();
     const previewRef = useRef();
@@ -719,7 +721,7 @@ export default function Invoice() {
                 eventType: loadEventType,
                 attachmentName: loadAttName,
                 attachmentUrl: loadAttUrl,
-                photographerSigned: !!fullInv.photographer_signed,
+                photographerSigned: false, // a clone is a new invoice and needs its own approval
             });
             setIsCreatorOpen(true);
             setEditingId(null); // Ensure it saves as a new draft
@@ -765,6 +767,13 @@ export default function Invoice() {
         if (mode === 'send' && !formData.clientEmail?.trim()) {
             setStatusMsg({ type: 'bad', text: 'Client email is required to send an invoice. Add one, or use Save Draft / Save & Mark Paid instead.' });
             return;
+        }
+        if (mode === 'send') {
+            const alreadySent = editingId && invoices.find(i => i.id === editingId)?.status === 'sent';
+            if (!formData.photographerSigned && !alreadySent) {
+                modal.alert(APPROVAL_REQUIRED_MESSAGE);
+                return;
+            }
         }
 
         setLoading(true);
@@ -909,6 +918,10 @@ export default function Invoice() {
     };
 
     const handleSendEmail = async (invoice, pdfBase64 = null) => {
+        if (invoice.status !== 'sent' && !invoice.photographer_signed) {
+            modal.alert(APPROVAL_REQUIRED_MESSAGE);
+            return;
+        }
         const ok = await modal.confirm(`Are you sure you want to officially dispatch Invoice #${invoice.invoice_number} to ${invoice.clients?.name || 'the client'}?`);
         if (!ok) return;
         
