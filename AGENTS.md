@@ -255,6 +255,8 @@ Express 4.19 API (api/)
 
 ## Key Files Reference
 
+**v7.29.5:** `web-react/src/utils/invoicePdf.js` renders Letter PDFs for both downloads and email attachments. Filenames use the client and invoice number. Current Profile Global Notes and invoice Notes combine in preview/PDF/email with duplicate suppression. The preview has an output-only Profile Terms checkbox that resets when reopened; Profile defaults and stored invoice data are not modified.
+
 | File | Purpose |
 |------|---------|
 | `CHANGELOG.md` | Version history — update on every change |

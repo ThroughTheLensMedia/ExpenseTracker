@@ -3,6 +3,19 @@
 All notable changes to this project are documented here.
 Format: `[vX.X.X] — YYYY-MM-DD`
 
+## [v7.29.5] — 2026-09-29
+
+### Improved — Customer invoice PDF presentation
+
+- `Invoice.jsx`, `utils/invoicePdf.js` — compact Letter PDF with saved business logo, readable text, live attachment links, neutral business fallback, and automatic table pagination. Downloads and emailed attachments share the same renderer and use `Client Name (#Invoice Number).pdf` filenames.
+- Current Profile Global Notes and saved invoice Notes now combine consistently in the preview, PDF, and email body, without duplicating notes already included. Saved invoice text is unchanged.
+- Line items use a borderless layout with centered QTY, Unit Price, and Total headers and values in both preview and PDF.
+- Preview includes an output-only Profile Terms checkbox (defaults on each time the preview opens); exact duplicate notes/terms are suppressed. Profile defaults and invoice financial calculations are unchanged.
+- `api/routes/invoices.js` — email attachment filename uses the saved client and invoice number, sanitizing filesystem-unsafe characters.
+- Validation: 19 passing invoice, PDF, mocked send, and mocked payment checks; production build; isolated desktop/mobile preview checks. No live customer email or payment was triggered.
+
+---
+
 ## [v7.29.4] — 2026-09-17
 
 ### Fixed — Single-line card button typography on invoice payment page

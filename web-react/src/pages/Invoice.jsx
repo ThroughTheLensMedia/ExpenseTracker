@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { apiGet, apiPost, apiPatch, apiDelete, formatMoney, invalidateExpensesCache, invalidateCache, fetchAllInvoices, fetchAllClients, fetchAllLeads } from '../api';
-import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
+import { buildInvoicePdf, invoiceFilename, distinctTerms } from '../utils/invoicePdf.js';
+import { combineInvoiceNotes } from '../utils/invoiceNotes.js';
 import { useModal } from '../components/ModalContext.jsx';
 import InvoicePaidCelebration from '../components/InvoicePaidCelebration.jsx';
 
@@ -48,6 +48,7 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
     const modal = useModal();
     const previewRef = useRef();
     const [isProcessing, setIsProcessing] = useState(false);
+    const [includeTerms, setIncludeTerms] = useState(true);
 
     // Data Normalization: Handle both API structure and Draft State structure
     const data = useMemo(() => {
@@ -116,74 +117,32 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
         };
     }, [invoice]);
 
+    const generatePdf = () => buildInvoicePdf({ ...data, notes: displayNotes }, settings, includeTerms);
+
+    const displayNotes = combineInvoiceNotes(settings.invoice_notes, data.notes);
+
     const handleDownloadPDF = async () => {
-        const style = document.createElement('style');
-        style.innerHTML = `
-            @media print {
-                body > * { display: none !important; }
-                .cloned-print-area { display: block !important; position: absolute; left: 0; top: 0; width: 100%; height: auto; background: #fff !important; margin: 0; padding: 0; }
-                .cloned-print-area .page-break-avoid { page-break-inside: avoid; }
-                .cloned-print-area .invoice-print-footer { transform: scale(0.65); transform-origin: top center; margin-top: 10px; }
-                @page { margin: 1in; size: letter; }
-            }
-        `;
-        document.head.appendChild(style);
-        
-        const printArea = previewRef.current.cloneNode(true);
-        printArea.classList.add('cloned-print-area');
-        printArea.style.margin = '0';
-        printArea.style.boxShadow = 'none';
-        
-        document.body.appendChild(printArea);
-        
-        setTimeout(() => {
-            window.print();
-            document.body.removeChild(printArea);
-            document.head.removeChild(style);
-        }, 100);
+        setIsProcessing(true);
+        try {
+            const pdf = await generatePdf();
+            pdf.save(invoiceFilename(data.clientName, data.number));
+        } catch (err) {
+            console.error('Invoice PDF error:', err);
+            modal.alert('Unable to prepare the invoice PDF. Please try again.');
+        } finally {
+            setIsProcessing(false);
+        }
     };
 
     const handleSendWithPDF = async () => {
         if (!onSendEmail) return;
         setIsProcessing(true);
         try {
-            const element = previewRef.current;
-            // Scroll element to top to prevent html2canvas capturing a scrolled/cut-off window
-            const originalScroll = element.parentElement.scrollTop;
-            element.parentElement.scrollTop = 0;
-            const canvas = await html2canvas(element, { 
-                scale: 2, 
-                useCORS: true,
-                scrollY: 0,
-                x: 0,
-                y: 0,
-                width: element.scrollWidth,
-                height: element.scrollHeight
-            });
-            element.parentElement.scrollTop = originalScroll;
-            const imgData = canvas.toDataURL('image/jpeg', 0.8);
-            const pdf = new jsPDF('p', 'mm', 'a4', true); // Use compression
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pageHeight = pdf.internal.pageSize.getHeight();
-            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-            let heightLeft = pdfHeight;
-            let position = 0;
-
-            pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, pdfHeight, undefined, 'FAST');
-            heightLeft -= pageHeight;
-
-            while (heightLeft > 0) {
-                position = heightLeft - pdfHeight;
-                pdf.addPage();
-                pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, pdfHeight, undefined, 'FAST');
-                heightLeft -= pageHeight;
-            }
-            // Generate Base64 for attachment
-            const pdfBase64 = pdf.output('datauristring').split(',')[1];
-            await onSendEmail(invoice, pdfBase64);
+            const pdf = await generatePdf();
+            await onSendEmail(invoice, pdf.output('datauristring').split(',')[1]);
         } catch (err) {
-            console.error("PDF Send Error:", err);
-            modal.alert("Failed to package PDF for email.");
+            console.error('Invoice PDF error:', err);
+            modal.alert('Unable to prepare the invoice PDF. Please try again.');
         } finally {
             setIsProcessing(false);
         }
@@ -191,13 +150,33 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
 
     const formatDate = (d) => {
         if (!d) return '---';
-        const date = new Date(d);
+        const date = /^\d{4}-\d{2}-\d{2}$/.test(d) ? new Date(`${d}T12:00:00`) : new Date(d);
         return isNaN(date.getTime()) ? d : date.toLocaleDateString();
     };
 
     return (
         <div className="drawer" style={{ background: 'rgba(0,0,0,0.92)', zIndex: 20000 }}>
             <style>{`
+                .invoice-print-area { color: #202020; font-family: Arial, sans-serif; }
+                .invoice-print-area * { overflow-wrap: anywhere; }
+                .invoice-preview-toolbar { flex-wrap: wrap; gap: 12px; }
+                .invoice-preview-actions { flex-wrap: wrap; align-items: center; }
+                @media (max-width: 600px) {
+                    .invoice-preview-toolbar { padding: 12px !important; }
+                    .invoice-preview-actions { gap: 8px !important; }
+                    .invoice-preview-actions button { padding: 8px 12px !important; }
+                    .invoice-scroll-area { padding: 12px !important; }
+                    .invoice-print-area { width: 100% !important; min-width: 0 !important; min-height: 0 !important; padding: 16px !important; }
+                    .invoice-brand-header { align-items: flex-start !important; gap: 16px; flex-direction: column; }
+                    .invoice-brand-header > div { max-width: 100% !important; text-align: left !important; }
+                    .invoice-client-details { grid-template-columns: 1fr !important; gap: 16px !important; }
+                    .invoice-output-row > div { padding: 8px 3px !important; font-size: 11px; }
+                    .invoice-output-row > div:first-child { min-width: 0; }
+                    .invoice-output-row > div:nth-child(2) { width: 34px !important; flex-shrink: 0; }
+                    .invoice-output-row > div:nth-child(3), .invoice-output-row > div:nth-child(4) { width: 62px !important; flex-shrink: 0; }
+
+                }
+
                 @media print {
                     @page { margin: 1in; size: letter; }
                     body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: transparent !important; }
@@ -220,31 +199,36 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
                 }
             `}</style>
             <div className="drawer-panel" style={{ width: 'min(1000px, 98%)', background: '#f5f5f5', color: '#1a1a1a', padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                <div style={{ padding: '20px 40px', background: '#111', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 10 }}>
-                    <h3 style={{ margin: 0, color: '#fff', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px', fontSize: '13px' }}>Executive Snapshot</h3>
-                    <div style={{ display: 'flex', gap: '12px' }}>
+                <div className="invoice-preview-toolbar" style={{ padding: '20px 40px', background: '#111', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 10 }}>
+                    <h3 style={{ margin: 0, color: '#fff', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px', fontSize: '13px' }}>Invoice Preview</h3>
+                    <div className="invoice-preview-actions" style={{ display: 'flex', gap: '12px' }}>
+                        {settings.standard_terms && <label style={{ color: '#fff', fontSize: '13px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <input type="checkbox" checked={includeTerms} onChange={e => setIncludeTerms(e.target.checked)} disabled={isProcessing} style={{ width: 'auto' }} />
+                            Include Profile Terms in this PDF
+                        </label>}
                         {(invoice.status === 'draft' || invoice.status === 'sent') && (
                             <button className="btn glow-blue" onClick={handleSendWithPDF} disabled={isProcessing} style={{ padding: '10px 24px' }}>
                                 {isProcessing ? '⏳ Preparing PDF...' : (invoice.status === 'sent' ? 'Resend to Client' : 'Email to Client')}
                             </button>
                         )}
-                        <button className="btn secondary" onClick={handleDownloadPDF} style={{ padding: '10px 24px', color: '#fff' }}>Print / Save PDF</button>
+                        <button className="btn secondary" onClick={handleDownloadPDF} disabled={isProcessing} style={{ padding: '10px 24px', color: '#fff' }}>Download PDF</button>
                         <button className="btn secondary" onClick={onClose} style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.2)' }}>Return to Invoice</button>
                     </div>
                 </div>
 
-                <div className="invoice-scroll-area" style={{ flex: 1, overflowY: 'auto', padding: '40px' }}>
-                    <div ref={previewRef} className="invoice-print-area" style={{ background: '#fff', width: '8.5in', minWidth: '8.5in', minHeight: '11in', margin: '0 auto', padding: '1in', boxShadow: '0 0 60px rgba(0,0,0,0.15)', position: 'relative', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
+                <div className="invoice-scroll-area" style={{ flex: 1, overflow: 'auto', padding: '24px' }}>
+                    <div ref={previewRef} className="invoice-print-area" style={{ background: '#fff', width: '8.5in', minWidth: '8.5in', minHeight: '11in', margin: '0 auto', padding: '0.5in', boxShadow: '0 0 60px rgba(0,0,0,0.15)', position: 'relative', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
 
                         {/* HEADER */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
-                            <div>
-                                <div style={{ fontSize: '28px', fontWeight: 950, textTransform: 'uppercase', letterSpacing: '4px', color: '#000' }}>
+                        <div className="invoice-brand-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                            <div style={{ maxWidth: '60%' }}>
+                                {settings.logo_url && <img src={settings.logo_url} alt="Business logo" style={{ maxWidth: '160px', maxHeight: '60px', objectFit: 'contain', marginBottom: '8px' }} />}
+                                <div style={{ fontSize: '20px', fontWeight: 950, textTransform: 'uppercase', letterSpacing: '1px', color: '#000' }}>
                                     {settings?.business_name || 'Your Business Name'}
                                 </div>
                             </div>
                             <div style={{ textAlign: 'right' }}>
-                                <h1 style={{ margin: 0, fontSize: '38px', fontWeight: 300, color: '#000', letterSpacing: '4px', textTransform: 'uppercase' }}>INVOICE</h1>
+                                <h1 style={{ margin: 0, fontSize: '38px', fontWeight: 300, color: '#000', letterSpacing: '1px', textTransform: 'uppercase' }}>INVOICE</h1>
                                 <div style={{ marginTop: '10px', fontSize: '12px', color: '#666', lineHeight: '1.6' }}>
                                     {settings?.tax_id && <div>Tax ID: {settings.tax_id}</div>}
                                     {settings?.studio_address && <div style={{ whiteSpace: 'pre-wrap' }}>{settings.studio_address}</div>}
@@ -253,7 +237,7 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
                         </div>
 
                         {/* BILL TO & DETAILS */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '60px', marginBottom: '80px' }}>
+                        <div className="invoice-client-details" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
                             <div>
                                 <div style={{ fontSize: '12px', fontWeight: 950, textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '15px', color: '#000', borderBottom: '1px solid #000', paddingBottom: '8px', display: 'inline-block' }}>BILL TO</div>
                                 <div style={{ fontSize: '16px', fontWeight: 800 }}>{data.clientName}</div>
@@ -271,29 +255,29 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
                         </div>
 
                         {/* LINE ITEMS HEADER */}
-                        <div style={{ background: '#444', color: '#fff', display: 'flex', fontWeight: 900, fontSize: '11px', textTransform: 'uppercase', borderRadius: '4px 4px 0 0' }}>
+                        <div className="invoice-output-row" style={{ background: '#444', color: '#fff', display: 'flex', fontWeight: 900, fontSize: '11px', textTransform: 'uppercase', borderRadius: '4px 4px 0 0' }}>
                             <div style={{ flex: 1, padding: '15px 20px', letterSpacing: '1px' }}>Service Description</div>
                             <div style={{ width: '80px', padding: '15px', textAlign: 'center' }}>Qty</div>
-                            <div style={{ width: '120px', padding: '15px', textAlign: 'right' }}>Unit Price</div>
-                            <div style={{ width: '120px', padding: '15px 20px', textAlign: 'right' }}>Total</div>
+                            <div style={{ width: '120px', padding: '15px', textAlign: 'center' }}>Unit Price</div>
+                            <div style={{ width: '120px', padding: '15px 20px', textAlign: 'center' }}>Total</div>
                         </div>
 
                         {/* LINE ITEMS LIST */}
-                        <div style={{ marginBottom: '60px' }}>
+                        <div style={{ marginBottom: '16px' }}>
                             {data.items.length === 0 ? (
                                 <div style={{ padding: '30px', textAlign: 'center', color: '#999', fontSize: '13px' }}>No line items generated for this snapshot.</div>
                             ) : data.items.map((it, idx) => {
                                 const hasBillableQty = it.quantity > 0;
                                 return (
-                                    <div key={idx} className="page-break-avoid" style={{ display: 'flex', borderBottom: '1px solid #f9f9f9', fontSize: '14px', alignItems: 'center', padding: '10px 0', background: 'transparent' }}>
+                                    <div key={idx} className="page-break-avoid invoice-output-row" style={{ display: 'flex', fontSize: '14px', alignItems: 'center', padding: '10px 0', background: 'transparent' }}>
                                         <div style={{ flex: 1, padding: '10px 20px', fontWeight: 500, fontStyle: hasBillableQty ? 'normal' : 'italic', color: hasBillableQty ? '#1a1a1a' : '#888' }}>{it.description || '---'}</div>
                                         <div style={{ width: '80px', padding: '10px', textAlign: 'center', color: '#999' }}>
                                             {hasBillableQty ? it.quantity : ''}
                                         </div>
-                                        <div style={{ width: '120px', padding: '10px', textAlign: 'right', color: '#999' }}>
+                                        <div style={{ width: '120px', padding: '10px', textAlign: 'center', color: '#999' }}>
                                             {hasBillableQty ? formatMoney(Number(it.unit_price) * 100) : ''}
                                         </div>
-                                        <div style={{ width: '120px', padding: '10px 20px', textAlign: 'right', fontWeight: 700, color: '#999' }}>
+                                        <div style={{ width: '120px', padding: '10px 20px', textAlign: 'center', fontWeight: 700, color: '#999' }}>
                                             {hasBillableQty ? formatMoney(Number(it.unit_price) * it.quantity * 100) : ''}
                                         </div>
                                     </div>
@@ -303,7 +287,7 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
 
                         {/* TOTALS BOX */}
                         <div className="page-break-avoid" style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
-                            <div style={{ width: '320px' }}>
+                            <div style={{ width: '320px', maxWidth: '100%' }}>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', fontSize: '14px', padding: '8px 20px', color: '#666' }}>
                                     <div>Subtotal</div>
                                     <div style={{ textAlign: 'right' }}>{formatMoney(data.subtotal * 100)}</div>
@@ -328,13 +312,13 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
                         </div>
 
                         {/* BOTTOM SECTIONS */}
-                        <div className="page-break-avoid" style={{ marginTop: 'auto', paddingTop: '40px' }}>
-                            <div style={{ display: 'flex', gap: '40px', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '60px' }}>
+                        <div className="page-break-avoid" style={{ marginTop: '16px', paddingTop: '8px' }}>
+                            <div style={{ display: 'flex', gap: '20px', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                                 <div style={{ flex: 1, fontSize: '13px', lineHeight: '1.8' }}>
-                                    {(data.notes || data.attachment) && (
+                                    {(displayNotes || data.attachment) && (
                                         <div style={{ marginBottom: '25px' }}>
                                             <div style={{ fontWeight: 950, textTransform: 'uppercase', fontSize: '11px', letterSpacing: '2px', marginBottom: '8px', color: '#000' }}>Notes</div>
-                                            {data.notes && <div style={{ color: '#000', whiteSpace: 'pre-wrap' }}>{data.notes}</div>}
+                                            {displayNotes && <div style={{ color: '#000', whiteSpace: 'pre-wrap' }}>{displayNotes}</div>}
                                             {data.attachment && (
                                                 <div style={{ marginTop: '15px' }}>
                                                     <a href={data.attachment.url} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#f8fafc', padding: '10px 16px', borderRadius: '8px', textDecoration: 'none', color: BRAND_ORANGE, fontWeight: 700, fontSize: '13px', border: `1px solid ${BRAND_ORANGE}` }}>
@@ -344,9 +328,9 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
                                             )}
                                         </div>
                                     )}
-                                    {settings?.standard_terms && (
+                                    {includeTerms && distinctTerms(displayNotes, settings.standard_terms) && (
                                         <div style={{ marginBottom: '25px' }}>
-                                            <div style={{ fontWeight: 950, textTransform: 'uppercase', fontSize: '11px', letterSpacing: '2px', marginBottom: '8px', color: '#000' }}>Studio Terms</div>
+                                            <div style={{ fontWeight: 950, textTransform: 'uppercase', fontSize: '11px', letterSpacing: '2px', marginBottom: '8px', color: '#000' }}>Terms</div>
                                             <div style={{ color: '#000', whiteSpace: 'pre-wrap' }}>{settings.standard_terms}</div>
                                         </div>
                                     )}
@@ -361,28 +345,28 @@ function InvoicePreview({ invoice, settings = {}, onClose, onSendEmail }) {
                             </div>
 
                             {/* FOOTER ANCHOR LINE */}
-                            <div style={{ borderTop: '2px solid #000', marginTop: '20px', paddingBottom: '30px' }}></div>
+                            <div style={{ borderTop: '2px solid #000', marginTop: '20px', paddingBottom: '10px' }}></div>
 
                             {/* FOOTER */}
                             <div className="invoice-print-footer" style={{ textAlign: 'center' }}>
                                 <div style={{
-                                    fontSize: '32px',
-                                    fontWeight: 950,
+                                    fontSize: '13px',
+                                    fontWeight: 700,
                                     textTransform: 'uppercase',
-                                    letterSpacing: '6px',
+                                    letterSpacing: '1px',
                                     color: '#000',
                                     marginBottom: '8px'
                                 }}>
-                                    {settings?.business_name || 'Through The Lens Media'}
+                                    {settings?.business_name || ''}
                                 </div>
                                 <div style={{
-                                    fontFamily: 'Papyrus, "Palatino Linotype", "Book Antiqua", Palatino, serif',
-                                    fontSize: '18px',
+                                    fontFamily: 'Arial, sans-serif',
+                                    fontSize: '11px',
                                     fontWeight: 'bold',
                                     letterSpacing: '3px',
                                     color: '#666'
                                 }}>
-                                    {settings?.website || 'throughthelens.media'}
+                                    {settings?.website || ''}
                                 </div>
                                 <div style={{ fontSize: '10px', color: '#999', marginTop: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>
                                     {settings?.business_email || settings?.contact_email || ''}

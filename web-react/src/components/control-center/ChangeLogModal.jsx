@@ -1,6 +1,11 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.29.5', date: 'SEP 29, 2026', color: '#635bff', items: [
+        '<strong>Improved:</strong> Compact, branded invoice PDFs with borderless line items, centered quantity and price columns, and automatic pagination for longer invoices.',
+        '<strong>New:</strong> Invoice PDFs are named with the client and invoice number. Choose whether to include Profile Terms in each PDF output.',
+        '<strong>Improved:</strong> Profile Global Notes and invoice Notes now appear consistently in preview, PDF, and email without repetition.',
+    ]},
     { version: '7.29.4', date: 'SEP 17, 2026', color: '#635bff', items: [
         '<strong>Fixed:</strong> Payment card button layout — prevented text wrapping on "Pay with Card →" button to ensure clean, single-line presentation.',
     ]},

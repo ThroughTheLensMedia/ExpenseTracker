@@ -4,6 +4,7 @@ const { randomUUID } = require('crypto');
 
 const router = express.Router();
 const { queueInvoiceEmail } = require("../utils/emailQueue");
+const { combineInvoiceNotes } = require("../utils/invoiceNotes");
 
 const ClientSchema = z.object({
     name: z.string().trim().min(1),
@@ -482,13 +483,10 @@ router.patch("/:id", async (req, res) => {
                     extEventName = metaMatch[1];
                 }
 
-                let sysNotes = settings?.invoice_notes || '';
-                if (sysNotes && rawInvoiceNotes.includes(sysNotes)) {
-                    sysNotes = ''; // Prevent duplication
-                }
-
-                const formatNotes = text => text ? text.replace(/\n/g, '<br/>') : '';
-                const combinedNotes = [sysNotes, rawInvoiceNotes].filter(Boolean).map(formatNotes).join('<br/><br/>');
+                const combinedNotes = combineInvoiceNotes(settings?.invoice_notes, rawInvoiceNotes)
+                    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+                    .replace(/\n/g, '<br/>');
 
                 const attachmentHtml = extAttUrl 
                     ? `<div style="margin-top:16px;">
@@ -598,7 +596,7 @@ router.patch("/:id", async (req, res) => {
                 const emailAttachments = [];
                 if (req.body.pdf_base64) {
                     emailAttachments.push({
-                        filename: `Invoice_${fullInvoice.invoice_number}.pdf`,
+                        filename: `${fullInvoice.clients?.name || 'Client'} (#${fullInvoice.invoice_number})`.replace(/[<>:"/\\|?*\x00-\x1f\x7f]/g, '_').trim().slice(0, 180) + '.pdf',
                         content: req.body.pdf_base64
                     });
                 }
