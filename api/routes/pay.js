@@ -5,6 +5,16 @@ const { sendInvoiceApprovalEmail } = require('../utils/mailer');
 const { decryptOrPlain } = require('../utils/cryptoUtil');
 const Stripe = require('stripe');
 
+// Invoice balance in cents — the single formula used to create the Checkout Session and to verify
+// what Stripe actually charged, so the two can never drift apart.
+function invoiceTotals(invoice) {
+    const billedItems = (invoice.invoice_items || []).filter(it => it.quantity > 0);
+    const subtotalCents = billedItems.reduce((s, it) => s + (it.unit_price_cents * it.quantity), 0);
+    const taxCents = Math.round(subtotalCents * ((invoice.tax_percent || 0) / 100));
+    const discountAmt = Math.round(subtotalCents * ((invoice.discount_cents || 0) / 10000));
+    return { billedItems, subtotalCents, taxCents, discountAmt, totalCents: subtotalCents + taxCents - discountAmt };
+}
+
 /**
  * GET /api/pay/:token
  * Public — no auth required.
@@ -113,6 +123,10 @@ router.post('/:token/checkout', async (req, res) => {
         if (invoice.status === 'paid') {
             return res.status(409).json({ error: 'This invoice has already been paid in full.' });
         }
+        // Client approval must come first — enforced here, not just in the pay page UI.
+        if (!invoice.customer_signed_at) {
+            return res.status(403).json({ error: 'Please approve this invoice before paying by card.', code: 'approval_required' });
+        }
 
         // Fetch photographer's Stripe key from settings
         const { data: settings } = await supabase
@@ -133,12 +147,7 @@ router.post('/:token/checkout', async (req, res) => {
         const userStripe = new Stripe(stripeKey, { apiVersion: '2024-06-20' });
 
         // Calculate totals
-        const billedItems = (invoice.invoice_items || []).filter(it => it.quantity > 0);
-        const subtotalCents = billedItems.reduce((s, it) => s + (it.unit_price_cents * it.quantity), 0);
-        const taxCents = Math.round(subtotalCents * ((invoice.tax_percent || 0) / 100));
-        const discountPct = (invoice.discount_cents || 0) / 10000;
-        const discountAmt = Math.round(subtotalCents * discountPct);
-        const totalCents = subtotalCents + taxCents - discountAmt;
+        const { billedItems, taxCents, discountAmt, totalCents } = invoiceTotals(invoice);
 
         if (totalCents <= 0) {
             return res.status(400).json({ error: 'Invoice total must be greater than $0 to pay online.' });
@@ -217,11 +226,13 @@ router.post('/:token/checkout', async (req, res) => {
 /**
  * POST /api/pay/:token/verify-session
  * Public — verifies Stripe payment upon client return, marks invoice as paid, and notifies photographer.
+ * The Checkout Session must belong to THIS invoice and match its exact balance — a paid session from
+ * another invoice (or any other payment on the photographer's Stripe account) never marks it paid.
  */
 router.post('/:token/verify-session', async (req, res) => {
     try {
         const { token } = req.params;
-        const { session_id } = req.body;
+        const { session_id } = req.body || {};
 
         if (!session_id) {
             return res.status(400).json({ error: 'Session ID is required.' });
@@ -236,10 +247,13 @@ router.post('/:token/verify-session', async (req, res) => {
         if (error || !invoice) {
             return res.status(404).json({ error: 'Invoice not found.' });
         }
+        if (invoice.status === 'void') {
+            return res.status(410).json({ error: 'This invoice has been voided.' });
+        }
 
-        // If already marked signed & paid, return success idempotently
-        if (invoice.customer_signed_at) {
-            return res.json({ ok: true, already_signed: true, signed_at: invoice.customer_signed_at });
+        // Idempotent: already recorded as paid (page refresh, second tab, resend of the return link)
+        if (invoice.status === 'paid') {
+            return res.json({ ok: true, already_paid: true, already_signed: Boolean(invoice.customer_signed_at), signed_at: invoice.customer_signed_at });
         }
 
         const { data: settings } = await supabase
@@ -254,36 +268,59 @@ router.post('/:token/verify-session', async (req, res) => {
         }
 
         const userStripe = new Stripe(stripeKey, { apiVersion: '2024-06-20' });
-        const session = await userStripe.checkout.sessions.retrieve(session_id);
+        let session;
+        try {
+            session = await userStripe.checkout.sessions.retrieve(session_id);
+        } catch (stripeErr) {
+            console.error(`[PAY] verify-session: could not retrieve session for invoice ${invoice.id}:`, stripeErr.message);
+            return res.status(400).json({ error: 'This payment session could not be verified.', code: 'session_not_found' });
+        }
 
         if (session.payment_status !== 'paid') {
             return res.status(400).json({ error: 'Payment has not been completed.' });
         }
 
-        const signedAt = new Date().toISOString();
+        // Bind the session to this invoice and its exact balance.
+        const { totalCents } = invoiceTotals(invoice);
+        const invoiceRef = String(invoice.id);
+        const belongsToInvoice = String(session.client_reference_id) === invoiceRef && String(session.metadata?.invoice_id) === invoiceRef;
+        const currencyMatches = String(session.currency || '').toLowerCase() === 'usd';
+        const amountMatches = session.amount_total === totalCents;
+        if (!belongsToInvoice || !currencyMatches || !amountMatches) {
+            // Money moved on Stripe but it does not match this invoice — do NOT mark paid; leave a trail for the photographer.
+            console.error(`[PAY] verify-session MISMATCH invoice ${invoice.id} (session ${session.id || session_id}): belongsToInvoice=${belongsToInvoice} currency=${session.currency} amount_total=${session.amount_total} expected=${totalCents}`);
+            return res.status(400).json({
+                error: 'This payment does not match this invoice, so it was not recorded automatically. If you were charged, please contact your photographer and do not pay again.',
+                code: 'session_mismatch',
+            });
+        }
+
+        const paidAt = new Date().toISOString();
         const customerName = session.customer_details?.name || invoice.clients?.name || 'Client';
 
-        // Update invoice to paid
-        const { error: updateError } = await supabase
+        // Mark paid once. A client who approved first keeps their original signature and approval time.
+        const patch = { status: 'paid', updated_at: paidAt };
+        if (!invoice.customer_signed_at) {
+            patch.customer_signature = customerName;
+            patch.customer_signed_at = paidAt;
+        }
+        const { data: updatedRows, error: updateError } = await supabase
             .from('invoices')
-            .update({
-                customer_signature: customerName,
-                customer_signed_at: signedAt,
-                status: 'paid',
-                updated_at: signedAt,
-            })
-            .eq('id', invoice.id);
+            .update(patch)
+            .eq('id', invoice.id)
+            .neq('status', 'paid')
+            .neq('status', 'void')
+            .select('id');
 
         if (updateError) throw updateError;
 
-        // Calculate totals for email
-        const subtotalCents = (invoice.invoice_items || []).reduce(
-            (s, it) => s + (it.unit_price_cents * it.quantity), 0
-        );
-        const taxCents = Math.round(subtotalCents * ((invoice.tax_percent || 0) / 100));
-        const discountPct = (invoice.discount_cents || 0) / 10000;
-        const discountAmt = Math.round(subtotalCents * discountPct);
-        const totalCents = subtotalCents + taxCents - discountAmt;
+        // Nothing updated → a concurrent request already recorded this payment; do not notify twice.
+        if (!updatedRows || updatedRows.length === 0) {
+            return res.json({ ok: true, already_paid: true, already_signed: true, signed_at: invoice.customer_signed_at || paidAt });
+        }
+
+        const signedAt = patch.customer_signed_at || invoice.customer_signed_at;
+        const signatureName = patch.customer_signature || invoice.customer_signature || customerName;
 
         if (settings?.email) {
             let extEventName = '';
@@ -293,33 +330,38 @@ router.post('/:token/verify-session', async (req, res) => {
                 extEventName = metaMatch[1];
             }
 
-            await sendInvoiceApprovalEmail({
-                to: settings.email,
-                studioName: settings.business_name || 'Lumière Ledger',
-                clientName: invoice.clients?.name || customerName,
-                clientEmail: invoice.clients?.email || session.customer_details?.email || '',
-                invoiceNumber: invoice.invoice_number,
-                eventName: extEventName,
-                totalCents,
-                signedAt,
-                customerSignature: `${customerName} (Paid via Stripe)`,
-                paymentHandles: {
-                    stripe: 'Paid with Card via Stripe Checkout',
-                },
-                invoiceId: invoice.id,
-            });
+            // The payment is already recorded — a mail failure must not turn a successful payment into an error page.
+            try {
+                await sendInvoiceApprovalEmail({
+                    to: settings.email,
+                    studioName: settings.business_name || 'Lumière Ledger',
+                    clientName: invoice.clients?.name || customerName,
+                    clientEmail: invoice.clients?.email || session.customer_details?.email || '',
+                    invoiceNumber: invoice.invoice_number,
+                    eventName: extEventName,
+                    totalCents,
+                    signedAt,
+                    customerSignature: `${signatureName} (Paid via Stripe)`,
+                    paymentHandles: {
+                        stripe: 'Paid with Card via Stripe Checkout',
+                    },
+                    invoiceId: invoice.id,
+                });
+            } catch (mailErr) {
+                console.error(`[PAY] Paid notification email failed for invoice ${invoice.id}:`, mailErr.message);
+            }
         }
 
         res.json({
             ok: true,
             message: 'Payment received and verified successfully.',
             signed_at: signedAt,
-            customer_signature: customerName,
+            customer_signature: signatureName,
         });
 
     } catch (e) {
         console.error('[PAY] verify-session error:', e);
-        res.status(500).json({ error: e.message || 'Failed to verify payment session.' });
+        res.status(500).json({ error: 'Failed to verify payment session.' });
     }
 });
 

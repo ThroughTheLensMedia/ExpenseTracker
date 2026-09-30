@@ -16,7 +16,7 @@ The world's most elite, AI-driven financial command center for creative professi
 
 | Property | Value |
 |----------|-------|
-| **Version** | v7.29.6 |
+| **Version** | v7.29.7 |
 | **Status** | Active Development — Open Public Launch |
 | **Deploy target** | `www.lumiereledger.com` (primary) — `app.throughthelens.media` 301 redirects to it |
 | **Deployment** | Vercel (auto-deploy on `git push origin main`) |
@@ -255,7 +255,9 @@ Express 4.19 API (api/)
 
 ## Key Files Reference
 
-**v7.29.6:** Invoice sending is gated on `invoices.photographer_signed` — enforced in `PATCH /invoices/:id` (`api/routes/invoices.js`) before anything is written or queued; already-sent invoices can be resent. `InvoiceSchema` must keep `photographer_signed` or Zod strips it on create. Invoice emails CC the Profile Email (`settings.email`) via `api/utils/invoiceCc.js` → `sendInvoiceEmail({ cc })` in `api/utils/mailer.js`. The client-approval gate on `/pay/:token` is UI-only (see `ROADMAP.md`).
+**v7.29.7:** Customer card payments (`api/routes/pay.js`) — `POST /pay/:token/checkout` requires `customer_signed_at` (403 `approval_required`). `POST /pay/:token/verify-session` is the ONLY thing that marks an invoice paid (no invoice webhook exists): it retrieves the Checkout Session from the photographer's own Stripe account and requires `client_reference_id` + `metadata.invoice_id` == invoice id, USD, and `amount_total` == `invoiceTotals(invoice).totalCents`; it marks paid once via a guarded `.neq('status','paid')` update and never overwrites an existing client signature. Checkout and verification share `invoiceTotals()` — keep it that way. Any future card fee/surcharge must change that expected amount in one place and record base vs. fee vs. charged separately. Surcharging is deliberately not built; findings in `ROADMAP.md`.
+
+**v7.29.6:** Invoice sending is gated on `invoices.photographer_signed` — enforced in `PATCH /invoices/:id` (`api/routes/invoices.js`) before anything is written or queued; already-sent invoices can be resent. `InvoiceSchema` must keep `photographer_signed` or Zod strips it on create. Invoice emails CC the Profile Email (`settings.email`) via `api/utils/invoiceCc.js` → `sendInvoiceEmail({ cc })` in `api/utils/mailer.js`.
 
 **v7.29.5:** `web-react/src/utils/invoicePdf.js` renders Letter PDFs for both downloads and email attachments. Filenames use the client and invoice number. Current Profile Global Notes and invoice Notes combine in preview/PDF/email with duplicate suppression. The preview has an output-only Profile Terms checkbox that resets when reopened; Profile defaults and stored invoice data are not modified.
 

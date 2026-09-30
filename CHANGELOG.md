@@ -3,6 +3,30 @@
 All notable changes to this project are documented here.
 Format: `[vX.X.X] — YYYY-MM-DD`
 
+## [v7.29.7] — 2026-09-29
+
+### Fixed — Card payments on approved invoices were never recorded as paid
+
+- `api/routes/pay.js` — `POST /pay/:token/verify-session` returned early whenever `customer_signed_at` was set. Because the pay page only offers card checkout *after* the client approves, every card payment through the normal approve → pay flow hit that early return: Stripe charged the card, but the invoice stayed `sent`, no paid notification was sent, and the pay page only showed "Paid" locally. Confirmed against production (invoice 2026-0929, $175.00: `status: sent`, last write = the approval timestamp) and reproduced with a route-level probe (response `already_signed`, 0 database writes). Now the invoice is marked `paid` once (guarded `neq('status','paid')` update; a concurrent request that loses the race sends no second email) and keeps the client's original signature and approval time. An already-paid invoice returns success idempotently.
+
+### Fixed — A paid Stripe session could mark any invoice paid
+
+- `api/routes/pay.js` — `verify-session` only checked `payment_status === 'paid'`; it never checked the session belonged to this invoice. A session ID from a different invoice, or any other paid session on the photographer's Stripe account (e.g. $1.00), marked this invoice paid (reproduced with the probe). Now the session's `client_reference_id` and `metadata.invoice_id` must equal the invoice ID, currency must be USD, and `amount_total` must equal the invoice balance computed server-side. A mismatch returns 400 `session_mismatch`, writes nothing, and logs `[PAY] verify-session MISMATCH …` for the photographer to reconcile. Voided invoices can never be marked paid (410).
+- Balance math is now one shared helper (`invoiceTotals`) used by both checkout creation and verification — same formula, same `quantity > 0` filter — so they cannot drift.
+
+### Fixed — Client approval enforced in the backend, not just the UI
+
+- `api/routes/pay.js` — `POST /pay/:token/checkout` returns 403 `approval_required` if `customer_signed_at` is empty; before, a direct API call could open Stripe checkout without approving (the open decision logged in v7.29.6). Sessions already in flight from before this release still verify and record the signature from Stripe's customer name.
+
+### Improved — Failure handling on the payment path
+
+- `api/routes/pay.js` — an unknown/invalid Stripe session returns a clean 400 instead of leaking Stripe's error text; a failed "paid" notification email no longer turns an already-recorded payment into a 500.
+- `PayInvoice.jsx` — if verification fails, the pay page shows the reason ("…if you were charged, contact your photographer and do not pay again") and disables the card button instead of silently offering Pay again (double-charge risk).
+- No migration, no new dependency, no change to invoice totals, PDF, email wording, or non-card payment paths. Credit-card surcharging was reviewed and is **not** part of this release (see `ROADMAP.md`).
+- Validation: `api/tests/invoice-payment-presentation.test.js` now 22 tests (12 new fail against the previous `pay.js`); full `api/tests` 43/43. Mocked routes only — no real payment made, no customer email sent.
+
+---
+
 ## [v7.29.6] — 2026-09-29
 
 ### Fixed — Photographer approval gate now enforced before an invoice can be emailed

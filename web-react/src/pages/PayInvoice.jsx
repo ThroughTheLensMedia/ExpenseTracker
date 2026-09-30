@@ -21,6 +21,7 @@ export default function PayInvoice() {
     const [submitting, setSubmitting] = useState(false);
     const [checkoutLoading, setCheckoutLoading] = useState(false);
     const [checkoutError, setCheckoutError] = useState('');
+    const [verifyError, setVerifyError] = useState('');
 
     useEffect(() => {
         async function load() {
@@ -62,8 +63,10 @@ export default function PayInvoice() {
                             setState('signed');
                             return;
                         }
+                        setVerifyError(verifyJson.error || 'We could not confirm your payment automatically.');
                     } catch (err) {
                         console.error('Session verification failed:', err);
+                        setVerifyError('We could not confirm your payment automatically. If you were charged, please contact your photographer and do not pay again.');
                     }
                 }
 
@@ -223,6 +226,12 @@ export default function PayInvoice() {
                         {isPaidInFull ? ' Your payment has been confirmed.' : ' Your business contact has been notified.'}
                     </p>
 
+                    {verifyError && !isPaidInFull && (
+                        <div role="alert" style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b', borderRadius: '10px', padding: '12px 14px', fontSize: '13px', lineHeight: 1.5, margin: '16px 0' }}>
+                            {verifyError}
+                        </div>
+                    )}
+
                     {/* Payment instructions if not yet paid */}
                     {hasPaymentMethods && !isPaidInFull && (
                         <div style={styles.paymentBox}>
@@ -235,8 +244,8 @@ export default function PayInvoice() {
                                     <button
                                         type="button"
                                         onClick={handleCardCheckout}
-                                        disabled={checkoutLoading}
-                                        style={{ ...styles.handleCard, border: '1.5px solid #635bff', background: '#fafaff', width: '100%', outline: 'none' }}
+                                        disabled={checkoutLoading || Boolean(verifyError)}
+                                        style={{ ...styles.handleCard, border: '1.5px solid #635bff', background: '#fafaff', width: '100%', outline: 'none', ...(verifyError ? { opacity: 0.45, cursor: 'not-allowed' } : {}) }}
                                     >
                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '8px', color: '#635bff' }}>
                                             <CreditCard size={22} />

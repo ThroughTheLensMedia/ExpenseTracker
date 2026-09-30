@@ -1,1 +1,1 @@
-{"version":"7.29.6","release_date":"2026-09-29","codename":"Lumière Ledger","notes":"Invoice approval gate restored; photographer copied on invoice emails"}
+{"version":"7.29.7","release_date":"2026-09-29","codename":"Lumière Ledger","notes":"Card payments now recorded reliably; client approval enforced server-side"}

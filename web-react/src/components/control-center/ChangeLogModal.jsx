@@ -1,6 +1,12 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.29.7', date: 'SEP 29, 2026', color: '#635bff', items: [
+        '<strong>Fixed:</strong> When a client approved an invoice and then paid by card, the payment went through but the invoice was not marked Paid and you were not notified. Card payments are now recorded as Paid right away.',
+        '<strong>Fixed:</strong> A payment is now only accepted for the invoice it was made for, at the exact invoice balance.',
+        '<strong>Fixed:</strong> Clients must approve an invoice before card checkout can start — enforced on the server, not just on the page.',
+        '<strong>Improved:</strong> If a payment cannot be confirmed automatically, the client sees a clear message instead of being offered the Pay button again.',
+    ]},
     { version: '7.29.6', date: 'SEP 29, 2026', color: '#635bff', items: [
         '<strong>Fixed:</strong> Invoices must now be approved by you before they can be emailed. If you try to send one without approving it, you will see a reminder — drafts can still be saved any time.',
         '<strong>New:</strong> You now receive a copy of every invoice email sent to your client, at the Email address in your Profile.',
