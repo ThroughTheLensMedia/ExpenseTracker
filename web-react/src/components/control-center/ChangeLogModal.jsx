@@ -1,6 +1,11 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.30.0', date: 'OCT 3, 2026', color: '#635bff', items: [
+        '<strong>New:</strong> Switching from another system? Import your clients and invoice history from a CSV export (Import → Import clients &amp; invoices). Columns are matched for you, you review everything before anything is saved, and every import can be undone.',
+        '<strong>New:</strong> Unpaid invoices that come over are flagged <strong>Open in old system</strong> with the balance still owed — filter them, finish them in both places, then mark each one closed when you are done.',
+        '<strong>New:</strong> Duplicate clients and invoices are detected. Information from your old system that has no home here is kept with the record under <strong>Imported data</strong> so nothing is lost, and tax IDs are stored encrypted.',
+    ]},
     { version: '7.29.7', date: 'SEP 29, 2026', color: '#635bff', items: [
         '<strong>Fixed:</strong> When a client approved an invoice and then paid by card, the payment went through but the invoice was not marked Paid and you were not notified. Card payments are now recorded as Paid right away.',
         '<strong>Fixed:</strong> A payment is now only accepted for the invoice it was made for, at the exact invoice balance.',

@@ -24,6 +24,7 @@ const authMiddleware = require("./middleware/auth");
 let expenseRouter;      try { expenseRouter      = require("./routes/expenses");    } catch(e) { console.error('[STARTUP] FAIL expenses:',    e.message); }
 let taxRouter;          try { taxRouter          = require("./routes/tax");         } catch(e) { console.error('[STARTUP] FAIL tax:',         e.message); }
 let importRouter;       try { importRouter       = require("./routes/import");      } catch(e) { console.error('[STARTUP] FAIL import:',      e.message); }
+let crmImportRouter;    try { crmImportRouter    = require("./routes/crmImport");   } catch(e) { console.error('[STARTUP] FAIL crm-import:', e.message); }
 let receiptsRouter;     try { receiptsRouter     = require("./routes/receipts");    } catch(e) { console.error('[STARTUP] FAIL receipts:',    e.message); }
 let rulesRouter;        try { rulesRouter        = require("./routes/rules");       } catch(e) { console.error('[STARTUP] FAIL rules:',       e.message); }
 let mileageRouter;      try { mileageRouter      = require("./routes/mileage");     } catch(e) { console.error('[STARTUP] FAIL mileage:',     e.message); }
@@ -220,6 +221,7 @@ apiRouter.use(licensingMiddleware);
 if (expenseRouter)      apiRouter.use("/expenses",      expenseRouter);
 if (taxRouter)          apiRouter.use("/tax",            taxRouter);
 if (importRouter)       apiRouter.use("/import",         importRouter);
+if (crmImportRouter)    apiRouter.use("/crm-import",     crmImportRouter);
 if (receiptsRouter)     apiRouter.use("/receipts",       receiptsRouter);
 if (rulesRouter)        apiRouter.use("/rules",          rulesRouter);
 if (mileageRouter)      apiRouter.use("/mileage",        mileageRouter);

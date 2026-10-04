@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiPost, apiPatch, apiDelete, formatMoney, invalidateCache, fetchAllClients, fetchAllInvoices } from '../api';
 import { useModal } from '../components/ModalContext.jsx';
+import ImportedDataModal from '../components/ImportedDataModal.jsx';
 
 const BRAND_ORANGE = '#f97316';
 const EMPTY_STATS = { openCount: 0, openTotal: 0, paidCount: 0, paidTotal: 0 };
@@ -27,6 +28,7 @@ export default function Clients() {
     const [sortConfig, setSortConfig] = useState({ key: 'name', dir: 'asc' });
 
     const [viewingClient, setViewingClient] = useState(null);
+    const [importedDataFor, setImportedDataFor] = useState(null); // client whose held-back import fields are open
     const [editingClient, setEditingClient] = useState(null);
     const [editForm, setEditForm] = useState({ name: '', email: '', phone: '', address: '', notes: '' });
     const [mergingClient, setMergingClient] = useState(null);
@@ -326,6 +328,9 @@ export default function Clients() {
             </div>
 
             {/* CLIENT DETAIL DRAWER */}
+            {importedDataFor && (
+                <ImportedDataModal entity="client" id={importedDataFor.id} title={importedDataFor.name} onClose={() => setImportedDataFor(null)} />
+            )}
             {viewingClient && (
                 <div className="drawer">
                     <div className="drawer-panel" style={{ width: 'min(560px, 100%)', padding: '24px' }}>
@@ -334,6 +339,12 @@ export default function Clients() {
                             {viewingClient.email || 'no email'}{viewingClient.phone ? ` · ${viewingClient.phone}` : ''}
                         </div>
                         {viewingClient.address && <div className="muted small" style={{ marginBottom: '8px' }}>{viewingClient.address}</div>}
+                        {viewingClient.import_batch_id && (
+                            <button type="button" className="muted small" onClick={() => setImportedDataFor(viewingClient)}
+                                style={{ background: 'none', border: 'none', padding: 0, minHeight: '44px', textDecoration: 'underline', cursor: 'pointer', marginBottom: '8px' }}>
+                                View imported data
+                            </button>
+                        )}
                         {viewingClient.notes && (
                             <div className="muted extra-small" style={{ marginBottom: '16px', padding: '10px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
                                 {viewingClient.notes}

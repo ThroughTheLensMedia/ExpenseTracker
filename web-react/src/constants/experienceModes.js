@@ -9,6 +9,7 @@ export const BUSINESS_ONLY_PATHS = Object.freeze([
     '/equipment',
     '/crm',
     '/clients',
+    '/import/migrate',
 ]);
 
 export function getExperienceMode(settings) {

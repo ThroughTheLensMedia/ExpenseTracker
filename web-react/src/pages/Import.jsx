@@ -4,6 +4,7 @@ import { invalidateExpensesCache, formatMoney, formatDate } from '../api';
 import { useAuth, supabase } from '../components/AuthContext';
 import PlaidLink from '../components/PlaidLink';
 import MoneyStoryModal from '../components/MoneyStoryModal.jsx';
+import { isBusinessExperience } from '../constants/experienceModes.js';
 
 const BANK_PROFILES = [
     { key: 'rocketmoney', label: 'Rocket Money', group: 'recommended' },
@@ -153,6 +154,7 @@ function DuplicateReviewPanel({ pairs, onMerge, onKeepBoth, onDismissAll }) {
 
 // ── Main Import Page ────────────────────────────────────────────────────────
 export default function Import() {
+    const { settings } = useAuth();
     const fileInputRef = useRef(null);
     const [isDragging, setIsDragging] = useState(false);
     const [rmMsg, setRmMsg] = useState('');
@@ -391,6 +393,17 @@ export default function Import() {
                     )}
                 </div>
             </div>
+
+            {/* Switching from another system (clients + invoice history) — Business mode only */}
+            {isBusinessExperience(settings) && (
+                <div className="card glass" style={{ margin: '0 0 20px 0', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+                    <div style={{ minWidth: '220px', flex: 1 }}>
+                        <div style={{ fontWeight: 800 }}>Switching from another system?</div>
+                        <div className="muted small">Import your clients and invoice history from a CSV export — duplicates checked, unpaid invoices flagged, every import undoable.</div>
+                    </div>
+                    <button className="btn glow-blue" style={{ minHeight: '44px' }} onClick={() => navigate('/import/migrate')}>Import clients &amp; invoices</button>
+                </div>
+            )}
 
             {/* Plaid Auto-Sync */}
             <div className="card glass" style={{ margin: '0 0 20px 0', padding: 0, overflow: 'hidden' }}>

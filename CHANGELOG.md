@@ -3,6 +3,24 @@
 All notable changes to this project are documented here.
 Format: `[vX.X.X] — YYYY-MM-DD`
 
+## [v7.30.0] — 2026-10-03
+
+### Added — Import clients and invoices from another system
+
+A customer moving from Zoho Books couldn't switch because his clients and invoice history lived in the old system. New wizard at `/import/migrate` (Business mode; linked from the Import page).
+
+- `api/migrations/021_crm_import.sql` — additive/idempotent. New tables `import_batches` (history + undo), `import_holding` (columns with no home in Ledger, kept in a separate table so existing `select *` list endpoints never carry ~100 extra fields per invoice), `client_tax_ids` (libsodium-encrypted, separate from `clients` so `clients(*)` selects never return ciphertext). New provenance columns `legacy_id`/`import_source`/`import_batch_id` on `clients` and `invoices`, plus `invoices.legacy_open` and `legacy_balance_cents`. All tables RLS `user_id = auth.uid()`. **Not applied to production yet.**
+- `api/utils/crmImport/` — `csv.js` (BOM/duplicate-header safe parser), `headerMapper.js` (synonym matching per target, Zoho Books detection, sensitive-column rules), `contacts.js`, `invoices.js` (groups one-row-per-line-item CSVs by invoice number; maps status; reconciles totals to the source file with a visible "Imported adjustment" line; folds prior partial payments into the invoice so Ledger's total equals the balance still owed), `common.js`, `zohoHeaders.js`.
+- `api/routes/crmImport.js` mounted at `/api/crm-import` — `analyze`, `suggest` (optional Gemini, header names only, whitelist-validated output), `preview` (writes nothing), `commit` (all-or-nothing per file: any failure removes what the file created), `batches` + undo, `legacy-summary`, `close-legacy`, `holding`.
+- Duplicates: client matches on old-system ID (skip), email (default merge — fills blanks only, never overwrites), name only (default keep both — wrongly merging history is worse than a duplicate the Clients page can merge). Invoices match on number / old-system ID; skip or renumber.
+- Tax IDs (`TaxID`/`TIN`/`SSN`-type columns): always encrypted, never written to plaintext holding data, masked on display, enforced server-side regardless of what the client sends.
+- Imported invoices: non-draft imports are stored `photographer_signed = true` (already issued by the owner, so the v7.29.6 approval gate doesn't block them); `created_at` is set to the invoice date so a bulk import doesn't consume the monthly invoice cap; first-paid celebration is unaffected (it only fires on `PATCH`).
+- Web: `CrmImport.jsx` wizard (upload → matching → preview → result, import history with Undo), `ImportedDataModal.jsx`, Invoices page badge/filter/banner/"Mark closed in old system", client drawer "View imported data", Import page entry card. `/import/migrate` added to `BUSINESS_ONLY_PATHS`.
+- Tests: 31 pure-logic tests (mapper, contacts, invoices — built from the exact headers supplied by the customer) and 9 route-level tests through the real Express router against an in-memory database (preview writes nothing, commit, re-import skip, merge fills blanks, renumber, undo guards, rollback on failure, tax-ID encryption). Full `api/tests` 83/83 (43 existing + 40 new); `web-react` 28/28; production build clean. No real customer data was used or available — the first real import is the final acceptance test, and it is undoable.
+- Not in this release: Vendors and Expenses import (Phase F2).
+
+---
+
 ## [v7.29.7] — 2026-09-29
 
 ### Fixed — Card payments on approved invoices were never recorded as paid

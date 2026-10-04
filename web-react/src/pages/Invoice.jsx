@@ -5,6 +5,7 @@ import { buildInvoicePdf, invoiceFilename, distinctTerms } from '../utils/invoic
 import { combineInvoiceNotes } from '../utils/invoiceNotes.js';
 import { useModal } from '../components/ModalContext.jsx';
 import InvoicePaidCelebration from '../components/InvoicePaidCelebration.jsx';
+import ImportedDataModal from '../components/ImportedDataModal.jsx';
 
 // Studio Invoice Branding
 const BRAND_ORANGE = '#f97316';
@@ -387,6 +388,8 @@ export default function Invoice() {
     const location = useLocation();
     const [view, setView] = useState('invoices');
     const [filterText, setFilterText] = useState('');
+    const [legacyOnly, setLegacyOnly] = useState(false); // show only invoices still open in the old system
+    const [importedDataFor, setImportedDataFor] = useState(null); // { entity, id, title }
     const [invoices, setInvoices] = useState([]);
     const [clients, setClients] = useState([]);
     const [leads, setLeads] = useState([]);
@@ -962,6 +965,23 @@ export default function Invoice() {
         }
     };
 
+    // Cleared by the user only, after they've closed the invoice out in the old system too.
+    const handleCloseLegacy = async (inv) => {
+        try {
+            await apiPost(`/crm-import/invoices/${inv.id}/close-legacy`, {});
+            invalidateCache('invoices');
+            setInvoices(prev => prev.map(i => (i.id === inv.id ? { ...i, legacy_open: false } : i)));
+            setStatusMsg({ type: 'ok', text: `Invoice #${inv.invoice_number} marked closed in the old system.` });
+        } catch (err) {
+            setStatusMsg({ type: 'bad', text: err.message });
+        }
+    };
+
+    const legacySummary = useMemo(() => {
+        const open = invoices.filter(inv => inv.legacy_open);
+        return { count: open.length, balanceCents: open.reduce((s, inv) => s + (inv.legacy_balance_cents || 0), 0) };
+    }, [invoices]);
+
     const handleDeleteInvoice = async (id) => {
         const ok = await modal.confirm("Are you sure you want to permanently delete this invoice?");
         if (!ok) return;
@@ -1071,6 +1091,10 @@ export default function Invoice() {
                 />
             )}
 
+            {importedDataFor && (
+                <ImportedDataModal entity={importedDataFor.entity} id={importedDataFor.id} title={importedDataFor.title} onClose={() => setImportedDataFor(null)} />
+            )}
+
             {/* Dashboard Card */}
             <div className="card glass glow-blue" style={{ border: 'none', padding: '30px', margin: 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1111,6 +1135,17 @@ export default function Invoice() {
                         {statusMsg.text}
                     </div>
                 )}
+                {view === 'invoices' && legacySummary.count > 0 && (
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', padding: '14px 16px', marginBottom: '16px', borderRadius: '12px', background: 'rgba(251,146,60,0.08)', border: '1px solid rgba(251,146,60,0.35)' }}>
+                        <div style={{ minWidth: '220px', flex: 1 }}>
+                            <div style={{ fontWeight: 800 }}>{legacySummary.count} invoice{legacySummary.count === 1 ? '' : 's'} still open in your old system · {formatMoney(legacySummary.balanceCents)}</div>
+                            <div className="muted small">Finish them in both places, then mark each one closed here.</div>
+                        </div>
+                        <button type="button" className={`btn ${legacyOnly ? 'glow-blue' : 'secondary'}`} style={{ minHeight: '44px' }} aria-pressed={legacyOnly} onClick={() => setLegacyOnly(v => !v)}>
+                            {legacyOnly ? 'Showing open in old system' : 'Show only these'}
+                        </button>
+                    </div>
+                )}
                 {view === 'invoices' ? (
                     <div className="tableWrap">
                         {loading && invoices.length === 0 ? (
@@ -1138,6 +1173,7 @@ export default function Invoice() {
                                 <tbody>
                                     {invoices
                                         .filter(inv => {
+                                            if (legacyOnly && !inv.legacy_open) return false;
                                             if (!filterText) return true;
                                             const term = filterText.toLowerCase();
                                             const num = (inv.invoice_number || '').toLowerCase();
@@ -1203,6 +1239,12 @@ export default function Invoice() {
                                                 <div>
                                                     <div style={{ color: BRAND_ORANGE }}>#{inv.invoice_number}</div>
                                                     <div className="muted small">{inv.issue_date}</div>
+                                                    {inv.import_batch_id && (
+                                                        <button type="button" className="muted extra-small" onClick={() => setImportedDataFor({ entity: 'invoice', id: inv.id, title: `#${inv.invoice_number}` })}
+                                                            style={{ background: 'none', border: 'none', padding: 0, minHeight: '44px', textDecoration: 'underline', cursor: 'pointer', textAlign: 'left' }}>
+                                                            Imported data
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </td>
                                             <td>
@@ -1220,6 +1262,14 @@ export default function Invoice() {
                                             <td style={{ textAlign: 'right', fontWeight: 900 }}>{formatMoney(total)}</td>
                                             <td style={{ textAlign: 'center' }}>
                                                 <span className={`tag ${inv.status === 'paid' ? 'ok' : 'warn'}`}>{inv.status}</span>
+                                                {inv.legacy_open && (
+                                                    <div style={{ marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'center' }}>
+                                                        <span className="tag warn" title="Imported from your old system and still unpaid there">
+                                                            Open in old system{inv.legacy_balance_cents ? ` · ${formatMoney(inv.legacy_balance_cents)}` : ''}
+                                                        </span>
+                                                        <button type="button" className="btn sm secondary" style={{ minHeight: '44px' }} onClick={() => handleCloseLegacy(inv)}>Mark closed in old system</button>
+                                                    </div>
+                                                )}
                                             </td>
                                             <td style={{ textAlign: 'center' }}>
                                                 <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>

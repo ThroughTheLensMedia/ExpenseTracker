@@ -1,6 +1,6 @@
 # Lumière Ledger — Master Roadmap
 
-**Version:** v7.28.1 | **Last reviewed:** 2026-09-09
+**Version:** v7.30.0 | **Last reviewed:** 2026-10-03
 Source of truth for all sprint work, security status, and product phases.
 
 ---
@@ -129,6 +129,16 @@ Improve the existing Business experience in small, reversible releases. Preserve
 | **E4.5C — Administrative Control Center sections** | Align Infrastructure and Admin surfaces after the user-facing pattern is stable, preserving admin-only access and operational behavior. | ✅ Protected preview approved 2026-09-10; Infrastructure, SaaS Management, System Logs, and Security Review passed authenticated owner review with admin-only access preserved and no browser errors. Production release remains unapproved. |
 | **E4.5D — Responsive acceptance and global rule** | Validate every Control Center option at desktop and installed-PWA widths, resolve consistency regressions, then add the verified cross-screen consistency requirement to the Global AI Rules. | ✅ Complete 2026-09-10; authenticated desktop and 390×844 Control Center checks passed without browser errors or confirmed regressions. Matching cross-screen consistency and responsive-verification requirements were added to the Claude and Codex global rules. Production release remains unapproved. |
 | **E5 — Pilot and controlled release** | Run responsive and end-to-end verification, review the diff, update both changelogs and version files, then request separate production approval. | ✅ Complete 2026-09-10; tests (12/12), production build, and `git diff --check` pass on v7.29.0. Diff reviewed — no auth/billing/Plaid/migration changes. Two dashboard readability issues found during acceptance (Top Spend/Recurring Vendors vendor column illegible on narrow screens; deprecated PWA meta tag) were fixed in-scope. A recurring-vendor vs. subscription detection gap was identified and logged to Good to Have for future work, not built. Owner completed full authenticated desktop and 390×844 walkthrough on protected preview (login, Business dashboard, Transactions, Accounts, Tax, Mileage, Clients, Invoice, Documents, Control Center user-facing and admin tabs, Personal mode) — approved. **Deployed to production 2026-09-10** at commit `5e190cf` (fast-forward merge, `codex/ledger-ux-current-main` → `main`). Post-deploy verification: `/api/health` returns `{ok:true, db:true, mailer:true}`, `/version.json` confirms `7.29.0`, no runtime errors logged, no console errors on the live homepage/login. |
+
+### Phase F — Import from another system (approved 2026-10-03, Need)
+
+First migrating customer (a photographer moving off Zoho Books) can't switch while clients, invoices, vendors and expenses live in the old system. CSV import modeled on the bank import (header detection, preview, duplicate scan) plus an "Open in old system" flag so unpaid invoices can be finished in both places. Split into two releases (Joshua, 2026-10-03).
+
+| Gate | Scope | Status |
+|------|-------|--------|
+| **F1 — Contacts + Invoices import (v7.30.0)** | `/import/migrate` wizard (Business mode): deterministic header matching with a Zoho Books preset, optional Gemini suggestions for unclear headers (header names only, user's own key), preview before any write, client/invoice duplicate handling, holding area for columns with no home, encrypted client tax IDs, per-file undo, "Open in old system" invoice flag (badge, filter, banner, user-cleared). Migration `021_crm_import.sql`. | ✅ Built + tested 2026-10-03 (`api/tests` 83/83 incl. 40 new import tests; `web-react` 28/28; production build clean; wizard and Invoices flag checked in the browser at desktop and 390px with stubbed API). ⏳ Migration `021` not yet applied and not yet deployed — awaiting Joshua's approval. First real import on the customer's own data is the final acceptance test (his data, can't be tested here); it is undoable. |
+| **F2 — Vendors + Expenses import** | New `vendors` table (+ encrypted `tin`), Vendors importer, Expenses importer reusing the bank import's dedup/vendor-normalization/rules. Import order: vendors before expenses. | Not started — next release. |
+| **F3 — Follow-ups (Good to Have)** | Vendor/expense Zoho preset detection already included in `zohoHeaders.js`; still to decide: reveal-on-demand for masked tax IDs, additional CRM presets (QuickBooks, FreshBooks, Wave), notes viewer on the invoice PDF. | Backlog |
 
 ### Design Pass
 
