@@ -8,13 +8,21 @@ const { parseCsvFile } = require('../utils/crmImport/csv');
 const mapper = require('../utils/crmImport/headerMapper');
 const { buildClients, findClientDuplicates, mergeFill, maskTaxId } = require('../utils/crmImport/contacts');
 const { buildInvoices, findInvoiceDuplicates, resolveCustomers } = require('../utils/crmImport/invoices');
+const { buildExpenses, applyRules, findExpenseDuplicates, mergeExpenseFill } = require('../utils/crmImport/expenses');
+const { normName } = require('../utils/crmImport/common');
 const { encrypt, decryptOrPlain } = require('../utils/cryptoUtil');
 const { getGeminiModel } = require('../utils/gemini');
 
 const router = express.Router();
 const upload = multer({ dest: os.tmpdir(), limits: { fileSize: 25 * 1024 * 1024 } });
 
-const SUPPORTED_TYPES = ['contacts', 'invoices']; // vendors + expenses ship in the next release
+const SUPPORTED_TYPES = ['contacts', 'vendors', 'invoices', 'expenses'];
+
+// Contacts and vendors share one flow; only the table and tax-ID table differ.
+const PARTY = {
+    contacts: { table: 'clients', taxTable: 'client_tax_ids', fk: 'client_id', entity: 'client', cols: 'id, name, email, phone, address, notes, legacy_id, import_source' },
+    vendors: { table: 'vendors', taxTable: 'vendor_tax_ids', fk: 'vendor_id', entity: 'vendor', cols: 'id, name, email, phone, address, notes, website, legacy_id, import_source' },
+};
 const CHUNK = 200;
 const MAX_LISTED = 200;
 
@@ -23,6 +31,7 @@ const SourceSchema = z.enum(['zoho', 'generic']).default('generic');
 const MappingSchema = z.record(z.string(), z.string());
 const ClientDecisionSchema = z.record(z.string(), z.enum(['merge', 'keep_both', 'skip']));
 const InvoiceDecisionSchema = z.record(z.string(), z.enum(['skip', 'renumber']));
+const VendorDecisionSchema = z.record(z.string(), z.enum(['merge', 'skip'])); // vendor names are unique, so no keep_both
 
 const chunks = (arr, n = CHUNK) => {
     const out = [];
@@ -50,8 +59,31 @@ async function fetchAll(query) {
     return rows;
 }
 
-const loadClients = (sb, userId) => fetchAll(() => sb.from('clients')
-    .select('id, name, email, phone, address, notes, legacy_id, import_source').eq('user_id', userId).order('id'));
+const loadParties = (sb, userId, kind) => fetchAll(() => sb.from(PARTY[kind].table).select(PARTY[kind].cols).eq('user_id', userId).order('id'));
+const loadClients = (sb, userId) => loadParties(sb, userId, 'contacts');
+const EXPENSE_COLS = 'id, expense_date, vendor, amount_cents, source, category, notes, tax_bucket, legacy_id, import_source';
+const shiftDay = (ymd, days) => new Date(Date.UTC(+ymd.slice(0, 4), +ymd.slice(5, 7) - 1, +ymd.slice(8, 10) + days)).toISOString().slice(0, 10);
+const loadExpensesWindow = (sb, userId, from, to) => fetchAll(() => sb.from('expenses').select(EXPENSE_COLS)
+    .eq('user_id', userId).gte('expense_date', shiftDay(from, -2)).lte('expense_date', shiftDay(to, 2)).order('id'));
+const loadMileageWindow = (sb, userId, from, to) => fetchAll(() => sb.from('mileage_logs').select('id, log_date, miles, purpose')
+    .eq('user_id', userId).gte('log_date', from).lte('log_date', to).order('id'));
+const dateRange = dates => dates.reduce((r, d) => [d < r[0] ? d : r[0], d > r[1] ? d : r[1]], [dates[0], dates[0]]);
+
+// Mileage rows already in the log (same date + miles + purpose) are skipped; each existing row is used once.
+function dedupeMileage(entries, existing) {
+    const pool = new Map();
+    for (const m of existing) {
+        const key = `${m.log_date}|${Number(m.miles)}|${normName(m.purpose)}`;
+        pool.set(key, (pool.get(key) || 0) + 1);
+    }
+    const fresh = [];
+    let skipped = 0;
+    for (const m of entries) {
+        const key = `${m.record.log_date}|${m.record.miles}|${normName(m.record.purpose)}`;
+        if ((pool.get(key) || 0) > 0) { pool.set(key, pool.get(key) - 1); skipped++; } else fresh.push(m);
+    }
+    return { fresh, skipped };
+}
 const loadInvoiceKeys = (sb, userId) => fetchAll(() => sb.from('invoices')
     .select('id, invoice_number, legacy_id, import_source').eq('user_id', userId).order('id'));
 
@@ -151,6 +183,29 @@ router.post('/suggest', express.json({ limit: '50kb' }), async (req, res) => {
     }
 });
 
+// Builds expenses + mileage from the file and flags what already exists. Used by preview and commit.
+async function prepareExpenses(req, ctx, userId) {
+    const markDeductible = String(req.body?.markDeductible ?? 'true') !== 'false';
+    const built = buildExpenses(ctx.rows, ctx.mapping, { markDeductible, sourceSystem: ctx.sourceSystem });
+    const dates = [...built.expenses.map(e => e.record.expense_date), ...built.mileage.map(m => m.record.log_date)];
+    built.range = dates.length ? dateRange(dates) : null;
+    built.existing = [];
+    built.freshMileage = built.mileage;
+    built.mileageSkipped = 0;
+    if (built.range) {
+        if (built.expenses.length) {
+            built.existing = await loadExpensesWindow(req.sb, userId, built.range[0], built.range[1]);
+            findExpenseDuplicates(built.expenses, built.existing, ctx.sourceSystem);
+        }
+        if (built.mileage.length) {
+            const { fresh, skipped } = dedupeMileage(built.mileage, await loadMileageWindow(req.sb, userId, built.range[0], built.range[1]));
+            built.freshMileage = fresh;
+            built.mileageSkipped = skipped;
+        }
+    }
+    return built;
+}
+
 // --- Step 2: dry run. Writes nothing. ---
 router.post('/preview', upload.single('file'), async (req, res) => {
     try {
@@ -158,12 +213,12 @@ router.post('/preview', upload.single('file'), async (req, res) => {
         const ctx = await prepare(req);
         const userId = req.user.id;
 
-        if (ctx.type === 'contacts') {
-            const { candidates, errors } = buildClients(ctx.rows, ctx.mapping);
-            findClientDuplicates(candidates, await loadClients(req.sb, userId), ctx.sourceSystem);
+        if (ctx.type === 'contacts' || ctx.type === 'vendors') {
+            const { candidates, errors } = buildClients(ctx.rows, ctx.mapping, ctx.type);
+            findClientDuplicates(candidates, await loadParties(req.sb, userId, ctx.type), ctx.sourceSystem, ctx.type);
             const dups = candidates.filter(c => c.dup);
             return res.json({
-                type: 'contacts',
+                type: ctx.type,
                 summary: {
                     total: candidates.length + errors.length,
                     newCount: candidates.length - dups.length,
@@ -179,6 +234,39 @@ router.post('/preview', upload.single('file'), async (req, res) => {
                 errors: errors.slice(0, MAX_LISTED),
                 warnings: candidates.filter(c => c.warnings.length).slice(0, MAX_LISTED).map(c => ({ row: c.rowNum, name: c.record.name, messages: c.warnings })),
                 sample: candidates.filter(c => !c.dup).slice(0, 5).map(c => ({ ...c.record, legacyId: c.legacyId, taxId: c.taxId ? maskTaxId(c.taxId.replace(/\W/g, '').slice(-4)) : null, holdingFields: Object.keys(c.holding).length })),
+            });
+        }
+
+        if (ctx.type === 'expenses') {
+            const built = await prepareExpenses(req, ctx, userId);
+            const { expenses, errors, categoryMap } = built;
+            const dups = expenses.filter(e => e.dup);
+            const fresh = expenses.filter(e => !e.dup);
+            const categories = [...categoryMap.entries()].map(([original, v]) => ({ original, category: v.category, count: v.count, mapped: original !== v.category })).sort((a, b) => b.count - a.count);
+            return res.json({
+                type: 'expenses',
+                summary: {
+                    total: expenses.length + built.mileage.length + errors.length,
+                    newCount: fresh.length,
+                    duplicates: dups.length,
+                    errors: errors.length,
+                    warnings: 0,
+                    mileageCount: built.freshMileage.length,
+                    mileageSkipped: built.mileageSkipped,
+                    totalCents: fresh.reduce((sum, e) => sum + e.record.amount_cents, 0),
+                    dateFrom: built.range?.[0] || null,
+                    dateTo: built.range?.[1] || null,
+                    deductibleCount: fresh.filter(e => e.record.tax_deductible).length,
+                    categoriesMapped: categories.filter(c => c.mapped).length,
+                    categoriesKept: categories.filter(c => !c.mapped).length,
+                },
+                categories: categories.slice(0, 40),
+                duplicates: dups.slice(0, MAX_LISTED).map(e => ({
+                    key: String(e.rowNum), row: e.rowNum, vendor: e.record.vendor, date: e.record.expense_date, amountCents: e.record.amount_cents,
+                    kind: e.dup.kind, existingVendor: e.dup.existingVendor, existingDate: e.dup.existingDate, existingSource: e.dup.existingSource, defaultDecision: e.dup.defaultDecision,
+                })),
+                errors: errors.slice(0, MAX_LISTED),
+                warnings: [],
             });
         }
 
@@ -217,22 +305,30 @@ router.post('/preview', upload.single('file'), async (req, res) => {
 });
 
 // Removes everything a failed or undone batch created. Best-effort and idempotent.
-async function removeBatchRows(sb, userId, batchId, { keepClientsReferencedByInvoices = false } = {}) {
+async function removeBatchRows(sb, userId, batchId, entityType, { keepClientsReferencedByInvoices = false } = {}) {
     const results = [];
-    results.push(await sb.from('invoices').delete().eq('user_id', userId).eq('import_batch_id', batchId)); // invoice_items cascade
-    if (keepClientsReferencedByInvoices) {
-        const { data: batchClients } = await sb.from('clients').select('id').eq('user_id', userId).eq('import_batch_id', batchId);
-        const ids = (batchClients || []).map(c => c.id);
-        let inUse = new Set();
-        for (const part of chunks(ids)) {
-            const { data } = await sb.from('invoices').select('client_id').eq('user_id', userId).in('client_id', part);
-            (data || []).forEach(r => inUse.add(r.client_id));
+    const del = table => sb.from(table).delete().eq('user_id', userId).eq('import_batch_id', batchId);
+    if (entityType === 'invoices' || entityType === 'contacts') {
+        if (entityType === 'invoices') results.push(await del('invoices')); // invoice_items cascade
+        if (keepClientsReferencedByInvoices) {
+            const { data: batchClients } = await sb.from('clients').select('id').eq('user_id', userId).eq('import_batch_id', batchId);
+            const ids = (batchClients || []).map(c => c.id);
+            const inUse = new Set();
+            for (const part of chunks(ids)) {
+                const { data } = await sb.from('invoices').select('client_id').eq('user_id', userId).in('client_id', part);
+                (data || []).forEach(r => inUse.add(r.client_id));
+            }
+            for (const part of chunks(ids.filter(id => !inUse.has(id)))) {
+                results.push(await sb.from('clients').delete().eq('user_id', userId).in('id', part));
+            }
+        } else {
+            results.push(await del('clients')); // tax IDs cascade
         }
-        for (const part of chunks(ids.filter(id => !inUse.has(id)))) {
-            results.push(await sb.from('clients').delete().eq('user_id', userId).in('id', part));
-        }
-    } else {
-        results.push(await sb.from('clients').delete().eq('user_id', userId).eq('import_batch_id', batchId)); // tax IDs cascade
+    } else if (entityType === 'vendors') {
+        results.push(await del('vendors')); // tax IDs cascade
+    } else if (entityType === 'expenses') {
+        results.push(await del('expenses'));
+        results.push(await del('mileage_logs'));
     }
     results.push(await sb.from('import_holding').delete().eq('user_id', userId).eq('batch_id', batchId));
     return results.find(r => r.error)?.error || null;
@@ -262,14 +358,17 @@ async function upsertHolding(sb, userId, batchId, entityType, entries) {
     }
 }
 
-async function storeTaxIds(sb, userId, entries) {
+async function storeTaxIds(sb, userId, kind, entries) {
+    const { taxTable, fk } = PARTY[kind];
     for (const part of chunks(entries)) {
         const rows = [];
         for (const e of part) {
-            rows.push({ client_id: e.clientId, user_id: userId, tax_id_encrypted: await encrypt(e.taxId), last4: e.taxId.replace(/\W/g, '').slice(-4) || null });
+            const row = { [fk]: e.partyId, user_id: userId, tax_id_encrypted: await encrypt(e.taxId), last4: e.taxId.replace(/\W/g, '').slice(-4) || null };
+            if (kind === 'vendors') row.tin_type = e.tinType || null;
+            rows.push(row);
         }
         // Never overwrite a tax ID the user already has on file.
-        const { error } = await sb.from('client_tax_ids').upsert(rows, { onConflict: 'client_id', ignoreDuplicates: true });
+        const { error } = await sb.from(taxTable).upsert(rows, { onConflict: fk, ignoreDuplicates: true });
         if (error) throw error;
     }
 }
@@ -282,11 +381,12 @@ async function createBatch(sb, userId, entityType, sourceSystem, filename) {
     return data.id;
 }
 
-async function commitContacts(req, ctx, userId) {
-    const decisions = parseJsonField(req.body?.decisions, ClientDecisionSchema, {});
-    const { candidates, errors } = buildClients(ctx.rows, ctx.mapping);
-    const existing = await loadClients(req.sb, userId);
-    findClientDuplicates(candidates, existing, ctx.sourceSystem);
+async function commitParties(req, ctx, userId, kind) {
+    const cfg = PARTY[kind];
+    const decisions = parseJsonField(req.body?.decisions, kind === 'vendors' ? VendorDecisionSchema : ClientDecisionSchema, {});
+    const { candidates, errors } = buildClients(ctx.rows, ctx.mapping, kind);
+    const existing = await loadParties(req.sb, userId, kind);
+    findClientDuplicates(candidates, existing, ctx.sourceSystem, kind);
     const existingById = new Map(existing.map(c => [c.id, c]));
 
     const toCreate = [];
@@ -295,7 +395,7 @@ async function commitContacts(req, ctx, userId) {
     for (const c of candidates) {
         if (!c.dup) { toCreate.push(c); continue; }
         const choice = decisions[String(c.rowNum)] || c.dup.defaultDecision;
-        if (choice === 'keep_both') toCreate.push(c);
+        if (choice === 'keep_both' && kind === 'contacts') toCreate.push(c);
         else if (choice === 'merge' && c.dup.existingId && existingById.has(c.dup.existingId)) toMerge.push(c);
         else skipped++;
     }
@@ -306,7 +406,7 @@ async function commitContacts(req, ctx, userId) {
         try { await encrypt('probe'); } catch { return { status: 500, body: { error: 'Tax IDs can\'t be stored right now (encryption isn\'t configured). Nothing was imported.' } }; }
     }
 
-    const batchId = await createBatch(req.sb, userId, 'contacts', ctx.sourceSystem, req.file.originalname);
+    const batchId = await createBatch(req.sb, userId, kind, ctx.sourceSystem, req.file.originalname);
     try {
         let created = 0;
         const holdingEntries = [];
@@ -314,11 +414,11 @@ async function commitContacts(req, ctx, userId) {
 
         for (const part of chunks(toCreate)) {
             const rows = part.map(c => ({ ...c.record, user_id: userId, legacy_id: c.legacyId, import_source: ctx.sourceSystem, import_batch_id: batchId }));
-            const inserted = await insertReturning(req.sb, 'clients', rows, 'id, name');
+            const inserted = await insertReturning(req.sb, cfg.table, rows, 'id, name');
             inserted.forEach((row, i) => {
                 if (row.name !== part[i].record.name) throw new Error('Inserted rows came back in an unexpected order.');
                 holdingEntries.push({ id: row.id, data: part[i].holding });
-                if (part[i].taxId) taxEntries.push({ clientId: row.id, taxId: part[i].taxId });
+                if (part[i].taxId) taxEntries.push({ partyId: row.id, taxId: part[i].taxId, tinType: part[i].tinType });
             });
             created += inserted.length;
         }
@@ -329,22 +429,91 @@ async function commitContacts(req, ctx, userId) {
             const updates = mergeFill(target, c.record);
             if (c.legacyId && !target.legacy_id) { updates.legacy_id = c.legacyId; updates.import_source = ctx.sourceSystem; }
             if (Object.keys(updates).length) {
-                const { error } = await req.sb.from('clients').update(updates).eq('id', target.id).eq('user_id', userId);
+                const { error } = await req.sb.from(cfg.table).update(updates).eq('id', target.id).eq('user_id', userId);
                 if (error) throw error;
             }
             holdingEntries.push({ id: target.id, data: c.holding });
-            if (c.taxId) taxEntries.push({ clientId: target.id, taxId: c.taxId });
+            if (c.taxId) taxEntries.push({ partyId: target.id, taxId: c.taxId, tinType: c.tinType });
             merged++;
         }
 
-        await upsertHolding(req.sb, userId, batchId, 'client', holdingEntries);
-        await storeTaxIds(req.sb, userId, taxEntries);
+        await upsertHolding(req.sb, userId, batchId, cfg.entity, holdingEntries);
+        await storeTaxIds(req.sb, userId, kind, taxEntries);
 
         const warnings = candidates.filter(c => c.warnings.length).map(c => ({ row: c.rowNum, name: c.record.name, messages: c.warnings }));
         await req.sb.from('import_batches').update({ counts: { created, merged, skipped, errors: errors.length } }).eq('id', batchId).eq('user_id', userId);
         return { status: 200, body: { batchId, created, merged, skipped, errors: errors.slice(0, MAX_LISTED), errorCount: errors.length, warnings: warnings.slice(0, MAX_LISTED) } };
     } catch (e) {
-        await removeBatchRows(req.sb, userId, batchId);
+        await removeBatchRows(req.sb, userId, batchId, kind);
+        await req.sb.from('import_batches').delete().eq('id', batchId).eq('user_id', userId);
+        throw e;
+    }
+}
+
+async function commitExpenses(req, ctx, userId) {
+    const decisions = parseJsonField(req.body?.decisions, ClientDecisionSchema, {});
+    const built = await prepareExpenses(req, ctx, userId);
+    const existingById = new Map(built.existing.map(e => [e.id, e]));
+
+    const toCreate = [];
+    const toMerge = [];
+    let skipped = 0;
+    for (const e of built.expenses) {
+        if (!e.dup) { toCreate.push(e); continue; }
+        const choice = decisions[String(e.rowNum)] || e.dup.defaultDecision;
+        if (choice === 'keep_both') toCreate.push(e);
+        else if (choice === 'merge' && existingById.has(e.dup.existingId)) toMerge.push(e);
+        else skipped++;
+    }
+    const mileage = built.freshMileage;
+    if (!toCreate.length && !toMerge.length && !mileage.length) {
+        return { status: 200, body: { batchId: null, created: 0, merged: 0, skipped, mileageCreated: 0, errors: built.errors.slice(0, MAX_LISTED), errorCount: built.errors.length, warnings: [] } };
+    }
+
+    // The user's own classification rules take precedence over the importer's defaults.
+    const { data: rules, error: rulesError } = await req.sb.from('classification_rules').select('*').eq('user_id', userId);
+    if (rulesError) throw rulesError;
+    [...toCreate, ...toMerge].forEach(e => applyRules(e.record, rules));
+
+    const batchId = await createBatch(req.sb, userId, 'expenses', ctx.sourceSystem, req.file.originalname);
+    try {
+        let created = 0;
+        const holdingEntries = [];
+        for (const part of chunks(toCreate, 500)) {
+            const rows = part.map(e => ({ ...e.record, user_id: userId, import_batch_id: batchId }));
+            const inserted = await insertReturning(req.sb, 'expenses', rows, 'id, expense_date, amount_cents');
+            inserted.forEach((row, i) => {
+                if (row.expense_date !== part[i].record.expense_date || Number(row.amount_cents) !== part[i].record.amount_cents) throw new Error('Inserted rows came back in an unexpected order.');
+                holdingEntries.push({ id: row.id, data: part[i].holding });
+            });
+            created += inserted.length;
+        }
+
+        let merged = 0;
+        for (const e of toMerge) {
+            const target = existingById.get(e.dup.existingId);
+            const updates = mergeExpenseFill(target, e.record);
+            if (Object.keys(updates).length) {
+                const { error } = await req.sb.from('expenses').update(updates).eq('id', target.id).eq('user_id', userId);
+                if (error) throw error;
+            }
+            merged++;
+        }
+
+        let mileageCreated = 0;
+        for (const part of chunks(mileage, 500)) {
+            const { error } = await req.sb.from('mileage_logs').insert(part.map(m => ({ ...m.record, user_id: userId, import_batch_id: batchId })));
+            if (error) throw error;
+            mileageCreated += part.length;
+        }
+
+        await upsertHolding(req.sb, userId, batchId, 'expense', holdingEntries);
+
+        const counts = { created, merged, skipped, mileageCreated, mileageSkipped: built.mileageSkipped, errors: built.errors.length };
+        await req.sb.from('import_batches').update({ counts }).eq('id', batchId).eq('user_id', userId);
+        return { status: 200, body: { batchId, ...counts, errors: built.errors.slice(0, MAX_LISTED), errorCount: built.errors.length, warnings: [] } };
+    } catch (e) {
+        await removeBatchRows(req.sb, userId, batchId, 'expenses');
         await req.sb.from('import_batches').delete().eq('id', batchId).eq('user_id', userId);
         throw e;
     }
@@ -429,7 +598,7 @@ async function commitInvoices(req, ctx, userId) {
         await req.sb.from('import_batches').update({ counts }).eq('id', batchId).eq('user_id', userId);
         return { status: 200, body: { batchId, ...counts, errors: allErrors.slice(0, MAX_LISTED), errorCount: allErrors.length, warnings: warnings.slice(0, MAX_LISTED) } };
     } catch (e) {
-        await removeBatchRows(req.sb, userId, batchId);
+        await removeBatchRows(req.sb, userId, batchId, 'invoices');
         await req.sb.from('import_batches').delete().eq('id', batchId).eq('user_id', userId);
         throw e;
     }
@@ -440,7 +609,9 @@ router.post('/commit', upload.single('file'), async (req, res) => {
     try {
         if (!req.file) return fail(res, 400, 'file required');
         const ctx = await prepare(req);
-        const out = ctx.type === 'contacts' ? await commitContacts(req, ctx, req.user.id) : await commitInvoices(req, ctx, req.user.id);
+        const out = ctx.type === 'contacts' || ctx.type === 'vendors' ? await commitParties(req, ctx, req.user.id, ctx.type)
+            : ctx.type === 'expenses' ? await commitExpenses(req, ctx, req.user.id)
+            : await commitInvoices(req, ctx, req.user.id);
         res.status(out.status).json(out.body);
     } catch (e) {
         if (e instanceof z.ZodError || e instanceof SyntaxError) return fail(res, 400, 'Invalid request.');
@@ -475,7 +646,7 @@ router.delete('/batches/:id', async (req, res) => {
             if (referenced) return fail(res, 409, `${referenced} invoice${referenced === 1 ? '' : 's'} still use clients from this import. Undo or delete those invoices first.`);
         }
 
-        const rowsError = await removeBatchRows(req.sb, userId, batch.id, { keepClientsReferencedByInvoices: batch.entity_type === 'invoices' });
+        const rowsError = await removeBatchRows(req.sb, userId, batch.id, batch.entity_type, { keepClientsReferencedByInvoices: batch.entity_type === 'invoices' });
         if (rowsError) throw rowsError;
         const { error: updateError } = await req.sb.from('import_batches').update({ status: 'undone', undone_at: new Date().toISOString() }).eq('id', batch.id).eq('user_id', userId);
         if (updateError) throw updateError;
@@ -510,17 +681,30 @@ router.post('/invoices/close-legacy-all', async (req, res) => {
 
 // --- Holding area viewer + masked tax ID ---
 router.get('/holding/:entity/:id', async (req, res) => {
-    const entity = z.enum(['client', 'invoice']).safeParse(req.params.entity);
+    const entity = z.enum(['client', 'invoice', 'vendor', 'expense']).safeParse(req.params.entity);
     if (!entity.success) return fail(res, 400, 'Unsupported entity.');
     const { data, error } = await req.sb.from('import_holding').select('data, batch_id, created_at')
         .eq('user_id', req.user.id).eq('entity_type', entity.data).eq('entity_id', String(req.params.id)).maybeSingle();
     if (error) return fail(res, 500, error.message);
     let taxId = null;
-    if (entity.data === 'client') {
-        const { data: t } = await req.sb.from('client_tax_ids').select('last4').eq('user_id', req.user.id).eq('client_id', req.params.id).maybeSingle();
+    const taxCfg = entity.data === 'client' ? PARTY.contacts : entity.data === 'vendor' ? PARTY.vendors : null;
+    if (taxCfg) {
+        const { data: t } = await req.sb.from(taxCfg.taxTable).select('last4').eq('user_id', req.user.id).eq(taxCfg.fk, req.params.id).maybeSingle();
         if (t) taxId = maskTaxId(t.last4);
     }
     res.json({ data: data?.data || {}, taxId });
+});
+
+// --- Vendor directory (read-only; tax IDs only ever as masked last 4) ---
+router.get('/vendors', async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const vendors = await fetchAll(() => req.sb.from('vendors')
+            .select('id, name, email, phone, address, website, notes, track_1099, import_batch_id, created_at').eq('user_id', userId).order('name'));
+        const taxRows = await fetchAll(() => req.sb.from('vendor_tax_ids').select('vendor_id, last4, tin_type').eq('user_id', userId).order('vendor_id'));
+        const tax = new Map(taxRows.map(t => [t.vendor_id, t]));
+        res.json({ data: vendors.map(v => ({ ...v, tax_id_masked: tax.has(v.id) ? maskTaxId(tax.get(v.id).last4) : null, tin_type: tax.get(v.id)?.tin_type || null })) });
+    } catch (e) { fail(res, 500, e.message); }
 });
 
 module.exports = router;

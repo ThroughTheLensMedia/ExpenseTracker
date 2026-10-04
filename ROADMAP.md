@@ -1,6 +1,6 @@
 # Lumière Ledger — Master Roadmap
 
-**Version:** v7.30.0 | **Last reviewed:** 2026-10-03
+**Version:** v7.31.0 | **Last reviewed:** 2026-10-04
 Source of truth for all sprint work, security status, and product phases.
 
 ---
@@ -136,9 +136,9 @@ First migrating customer (a photographer moving off Zoho Books) can't switch whi
 
 | Gate | Scope | Status |
 |------|-------|--------|
-| **F1 — Contacts + Invoices import (v7.30.0)** | `/import/migrate` wizard (Business mode): deterministic header matching with a Zoho Books preset, optional Gemini suggestions for unclear headers (header names only, user's own key), preview before any write, client/invoice duplicate handling, holding area for columns with no home, encrypted client tax IDs, per-file undo, "Open in old system" invoice flag (badge, filter, banner, user-cleared). Migration `021_crm_import.sql`. | ✅ Built + tested 2026-10-03 (`api/tests` 83/83 incl. 40 new import tests; `web-react` 28/28; production build clean; wizard and Invoices flag checked in the browser at desktop and 390px with stubbed API). ⏳ Migration `021` not yet applied and not yet deployed — awaiting Joshua's approval. First real import on the customer's own data is the final acceptance test (his data, can't be tested here); it is undoable. |
-| **F2 — Vendors + Expenses import** | New `vendors` table (+ encrypted `tin`), Vendors importer, Expenses importer reusing the bank import's dedup/vendor-normalization/rules. Import order: vendors before expenses. | Not started — next release. |
-| **F3 — Follow-ups (Good to Have)** | Vendor/expense Zoho preset detection already included in `zohoHeaders.js`; still to decide: reveal-on-demand for masked tax IDs, additional CRM presets (QuickBooks, FreshBooks, Wave), notes viewer on the invoice PDF. | Backlog |
+| **F1 — Contacts + Invoices import (v7.30.0)** | `/import/migrate` wizard (Business mode): deterministic header matching with a Zoho Books preset, optional Gemini suggestions for unclear headers (header names only, user's own key), preview before any write, client/invoice duplicate handling, holding area for columns with no home, encrypted client tax IDs, per-file undo, "Open in old system" invoice flag (badge, filter, banner, user-cleared). Migration `021_crm_import.sql`. | ✅ Shipped v7.30.0 (2026-10-03, migration 021 applied, production verified). Built + tested 2026-10-03 (`api/tests` 83/83 incl. 40 new import tests; `web-react` 28/28; production build clean; wizard and Invoices flag checked in the browser at desktop and 390px with stubbed API). ⏳ Migration `021` not yet applied and not yet deployed — awaiting Joshua's approval. First real import on the customer's own data is the final acceptance test (his data, can't be tested here); it is undoable. |
+| **F2 — Vendors + Expenses import** | New `vendors` table (+ encrypted `tin`), Vendors importer, Expenses importer reusing the bank import's dedup/vendor-normalization/rules. Import order: vendors before expenses. | ✅ Built + tested 2026-10-04 (`api/tests` 103/103; wizard preview + new read-only `/vendors` page checked in the browser at desktop and 390px with stubbed API). Vendors: contact details, 1099 flag, encrypted TIN. Expenses: Zoho account names mapped to Ledger categories (unknown names kept), Total/Amount+Tax, user rules applied, `Paid Through` → account, mileage rows (distance) routed to the Mileage log instead of dollar expenses, duplicates against bank transactions (exact skip / similar-within-2-days merge fills blanks only). ⏳ Migration `022_crm_import_vendors_expenses.sql` not yet applied and not deployed — awaiting Joshua's approval. |
+| **F3 — Follow-ups (Good to Have)** | (1) Imported-data viewer for expenses — held-back columns are saved in `import_holding` but there is no UI for them yet (TransactionDrawer is shared, left untouched). (2) Vendors page is read-only — add manual create/edit/delete. (3) Link expense `vendor` text to `vendors` rows. (4) Reveal-on-demand for masked tax IDs. (5) More CRM presets (QuickBooks, FreshBooks, Wave). (6) Per-account category override in the expense preview. | Backlog |
 
 ### Design Pass
 

@@ -3,6 +3,25 @@
 All notable changes to this project are documented here.
 Format: `[vX.X.X] — YYYY-MM-DD`
 
+## [v7.31.0] — 2026-10-04
+
+### Added — Import vendors and expenses from another system (Release 2)
+
+Completes the importer started in v7.30.0 (contacts + invoices): same wizard at `/import/migrate`, now with **Vendors** and **Expenses**.
+
+- `api/migrations/022_crm_import_vendors_expenses.sql` — additive/idempotent. New `vendors` table (unique per user by case-insensitive name; contact details, website, `track_1099`) and `vendor_tax_ids` (libsodium-encrypted TIN + `tin_type` + last4, separate table so `select *` on vendors never returns ciphertext). Provenance columns `legacy_id`/`import_source`/`import_batch_id` on `expenses`, and `import_source`/`import_batch_id` on `mileage_logs`. RLS `user_id = auth.uid()` on both new tables. **Not applied to production yet.** Note: `expenses.rm_id` is globally UNIQUE (not per user) and is deliberately never used by imports.
+- `api/utils/crmImport/expenses.js` — expense builder. Total (incl. tax) is the amount, falling back to Amount + Tax. Zoho-style account names ("Automobile Expense", "Fuel/Mileage Expenses", …) map to Ledger categories with a Schedule C bucket where one exists; anything unrecognised keeps the user's own label and no bucket. The original account name is always kept in the holding area when it was mapped. The user's own classification rules override the importer's defaults (same first-match semantics as the bank import). `Paid Through` becomes the expense's account.
+- Mileage: rows carrying a distance become **mileage log entries** (km converted to miles, vehicle/odometer kept in notes), never dollar expenses — importing both would double count the deduction.
+- Duplicates: exact (same date + vendor + amount) skips and is *counted*, so two genuinely identical purchases still import; same amount within ±2 days of an existing row (typically the bank transaction) defaults to merge, which fills blanks only and never changes the bank row's date, vendor, amount or account. Mileage already in the log (date + miles + purpose) is skipped.
+- Tax deductibility: optional checkbox (default on). Only categories with a known Schedule C bucket are marked deductible; unknown ones are left for the user to decide.
+- Vendors reuse the contacts flow (`commitParties`): name match merges (names are unique), email match merges, same-system ID skips, `keep_both` is rejected (400). Vendor `TIN` columns are always encrypted and never written to plaintext holding data.
+- `api/routes/crmImport.js` — `analyze`/`preview`/`commit`/undo now cover all four types; `removeBatchRows` is entity-aware (expense undo removes the batch's mileage rows too); `GET /crm-import/vendors` (masked tax IDs only); `holding` viewer accepts `vendor`/`expense`.
+- Web: `Vendors.jsx` (read-only directory at `/vendors`, Business mode, linked from Clients and the import result), wizard UI for vendors/expenses (deductible option, account-matching summary, mileage count, duplicate choices), `/vendors` added to `BUSINESS_ONLY_PATHS`.
+- Tests: 13 builder tests + 7 route tests for the new flows (vendors commit/merge/undo, expenses preview/commit/rules/provenance/re-import/merge/rollback, mileage routing). Full `api/tests` 103/103; `web-react` 28/28; production build clean. No real customer data was used.
+- Known gaps (ROADMAP Phase F3): held-back expense columns have no viewer yet; Vendors page is read-only.
+
+---
+
 ## [v7.30.0] — 2026-10-03
 
 ### Added — Import clients and invoices from another system

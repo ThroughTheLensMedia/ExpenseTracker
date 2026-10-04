@@ -6,8 +6,8 @@ import { useModal } from '../components/ModalContext.jsx';
 const TYPES = [
     { key: 'contacts', label: 'Contacts / Clients', hint: 'Your customer list', ready: true },
     { key: 'invoices', label: 'Invoices', hint: 'Import contacts first', ready: true },
-    { key: 'vendors', label: 'Vendors', hint: 'Coming soon', ready: false },
-    { key: 'expenses', label: 'Expenses', hint: 'Coming soon', ready: false },
+    { key: 'vendors', label: 'Vendors', hint: 'Who you pay', ready: true },
+    { key: 'expenses', label: 'Expenses', hint: 'Import vendors first', ready: true },
 ];
 const MAX_FILE_BYTES = 4 * 1024 * 1024;
 const HOLDING = '__holding__';
@@ -21,7 +21,10 @@ const KIND_LABEL = {
     name: 'Same name as an existing client',
     in_file: 'Repeated earlier in this file',
     number: 'Invoice number already exists',
+    exact: 'Same date, vendor and amount already in your ledger',
+    similar: 'Same amount within 2 days — likely the same purchase from your bank',
 };
+const NOUN = { contacts: 'client', vendors: 'vendor', invoices: 'invoice', expenses: 'record' }; // expense imports also carry mileage trips
 
 function downloadReport(filename, errors, warnings) {
     const esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
@@ -54,6 +57,7 @@ export default function CrmImport() {
     const [preview, setPreview] = useState(null);
     const [decisions, setDecisions] = useState({});
     const [createMissing, setCreateMissing] = useState(true);
+    const [markDeductible, setMarkDeductible] = useState(true);
     const [result, setResult] = useState(null);
     const [busy, setBusy] = useState('');
     const [error, setError] = useState('');
@@ -66,7 +70,7 @@ export default function CrmImport() {
     const loadBatches = useCallback(() => apiGet('/crm-import/batches').then(r => setBatches(r.data || [])).catch(() => { }), []);
     useEffect(() => { loadBatches(); }, [loadBatches]);
 
-    const reset = () => { setFile(null); setAnalysis(null); setMapping({}); setAiTags({}); setPreview(null); setDecisions({}); setResult(null); setError(''); setShowMatched(false); if (fileRef.current) fileRef.current.value = ''; };
+    const reset = () => { setMarkDeductible(true); setFile(null); setAnalysis(null); setMapping({}); setAiTags({}); setPreview(null); setDecisions({}); setResult(null); setError(''); setShowMatched(false); if (fileRef.current) fileRef.current.value = ''; };
 
     const form = (extra = {}) => {
         const fd = new FormData();
@@ -103,7 +107,7 @@ export default function CrmImport() {
     const runPreview = async () => {
         setError(''); setBusy('Checking for duplicates and problems…');
         try {
-            const p = await apiUpload('/crm-import/preview', form({ sourceSystem: analysis.detectedSource, mapping }));
+            const p = await apiUpload('/crm-import/preview', form({ sourceSystem: analysis.detectedSource, mapping, markDeductible: String(markDeductible) }));
             setPreview(p);
             setDecisions(Object.fromEntries((p.duplicates || []).map(d => [d.key, d.defaultDecision])));
             setCreateMissing(true);
@@ -113,7 +117,7 @@ export default function CrmImport() {
     const commit = async () => {
         setError(''); setBusy('Importing… this can take a minute for large files.');
         try {
-            const r = await apiUpload('/crm-import/commit', form({ sourceSystem: analysis.detectedSource, mapping, decisions, createMissingClients: String(createMissing) }));
+            const r = await apiUpload('/crm-import/commit', form({ sourceSystem: analysis.detectedSource, mapping, decisions, createMissingClients: String(createMissing), markDeductible: String(markDeductible) }));
             setResult(r);
             invalidateCache('clients'); invalidateCache('invoices');
             loadBatches();
@@ -135,7 +139,7 @@ export default function CrmImport() {
 
     const s = preview?.summary;
     // Records that will actually be written: new rows plus any duplicate the user chose to merge / keep / renumber.
-    const actionCount = preview ? s.newCount + (preview.duplicates || []).filter(d => (decisions[d.key] || d.defaultDecision) !== 'skip').length : 0;
+    const actionCount = preview ? s.newCount + (s.mileageCount || 0) + (preview.duplicates || []).filter(d => (decisions[d.key] || d.defaultDecision) !== 'skip').length : 0;
 
     return (
         <div className="page" style={{ maxWidth: 980, margin: '0 auto', padding: '0 16px 60px' }}>
@@ -160,7 +164,7 @@ export default function CrmImport() {
                             </button>
                         ))}
                     </div>
-                    <div className="muted small" style={{ marginBottom: 16 }}>Import <strong>contacts first</strong>, then invoices, so each invoice links to its client.</div>
+                    <div className="muted small" style={{ marginBottom: 16 }}>Import <strong>contacts first</strong>, then invoices, so each invoice links to its client. Import <strong>vendors before expenses</strong>.</div>
 
                     <input ref={fileRef} type="file" accept=".csv,text/csv" style={{ display: 'none' }} onChange={e => e.target.files[0] && analyze(e.target.files[0])} />
                     <div role="button" tabIndex={0} onClick={() => !busy && fileRef.current?.click()} onKeyDown={e => e.key === 'Enter' && fileRef.current?.click()}
@@ -225,6 +229,13 @@ export default function CrmImport() {
                         </>
                     ) : <div className="tag ok" style={{ padding: 12 }}>Every column with data was matched — nothing to decide.</div>}
 
+                    {type === 'expenses' && (
+                        <label style={{ ...BOX, display: 'flex', gap: 10, alignItems: 'flex-start', minHeight: 44, cursor: 'pointer', marginTop: 14 }}>
+                            <input type="checkbox" checked={markDeductible} onChange={e => setMarkDeductible(e.target.checked)} style={{ width: 22, height: 22, flexShrink: 0 }} />
+                            <span><strong>Mark imported business expenses as tax deductible</strong><span className="muted small" style={{ display: 'block' }}>Only categories with a clear Schedule C match are marked; anything else stays for you to decide. Your own rules always win. You can review everything on the Tax page.</span></span>
+                        </label>
+                    )}
+
                     <div style={{ display: 'flex', gap: 10, marginTop: 20, flexWrap: 'wrap' }}>
                         <button className="btn secondary" style={CTRL} onClick={reset}>← Choose another file</button>
                         <button className="btn glow-blue" style={{ ...CTRL, flex: 1, fontWeight: 900 }} onClick={runPreview} disabled={!!busy}>Preview import →</button>
@@ -241,7 +252,33 @@ export default function CrmImport() {
                         <Stat label="PROBLEMS" value={s.errors} color={s.errors ? '#ff7777' : undefined} />
                         <Stat label="NOTES" value={s.warnings} />
                         {preview.type === 'invoices' && <Stat label="STILL OPEN" value={s.openCount} color="#fb923c" />}
+                        {preview.type === 'expenses' && <Stat label="MILEAGE TRIPS" value={s.mileageCount} color="#38bdf8" />}
                     </div>
+
+                    {preview.type === 'expenses' && (
+                        <div style={{ ...BOX, marginBottom: 14 }}>
+                            <strong>{formatMoney(s.totalCents)} across {s.newCount} new expense{s.newCount === 1 ? '' : 's'}{s.dateFrom ? ` · ${s.dateFrom} to ${s.dateTo}` : ''}</strong>
+                            <div className="muted small" style={{ marginTop: 4 }}>
+                                {s.categoriesMapped} account name{s.categoriesMapped === 1 ? '' : 's'} matched to Ledger categories; {s.categoriesKept} kept under your own label.
+                                {markDeductible ? ` ${s.deductibleCount} marked tax deductible.` : ' None marked tax deductible.'}
+                                {s.mileageCount > 0 && ` ${s.mileageCount} mileage entr${s.mileageCount === 1 ? 'y goes' : 'ies go'} to your Mileage log instead of expenses, so the deduction isn't counted twice.`}
+                                {s.mileageSkipped > 0 && ` ${s.mileageSkipped} trip${s.mileageSkipped === 1 ? ' was' : 's were'} already in your log.`}
+                            </div>
+                            {preview.categories.length > 0 && (
+                                <details style={{ marginTop: 8 }}>
+                                    <summary style={{ cursor: 'pointer', minHeight: 44, display: 'flex', alignItems: 'center' }}>See how accounts were matched</summary>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 6 }}>
+                                        {preview.categories.map(c => (
+                                            <div key={c.original} className="small" style={{ display: 'flex', justifyContent: 'space-between', gap: 8, padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8 }}>
+                                                <span style={{ overflowWrap: 'anywhere' }}>{c.original} <span className="muted">({c.count})</span></span>
+                                                <span className="muted" style={{ textAlign: 'right' }}>{c.mapped ? `→ ${c.category}` : 'kept as is'}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </details>
+                            )}
+                        </div>
+                    )}
 
                     {preview.type === 'invoices' && s.openCount > 0 && (
                         <div style={{ ...BOX, borderColor: 'rgba(251,146,60,0.4)', marginBottom: 14 }}>
@@ -249,7 +286,7 @@ export default function CrmImport() {
                             <div className="muted small" style={{ marginTop: 4 }}>They'll be flagged <strong>Open in old system</strong> so you can finish them in both places. The flag stays until you clear it yourself.{s.partialCount > 0 && ` ${s.partialCount} partly paid invoice${s.partialCount === 1 ? ' is' : 's are'} imported at the balance still owed.`}</div>
                         </div>
                     )}
-                    {preview.type === 'contacts' && s.withTaxId > 0 && <div className="muted small" style={{ marginBottom: 14 }}>🔒 {s.withTaxId} tax ID{s.withTaxId === 1 ? '' : 's'} will be stored encrypted and shown masked.</div>}
+                    {(preview.type === 'contacts' || preview.type === 'vendors') && s.withTaxId > 0 && <div className="muted small" style={{ marginBottom: 14 }}>🔒 {s.withTaxId} tax ID{s.withTaxId === 1 ? '' : 's'} will be stored encrypted and shown masked.</div>}
 
                     {preview.type === 'invoices' && preview.unmatchedCount > 0 && (
                         <div style={{ ...BOX, marginBottom: 14 }}>
@@ -269,13 +306,20 @@ export default function CrmImport() {
                                 {preview.duplicates.map(d => (
                                     <div key={d.key} style={{ ...BOX, display: 'flex', gap: 10, justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
                                         <div style={{ minWidth: 200, flex: 1 }}>
-                                            <div style={{ fontWeight: 800, overflowWrap: 'anywhere' }}>{preview.type === 'invoices' ? `#${d.invoiceNumber}` : d.name}{d.email ? ` · ${d.email}` : ''}</div>
-                                            <div className="muted small">{KIND_LABEL[d.kind]}{d.existingName ? `: ${d.existingName}` : d.existingNumber ? `: #${d.existingNumber}` : ''}</div>
+                                            <div style={{ fontWeight: 800, overflowWrap: 'anywhere' }}>{preview.type === 'invoices' ? `#${d.invoiceNumber}` : preview.type === 'expenses' ? `${d.vendor} · ${formatMoney(d.amountCents)} · ${d.date}` : d.name}{d.email ? ` · ${d.email}` : ''}</div>
+                                            <div className="muted small">{KIND_LABEL[d.kind]}{d.existingName ? `: ${d.existingName}` : d.existingNumber ? `: #${d.existingNumber}` : d.existingVendor ? `: ${d.existingVendor} on ${d.existingDate}${d.existingSource ? ` (${d.existingSource})` : ''}` : ''}</div>
                                         </div>
                                         <select value={decisions[d.key] || d.defaultDecision} onChange={e => setDecisions(x => ({ ...x, [d.key]: e.target.value }))} style={{ ...CTRL, minWidth: 180 }} aria-label="What to do with this duplicate">
                                             {preview.type === 'contacts' ? (<>
                                                 <option value="merge" disabled={d.kind === 'in_file'}>Merge into existing</option>
                                                 <option value="keep_both">Keep both</option>
+                                                <option value="skip">Skip</option>
+                                            </>) : preview.type === 'vendors' ? (<>
+                                                <option value="merge" disabled={d.kind === 'in_file'}>Merge into existing</option>
+                                                <option value="skip">Skip</option>
+                                            </>) : preview.type === 'expenses' ? (<>
+                                                <option value="merge" disabled={d.kind === 'exact' || d.kind === 'already_imported' || d.kind === 'in_file'}>Add details to existing</option>
+                                                <option value="keep_both">Import as separate</option>
                                                 <option value="skip">Skip</option>
                                             </>) : (<>
                                                 <option value="skip">Skip</option>
@@ -316,7 +360,7 @@ export default function CrmImport() {
                     <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                         <button className="btn secondary" style={CTRL} onClick={() => setPreview(null)}>← Back to matching</button>
                         <button className="btn glow-blue" style={{ ...CTRL, flex: 1, fontWeight: 900 }} onClick={commit} disabled={!!busy || actionCount === 0}>
-                            Import {actionCount} {preview.type === 'invoices' ? 'invoice' : 'client'}{actionCount === 1 ? '' : 's'}
+                            Import {actionCount} {NOUN[preview.type]}{actionCount === 1 ? '' : 's'}
                         </button>
                     </div>
                 </div>
@@ -331,11 +375,12 @@ export default function CrmImport() {
                         <Stat label="SKIPPED" value={result.skipped} />
                         <Stat label="PROBLEMS" value={result.errorCount ?? result.errors.length} color={(result.errorCount || result.errors.length) ? '#ff7777' : undefined} />
                         {result.openCount !== undefined && <Stat label="STILL OPEN" value={result.openCount} color="#fb923c" />}
+                        {result.mileageCreated !== undefined && <Stat label="MILEAGE TRIPS" value={result.mileageCreated} color="#38bdf8" />}
                     </div>
                     {result.clientsCreated > 0 && <div className="muted small" style={{ marginBottom: 10 }}>{result.clientsCreated} new client{result.clientsCreated === 1 ? ' was' : 's were'} created from invoice customers.</div>}
                     {result.openCount > 0 && <div className="muted" style={{ marginBottom: 14 }}>Find the {result.openCount} unpaid invoice{result.openCount === 1 ? '' : 's'} ({formatMoney(result.openBalanceCents)}) under <strong>Invoices → Open in old system</strong>.</div>}
                     <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                        <Link className="btn glow-blue" style={{ ...CTRL, display: 'inline-flex', alignItems: 'center' }} to={type === 'invoices' ? '/crm/financials' : '/clients'}>View {type === 'invoices' ? 'invoices' : 'clients'}</Link>
+                        <Link className="btn glow-blue" style={{ ...CTRL, display: 'inline-flex', alignItems: 'center' }} to={{ invoices: '/crm/financials', vendors: '/vendors', expenses: '/transactions', contacts: '/clients' }[type]}>View {{ invoices: 'invoices', vendors: 'vendors', expenses: 'transactions', contacts: 'clients' }[type]}</Link>
                         <button className="btn secondary" style={CTRL} onClick={reset}>Import another file</button>
                         {(result.errors.length > 0 || result.warnings.length > 0) && <button className="btn secondary" style={CTRL} onClick={() => downloadReport('import-report.csv', result.errors, result.warnings)}>Download report</button>}
                         {result.batchId && <button className="btn secondary" style={{ ...CTRL, color: '#ff7777' }} onClick={() => undo({ id: result.batchId, entity_type: type, filename: file?.name })}>Undo this import</button>}

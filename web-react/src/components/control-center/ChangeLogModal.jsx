@@ -1,6 +1,11 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.31.0', date: 'OCT 4, 2026', color: '#635bff', items: [
+        '<strong>New:</strong> Import your <strong>vendors</strong> and <strong>expenses</strong> from another system (Import → Import clients &amp; invoices → pick Vendors or Expenses). Expenses are sorted into your categories, matched against bank transactions you already have so nothing is counted twice, and your own rules are applied.',
+        '<strong>New:</strong> A <strong>Vendors</strong> page (from Clients → Vendors) with contact details, 1099 tracking and an encrypted, masked tax ID.',
+        '<strong>Improved:</strong> Mileage trips found in an expense file go to your Mileage log instead of your expenses, so the deduction is never counted twice.',
+    ]},
     { version: '7.30.0', date: 'OCT 3, 2026', color: '#635bff', items: [
         '<strong>New:</strong> Switching from another system? Import your clients and invoice history from a CSV export (Import → Import clients &amp; invoices). Columns are matched for you, you review everything before anything is saved, and every import can be undone.',
         '<strong>New:</strong> Unpaid invoices that come over are flagged <strong>Open in old system</strong> with the balance still owed — filter them, finish them in both places, then mark each one closed when you are done.',

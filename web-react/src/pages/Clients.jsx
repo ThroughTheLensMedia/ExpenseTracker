@@ -196,9 +196,12 @@ export default function Clients() {
 
             {/* Dashboard Card */}
             <div className="card glass glow-blue" style={{ border: 'none', padding: '30px', margin: 0 }}>
-                <div>
-                    <h1 style={{ margin: 0, fontSize: '2rem', fontWeight: 950, letterSpacing: '-0.02em' }}>Clients</h1>
-                    <div className="muted" style={{ marginTop: '4px', fontSize: '15px' }}>Search, contact, and manage everyone on file</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                    <div>
+                        <h1 style={{ margin: 0, fontSize: '2rem', fontWeight: 950, letterSpacing: '-0.02em' }}>Clients</h1>
+                        <div className="muted" style={{ marginTop: '4px', fontSize: '15px' }}>Search, contact, and manage everyone on file</div>
+                    </div>
+                    <button className="btn secondary" style={{ minHeight: '44px' }} onClick={() => navigate('/vendors')}>Vendors →</button>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginTop: '30px' }}>

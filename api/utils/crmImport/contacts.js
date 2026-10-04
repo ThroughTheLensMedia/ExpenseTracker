@@ -1,15 +1,17 @@
 'use strict';
 
-const { readRow, clip, normName, normEmail, looksLikeEmail } = require('./common');
+const { readRow, clip, normName, normEmail, looksLikeEmail, parseBool } = require('./common');
 
 function composeAddress(f) {
     const cityLine = [f.address_city, [f.address_state, f.address_zip].filter(Boolean).join(' ')].filter(Boolean).join(', ');
     return [f.address_line1, f.address_line2, cityLine, f.address_country].filter(Boolean).join('\n');
 }
 
-// Turns CSV rows into client candidates for the existing `clients` table.
+// Turns CSV rows into candidates for the `clients` table (kind 'contacts') or `vendors` table (kind 'vendors').
 // Returns { candidates, errors }. candidate.rowNum is the 1-based data row (header excluded).
-function buildClients(rows, mapping) {
+function buildClients(rows, mapping, kind = 'contacts') {
+    const isVendor = kind === 'vendors';
+    const noun = isVendor ? 'vendor' : 'client';
     const candidates = [];
     const errors = [];
 
@@ -21,7 +23,7 @@ function buildClients(rows, mapping) {
         const warnings = [];
         const combined = [f.first_name, f.last_name].filter(Boolean).join(' ');
         const name = clip(f.name || f.company || combined, 200);
-        if (!name) { errors.push({ row: rowNum, error: 'No client name (Display Name, Company, or First/Last name is blank).' }); return; }
+        if (!name) { errors.push({ row: rowNum, error: `No ${noun} name (Display Name, Company, or First/Last name is blank).` }); return; }
 
         // Name-fallback sources are real data; keep them reachable instead of dropping them.
         const labelOf = target => Object.keys(mapping).find(h => mapping[h] === target);
@@ -41,17 +43,24 @@ function buildClients(rows, mapping) {
         let phone = f.phone || f.phone_alt || null;
         if (f.phone && f.phone_alt && f.phone !== f.phone_alt) holding[labelOf('phone_alt') || 'Mobile phone'] = clip(f.phone_alt, 2000);
 
+        const record = {
+            name,
+            email: email ? clip(email, 254) : null,
+            phone: phone ? clip(phone, 60) : null,
+            address: composeAddress(f) ? clip(composeAddress(f), 500) : null,
+            notes: f.notes ? clip(f.notes, 5000) : null,
+        };
+        if (isVendor) {
+            record.website = f.website ? clip(f.website, 300) : null;
+            record.track_1099 = parseBool(f.track_1099);
+        }
+
         candidates.push({
             rowNum,
-            record: {
-                name,
-                email: email ? clip(email, 254) : null,
-                phone: phone ? clip(phone, 60) : null,
-                address: composeAddress(f) ? clip(composeAddress(f), 500) : null,
-                notes: f.notes ? clip(f.notes, 5000) : null,
-            },
+            record,
             legacyId: f.legacy_id ? clip(f.legacy_id, 100) : null,
             taxId: f.tax_id ? clip(f.tax_id, 64) : null,
+            tinType: isVendor && f.tin_type ? clip(f.tin_type, 20) : null,
             holding,
             warnings,
         });
@@ -64,8 +73,10 @@ function buildClients(rows, mapping) {
 // dup.kind: 'already_imported' (same ID from the same system) | 'email' | 'name' | 'in_file'.
 // Default decision: skip re-imports and in-file repeats; merge on email match; keep both on a name-only
 // match (two different people can share a name — wrongly merging history is worse than a duplicate
-// that the Clients page can merge later).
-function findClientDuplicates(candidates, existing, sourceSystem) {
+// that the Clients page can merge later). Vendors are unique by name per user, so a name match
+// merges (fills blanks) — keeping both isn't possible.
+function findClientDuplicates(candidates, existing, sourceSystem, kind = 'contacts') {
+    const nameDefault = kind === 'vendors' ? 'merge' : 'keep_both';
     const byLegacy = new Map();
     const byEmail = new Map();
     const byName = new Map();
@@ -85,7 +96,7 @@ function findClientDuplicates(candidates, existing, sourceSystem) {
 
         if (cand.legacyId && byLegacy.has(cand.legacyId)) hit('already_imported', byLegacy.get(cand.legacyId), 'skip');
         else if (e && byEmail.has(e)) hit('email', byEmail.get(e), 'merge');
-        else if (n && byName.has(n)) hit('name', byName.get(n), 'keep_both');
+        else if (n && byName.has(n)) hit('name', byName.get(n), nameDefault);
         else if (cand.legacyId && seenInFile.legacy.has(cand.legacyId)) hit('in_file', seenInFile.legacy.get(cand.legacyId), 'skip');
         else if (e && seenInFile.email.has(e)) hit('in_file', seenInFile.email.get(e), 'skip');
         else if (n && seenInFile.name.has(n)) hit('in_file', seenInFile.name.get(n), 'skip');
@@ -102,7 +113,7 @@ function findClientDuplicates(candidates, existing, sourceSystem) {
 // Fill-blanks merge: CSV values only ever populate empty fields, never overwrite what the user already has.
 function mergeFill(existing, record) {
     const updates = {};
-    for (const key of ['email', 'phone', 'address', 'notes']) {
+    for (const key of ['email', 'phone', 'address', 'notes', 'website']) {
         if (!existing[key] && record[key]) updates[key] = record[key];
     }
     return updates;

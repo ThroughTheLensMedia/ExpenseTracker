@@ -39,5 +39,6 @@ test('the business-only route inventory covers every business module', () => {
         '/crm',
         '/clients',
         '/import/migrate',
+        '/vendors',
     ]);
 });

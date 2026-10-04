@@ -20,6 +20,7 @@ const Assets         = lazy(() => import('./pages/Assets'));
 const CRM            = lazy(() => import('./pages/CRM'));
 const Import         = lazy(() => import('./pages/Import'));
 const CrmImport      = lazy(() => import('./pages/CrmImport'));
+const Vendors        = lazy(() => import('./pages/Vendors'));
 const Login          = lazy(() => import('./pages/Login'));
 const Mileage        = lazy(() => import('./pages/Mileage'));
 const Privacy        = lazy(() => import('./pages/Privacy'));
@@ -38,7 +39,7 @@ import OnboardingChecklist from './components/OnboardingChecklist.jsx';
 // Single source of truth for the "What's New" badge — the check (useEffect below)
 // and the dismiss handler (handleWhatsNewClick) must read the exact same value,
 // or the badge re-lights immediately after being dismissed.
-const CURRENT_VERSION = "7.30.0";
+const CURRENT_VERSION = "7.31.0";
 
 // Shared route-level loading fallback — matches app's existing spinner style
 function PageSpinner() {
@@ -605,6 +606,7 @@ function AppContent() {
             <Route path="/import/migrate" element={<BusinessOnlyRoute experienceMode={experienceMode}><CrmImport /></BusinessOnlyRoute>} />
             <Route path="/accounts" element={<Accounts />} />
             <Route path="/clients" element={<BusinessOnlyRoute experienceMode={experienceMode}><Clients /></BusinessOnlyRoute>} />
+            <Route path="/vendors" element={<BusinessOnlyRoute experienceMode={experienceMode}><Vendors /></BusinessOnlyRoute>} />
             <Route path="/addons" element={<AddOns />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />

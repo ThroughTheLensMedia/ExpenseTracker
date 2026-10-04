@@ -12,7 +12,7 @@ const { decrypt } = require('../utils/cryptoUtil');
 
 // ---- Minimal in-memory stand-in for the Supabase client (only what the route uses) ----
 function makeDb() {
-    const tables = { clients: [], invoices: [], invoice_items: [], import_batches: [], import_holding: [], client_tax_ids: [], settings: [] };
+    const tables = { clients: [], invoices: [], invoice_items: [], import_batches: [], import_holding: [], client_tax_ids: [], settings: [], vendors: [], vendor_tax_ids: [], expenses: [], mileage_logs: [], classification_rules: [] };
     let seq = 100;
     let failInsertOn = null;
     const uuid = () => `batch-${++seq}`;
@@ -27,6 +27,8 @@ function makeDb() {
             upsert(rows, opts = {}) { q.op = 'upsert'; q.rows = Array.isArray(rows) ? rows : [rows]; q.opts = opts; return api; },
             eq(col, val) { q.filters.push(r => String(r[col]) === String(val)); return api; },
             in(col, vals) { q.filters.push(r => vals.map(String).includes(String(r[col]))); return api; },
+            gte(col, val) { q.filters.push(r => String(r[col]) >= String(val)); return api; },
+            lte(col, val) { q.filters.push(r => String(r[col]) <= String(val)); return api; },
             order() { return api; },
             range(a, b) { q.range = [a, b]; return api; },
             maybeSingle() { q.single = 'maybe'; return api; },
@@ -69,6 +71,10 @@ function makeDb() {
                 const hit = new Set(matches());
                 tables[table] = rows.filter(r => !hit.has(r));
                 if (table === 'invoices') { const ids = new Set([...hit].map(r => r.id)); tables.invoice_items = tables.invoice_items.filter(i => !ids.has(i.invoice_id)); }
+                if (table === 'vendors') {
+                    const ids = new Set([...hit].map(r => r.id));
+                    tables.vendor_tax_ids = tables.vendor_tax_ids.filter(t => !ids.has(t.vendor_id));
+                }
                 if (table === 'clients') {
                     const ids = new Set([...hit].map(r => r.id));
                     tables.client_tax_ids = tables.client_tax_ids.filter(t => !ids.has(t.client_id));
@@ -336,6 +342,188 @@ test('invalid requests are rejected without touching data', async () => {
     assert.equal(dupTarget.status, 400);
     const noFile = await post('/commit', { type: 'contacts', mapping });
     assert.equal(noFile.status, 400);
-    const vendors = await post('/analyze', { type: 'vendors' }, { text });
-    assert.equal(vendors.status, 400);
+    const unsupported = await post('/analyze', { type: 'banana' }, { text });
+    assert.equal(unsupported.status, 400);
+});
+
+// ---------------------------------------------------------------------------------------------
+// Release 2 — vendors + expenses
+// ---------------------------------------------------------------------------------------------
+
+function resetAll() {
+    for (const t of Object.keys(db.tables)) db.tables[t].length = 0;
+}
+const vendor = (over = {}) => ({
+    'Contact ID': 'v100', 'Display Name': 'Mesa Print Shop', 'Company Name': 'Mesa Print Shop', 'Contact Name': 'Pat Owner',
+    EmailID: 'orders@mesa.test', Website: 'https://mesa.test', 'Track 1099 Payments': 'true', TINType: 'EIN', TIN: '12-3456789', Status: 'Active', ...over,
+});
+const expense = (over = {}) => ({
+    'Expense Date': '2026-02-10', 'Expense Description': 'Lens cleaning kit', 'Expense Account': 'Office Supplies', 'Paid Through': 'Chase Checking',
+    Vendor: 'B&H Photo', 'Currency Code': 'USD', 'Expense Amount': '40.00', 'Tax Amount': '3.20', Total: '43.20', 'Expense Reference ID': 'e1', ...over,
+});
+
+test('vendors commit: unique names, encrypted TIN with type, holding data, masked directory, undo', async () => {
+    resetAll();
+    const text = csv('vendors', [vendor(), vendor({ 'Display Name': 'Other Co', 'Company Name': 'Other Co', 'Contact ID': 'v101', EmailID: 'hello@other.test', TIN: '', 'Track 1099 Payments': 'false' })]);
+    const { analysis, mapping } = await analyzeAndMap('vendors', text);
+    assert.equal(analysis.unresolved.length, 0);
+
+    const preview = await post('/preview', { type: 'vendors', sourceSystem: 'zoho', mapping }, { text });
+    assert.equal(preview.body.type, 'vendors');
+    assert.equal(preview.body.summary.newCount, 2);
+    assert.equal(preview.body.summary.withTaxId, 1);
+    assert.equal(db.tables.vendors.length, 0);
+
+    const c = await post('/commit', { type: 'vendors', sourceSystem: 'zoho', mapping }, { text, name: 'vendors.csv' });
+    assert.equal(c.status, 200, JSON.stringify(c.body));
+    assert.equal(c.body.created, 2);
+
+    const mesa = db.tables.vendors.find(v => v.name === 'Mesa Print Shop');
+    assert.deepEqual([mesa.user_id, mesa.website, mesa.track_1099, mesa.legacy_id, mesa.import_source], ['u1', 'https://mesa.test', true, 'v100', 'zoho']);
+    assert.equal(db.tables.vendors.find(v => v.name === 'Other Co').track_1099, false);
+
+    const tax = db.tables.vendor_tax_ids[0];
+    assert.deepEqual([tax.vendor_id, tax.last4, tax.tin_type], [mesa.id, '6789', 'EIN']);
+    assert.equal(await decrypt(tax.tax_id_encrypted), '12-3456789');
+    assert.ok(!JSON.stringify(db.tables.import_holding).includes('12-3456789'));
+    assert.equal(db.tables.import_holding.find(h => h.entity_type === 'vendor' && h.entity_id === String(mesa.id)).data['Contact Name'], 'Pat Owner');
+
+    const dir = await (await fetch(`${base}/vendors`)).json();
+    assert.equal(dir.data.length, 2);
+    const row = dir.data.find(v => v.name === 'Mesa Print Shop');
+    assert.equal(row.tax_id_masked, '••••6789');
+    assert.ok(!JSON.stringify(dir).includes('12-3456789') && !JSON.stringify(dir).includes(tax.tax_id_encrypted));
+
+    const holding = await (await fetch(`${base}/holding/vendor/${mesa.id}`)).json();
+    assert.equal(holding.taxId, '••••6789');
+
+    const again = await post('/commit', { type: 'vendors', sourceSystem: 'zoho', mapping }, { text });
+    assert.equal(again.body.created, 0);
+    assert.equal(again.body.skipped, 2);
+
+    const undo = await fetch(`${base}/batches/${c.body.batchId}`, { method: 'DELETE' });
+    assert.equal(undo.status, 200);
+    assert.equal(db.tables.vendors.length, 0);
+    assert.equal(db.tables.vendor_tax_ids.length, 0);
+    assert.equal(db.tables.import_holding.length, 0);
+});
+
+test('vendor name match merges into the existing vendor (fills blanks) and keep_both is not possible', async () => {
+    resetAll();
+    db.tables.vendors.push({ id: 7, user_id: 'u1', name: 'mesa print shop', email: null, phone: null, address: null, notes: null, website: null, legacy_id: null, import_source: null });
+    const text = csv('vendors', [vendor({ TIN: '' })]);
+    const { mapping } = await analyzeAndMap('vendors', text);
+    const preview = await post('/preview', { type: 'vendors', sourceSystem: 'zoho', mapping }, { text });
+    assert.equal(preview.body.duplicates[0].kind, 'name');
+    assert.equal(preview.body.duplicates[0].defaultDecision, 'merge');
+
+    const both = await post('/commit', { type: 'vendors', sourceSystem: 'zoho', mapping, decisions: { 1: 'keep_both' } }, { text });
+    assert.equal(both.status, 400, 'keep_both is not a valid vendor decision');
+
+    const merged = await post('/commit', { type: 'vendors', sourceSystem: 'zoho', mapping }, { text });
+    assert.equal(merged.body.merged, 1);
+    assert.equal(db.tables.vendors.length, 1);
+    assert.deepEqual([db.tables.vendors[0].name, db.tables.vendors[0].email, db.tables.vendors[0].website], ['mesa print shop', 'orders@mesa.test', 'https://mesa.test']);
+});
+
+test('expenses preview writes nothing and reports totals, categories, mileage and duplicates', async () => {
+    resetAll();
+    const text = csv('expenses', [
+        expense(),
+        expense({ 'Expense Account': 'Fuel/Mileage Expenses', Vendor: 'Shell', Total: '60.00', 'Expense Reference ID': 'e2' }),
+        expense({ 'Expense Description': 'Client shoot', Distance: '20', 'Mileage Unit': 'mile', Total: '14.00', 'Expense Reference ID': 'e3' }),
+        expense({ 'Expense Date': 'bad', 'Expense Reference ID': 'e4' }),
+    ]);
+    const { analysis, mapping } = await analyzeAndMap('expenses', text);
+    assert.equal(analysis.unresolved.length, 0);
+    const p = await post('/preview', { type: 'expenses', sourceSystem: 'zoho', mapping }, { text });
+    assert.equal(p.status, 200, JSON.stringify(p.body));
+    assert.equal(p.body.summary.newCount, 2);
+    assert.equal(p.body.summary.mileageCount, 1);
+    assert.equal(p.body.summary.errors, 1);
+    assert.equal(p.body.summary.totalCents, 4320 + 6000);
+    assert.equal(p.body.summary.dateFrom, '2026-02-10');
+    assert.equal(p.body.summary.deductibleCount, 2);
+    assert.ok(p.body.categories.some(c => c.original === 'Fuel/Mileage Expenses' && c.category === 'Gas & Fuel' && c.mapped));
+    assert.equal(db.tables.expenses.length + db.tables.mileage_logs.length + db.tables.import_batches.length, 0);
+});
+
+test('expenses commit: rows, mileage log, user rules, provenance, re-import skip, undo', async () => {
+    resetAll();
+    db.tables.classification_rules.push({ user_id: 'u1', match_column: 'vendor', match_type: 'contains', match_value: 'shell', assign_category: 'Gas & Fuel', assign_tax_bucket: 'Car and truck', assign_tax_deductible: true, assign_business_use_pct: 75 });
+    const text = csv('expenses', [
+        expense(),
+        expense({ 'Expense Account': 'Bank Charges', Vendor: 'Shell', Total: '60.00', 'Expense Reference ID': 'e2' }),
+        expense({ 'Expense Description': 'Client shoot', Distance: '20', 'Mileage Unit': 'mile', Vehicle: '', 'Vehicle Name': 'Van', Total: '14.00', 'Expense Reference ID': 'e3' }),
+    ]);
+    const { mapping } = await analyzeAndMap('expenses', text);
+    const c = await post('/commit', { type: 'expenses', sourceSystem: 'zoho', mapping }, { text, name: 'expenses.csv' });
+    assert.equal(c.status, 200, JSON.stringify(c.body));
+    assert.deepEqual([c.body.created, c.body.mileageCreated, c.body.skipped], [2, 1, 0]);
+
+    const bh = db.tables.expenses.find(e => e.vendor === 'B&H Photo');
+    assert.deepEqual([bh.user_id, bh.amount_cents, bh.category, bh.tax_bucket, bh.tax_deductible, bh.source, bh.currency, bh.legacy_id, bh.import_source, bh.import_batch_id],
+        ['u1', 4320, 'Office Supplies', 'Office expense', true, 'Chase Checking', 'USD', 'e1', 'zoho', c.body.batchId]);
+    assert.ok(!('rm_id' in bh) && !('plaid_transaction_id' in bh));
+
+    const shell = db.tables.expenses.find(e => e.vendor === 'Shell');
+    assert.deepEqual([shell.category, shell.tax_bucket, shell.business_use_pct], ['Gas & Fuel', 'Car and truck', 75], 'the user\'s rule beats the importer default');
+
+    const trip = db.tables.mileage_logs[0];
+    assert.deepEqual([trip.user_id, trip.miles, trip.purpose, trip.source, trip.import_batch_id], ['u1', 20, 'Client shoot', 'zoho_import', c.body.batchId]);
+    assert.match(trip.notes, /Vehicle: Van/);
+
+    const again = await post('/commit', { type: 'expenses', sourceSystem: 'zoho', mapping }, { text });
+    assert.deepEqual([again.body.created, again.body.mileageCreated, again.body.skipped], [0, 0, 2]);
+    assert.equal(db.tables.expenses.length, 2);
+    assert.equal(db.tables.mileage_logs.length, 1);
+
+    const undo = await fetch(`${base}/batches/${c.body.batchId}`, { method: 'DELETE' });
+    assert.equal(undo.status, 200);
+    assert.equal(db.tables.expenses.length + db.tables.mileage_logs.length + db.tables.import_holding.length, 0);
+});
+
+test('a matching bank transaction is merged (fills blanks only), and markDeductible=false is honored', async () => {
+    resetAll();
+    db.tables.expenses.push({ id: 1, user_id: 'u1', expense_date: '2026-02-11', vendor: 'BH PHOTO NYC', amount_cents: 4320, source: 'Chase', category: 'Uncategorized', notes: '', tax_bucket: '', tax_deductible: false, business_use_pct: 100, legacy_id: null, import_source: null });
+    const text = csv('expenses', [expense()]);
+    const { mapping } = await analyzeAndMap('expenses', text);
+
+    const preview = await post('/preview', { type: 'expenses', sourceSystem: 'zoho', mapping, markDeductible: 'false' }, { text });
+    assert.equal(preview.body.summary.duplicates, 1);
+    assert.equal(preview.body.duplicates[0].kind, 'similar');
+    assert.equal(preview.body.duplicates[0].defaultDecision, 'merge');
+    assert.equal(preview.body.summary.deductibleCount, 0);
+
+    const c = await post('/commit', { type: 'expenses', sourceSystem: 'zoho', mapping }, { text });
+    assert.equal(c.body.merged, 1);
+    assert.equal(db.tables.expenses.length, 1);
+    const row = db.tables.expenses[0];
+    assert.deepEqual([row.vendor, row.source, row.expense_date, row.amount_cents], ['BH PHOTO NYC', 'Chase', '2026-02-11', 4320], 'bank row stays authoritative');
+    assert.deepEqual([row.category, row.notes, row.tax_bucket], ['Office Supplies', 'Lens cleaning kit', 'Office expense']);
+
+    const skipped = await post('/commit', { type: 'expenses', sourceSystem: 'zoho', mapping, decisions: { 1: 'skip' } }, { text });
+    assert.equal(skipped.body.created + skipped.body.merged, 0);
+});
+
+test('an expense import that fails partway removes everything it created', async () => {
+    resetAll();
+    const text = csv('expenses', [expense(), expense({ 'Expense Description': 'Trip', Distance: '5', 'Mileage Unit': 'mile', 'Expense Reference ID': 'e9' })]);
+    const { mapping } = await analyzeAndMap('expenses', text);
+    db.failInsertOn('mileage_logs');
+    const res = await post('/commit', { type: 'expenses', sourceSystem: 'zoho', mapping }, { text });
+    db.failInsertOn(null);
+    assert.equal(res.status, 500);
+    assert.match(res.body.error, /rolled back/);
+    assert.equal(db.tables.expenses.length, 0, 'expenses inserted before the failure are removed');
+    assert.equal(db.tables.import_batches.length, 0);
+    assert.equal(db.tables.import_holding.length, 0);
+});
+
+test('Release 2 rejects bad mappings the same way', async () => {
+    const text = csv('expenses', [expense()]);
+    const { mapping } = await analyzeAndMap('expenses', text);
+    const noAmount = Object.fromEntries(Object.entries(mapping).map(([h, t]) => [h, t === 'total' || t === 'amount' ? '__holding__' : t]));
+    assert.equal((await post('/commit', { type: 'expenses', sourceSystem: 'zoho', mapping: noAmount }, { text })).status, 400);
+    assert.equal((await post('/commit', { type: 'expenses', sourceSystem: 'zoho', mapping: { ...mapping, Vendor: 'banana' } }, { text })).status, 400);
 });

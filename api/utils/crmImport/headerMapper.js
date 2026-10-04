@@ -10,8 +10,7 @@ const norm = h => String(h || '').toLowerCase().replace(/[^a-z0-9%#]+/g, ' ').tr
 
 // `syn` is ordered best-first. A target takes only the best-matching header; any other
 // header that also matches it goes to the holding area instead of silently overwriting it.
-const TARGETS = {
-    contacts: [
+const PARTY_TARGETS = [
         { key: 'name', label: 'Client name', syn: ['display name', 'client name', 'customer name', 'full name', 'name', 'contact name', 'client', 'customer'] },
         { key: 'company', label: 'Company (name fallback)', syn: ['company name', 'company', 'organization', 'business name'] },
         { key: 'first_name', label: 'First name (name fallback)', syn: ['first name', 'firstname', 'given name'] },
@@ -27,7 +26,34 @@ const TARGETS = {
         { key: 'address_country', label: 'Address – country', syn: ['billing country', 'country'] },
         { key: 'notes', label: 'Notes', syn: ['notes', 'note', 'comments', 'memo'] },
         { key: 'tax_id', label: 'Tax ID (stored encrypted)', syn: ['taxid', 'tax id', 'tin', 'ein', 'ssn', 'tax identification number', 'taxpayer id', 'tax payer id'] },
-        { key: 'legacy_id', label: 'ID in old system', syn: ['contact id', 'customer id', 'client id', 'id'] },
+        { key: 'legacy_id', label: 'ID in old system', syn: ['contact id', 'customer id', 'client id', 'vendor id', 'id'] },
+];
+
+const TARGETS = {
+    contacts: PARTY_TARGETS,
+    vendors: [
+        ...PARTY_TARGETS.filter(t => t.key !== 'name'),
+        { key: 'name', label: 'Vendor name', syn: ['display name', 'vendor name', 'supplier name', 'company name', 'name', 'contact name', 'vendor', 'supplier', 'payee'] },
+        { key: 'website', label: 'Website', syn: ['website', 'web site', 'url'] },
+        { key: 'track_1099', label: 'Track 1099 payments (yes/no)', syn: ['track 1099 payments', 'track 1099', '1099'] },
+        { key: 'tin_type', label: 'Tax ID type (SSN/EIN)', syn: ['tintype', 'tin type', 'tax id type'] },
+    ],
+    expenses: [
+        { key: 'expense_date', label: 'Expense date', syn: ['expense date', 'date', 'transaction date'] },
+        { key: 'description', label: 'Description (saved as notes)', syn: ['expense description', 'description', 'memo', 'notes', 'note'] },
+        { key: 'category', label: 'Category / expense account', syn: ['expense account', 'category', 'expense category'] },
+        { key: 'paid_through', label: 'Paid from (account)', syn: ['paid through', 'payment account', 'paid from', 'account'] },
+        { key: 'vendor', label: 'Vendor', syn: ['vendor', 'payee', 'merchant', 'supplier'] },
+        { key: 'currency', label: 'Currency', syn: ['currency code', 'currency'] },
+        { key: 'total', label: 'Total (including tax)', syn: ['total', 'total amount'] },
+        { key: 'amount', label: 'Amount', syn: ['expense amount', 'amount', 'cost'] },
+        { key: 'tax_amount', label: 'Tax amount', syn: ['tax amount'] },
+        { key: 'legacy_id', label: 'ID in old system', syn: ['expense reference id'] },
+        { key: 'distance', label: 'Distance (mileage rows)', syn: ['distance'] },
+        { key: 'mileage_unit', label: 'Distance unit (mile/km)', syn: ['mileage unit', 'distance unit'] },
+        { key: 'vehicle_name', label: 'Vehicle', syn: ['vehicle name', 'vehicle'] },
+        { key: 'odometer_start', label: 'Start odometer', syn: ['start odometer reading', 'start odometer'] },
+        { key: 'odometer_end', label: 'End odometer', syn: ['end odometer reading', 'end odometer'] },
     ],
     invoices: [
         { key: 'invoice_number', label: 'Invoice number', syn: ['invoice number', 'invoice no', 'invoice #', 'invoice num', 'inv number', 'number', 'invoice'] },
@@ -74,6 +100,8 @@ const isSensitiveHeader = header => SENSITIVE.test(norm(header));
 
 const REQUIRED = {
     contacts: { anyOf: [['name', 'company', 'first_name', 'last_name']], message: 'Map at least one column to Client name (or Company / First name / Last name).' },
+    vendors: { anyOf: [['name', 'company', 'first_name', 'last_name']], message: 'Map at least one column to Vendor name (or Company / First name / Last name).' },
+    expenses: { all: ['expense_date'], anyOf: [['total', 'amount']], message: 'Expenses need a date and an amount (Total or Amount).' },
     invoices: {
         all: ['invoice_number', 'issue_date'],
         anyOf: [['customer_name', 'customer_legacy_id', 'customer_email'], ['item_price', 'total']],
@@ -88,6 +116,9 @@ const TYPE_SIGNALS = {
     vendors: ['track 1099 payments', 'tintype', 'tin'],
     expenses: ['expense account', 'expense date', 'paid through'],
 };
+
+// Contact-like types: tax IDs are kept (encrypted) instead of ignored.
+const PARTY_TYPES = new Set(['contacts', 'vendors']);
 
 const ZOHO_SET = new Set(Object.values(ZOHO).flat().map(norm));
 
@@ -156,7 +187,7 @@ function autoMap(type, headers, rows) {
     const unresolved = [];
     for (const header of headers) {
         const n = norm(header);
-        if (type === 'contacts' && isSensitiveHeader(header)) {
+        if (PARTY_TYPES.has(type) && isSensitiveHeader(header)) {
             mapping[header] = { target: 'tax_id', confidence: 'sensitive' };
         } else if (isSensitiveHeader(header)) {
             mapping[header] = { target: IGNORE, confidence: 'sensitive' };
@@ -199,7 +230,7 @@ function finalizeMapping(type, headers, input) {
         let target = input?.[header];
         if (target === undefined) { errors.push(`Column "${header}" has no mapping.`); continue; }
         if (!allowed.has(target)) { errors.push(`Column "${header}" is mapped to an unknown field "${target}".`); continue; }
-        if (isSensitiveHeader(header) && target === HOLDING) target = type === 'contacts' ? 'tax_id' : IGNORE;
+        if (isSensitiveHeader(header) && target === HOLDING) target = PARTY_TYPES.has(type) ? 'tax_id' : IGNORE;
         if (target !== HOLDING && target !== IGNORE) {
             if (used.has(target)) {
                 errors.push(`"${used.get(target)}" and "${header}" are both mapped to "${target}". Pick one.`);
