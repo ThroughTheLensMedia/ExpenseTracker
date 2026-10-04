@@ -15,6 +15,7 @@ Format: `[vX.X.X] — YYYY-MM-DD`
 - `vercel.json` — one rewrite, `/` → `/web-react/home.html`, placed before the catch-all. All other routes still fall through to `index.html`.
 - `web-react/src/pages/Home.jsx` intentionally untouched: its `<h1>` replaces the static one once React mounts (visible text swap on load).
 - Version files: `version.json`, `App.jsx`, `ChangeLogModal.jsx`.
+- **Deployed 2026-10-04** (commit `55cf393`). Live check by curl: `/version.json` = 7.31.1; `/` raw HTML contains the `<h1>`, the picker `<img>` and `og:image` = `/og-profile-picker.png`; `/login`, `/transactions`, `/privacy`, `/pay/*` still serve `index.html` without the homepage headline. Social preview caches (Facebook, LinkedIn, X) must be refreshed manually.
 
 ## [v7.31.0] — 2026-10-04
 
