@@ -26,6 +26,10 @@
             "destination": "/web-react/$1"
         },
         {
+            "source": "/",
+            "destination": "/web-react/home.html"
+        },
+        {
             "source": "/((?!api/).*)",
             "destination": "/web-react/index.html"
         }

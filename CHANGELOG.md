@@ -3,13 +3,26 @@
 All notable changes to this project are documented here.
 Format: `[vX.X.X] — YYYY-MM-DD`
 
+## [v7.31.1] — 2026-10-04
+
+### Fixed — Homepage raw HTML was an empty shell
+
+`web-react/index.html` shipped an empty `<div id="root">`, so crawlers and link-preview bots that don't run JavaScript saw no homepage content, and `og:image`/`twitter:image` pointed at the 512px `icon.png`.
+
+- `web-react/home.html` (new) — copy of `index.html` served for exactly `/`. `#root` contains a visible `<h1>` ("Lumière Ledger: a finance tracker where you pick a profile for your line of work and only see what fits."), the login/signup links, and an `<img>` of the real profile picker with descriptive alt text. React still mounts over it (no hydration; `createRoot` replaces the contents). `og:image`/`twitter:image` now `/og-profile-picker.png` (1200×630, with width/height/alt tags); `twitter:card` is `summary_large_image`. Head tags must be kept in sync with `index.html` by hand.
+- `web-react/public/og-profile-picker.png` (new) — real capture of `PageRoleSelector` from `OnboardingChecklist.jsx`, rendered from the actual component in a throwaway local harness (no account, no real data; harness deleted).
+- `web-react/vite.config.js` — `home.html` added as a second Rollup input; both pages share the same hashed bundle.
+- `vercel.json` — one rewrite, `/` → `/web-react/home.html`, placed before the catch-all. All other routes still fall through to `index.html`.
+- `web-react/src/pages/Home.jsx` intentionally untouched: its `<h1>` replaces the static one once React mounts (visible text swap on load).
+- Version files: `version.json`, `App.jsx`, `ChangeLogModal.jsx`.
+
 ## [v7.31.0] — 2026-10-04
 
 ### Added — Import vendors and expenses from another system (Release 2)
 
 Completes the importer started in v7.30.0 (contacts + invoices): same wizard at `/import/migrate`, now with **Vendors** and **Expenses**.
 
-- `api/migrations/022_crm_import_vendors_expenses.sql` — additive/idempotent. New `vendors` table (unique per user by case-insensitive name; contact details, website, `track_1099`) and `vendor_tax_ids` (libsodium-encrypted TIN + `tin_type` + last4, separate table so `select *` on vendors never returns ciphertext). Provenance columns `legacy_id`/`import_source`/`import_batch_id` on `expenses`, and `import_source`/`import_batch_id` on `mileage_logs`. RLS `user_id = auth.uid()` on both new tables. **Not applied to production yet.** Note: `expenses.rm_id` is globally UNIQUE (not per user) and is deliberately never used by imports.
+- `api/migrations/022_crm_import_vendors_expenses.sql` — additive/idempotent. New `vendors` table (unique per user by case-insensitive name; contact details, website, `track_1099`) and `vendor_tax_ids` (libsodium-encrypted TIN + `tin_type` + last4, separate table so `select *` on vendors never returns ciphertext). Provenance columns `legacy_id`/`import_source`/`import_batch_id` on `expenses`, and `import_source`/`import_batch_id` on `mileage_logs`. RLS `user_id = auth.uid()` on both new tables. **Applied to production 2026-10-04 (RLS and columns verified).** Note: `expenses.rm_id` is globally UNIQUE (not per user) and is deliberately never used by imports.
 - `api/utils/crmImport/expenses.js` — expense builder. Total (incl. tax) is the amount, falling back to Amount + Tax. Zoho-style account names ("Automobile Expense", "Fuel/Mileage Expenses", …) map to Ledger categories with a Schedule C bucket where one exists; anything unrecognised keeps the user's own label and no bucket. The original account name is always kept in the holding area when it was mapped. The user's own classification rules override the importer's defaults (same first-match semantics as the bank import). `Paid Through` becomes the expense's account.
 - Mileage: rows carrying a distance become **mileage log entries** (km converted to miles, vehicle/odometer kept in notes), never dollar expenses — importing both would double count the deduction.
 - Duplicates: exact (same date + vendor + amount) skips and is *counted*, so two genuinely identical purchases still import; same amount within ±2 days of an existing row (typically the bank transaction) defaults to merge, which fills blanks only and never changes the bank row's date, vendor, amount or account. Mileage already in the log (date + miles + purpose) is skipped.
@@ -28,7 +41,7 @@ Completes the importer started in v7.30.0 (contacts + invoices): same wizard at 
 
 A customer moving from Zoho Books couldn't switch because his clients and invoice history lived in the old system. New wizard at `/import/migrate` (Business mode; linked from the Import page).
 
-- `api/migrations/021_crm_import.sql` — additive/idempotent. New tables `import_batches` (history + undo), `import_holding` (columns with no home in Ledger, kept in a separate table so existing `select *` list endpoints never carry ~100 extra fields per invoice), `client_tax_ids` (libsodium-encrypted, separate from `clients` so `clients(*)` selects never return ciphertext). New provenance columns `legacy_id`/`import_source`/`import_batch_id` on `clients` and `invoices`, plus `invoices.legacy_open` and `legacy_balance_cents`. All tables RLS `user_id = auth.uid()`. **Not applied to production yet.**
+- `api/migrations/021_crm_import.sql` — additive/idempotent. New tables `import_batches` (history + undo), `import_holding` (columns with no home in Ledger, kept in a separate table so existing `select *` list endpoints never carry ~100 extra fields per invoice), `client_tax_ids` (libsodium-encrypted, separate from `clients` so `clients(*)` selects never return ciphertext). New provenance columns `legacy_id`/`import_source`/`import_batch_id` on `clients` and `invoices`, plus `invoices.legacy_open` and `legacy_balance_cents`. All tables RLS `user_id = auth.uid()`. **Applied to production 2026-10-03 (RLS and columns verified).**
 - `api/utils/crmImport/` — `csv.js` (BOM/duplicate-header safe parser), `headerMapper.js` (synonym matching per target, Zoho Books detection, sensitive-column rules), `contacts.js`, `invoices.js` (groups one-row-per-line-item CSVs by invoice number; maps status; reconciles totals to the source file with a visible "Imported adjustment" line; folds prior partial payments into the invoice so Ledger's total equals the balance still owed), `common.js`, `zohoHeaders.js`.
 - `api/routes/crmImport.js` mounted at `/api/crm-import` — `analyze`, `suggest` (optional Gemini, header names only, whitelist-validated output), `preview` (writes nothing), `commit` (all-or-nothing per file: any failure removes what the file created), `batches` + undo, `legacy-summary`, `close-legacy`, `holding`.
 - Duplicates: client matches on old-system ID (skip), email (default merge — fills blanks only, never overwrites), name only (default keep both — wrongly merging history is worse than a duplicate the Clients page can merge). Invoices match on number / old-system ID; skip or renumber.

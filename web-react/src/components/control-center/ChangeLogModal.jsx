@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.31.1', date: 'OCT 4, 2026', color: '#635bff', items: [
+        '<strong>Improved:</strong> Search engines and link previews now see the Lumière Ledger homepage headline and a real picture of the profile picker, instead of a blank page. Shared links show a proper preview image.',
+    ]},
     { version: '7.31.0', date: 'OCT 4, 2026', color: '#635bff', items: [
         '<strong>New:</strong> Import your <strong>vendors</strong> and <strong>expenses</strong> from another system (Import → Import clients &amp; invoices → pick Vendors or Expenses). Expenses are sorted into your categories, matched against bank transactions you already have so nothing is counted twice, and your own rules are applied.',
         '<strong>New:</strong> A <strong>Vendors</strong> page (from Clients → Vendors) with contact details, 1099 tracking and an encrypted, masked tax ID.',

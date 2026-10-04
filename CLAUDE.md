@@ -16,7 +16,7 @@ The world's most elite, AI-driven financial command center for creative professi
 
 | Property | Value |
 |----------|-------|
-| **Version** | v7.31.0 |
+| **Version** | v7.31.1 |
 | **Status** | Active Development — Open Public Launch |
 | **Deploy target** | `www.lumiereledger.com` (primary) — `app.throughthelens.media` 301 redirects to it |
 | **Deployment** | Vercel (auto-deploy on `git push origin main`) |
@@ -297,7 +297,7 @@ Express 4.19 API (api/)
 
 ### Full Frontend File Map (beyond the curated table above)
 
-**Pages (`web-react/src/pages/`)** — `Tax.jsx` (Schedule C mapping, deduction totals, PDF export), `Import.jsx` (CSV wizard, auto-detect, retroactive dedup), `Invoice.jsx` (line items, client info, tax/discount, PDF, email), `Clients.jsx` (v7.23.0 — dedicated client roster: search, open/paid invoice counts, sortable lifetime value, edit-in-place, merge/delete/email; deliberately kept separate from the Clients tab inside `Invoice.jsx` rather than merged), `Assets.jsx` (equipment registry, depreciation calc), `Mileage.jsx` (log by date, Google Maps automation, IRS rate), `Rules.jsx` (classification rules editor, retroactive apply), `CRM.jsx` (lead pipeline kanban), `AddOns.jsx` (marketplace), `Home.jsx` / `Privacy.jsx` / `Terms.jsx` (static/public).
+**Pages (`web-react/src/pages/`)** — `Tax.jsx` (Schedule C mapping, deduction totals, PDF export), `Import.jsx` (CSV wizard, auto-detect, retroactive dedup), `Invoice.jsx` (line items, client info, tax/discount, PDF, email), `Clients.jsx` (v7.23.0 — dedicated client roster: search, open/paid invoice counts, sortable lifetime value, edit-in-place, merge/delete/email; deliberately kept separate from the Clients tab inside `Invoice.jsx` rather than merged), `Assets.jsx` (equipment registry, depreciation calc), `Mileage.jsx` (log by date, Google Maps automation, IRS rate), `Rules.jsx` (classification rules editor, retroactive apply), `CRM.jsx` (lead pipeline kanban), `AddOns.jsx` (marketplace), `Home.jsx` / `Privacy.jsx` / `Terms.jsx` (static/public). **v7.31.1:** exact `/` is served by `web-react/home.html` (via a `vercel.json` rewrite) — a hand-synced copy of `index.html` with the headline, links and profile-picker screenshot (`public/og-profile-picker.png`) already in the raw HTML; React replaces it on mount. Keep its head tags in sync with `index.html`; every other route still uses `index.html`.
 
 **Hooks (`web-react/src/hooks/`)** — `useExpenseFilters.js` (shared filter/sort for Transactions/Dashboard/Tax; Category + Notes combine as AND by default, or OR via the `categoryNotesMatch` option — added v7.25.2, only Transactions.jsx exposes the toggle, other callers default to AND unchanged), `useFilterOptions.js` (unique vendors/accounts/categories, feeds filter dropdowns + drawer source list), `useActivityPulse.js` (daily engagement tracking), `useLeadsRealtime.js` (Supabase Realtime subscription for live lead notifications).
 

@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { resolve } from 'node:path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -22,6 +23,11 @@ export default defineConfig({
     // Warn when any individual chunk exceeds 600KB
     chunkSizeWarningLimit: 600,
     rollupOptions: {
+      // home.html = prerendered shell for the "/" route (see vercel.json rewrite)
+      input: {
+        main: resolve(import.meta.dirname, 'index.html'),
+        home: resolve(import.meta.dirname, 'home.html'),
+      },
       output: {
         manualChunks: {
           // React core — changes almost never; maximum cache hit rate
