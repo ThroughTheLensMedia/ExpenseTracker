@@ -27,6 +27,7 @@ const Privacy        = lazy(() => import('./pages/Privacy'));
 const Terms          = lazy(() => import('./pages/Terms'));
 const SecurityPolicy = lazy(() => import('./pages/SecurityPolicy'));
 const Home           = lazy(() => import('./pages/Home'));
+const Compare        = lazy(() => import('./pages/Compare'));
 const PayInvoice     = lazy(() => import('./pages/PayInvoice'));
 const AddOns         = lazy(() => import('./pages/AddOns'));
 const Accounts       = lazy(() => import('./pages/Accounts'));
@@ -316,6 +317,9 @@ function AppContent() {
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/security-policy" element={<SecurityPolicy />} />
+          {/* Public comparison pages. Not linked from the homepage yet. */}
+          <Route path="/compare" element={<Compare />} />
+          <Route path="/compare/:slug" element={<Compare />} />
           {/* Public: no login required — client payment portal */}
           <Route path="/pay/:token" element={<PayInvoice />} />
           <Route path="*" element={<Navigate to="/" />} />
@@ -611,6 +615,8 @@ function AppContent() {
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/security-policy" element={<SecurityPolicy />} />
+            <Route path="/compare" element={<Compare />} />
+            <Route path="/compare/:slug" element={<Compare />} />
             {/* Public: client payment portal, also accessible when logged in */}
             <Route path="/pay/:token" element={<PayInvoice />} />
             <Route path="*" element={<Navigate to="/" />} />
