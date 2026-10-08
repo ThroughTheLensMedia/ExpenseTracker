@@ -16,7 +16,7 @@ The world's most elite, AI-driven financial command center for creative professi
 
 | Property | Value |
 |----------|-------|
-| **Version** | v7.31.1 |
+| **Version** | v7.32.0 |
 | **Status** | Active Development — Open Public Launch |
 | **Deploy target** | `www.lumiereledger.com` (primary) — `app.throughthelens.media` 301 redirects to it |
 | **Deployment** | Vercel (auto-deploy on `git push origin main`) |
@@ -299,6 +299,8 @@ Express 4.19 API (api/)
 
 **Pages (`web-react/src/pages/`)** — `Tax.jsx` (Schedule C mapping, deduction totals, PDF export), `Import.jsx` (CSV wizard, auto-detect, retroactive dedup), `Invoice.jsx` (line items, client info, tax/discount, PDF, email), `Clients.jsx` (v7.23.0 — dedicated client roster: search, open/paid invoice counts, sortable lifetime value, edit-in-place, merge/delete/email; deliberately kept separate from the Clients tab inside `Invoice.jsx` rather than merged), `Assets.jsx` (equipment registry, depreciation calc), `Mileage.jsx` (log by date, Google Maps automation, IRS rate), `Rules.jsx` (classification rules editor, retroactive apply), `CRM.jsx` (lead pipeline kanban), `AddOns.jsx` (marketplace), `Home.jsx` / `Privacy.jsx` / `Terms.jsx` (static/public). **v7.31.1:** exact `/` is served by `web-react/home.html` (via a `vercel.json` rewrite) — a hand-synced copy of `index.html` with the headline, links and profile-picker screenshot (`public/og-profile-picker.png`) already in the raw HTML; React replaces it on mount. Keep its head tags in sync with `index.html`; every other route still uses `index.html`.
 
+**v7.32.0:** `/compare` and `/compare/<slug>` (QuickBooks Solopreneur, FreshBooks, Wave, Bonsai, HoneyBook) are public pages rendered by `pages/Compare.jsx` from `pages/compareData.js` (copy, prices, titles, descriptions — shared with the build script, so edit content there). `npm run build` is `vite build && node scripts/prerender-compare.js`: `scripts/prerender-compare.js` server-renders the same component via `scripts/compare-ssr-entry.jsx` and writes `dist/compare/index.html` + `dist/compare/<slug>/index.html` (built `index.html` with per-page title, description, og/twitter, canonical, exactly one `<h1>` — the script fails the build otherwise). The static copy sits in `#compare-prerender` beside `#root` and is removed by `utils/comparePrerender.js` (`Compare.jsx` on mount; `App.jsx` once a signed-in user is ready). `vercel.json` has explicit `/compare` and `/compare/(quickbooks-solopreneur|freshbooks|wave|bonsai|honeybook)` rewrites to `/web-react/compare/...` above the SPA catch-all — the legacy `builds` config serves output under `/web-react/`, so the files are not found automatically. **Adding a compare page = new entry in `compareData.js` + new slug in that `vercel.json` rewrite + `sitemap.xml`.** Homepage footer links to `/compare` in both `home.html` and `Home.jsx`.
+
 **Hooks (`web-react/src/hooks/`)** — `useExpenseFilters.js` (shared filter/sort for Transactions/Dashboard/Tax; Category + Notes combine as AND by default, or OR via the `categoryNotesMatch` option — added v7.25.2, only Transactions.jsx exposes the toggle, other callers default to AND unchanged), `useFilterOptions.js` (unique vendors/accounts/categories, feeds filter dropdowns + drawer source list), `useActivityPulse.js` (daily engagement tracking), `useLeadsRealtime.js` (Supabase Realtime subscription for live lead notifications).
 
 **Constants (`web-react/src/constants/`)** — `categories.js` (single source of truth for built-in category groups), `billing.js` (see Key Files Reference above).
@@ -379,7 +381,7 @@ Plaid-connected accounts use `source: 'plaid'` regardless of institution. Known 
 |---------|---------|
 | `cd api && npm start` | Start backend server |
 | `cd web-react && npm run dev` | Start frontend dev server |
-| `cd web-react && npm run build` | Production build |
+| `cd web-react && npm run build` | Production build (Vite build, then `scripts/prerender-compare.js` writes the static `/compare` pages) |
 | `git push origin main` | Deploy to Vercel (auto-build triggers on push) |
 
 ---

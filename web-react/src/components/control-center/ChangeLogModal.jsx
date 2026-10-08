@@ -1,6 +1,11 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.32.0', date: 'OCT 8, 2026', color: '#635bff', items: [
+        '<strong>New:</strong> Comparison pages showing how Lumière Ledger stacks up against <strong>QuickBooks Solopreneur</strong>, <strong>FreshBooks</strong>, <strong>Wave</strong>, <strong>Bonsai</strong> and <strong>HoneyBook</strong> for freelancers. Find them under <strong>Compare</strong> at the bottom of the homepage.',
+        '<strong>Improved:</strong> Clearer site description in search results and shared links: pick your profile and see only the tools that fit, with bank sync optional and free to start.',
+        '<strong>Improved:</strong> The comparison pages load with their content already in place, so search engines and link previews see each page properly.',
+    ]},
     { version: '7.31.1', date: 'OCT 4, 2026', color: '#635bff', items: [
         '<strong>Improved:</strong> Search engines and link previews now see the Lumière Ledger homepage headline and a real picture of the profile picker, instead of a blank page. Shared links show a proper preview image.',
     ]},

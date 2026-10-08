@@ -3,6 +3,39 @@
 All notable changes to this project are documented here.
 Format: `[vX.X.X] — YYYY-MM-DD`
 
+## [v7.32.0] — 2026-10-08
+
+Docs catch-up: the three commits below shipped to production without a version bump or changelog entry. This release records them; no app code changed in the version commit beyond version files and the in-app changelog.
+
+### Added — Freelancer comparison pages (`5848d14`, 2026-10-04)
+
+- `web-react/src/pages/Compare.jsx` (new) — public `/compare` hub plus `/compare/quickbooks-solopreneur`, `/compare/freshbooks`, `/compare/wave`, `/compare/bonsai`, `/compare/honeybook` (one component, `:slug` param). Prices match the live homepage pricing table (Free to start, bank sync $4.99/mo, Core $9/mo, Studio $19/mo).
+- `web-react/src/App.jsx` — `Compare` lazy-loaded; `/compare` and `/compare/:slug` routes added to both the signed-out and signed-in route trees (public, no login).
+- `web-react/public/sitemap.xml` — six new URLs (`/compare` priority 0.8, each comparison 0.7, `lastmod` 2026-10-04). Sitemap now lists 10 URLs.
+
+### Fixed — Share/SEO descriptions no longer make AI or tax-automation claims (`7ca06c3`, 2026-10-07)
+
+SaaSHub (and other link-preview bots) pull `og:description`, which still read "AI-powered tax automation…". Approved copy has no AI or CPA-replacement claims.
+
+- `web-react/home.html` and `web-react/index.html` — `meta description`, `og:description` and `twitter:description` all now: "Finance app for freelancers and creatives. Pick your profile (Photographer, Freelancer, Small Business) and see only the tools that fit: invoicing, expenses, mileage, and gear depreciation. Bank sync optional. Free to start." `keywords`: dropped "tax automation for freelancers", added "mileage tracking", "gear depreciation". `<title>`/`og:title`/`twitter:title` unchanged.
+
+### Added — Compare pages pre-rendered as static HTML + homepage link (`c644dcb`, 2026-10-08)
+
+The compare pages only existed after the SPA ran JS, so crawlers saw `index.html`'s homepage title/description and an empty `#root` on all six URLs.
+
+- `web-react/src/pages/compareData.js` (new) — page copy, prices, hub/page titles and descriptions, `SITE_URL`. Plain module shared by `Compare.jsx` and the build script so the static HTML and the React page cannot drift.
+- `web-react/scripts/compare-ssr-entry.jsx` (new) — `renderToStaticMarkup` of the same `Compare` component under a `StaticRouter`.
+- `web-react/scripts/prerender-compare.js` (new) — runs after `vite build`: takes built `dist/index.html`, swaps in per-page `<title>`, meta description, `og:url`/`og:title`/`og:description`, `twitter:title`/`twitter:description` and `canonical`, inserts the rendered markup in a `#compare-prerender` block before `#root`, and fails the build unless each tag is replaced exactly once and the page has exactly one `<h1>`. Writes `dist/compare/index.html` and `dist/compare/<slug>/index.html`.
+- `web-react/src/utils/comparePrerender.js` (new) — `removeComparePrerender()`; `Compare.jsx` calls it on mount, and `App.jsx` calls it in a `useLayoutEffect` once a signed-in user's subscription is ready (signed-in visitors may land on a gate instead of the Compare page).
+- `web-react/package.json` — `build` is now `vite build && node scripts/prerender-compare.js`.
+- `vercel.json` — explicit rewrites `/compare` → `/web-react/compare/index.html` and `/compare/(quickbooks-solopreneur|freshbooks|wave|bonsai|honeybook)` → `/web-react/compare/$1/index.html`, placed above the SPA catch-all. Needed because the legacy `builds` config serves the output under `/web-react/`, so the files are not found at `/compare/...` automatically. A new compare slug must be added to this rewrite as well as `compareData.js`.
+- `web-react/home.html` and `web-react/src/pages/Home.jsx` — COMPARE link in the homepage footer (static and React versions).
+
+### Version record
+
+- `CHANGELOG.md`, `ChangeLogModal.jsx`, `ROADMAP.md`, `AGENTS.md`, `CLAUDE.md`, `version.json`, `App.jsx` (`CURRENT_VERSION`).
+- Minor bump (new public pages), matching v7.23.0 (dedicated Clients page).
+
 ## [v7.31.1] — 2026-10-04
 
 ### Fixed — Homepage raw HTML was an empty shell
