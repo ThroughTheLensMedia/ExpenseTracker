@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, lazy, Suspense } from 'react';
 import * as Sentry from '@sentry/react';
 import { useActivityPulse } from "./hooks/useActivityPulse";
 import { useLeadsRealtime } from "./hooks/useLeadsRealtime";
@@ -9,6 +9,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { LayoutDashboard, ArrowLeftRight, Car, Users, Landmark, Download } from 'lucide-react';
 import { EXPERIENCE_MODES, getExperienceMode } from './constants/experienceModes';
 import { getSubscriptionStatusLabel } from './utils/dashboardPriorities';
+import { removeComparePrerender } from './utils/comparePrerender';
 
 // Code-split every page — only load the chunk when the user navigates to it
 const DashboardV2    = lazy(() => import('./pages/DashboardV2'));
@@ -167,6 +168,13 @@ function AppContent() {
   const { newLeadCount, clearBadge } = useLeadsRealtime();
   const [apiStatus, setApiStatus] = useState('Checking...');
   const { user, loading, logout, subscription, subscriptionReady, settings, refreshSubscription, refreshAccountData } = useAuth();
+
+  // Signed-in visitors on a pre-rendered /compare URL may land on a gate instead
+  // of the Compare page, so drop the static copy once the signed-in app renders.
+  // (Signed-out visitors: Compare.jsx removes it on mount.)
+  useLayoutEffect(() => {
+    if (user && subscriptionReady) removeComparePrerender();
+  }, [user, subscriptionReady]);
   const location = useLocation();
   const navigate = useNavigate();
   const [showRedeem, setShowRedeem] = useState(false);
@@ -317,7 +325,7 @@ function AppContent() {
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/security-policy" element={<SecurityPolicy />} />
-          {/* Public comparison pages. Not linked from the homepage yet. */}
+          {/* Public comparison pages. Linked from the homepage footer; pre-rendered at build (scripts/prerender-compare.js). */}
           <Route path="/compare" element={<Compare />} />
           <Route path="/compare/:slug" element={<Compare />} />
           {/* Public: no login required — client payment portal */}

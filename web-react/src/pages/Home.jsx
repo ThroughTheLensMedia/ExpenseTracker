@@ -449,6 +449,7 @@ export default function Home() {
             <NavLink to="/privacy" style={{ color: 'rgba(255,255,255,0.35)', textDecoration: 'none', fontSize: '11px', fontWeight: 800, letterSpacing: '0.05em' }}>PRIVACY POLICY</NavLink>
             <NavLink to="/terms" style={{ color: 'rgba(255,255,255,0.35)', textDecoration: 'none', fontSize: '11px', fontWeight: 800, letterSpacing: '0.05em' }}>TERMS OF SERVICE</NavLink>
             <NavLink to="/security-policy" style={{ color: 'rgba(255,255,255,0.35)', textDecoration: 'none', fontSize: '11px', fontWeight: 800, letterSpacing: '0.05em' }}>SECURITY</NavLink>
+            <NavLink to="/compare" style={{ color: 'rgba(255,255,255,0.35)', textDecoration: 'none', fontSize: '11px', fontWeight: 800, letterSpacing: '0.05em' }}>COMPARE</NavLink>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 8 }}>
             <img src="/icon.png" alt="Lumière Ledger" style={{ width: 38, height: 38, borderRadius: 10 }} />
