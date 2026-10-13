@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.33.1', date: 'OCT 13, 2026', color: '#635bff', items: [
+        '<strong>Improved:</strong> The homepage now describes what the app actually does: invoicing with online card payment, CRM pipeline, bank import or live bank sync, mileage, gear depreciation and Schedule C category review.',
+        '<strong>Fixed:</strong> The HoneyBook and Bonsai comparison pages now mention the lead pipeline and Clients page.',
+    ]},
     { version: '7.33.0', date: 'OCT 13, 2026', color: '#635bff', items: [
         '<strong>New:</strong> Pages explaining what Lumière Ledger does for <strong>photographers</strong>, <strong>freelancers</strong> and <strong>small businesses</strong>, linked from the comparison pages and the homepage footer.',
         '<strong>Improved:</strong> The comparison pages now describe the three business profiles: Photographer, Freelancer and Small Business.',

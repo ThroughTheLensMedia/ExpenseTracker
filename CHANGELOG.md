@@ -3,6 +3,31 @@
 All notable changes to this project are documented here.
 Format: `[vX.X.X] — YYYY-MM-DD`
 
+## [v7.33.1] — 2026-10-13
+
+### Changed — Homepage copy: no AI or tax-automation claims
+
+Approved by Joshua 2026-10-13. Copy only; prices, plan limits and app behavior unchanged. The features behind the old AI wording exist (chat assistant `components/AssistantSidebar.jsx` on the user's own Gemini key, receipt scanner in `TransactionDrawer.jsx`, batch categorization gated in `UpgradeGate.jsx`), so they are reworded rather than removed.
+
+- `web-react/src/pages/Home.jsx`
+  - Hero: "Financial intelligence, CRM pipeline, AI-powered tax automation, professional invoicing, and gear management" → "Invoicing with online card payment, a CRM pipeline, bank CSV import or live bank sync, mileage, gear depreciation, and Schedule C category review".
+  - Feature card "AI Financial Assistant" (badge "Gemini 2.5 Flash") → "Financial Assistant" (badge "Bring Your Own Key"), plain description of what it answers from.
+  - Invoicing card mentions card payment on the Pay Portal; gear card no longer says "calculated automatically"; receipt badge "Auto Missing-Doc Alerts" → "Missing-Receipt Flags".
+  - Section "Tax Automation" → "Schedule C Review"; "AI Ledger Repair" bullet → "Batch categorization (Studio) — sorts past imports into categories for you to review"; receipt-threshold and mapping bullets reworded without "auto".
+  - Section "AI Intelligence" (eyebrow "Gemini 2.5 Flash") → "Ask Your Books" (eyebrow "Core & Studio · Your Own Gemini Key").
+  - Security card "Your AI, your key" → "Your assistant, your key".
+  - Pricing table rows "AI Financial Assistant" → "Financial assistant (chat)", "Batch AI categorization" → "Batch categorization". Same plans, same checkmarks.
+  - Illustrative personas: dropped "automatic Section 179 depreciation" and "lands in the right tax bucket automatically".
+- `web-react/home.html` / `index.html` — checked; no AI or tax-automation wording (already fixed in `7ca06c3`). `<title>` "Financial Intelligence…" left as is.
+
+### Fixed — HoneyBook and Bonsai compare pages under-sold client management
+
+- `web-react/src/pages/compareData.js` — HoneyBook: "Scheduling and client management: No" split into "Scheduling: No" and "Client list and lead pipeline: Yes"; angle, trade-off and meta description no longer imply Lumière Ledger lacks client management. Bonsai: new "Client list and lead pipeline: Yes" row; trade-off no longer says Bonsai wins on CRM. "CRM pipeline" added to the shared feature chips. Other compare and `/for` copy re-checked against the code; no other inaccuracies found.
+
+### Version record
+
+- `CHANGELOG.md`, `ChangeLogModal.jsx`, `ROADMAP.md`, `AGENTS.md`, `CLAUDE.md`, `version.json`, `App.jsx`. Patch bump (copy fixes).
+
 ## [v7.33.0] — 2026-10-13
 
 ### Added — `/for/photographers`, `/for/freelancers`, `/for/small-business`

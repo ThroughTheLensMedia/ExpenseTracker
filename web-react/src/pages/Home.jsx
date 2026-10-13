@@ -6,11 +6,11 @@ import { Bot, FileText, BarChart3, Target, Wrench, Landmark, Map, Paperclip, Mes
 const PERSONAS = [
   {
     icon: Camera, accent: '#f97316', title: 'The Wedding Photographer',
-    body: 'Tracks a $14k gear bag with automatic Section 179 depreciation, logs venue round-trips at the IRS rate, and hands their CPA a clean Schedule C export in January.',
+    body: 'Tracks a $14k gear bag with Section 179 or straight-line depreciation, logs venue round-trips at the IRS rate, and hands their CPA a clean Schedule C export in January.',
   },
   {
     icon: Palette, accent: '#38bdf8', title: 'The Freelance Designer',
-    body: 'Caught $200/mo in forgotten software subscriptions in the first import, and now every Adobe and Figma charge lands in the right tax bucket automatically.',
+    body: 'Caught $200/mo in forgotten software subscriptions in the first import, and now checks every Adobe and Figma charge against its Schedule C category before tax time.',
   },
   {
     icon: Video, accent: '#a78bfa', title: 'The Videographer',
@@ -21,7 +21,7 @@ const PERSONAS = [
 const SECURITY_ITEMS = [
   { icon: ShieldCheck, title: 'Tenant isolation', body: 'Row-Level Security enforced at the database — your data is invisible to every other account, by architecture.' },
   { icon: Lock, title: 'Encrypted bank tokens', body: 'Bank credentials never touch our servers. Plaid tokens are encrypted with libsodium; everything rides TLS.' },
-  { icon: KeyRound, title: 'Your AI, your key', body: 'Bring-your-own-key AI: your financial data goes to your Gemini key — it never trains anyone’s model.' },
+  { icon: KeyRound, title: 'Your assistant, your key', body: 'The optional chat assistant runs on your own Google Gemini API key. Your financial data goes only to your key.' },
   { icon: BadgeCheck, title: 'SOC 2 Type II infrastructure', body: 'Built on Vercel, Supabase, and Plaid — all SOC 2 Type II certified providers.' },
 ];
 
@@ -31,14 +31,14 @@ const MOCK_BARS = [34, 52, 41, 68, 59, 82, 74, 90, 66, 78, 95, 88];
 const FEATURES = [
   {
     icon: Bot,
-    title: 'AI Financial Assistant',
-    desc: 'Ask Lumière anything about your business. Powered by Google Gemini 2.5 Flash with access to your full transaction history.',
-    badge: 'Gemini 2.5 Flash',
+    title: 'Financial Assistant',
+    desc: 'Ask questions about your business in plain English and get answers from your own transactions, gear, and invoices. Runs on your own Google Gemini API key.',
+    badge: 'Bring Your Own Key',
   },
   {
     icon: FileText,
     title: 'Professional Invoicing',
-    desc: 'Build and send polished invoices with line items, tax, and discounts. Clients e-sign directly on a branded Pay Portal.',
+    desc: 'Build and send polished invoices with line items, tax, and discounts. Clients e-sign and pay by card on a branded Pay Portal.',
     badge: 'E-Signature Included',
   },
   {
@@ -56,7 +56,7 @@ const FEATURES = [
   {
     icon: Wrench,
     title: 'Gear Depreciation',
-    desc: 'Section 179 and Straight-Line depreciation calculated automatically.',
+    desc: 'Section 179 or straight-line depreciation, with this year’s deduction shown per item.',
     badge: null,
   },
   {
@@ -75,7 +75,7 @@ const FEATURES = [
     icon: Paperclip,
     title: 'Receipt Management',
     desc: 'Upload receipts from your camera roll, Files app, or iCloud Drive directly.',
-    badge: 'Auto Missing-Doc Alerts',
+    badge: 'Missing-Receipt Flags',
   },
 ];
 
@@ -98,9 +98,9 @@ const FEATURE_ROWS = [
   { label: 'Gear depreciation',          values: ['5 items', '5 items', 'Unlimited', 'Unlimited'] },
   { label: 'Executive dashboard',        values: [null,   null,       true,       true]   },
   { label: 'Live bank sync (Plaid)',      values: [null,   'Up to 5 accounts', true, true] },
-  { label: 'AI Financial Assistant',     values: [null,   null,       true,       true]   },
+  { label: 'Financial assistant (chat)', values: [null,   null,       true,       true]   },
   { label: 'Receipt scanner (OCR)',      values: [null,   null,       true,       true]   },
-  { label: 'Batch AI categorization',    values: [null,   null,       null,       true]   },
+  { label: 'Batch categorization',       values: [null,   null,       null,       true]   },
   { label: 'Mileage autopilot (A→B→A)',  values: [null,   null,       null,       true]   },
   { label: 'Unlimited transactions',     values: [null,   null,       null,       true]   },
   { label: 'Priority support',           values: [null,   null,       true,       true]   },
@@ -134,7 +134,7 @@ export default function Home() {
         </h1>
 
         <p style={{ fontSize: '18px', lineHeight: 1.65, maxWidth: '640px', margin: '0 auto 32px', color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>
-          Financial intelligence, CRM pipeline, AI-powered tax automation, professional invoicing, and gear management — built for freelancers and creative professionals. Photographers are why we built it. Everyone else is welcome too.
+          Invoicing with online card payment, a CRM pipeline, bank CSV import or live bank sync, mileage, gear depreciation, and Schedule C category review — built for freelancers and creative professionals. Photographers are why we built it. Everyone else is welcome too.
         </p>
 
         <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 0 }}>
@@ -209,23 +209,23 @@ export default function Home() {
         <p style={{ textAlign: 'center', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.2)', marginTop: 10, letterSpacing: '0.06em' }}>ILLUSTRATIVE DATA</p>
       </div>
 
-      {/* ── Tax Automation ──────────────────────────────────────────────── */}
+      {/* ── Schedule C Review ──────────────────────────────────────────────── */}
       <div style={{ width: '100%', maxWidth: 1060, marginTop: 72 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24, alignItems: 'center' }}>
           <div>
             <div style={{ fontSize: 11, fontWeight: 900, color: '#10b981', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 10 }}>Schedule C Ready</div>
-            <h2 style={{ fontSize: 'clamp(1.6rem, 3.5vw, 2.2rem)', fontWeight: 950, letterSpacing: '-0.03em', margin: '0 0 14px' }}>Tax Automation</h2>
+            <h2 style={{ fontSize: 'clamp(1.6rem, 3.5vw, 2.2rem)', fontWeight: 950, letterSpacing: '-0.03em', margin: '0 0 14px' }}>Schedule C Review</h2>
             <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', fontWeight: 600, lineHeight: 1.6, margin: '0 0 20px' }}>
-              Everything mapped, flagged, and export-ready — so tax time is a printout, not a scramble.
+              Expenses sorted into Schedule C categories, missing receipts flagged, and a CSV your accountant can open — so tax time is less of a scramble.
             </p>
           </div>
           <div className="card glass" style={{ padding: '28px 30px' }}>
             <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
               {[
-                'Real-time Schedule C category mapping across all expense types',
-                'IRS $75 receipt threshold auto-flagged — missing docs surface immediately',
+                'A Schedule C category for every expense type, reviewable before you export',
+                'Expenses over the IRS $75 receipt threshold without a receipt are flagged',
                 'Accountant-ready CSV export with one click',
-                'AI Ledger Repair — retroactively categorizes your entire import history in batch',
+                'Batch categorization (Studio) — sorts past imports into categories for you to review',
                 'Near-duplicate detection prevents double-counted transactions on import',
               ].map(item => (
                 <li key={item} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
@@ -267,12 +267,12 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ── AI Intelligence ─────────────────────────────────────────────── */}
+      {/* ── Financial Assistant ─────────────────────────────────────────────── */}
       <div style={{ width: '100%', maxWidth: 1060, marginTop: 72 }}>
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ fontSize: 11, fontWeight: 900, color: '#f97316', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 10 }}>Gemini 2.5 Flash</div>
-          <h2 style={{ fontSize: 'clamp(1.6rem, 3.5vw, 2.2rem)', fontWeight: 950, letterSpacing: '-0.03em', margin: '0 0 12px' }}>AI Intelligence</h2>
-          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', fontWeight: 600, margin: '0 auto', maxWidth: 520 }}>Ask Lumière anything. It has your full transaction history, gear data, and invoicing records in context.</p>
+          <div style={{ fontSize: 11, fontWeight: 900, color: '#f97316', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 10 }}>Core &amp; Studio · Your Own Gemini Key</div>
+          <h2 style={{ fontSize: 'clamp(1.6rem, 3.5vw, 2.2rem)', fontWeight: 950, letterSpacing: '-0.03em', margin: '0 0 12px' }}>Ask Your Books</h2>
+          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', fontWeight: 600, margin: '0 auto', maxWidth: 520 }}>A chat assistant that answers from your transaction history, gear, and invoices, using your own Google Gemini API key.</p>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12 }}>
           {[
