@@ -29,6 +29,7 @@ const Terms          = lazy(() => import('./pages/Terms'));
 const SecurityPolicy = lazy(() => import('./pages/SecurityPolicy'));
 const Home           = lazy(() => import('./pages/Home'));
 const Compare        = lazy(() => import('./pages/Compare'));
+const ForProfile     = lazy(() => import('./pages/ForProfile'));
 const PayInvoice     = lazy(() => import('./pages/PayInvoice'));
 const AddOns         = lazy(() => import('./pages/AddOns'));
 const Accounts       = lazy(() => import('./pages/Accounts'));
@@ -41,7 +42,7 @@ import OnboardingChecklist from './components/OnboardingChecklist.jsx';
 // Single source of truth for the "What's New" badge — the check (useEffect below)
 // and the dismiss handler (handleWhatsNewClick) must read the exact same value,
 // or the badge re-lights immediately after being dismissed.
-const CURRENT_VERSION = "7.32.0";
+const CURRENT_VERSION = "7.33.0";
 
 // Shared route-level loading fallback — matches app's existing spinner style
 function PageSpinner() {
@@ -328,6 +329,7 @@ function AppContent() {
           {/* Public comparison pages. Linked from the homepage footer; pre-rendered at build (scripts/prerender-compare.js). */}
           <Route path="/compare" element={<Compare />} />
           <Route path="/compare/:slug" element={<Compare />} />
+          <Route path="/for/:profile" element={<ForProfile />} />
           {/* Public: no login required — client payment portal */}
           <Route path="/pay/:token" element={<PayInvoice />} />
           <Route path="*" element={<Navigate to="/" />} />
@@ -625,6 +627,7 @@ function AppContent() {
             <Route path="/security-policy" element={<SecurityPolicy />} />
             <Route path="/compare" element={<Compare />} />
             <Route path="/compare/:slug" element={<Compare />} />
+            <Route path="/for/:profile" element={<ForProfile />} />
             {/* Public: client payment portal, also accessible when logged in */}
             <Route path="/pay/:token" element={<PayInvoice />} />
             <Route path="*" element={<Navigate to="/" />} />

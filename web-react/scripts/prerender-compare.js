@@ -1,4 +1,5 @@
-// Build step: write static HTML for /compare and each /compare/<slug> page.
+// Build step: write static HTML for /compare, each /compare/<slug> page,
+// and each /for/<profile> page (src/pages/forData.js).
 //
 // Runs after `vite build`. Takes the built dist/index.html (so the SPA bundle
 // and CSS still load), swaps in per-page title / description / Open Graph /
@@ -6,8 +7,8 @@
 // #compare-prerender block just before #root. Compare.jsx removes that block
 // on mount, once React has drawn the same markup.
 //
-// Output: dist/compare/index.html and dist/compare/<slug>/index.html.
-// vercel.json rewrites /compare and /compare/<slug> to these files.
+// Output: dist/compare/index.html, dist/compare/<slug>/index.html and
+// dist/for/<profile>/index.html. vercel.json rewrites those URLs to these files.
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -61,6 +62,7 @@ async function main() {
   try {
     const { render } = await vite.ssrLoadModule('/scripts/compare-ssr-entry.jsx');
     const { PAGES, OTHERS, HUB, SITE_URL } = await vite.ssrLoadModule('/src/pages/compareData.js');
+    const { FOR_PAGES, FOR_SLUGS } = await vite.ssrLoadModule('/src/pages/forData.js');
 
     const pages = [
       { path: '/compare', title: HUB.title, description: HUB.description },
@@ -68,6 +70,11 @@ async function main() {
         path: `/compare/${slug}`,
         title: PAGES[slug].title,
         description: PAGES[slug].description,
+      })),
+      ...FOR_SLUGS.map((slug) => ({
+        path: `/for/${slug}`,
+        title: FOR_PAGES[slug].title,
+        description: FOR_PAGES[slug].description,
       })),
     ];
 

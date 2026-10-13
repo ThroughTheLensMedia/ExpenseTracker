@@ -38,6 +38,10 @@
             "destination": "/web-react/compare/$1/index.html"
         },
         {
+            "source": "/for/(photographers|freelancers|small-business)",
+            "destination": "/web-react/for/$1/index.html"
+        },
+        {
             "source": "/((?!api/).*)",
             "destination": "/web-react/index.html"
         }

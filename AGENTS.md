@@ -16,7 +16,7 @@ The world's most elite, AI-driven financial command center for creative professi
 
 | Property | Value |
 |----------|-------|
-| **Version** | v7.32.0 |
+| **Version** | v7.33.0 |
 | **Status** | Active Development — Open Public Launch |
 | **Deploy target** | `www.lumiereledger.com` (primary) — `app.throughthelens.media` 301 redirects to it |
 | **Deployment** | Vercel (auto-deploy on `git push origin main`) |
@@ -308,6 +308,8 @@ Express 4.19 API (api/)
 
 **v7.32.0:** `/compare` and `/compare/<slug>` (QuickBooks Solopreneur, FreshBooks, Wave, Bonsai, HoneyBook) are public pages rendered by `pages/Compare.jsx` from `pages/compareData.js` (copy, prices, titles, descriptions — shared with the build script, so edit content there). `npm run build` is `vite build && node scripts/prerender-compare.js`: `scripts/prerender-compare.js` server-renders the same component via `scripts/compare-ssr-entry.jsx` and writes `dist/compare/index.html` + `dist/compare/<slug>/index.html` (built `index.html` with per-page title, description, og/twitter, canonical, exactly one `<h1>` — the script fails the build otherwise). The static copy sits in `#compare-prerender` beside `#root` and is removed by `utils/comparePrerender.js` (`Compare.jsx` on mount; `App.jsx` once a signed-in user is ready). `vercel.json` has explicit `/compare` and `/compare/(quickbooks-solopreneur|freshbooks|wave|bonsai|honeybook)` rewrites to `/web-react/compare/...` above the SPA catch-all — the legacy `builds` config serves output under `/web-react/`, so the files are not found automatically. **Adding a compare page = new entry in `compareData.js` + new slug in that `vercel.json` rewrite + `sitemap.xml`.** Homepage footer links to `/compare` in both `home.html` and `Home.jsx`.
 
+**v7.33.0:** `/for/photographers`, `/for/freelancers`, `/for/small-business` are public pages rendered by `pages/ForProfile.jsx` from `pages/forData.js` (edit copy there; its header comment maps each claimed feature to the app file that backs it). The same `scripts/prerender-compare.js` writes `dist/for/<profile>/index.html` with the same checks; `vercel.json` has a `/for/(photographers|freelancers|small-business)` rewrite. **Adding a `/for` page = entry in `forData.js` (`FOR_SLUGS`, `FOR_LABELS`, `FOR_PAGES`) + slug in that rewrite + `sitemap.xml`.** Linked from the `/compare` hub (`ForLinks` in `Compare.jsx`) and the homepage footer. `usePageMeta` lives in `utils/usePageMeta.js`. Marketing pages name only Photographer, Freelancer and Small Business (`PROFILES` in `compareData.js`); the in-app picker still has Personal — do not change it from marketing work.
+
 **Hooks (`web-react/src/hooks/`)** — `useExpenseFilters.js` (shared filter/sort for Transactions/Dashboard/Tax; Category + Notes combine as AND by default, or OR via the `categoryNotesMatch` option — added v7.25.2, only Transactions.jsx exposes the toggle, other callers default to AND unchanged), `useFilterOptions.js` (unique vendors/accounts/categories, feeds filter dropdowns + drawer source list), `useActivityPulse.js` (daily engagement tracking), `useLeadsRealtime.js` (Supabase Realtime subscription for live lead notifications).
 
 **Constants (`web-react/src/constants/`)** — `categories.js` (single source of truth for built-in category groups), `billing.js` (see Key Files Reference above).
@@ -386,7 +388,7 @@ Plaid-connected accounts use `source: 'plaid'` regardless of institution. Known 
 |---------|---------|
 | `cd api && npm start` | Start backend server |
 | `cd web-react && npm run dev` | Start frontend dev server |
-| `cd web-react && npm run build` | Production build (Vite build, then `scripts/prerender-compare.js` writes the static `/compare` pages) |
+| `cd web-react && npm run build` | Production build (Vite build, then `scripts/prerender-compare.js` writes the static `/compare` and `/for` pages) |
 | `git push origin main` | Deploy to Vercel (auto-build triggers on push) |
 
 ---

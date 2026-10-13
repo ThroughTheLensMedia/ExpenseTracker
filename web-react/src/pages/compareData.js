@@ -9,7 +9,9 @@
 
 export const PRICE = 'Free to start. Bank sync $4.99/mo. Core $9/mo, Studio $19/mo.';
 
-export const PROFILES = 'Photographer, Freelancer, Small Business, or Personal / Side Hustle';
+// Marketing copy names only the three business profiles (decided 2026-10-13).
+// The in-app picker is unchanged; this string is marketing copy only.
+export const PROFILES = 'Photographer, Freelancer, or Small Business';
 
 export const OTHERS = [
   { slug: 'quickbooks-solopreneur', name: 'QuickBooks Solopreneur' },

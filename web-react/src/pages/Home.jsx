@@ -445,11 +445,14 @@ export default function Home() {
       {/* ── Footer ──────────────────────────────────────────────────────── */}
       <footer style={{ marginTop: 80, paddingBottom: 60, display: 'flex', justifyContent: 'center', width: '100%' }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-          <div style={{ display: 'flex', gap: 24, justifyContent: 'center' }}>
+          <div style={{ display: 'flex', gap: 24, justifyContent: 'center', flexWrap: 'wrap' }}>
             <NavLink to="/privacy" style={{ color: 'rgba(255,255,255,0.35)', textDecoration: 'none', fontSize: '11px', fontWeight: 800, letterSpacing: '0.05em' }}>PRIVACY POLICY</NavLink>
             <NavLink to="/terms" style={{ color: 'rgba(255,255,255,0.35)', textDecoration: 'none', fontSize: '11px', fontWeight: 800, letterSpacing: '0.05em' }}>TERMS OF SERVICE</NavLink>
             <NavLink to="/security-policy" style={{ color: 'rgba(255,255,255,0.35)', textDecoration: 'none', fontSize: '11px', fontWeight: 800, letterSpacing: '0.05em' }}>SECURITY</NavLink>
             <NavLink to="/compare" style={{ color: 'rgba(255,255,255,0.35)', textDecoration: 'none', fontSize: '11px', fontWeight: 800, letterSpacing: '0.05em' }}>COMPARE</NavLink>
+            <NavLink to="/for/photographers" style={{ color: 'rgba(255,255,255,0.35)', textDecoration: 'none', fontSize: '11px', fontWeight: 800, letterSpacing: '0.05em' }}>FOR PHOTOGRAPHERS</NavLink>
+            <NavLink to="/for/freelancers" style={{ color: 'rgba(255,255,255,0.35)', textDecoration: 'none', fontSize: '11px', fontWeight: 800, letterSpacing: '0.05em' }}>FOR FREELANCERS</NavLink>
+            <NavLink to="/for/small-business" style={{ color: 'rgba(255,255,255,0.35)', textDecoration: 'none', fontSize: '11px', fontWeight: 800, letterSpacing: '0.05em' }}>FOR SMALL BUSINESS</NavLink>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 8 }}>
             <img src="/icon.png" alt="Lumière Ledger" style={{ width: 38, height: 38, borderRadius: 10 }} />

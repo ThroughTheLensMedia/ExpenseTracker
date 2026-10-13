@@ -3,6 +3,28 @@
 All notable changes to this project are documented here.
 Format: `[vX.X.X] — YYYY-MM-DD`
 
+## [v7.33.0] — 2026-10-13
+
+### Added — `/for/photographers`, `/for/freelancers`, `/for/small-business`
+
+- `web-react/src/pages/forData.js` (new) — copy, titles, descriptions and H1s for the three pages; plain module shared with the build script. Header comment lists the app file that backs each claimed feature (Invoice/PayInvoice, CRM/Clients, Import/PlaidLink, Mileage, Assets, Tax, Transactions, `DashboardTab.jsx` `ROLE_PRESETS`). No AI, tax-automation, testimonial or "free trial" copy. Prices re-checked against the live homepage bundle on 2026-10-13 (Free, Sync $4.99/mo, Core $9/mo, Studio $19/mo) and plan limits match `Home.jsx` `FEATURE_ROWS`.
+- `web-react/src/pages/ForProfile.jsx` (new) — renders `/for/:profile`; unknown profiles redirect to `/compare`. Links to `/`, `/compare`, each compare page, the other two `/for` pages and signup (`/login?signup=1`).
+- `web-react/src/App.jsx` — `ForProfile` lazy-loaded; `/for/:profile` added to both the signed-out and signed-in route trees.
+- `web-react/scripts/prerender-compare.js`, `scripts/compare-ssr-entry.jsx` — also pre-render `dist/for/<profile>/index.html` with the same per-page title/description/og/twitter/canonical and one-`<h1>` checks.
+- `vercel.json` — `/for/(photographers|freelancers|small-business)` → `/web-react/for/$1/index.html`, above the SPA catch-all.
+- `web-react/public/sitemap.xml` — three `/for` URLs (priority 0.7, `lastmod` 2026-10-13). Sitemap now lists 13 URLs.
+- `web-react/src/pages/Compare.jsx` — "By line of work" links (`ForLinks`) on the `/compare` hub; `Shell`, `StartFree`, `ForLinks` exported for reuse.
+- `web-react/src/utils/usePageMeta.js` (new) — `usePageMeta` moved out of `Compare.jsx` so it can be shared (fast-refresh lint rule).
+- `web-react/home.html`, `web-react/src/pages/Home.jsx` — homepage footer links FOR PHOTOGRAPHERS / FOR FREELANCERS / FOR SMALL BUSINESS next to COMPARE (React footer row now wraps on narrow screens).
+
+### Changed — Compare pages name only the three business profiles
+
+- `web-react/src/pages/compareData.js` — `PROFILES` is now "Photographer, Freelancer, or Small Business" (was "…, or Personal / Side Hustle"). Marketing copy only: the in-app profile picker, profile types and user data are unchanged.
+
+### Version record
+
+- `CHANGELOG.md`, `ChangeLogModal.jsx`, `ROADMAP.md`, `AGENTS.md`, `CLAUDE.md`, `version.json`, `App.jsx` (`CURRENT_VERSION`). Minor bump (new public pages).
+
 ## [v7.32.0] — 2026-10-08
 
 Docs catch-up: the three commits below shipped to production without a version bump or changelog entry. This release records them; no app code changed in the version commit beyond version files and the in-app changelog.

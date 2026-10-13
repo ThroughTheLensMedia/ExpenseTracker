@@ -4,6 +4,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { StaticRouter, Routes, Route } from 'react-router-dom';
 import Compare from '../src/pages/Compare.jsx';
+import ForProfile from '../src/pages/ForProfile.jsx';
 
 export function render(url) {
   return renderToStaticMarkup(
@@ -11,6 +12,7 @@ export function render(url) {
       <Routes>
         <Route path="/compare" element={<Compare />} />
         <Route path="/compare/:slug" element={<Compare />} />
+        <Route path="/for/:profile" element={<ForProfile />} />
       </Routes>
     </StaticRouter>
   );

@@ -1,24 +1,12 @@
-import React, { useEffect, useLayoutEffect } from 'react';
+import React, { useLayoutEffect } from 'react';
 import { NavLink, useParams, Navigate } from 'react-router-dom';
 
 import { PROFILES, OTHERS, PAGES, FEATURES, HUB } from './compareData';
+import { FOR_SLUGS, FOR_LABELS } from './forData';
 import { removeComparePrerender } from '../utils/comparePrerender';
+import { usePageMeta } from '../utils/usePageMeta';
 
-function usePageMeta(title, description) {
-  useEffect(() => {
-    const prevTitle = document.title;
-    const meta = document.querySelector('meta[name="description"]');
-    const prevDesc = meta ? meta.getAttribute('content') : null;
-    document.title = title;
-    if (meta && description) meta.setAttribute('content', description);
-    return () => {
-      document.title = prevTitle;
-      if (meta && prevDesc != null) meta.setAttribute('content', prevDesc);
-    };
-  }, [title, description]);
-}
-
-function Shell({ children }) {
+export function Shell({ children }) {
   // The static pre-rendered copy of this page (see scripts/prerender-compare.js)
   // sits above #root until React has drawn the same markup. Remove it before
   // paint so there is no flash and never two H1s on screen.
@@ -46,7 +34,7 @@ function Shell({ children }) {
   );
 }
 
-function StartFree() {
+export function StartFree() {
   return (
     <div style={{
       marginTop: 36,
@@ -201,7 +189,26 @@ function CompareHub() {
           </NavLink>
         ))}
       </div>
+      <ForLinks />
       <StartFree />
     </Shell>
+  );
+}
+
+// Links to the /for/<profile> pages (ForProfile.jsx). Shown on the hub.
+export function ForLinks({ current }) {
+  return (
+    <div style={{ marginTop: 28 }}>
+      <div style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', marginBottom: 10 }}>
+        By line of work
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+        {FOR_SLUGS.filter(s => s !== current).map(s => (
+          <NavLink key={s} to={`/for/${s}`} className="card glass" style={{ textDecoration: 'none', color: 'white', padding: '12px 14px', fontSize: 13, fontWeight: 800 }}>
+            For {FOR_LABELS[s].toLowerCase()}
+          </NavLink>
+        ))}
+      </div>
+    </div>
   );
 }
