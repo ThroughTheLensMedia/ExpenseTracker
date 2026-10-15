@@ -2,6 +2,8 @@ const express = require("express");
 const z = require("zod");
 
 const router = express.Router();
+const { requireFeature } = require("../middleware/requireFeature");
+router.use(requireFeature('tax_review'));
 
 function csvEscape(v) {
   const s = String(v ?? "");

@@ -2,6 +2,8 @@ const express = require("express");
 const z = require("zod");
 
 const router = express.Router();
+const { requireFeature } = require("../middleware/requireFeature");
+router.use(requireFeature('gear_depreciation'));
 
 const DEPRECIATION_LIFE = {
     Camera: 5, Lens: 5, Drone: 5, Laptop: 5, 'Drone / Remote': 5,

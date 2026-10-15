@@ -16,7 +16,7 @@ The world's most elite, AI-driven financial command center for creative professi
 
 | Property | Value |
 |----------|-------|
-| **Version** | v7.33.1 |
+| **Version** | v7.34.0 |
 | **Status** | Active Development — Open Public Launch |
 | **Deploy target** | `www.lumiereledger.com` (primary) — `app.throughthelens.media` 301 redirects to it |
 | **Deployment** | Vercel (auto-deploy on `git push origin main`) |
@@ -304,6 +304,8 @@ Express 4.19 API (api/)
 **v7.33.0:** `/for/photographers`, `/for/freelancers`, `/for/small-business` are public pages rendered by `pages/ForProfile.jsx` from `pages/forData.js` (edit copy there; its header comment maps each claimed feature to the app file that backs it). The same `scripts/prerender-compare.js` writes `dist/for/<profile>/index.html` with the same checks; `vercel.json` has a `/for/(photographers|freelancers|small-business)` rewrite. **Adding a `/for` page = entry in `forData.js` (`FOR_SLUGS`, `FOR_LABELS`, `FOR_PAGES`) + slug in that rewrite + `sitemap.xml`.** Linked from the `/compare` hub (`ForLinks` in `Compare.jsx`) and the homepage footer. `usePageMeta` lives in `utils/usePageMeta.js`. Marketing pages name only Photographer, Freelancer and Small Business (`PROFILES` in `compareData.js`); the in-app picker still has Personal — do not change it from marketing work.
 
 **v7.33.1:** Public marketing copy (homepage `Home.jsx`/`home.html`, `/compare`, `/for`) carries no AI, tax-automation, testimonial or "free trial" wording. The chat assistant, receipt scanner and batch categorization exist and are described plainly ("Financial assistant (chat)", "Batch categorization").
+
+**v7.34.0:** Access & Flags — `app_flags` / `app_flag_audit` (migration `023_app_flags.sql`), admin UI + API, `requireFeature` on plaid/invoices/mileage/assets/tax/brain, client `useFlags`. Previously unguarded admin routes now `requireRole('admin')`. Public `/pay` and Plaid webhooks stay ungated.
 
 **Hooks (`web-react/src/hooks/`)** — `useExpenseFilters.js` (shared filter/sort for Transactions/Dashboard/Tax; Category + Notes combine as AND by default, or OR via the `categoryNotesMatch` option — added v7.25.2, only Transactions.jsx exposes the toggle, other callers default to AND unchanged), `useFilterOptions.js` (unique vendors/accounts/categories, feeds filter dropdowns + drawer source list), `useActivityPulse.js` (daily engagement tracking), `useLeadsRealtime.js` (Supabase Realtime subscription for live lead notifications).
 

@@ -3,6 +3,8 @@ const z = require("zod");
 const { randomUUID } = require('crypto');
 
 const router = express.Router();
+const { requireFeature } = require("../middleware/requireFeature");
+router.use(requireFeature('invoicing'));
 const { queueInvoiceEmail } = require("../utils/emailQueue");
 const { combineInvoiceNotes } = require("../utils/invoiceNotes");
 const { photographerCc } = require("../utils/invoiceCc");
