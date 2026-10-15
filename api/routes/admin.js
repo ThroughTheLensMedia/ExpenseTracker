@@ -13,12 +13,8 @@ router.get("/test", (req, res) => res.json({ ok: true, test: "admin-reachable" }
 
 // GET /admin/daily-report — Admin UI preview only. Returns activity data; never sends email.
 // Automated cron firing lives at /api/cron/daily-report (mounted before authMiddleware).
-router.get("/daily-report", async (req, res) => {
-    const userEmail = req.user?.email?.toLowerCase();
-    if (userEmail !== 'joshua.deuermeyer@gmail.com' && userEmail !== 'info@throughthelens.media') {
-        return res.status(403).json({ error: "Unauthorized" });
-    }
-
+// Cron path is /api/cron/daily-report (before auth) — no cron-secret needed here.
+router.get("/daily-report", requireRole('admin'), async (req, res) => {
     try {
         const { supabase: serviceClient } = require("../db");
         if (!serviceClient) throw new Error("Supabase service client not initialized");
@@ -191,7 +187,7 @@ async function fetchAllRows(sb, tableName) {
 }
 
 // POST /admin/purge-cloudflare
-router.post("/purge-cloudflare", async (req, res) => {
+router.post("/purge-cloudflare", requireRole('admin'), async (req, res) => {
     const CF_ZONE_ID = process.env.CF_ZONE_ID;
     const CF_API_TOKEN = process.env.CF_API_TOKEN;
 
@@ -217,7 +213,7 @@ router.post("/purge-cloudflare", async (req, res) => {
 });
 
 // GET /admin/export-all
-router.get("/export-all", async (req, res) => {
+router.get("/export-all", requireRole('admin'), async (req, res) => {
     try {
         const tables = ["expenses", "equipment_assets", "mileage_logs", "classification_rules", "clients", "invoices", "invoice_items", "settings"];
         const backup = {};
@@ -233,7 +229,7 @@ router.get("/export-all", async (req, res) => {
 });
 
 // POST /admin/import-all
-router.post("/import-all", async (req, res) => {
+router.post("/import-all", requireRole('admin'), async (req, res) => {
     try {
         const backup = req.body; 
         if (!backup) return res.status(400).json({ error: "No backup data provided" });
@@ -562,7 +558,7 @@ router.delete("/beta-codes/:code", requireRole('admin'), async (req, res) => {
 });
 
 // POST /admin/subscriptions/:userId/extend
-router.post("/subscriptions/:userId/extend", async (req, res) => {
+router.post("/subscriptions/:userId/extend", requireRole('admin'), async (req, res) => {
     try {
         const { supabase: serviceClient } = require("../db");
         const { data: current } = await serviceClient
@@ -594,7 +590,7 @@ router.post("/subscriptions/:userId/extend", async (req, res) => {
 });
 
 // POST /admin/subscriptions/:userId/suspend
-router.post("/subscriptions/:userId/suspend", async (req, res) => {
+router.post("/subscriptions/:userId/suspend", requireRole('admin'), async (req, res) => {
     try {
         const { supabase: serviceClient } = require("../db");
         const { error } = await serviceClient
