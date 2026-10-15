@@ -3,6 +3,31 @@
 All notable changes to this project are documented here.
 Format: `[vX.X.X] — YYYY-MM-DD`
 
+## [v7.34.0] — 2026-10-15
+
+### Added — Access & Flags (admin control center)
+
+Global feature and bot capability flags with audit trail. Code works before or after the SQL migration is applied (built-in defaults).
+
+- `api/migrations/023_app_flags.sql` — `app_flags` + `app_flag_audit` (RLS on, no policies = service-role only), seed defaults, `set_app_flag` RPC (requires non-empty reason).
+- `api/utils/flags.js` — `isFlagEnabled` / `getFlags` with ~30s cache. Features fail open (ON); bot write caps fail closed (OFF); `bot_require_human_confirm` fails closed (ON).
+- Admin API: `GET/PATCH /api/admin/flags`, `GET /api/admin/flags/audit` (admin-only). PATCH returns 503 with a clear message until migration 023 is run. `GET /api/settings/feature-flags` for authenticated clients (feature keys only).
+- Control Center → Administration → **Access & Flags** (`AccessFlagsTab.jsx`): feature and bot groups, required reason, confirm when turning a user-facing feature off, audit list. Security Review tab untouched.
+- `requireFeature` middleware on authenticated `/plaid`, `/invoices`, `/mileage`, `/assets`, `/tax`, `/brain` routers (admins bypass; off → 403 `{error:'feature_disabled'}`).
+- Client `useFlags()` hook (defaults all ON); nav/routes hidden for non-admins when a feature is off; AssistantSidebar hidden when `ai_assistant` is off.
+
+### Security — Lock previously unguarded admin routes
+
+`requireRole('admin')` on `/admin/daily-report`, `/purge-cloudflare`, `/export-all`, `/import-all`, `/subscriptions/:id/extend|suspend`. Cron remains on `/api/cron/daily-report` (separate, cron-secret authorized).
+
+### Ungated by design
+
+Public `/api/pay/*` invoice pay links, Plaid webhook (`POST /api/plaid/webhook`), CSV import, transactions/expenses ledger, CRM leads, and existing stored data stay available so turning a flag off does not orphan data. Bot flag enforcement is deferred until bot identity exists.
+
+### Version record
+
+- `CHANGELOG.md`, `ChangeLogModal.jsx`, `version.json`, `App.jsx`, `AGENTS.md`, `CLAUDE.md`, `ROADMAP.md`. Minor bump.
+
 ## [v7.33.1] — 2026-10-13
 
 ### Changed — Homepage copy: no AI or tax-automation claims

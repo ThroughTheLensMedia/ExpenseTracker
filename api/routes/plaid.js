@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const { requireFeature } = require("../middleware/requireFeature");
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const { z } = require("zod");
@@ -68,6 +69,7 @@ function requirePlaidConfig(req, res, next) {
 }
 
 router.use(requirePlaidConfig);
+router.use(requireFeature('bank_sync'));
 
 // ─── 1. Create Link Token ───
 // Pass { connection_id } to open Plaid Link in UPDATE MODE for an existing item

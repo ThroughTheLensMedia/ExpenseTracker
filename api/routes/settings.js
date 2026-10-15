@@ -77,4 +77,23 @@ router.post("/", async (req, res) => {
     }
 });
 
+
+const { getFlags, FEATURE_KEYS, DEFAULTS } = require("../utils/flags");
+
+// GET /settings/feature-flags — any authenticated user; feature keys only (fail-open defaults).
+router.get("/feature-flags", async (req, res) => {
+    try {
+        const { flags, migrationPending } = await getFlags();
+        const out = {};
+        for (const key of FEATURE_KEYS) {
+            out[key] = Object.prototype.hasOwnProperty.call(flags, key) ? !!flags[key] : !!DEFAULTS[key];
+        }
+        res.json({ flags: out, migration_pending: !!migrationPending });
+    } catch (e) {
+        const out = {};
+        for (const key of FEATURE_KEYS) out[key] = !!DEFAULTS[key];
+        res.json({ flags: out, migration_pending: true });
+    }
+});
+
 module.exports = router;

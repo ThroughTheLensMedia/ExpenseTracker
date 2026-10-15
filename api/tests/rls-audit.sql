@@ -126,3 +126,21 @@ WHERE schemaname = 'public' AND tablename = 'user_roles';
 --   - Query 4 returns rows → add user_id column and policies
 --   - Query 6 shows qual = 'true' → drop that policy, restrict to service role only
 -- ─────────────────────────────────────────────────────────────────────────────
+
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- APP FLAGS (v7.34.0) — service-role only infrastructure
+-- app_flags / app_flag_audit must have RLS enabled and ZERO policies.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+SELECT tablename, rowsecurity
+FROM pg_tables
+WHERE schemaname = 'public'
+  AND tablename IN ('app_flags', 'app_flag_audit')
+ORDER BY tablename;
+
+SELECT tablename, policyname
+FROM pg_policies
+WHERE schemaname = 'public'
+  AND tablename IN ('app_flags', 'app_flag_audit');
+-- Expect: zero rows (no policies).

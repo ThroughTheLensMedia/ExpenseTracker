@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, lazy, Suspense } from 'react';
 import * as Sentry from '@sentry/react';
 import { useActivityPulse } from "./hooks/useActivityPulse";
+import { useFlags } from "./hooks/useFlags";
 import { useLeadsRealtime } from "./hooks/useLeadsRealtime";
 import { BrowserRouter as Router, Routes, Route, NavLink, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth, supabase } from './components/AuthContext';
@@ -42,7 +43,7 @@ import OnboardingChecklist from './components/OnboardingChecklist.jsx';
 // Single source of truth for the "What's New" badge — the check (useEffect below)
 // and the dismiss handler (handleWhatsNewClick) must read the exact same value,
 // or the badge re-lights immediately after being dismissed.
-const CURRENT_VERSION = "7.33.1";
+const CURRENT_VERSION = "7.34.0";
 
 // Shared route-level loading fallback — matches app's existing spinner style
 function PageSpinner() {
@@ -81,6 +82,15 @@ function PrivateRoute({ children }) {
 
 function BusinessOnlyRoute({ experienceMode, children }) {
   if (experienceMode === EXPERIENCE_MODES.PERSONAL) {
+    return <Navigate to="/" replace />;
+  }
+  return children;
+}
+
+/** Hide a route for non-admins when its feature flag is off. Admins always pass. */
+function FeatureFlagRoute({ flagKey, flags, isAdmin, children }) {
+  const enabled = flags?.[flagKey] !== false;
+  if (!enabled && !isAdmin) {
     return <Navigate to="/" replace />;
   }
   return children;
@@ -167,8 +177,11 @@ function BetaCodeGate({ email, onSuccess, onLogout }) {
 function AppContent() {
   useActivityPulse();
   const { newLeadCount, clearBadge } = useLeadsRealtime();
+  const { flags } = useFlags();
   const [apiStatus, setApiStatus] = useState('Checking...');
   const { user, loading, logout, subscription, subscriptionReady, settings, refreshSubscription, refreshAccountData } = useAuth();
+  const isAdmin = user?.email === 'joshua.deuermeyer@gmail.com' || user?.email === 'info@throughthelens.media';
+  const showFlag = (key) => isAdmin || flags?.[key] !== false;
 
   // Signed-in visitors on a pre-rendered /compare URL may land on a gate instead
   // of the Compare page, so drop the static copy once the signed-in app renders.
@@ -354,7 +367,7 @@ function AppContent() {
 
   return (
     <div className="wrap">
-      <Suspense fallback={null}><AssistantSidebar /></Suspense>
+      {showFlag('ai_assistant') && <Suspense fallback={null}><AssistantSidebar /></Suspense>}
       {/* Expiration Banner */}
       {daysLeft !== null && daysLeft <= 7 && (
         <div style={{ 
@@ -483,13 +496,15 @@ function AppContent() {
             <NavLink to="/" end onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
               Dashboard
             </NavLink>
+            {showFlag('bank_sync') && (
             <NavLink to="/accounts" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
               Accounts
             </NavLink>
+            )}
             <NavLink to="/transactions" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
               Transactions
             </NavLink>
-            {!isPersonalMode && (
+            {!isPersonalMode && showFlag('tax_review') && (
               <NavLink to="/tax" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
                 Tax &amp; Schedule C
               </NavLink>
@@ -503,12 +518,16 @@ function AppContent() {
                 <NavLink to="/crm" end onClick={() => { setMobileMenuOpen(false); clearBadge(); }} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
                   Leads &amp; Projects {newLeadCount > 0 && <span style={{ background: '#ef4444', color: 'white', borderRadius: '50%', fontSize: '9px', fontWeight: 900, padding: '1px 5px', marginLeft: '6px' }}>{newLeadCount > 9 ? '9+' : newLeadCount}</span>}
                 </NavLink>
+                {showFlag('invoicing') && (
                 <NavLink to="/crm/financials" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
                   Invoices
                 </NavLink>
+                )}
+                {showFlag('invoicing') && (
                 <NavLink to="/clients" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
                   Clients
                 </NavLink>
+                )}
               </>
             )}
 
@@ -520,12 +539,16 @@ function AppContent() {
             </NavLink>
             {!isPersonalMode && (
               <>
+                {showFlag('mileage') && (
                 <NavLink to="/mileage" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
                   Mileage
                 </NavLink>
+                )}
+                {showFlag('gear_depreciation') && (
                 <NavLink to="/equipment" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
                   Equipment
                 </NavLink>
+                )}
               </>
             )}
             <NavLink
@@ -610,16 +633,16 @@ function AppContent() {
           <Routes>
             <Route path="/" element={isPersonalMode ? <PersonalDashboard /> : <DashboardV2 apiStatus={apiStatus} />} />
             <Route path="/transactions" element={<Transactions />} />
-            <Route path="/tax" element={<BusinessOnlyRoute experienceMode={experienceMode}><Tax /></BusinessOnlyRoute>} />
-            <Route path="/mileage" element={<BusinessOnlyRoute experienceMode={experienceMode}><Mileage /></BusinessOnlyRoute>} />
-            <Route path="/equipment" element={<BusinessOnlyRoute experienceMode={experienceMode}><Assets /></BusinessOnlyRoute>} />
+            <Route path="/tax" element={<BusinessOnlyRoute experienceMode={experienceMode}><FeatureFlagRoute flagKey="tax_review" flags={flags} isAdmin={isAdmin}><Tax /></FeatureFlagRoute></BusinessOnlyRoute>} />
+            <Route path="/mileage" element={<BusinessOnlyRoute experienceMode={experienceMode}><FeatureFlagRoute flagKey="mileage" flags={flags} isAdmin={isAdmin}><Mileage /></FeatureFlagRoute></BusinessOnlyRoute>} />
+            <Route path="/equipment" element={<BusinessOnlyRoute experienceMode={experienceMode}><FeatureFlagRoute flagKey="gear_depreciation" flags={flags} isAdmin={isAdmin}><Assets /></FeatureFlagRoute></BusinessOnlyRoute>} />
             <Route path="/StudioControlCenter" element={<Backup />} />
             <Route path="/backup" element={<Navigate to="/StudioControlCenter" replace />} />
             <Route path="/crm/*" element={<BusinessOnlyRoute experienceMode={experienceMode}><CRM /></BusinessOnlyRoute>} />
             <Route path="/import" element={<Import />} />
             <Route path="/import/migrate" element={<BusinessOnlyRoute experienceMode={experienceMode}><CrmImport /></BusinessOnlyRoute>} />
-            <Route path="/accounts" element={<Accounts />} />
-            <Route path="/clients" element={<BusinessOnlyRoute experienceMode={experienceMode}><Clients /></BusinessOnlyRoute>} />
+            <Route path="/accounts" element={<FeatureFlagRoute flagKey="bank_sync" flags={flags} isAdmin={isAdmin}><Accounts /></FeatureFlagRoute>} />
+            <Route path="/clients" element={<BusinessOnlyRoute experienceMode={experienceMode}><FeatureFlagRoute flagKey="invoicing" flags={flags} isAdmin={isAdmin}><Clients /></FeatureFlagRoute></BusinessOnlyRoute>} />
             <Route path="/vendors" element={<BusinessOnlyRoute experienceMode={experienceMode}><Vendors /></BusinessOnlyRoute>} />
             <Route path="/addons" element={<AddOns />} />
             <Route path="/privacy" element={<Privacy />} />
@@ -652,10 +675,12 @@ function AppContent() {
         </NavLink>
         {isPersonalMode ? (
           <>
+            {showFlag('bank_sync') && (
             <NavLink to="/accounts" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
               <span className="bottom-nav-icon"><Landmark size={20} /></span>
               <span>Accounts</span>
             </NavLink>
+            )}
             <NavLink to="/import" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
               <span className="bottom-nav-icon"><Download size={20} /></span>
               <span>Import</span>
@@ -663,10 +688,12 @@ function AppContent() {
           </>
         ) : (
           <>
+            {showFlag('mileage') && (
             <NavLink to="/mileage" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
               <span className="bottom-nav-icon"><Car size={20} /></span>
               <span>Trips</span>
             </NavLink>
+            )}
             <NavLink to="/crm" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`} onClick={clearBadge}>
               <span className="bottom-nav-icon" style={{ position: 'relative', display: 'inline-block' }}>
                 <Users size={20} />

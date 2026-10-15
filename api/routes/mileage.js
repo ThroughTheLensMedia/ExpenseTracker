@@ -3,6 +3,8 @@ const z = require("zod");
 const { requireRole } = require("../middleware/auth");
 
 const router = express.Router();
+const { requireFeature } = require("../middleware/requireFeature");
+router.use(requireFeature('mileage'));
 
 // Official IRS standard business mileage rates by year
 // Source: IRS Rev. Proc. / IRS Notice for each year

@@ -1,5 +1,7 @@
 const express = require("express");
 const router = express.Router();
+const { requireFeature } = require("../middleware/requireFeature");
+router.use(requireFeature('ai_assistant'));
 const { repairLedgerBatch, getGeminiModel } = require("../utils/gemini");
 const { decryptOrPlain } = require("../utils/cryptoUtil");
 const { getDrivingDistanceMiles } = require("../utils/googleMaps");

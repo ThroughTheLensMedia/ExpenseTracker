@@ -7,18 +7,15 @@ const router = express.Router();
 const { queueInviteEmail, queueDailyReportEmail, queueHealthAlertEmail } = require("../utils/emailQueue");
 const { requireRole } = require("../middleware/auth");
 const { listAllUsers } = require("../utils/userDirectory");
+const { getFlags, bustFlagCache, DEFAULTS, FEATURE_KEYS, BOT_KEYS } = require("../utils/flags");
 
 router.get("/", (req, res) => res.json({ ok: true, module: "admin", user: req.user?.email }));
 router.get("/test", (req, res) => res.json({ ok: true, test: "admin-reachable" }));
 
 // GET /admin/daily-report — Admin UI preview only. Returns activity data; never sends email.
 // Automated cron firing lives at /api/cron/daily-report (mounted before authMiddleware).
-router.get("/daily-report", async (req, res) => {
-    const userEmail = req.user?.email?.toLowerCase();
-    if (userEmail !== 'joshua.deuermeyer@gmail.com' && userEmail !== 'info@throughthelens.media') {
-        return res.status(403).json({ error: "Unauthorized" });
-    }
-
+// Cron path is /api/cron/daily-report (before auth) — no cron-secret needed here.
+router.get("/daily-report", requireRole('admin'), async (req, res) => {
     try {
         const { supabase: serviceClient } = require("../db");
         if (!serviceClient) throw new Error("Supabase service client not initialized");
@@ -191,7 +188,7 @@ async function fetchAllRows(sb, tableName) {
 }
 
 // POST /admin/purge-cloudflare
-router.post("/purge-cloudflare", async (req, res) => {
+router.post("/purge-cloudflare", requireRole('admin'), async (req, res) => {
     const CF_ZONE_ID = process.env.CF_ZONE_ID;
     const CF_API_TOKEN = process.env.CF_API_TOKEN;
 
@@ -217,7 +214,7 @@ router.post("/purge-cloudflare", async (req, res) => {
 });
 
 // GET /admin/export-all
-router.get("/export-all", async (req, res) => {
+router.get("/export-all", requireRole('admin'), async (req, res) => {
     try {
         const tables = ["expenses", "equipment_assets", "mileage_logs", "classification_rules", "clients", "invoices", "invoice_items", "settings"];
         const backup = {};
@@ -233,7 +230,7 @@ router.get("/export-all", async (req, res) => {
 });
 
 // POST /admin/import-all
-router.post("/import-all", async (req, res) => {
+router.post("/import-all", requireRole('admin'), async (req, res) => {
     try {
         const backup = req.body; 
         if (!backup) return res.status(400).json({ error: "No backup data provided" });
@@ -562,7 +559,7 @@ router.delete("/beta-codes/:code", requireRole('admin'), async (req, res) => {
 });
 
 // POST /admin/subscriptions/:userId/extend
-router.post("/subscriptions/:userId/extend", async (req, res) => {
+router.post("/subscriptions/:userId/extend", requireRole('admin'), async (req, res) => {
     try {
         const { supabase: serviceClient } = require("../db");
         const { data: current } = await serviceClient
@@ -594,7 +591,7 @@ router.post("/subscriptions/:userId/extend", async (req, res) => {
 });
 
 // POST /admin/subscriptions/:userId/suspend
-router.post("/subscriptions/:userId/suspend", async (req, res) => {
+router.post("/subscriptions/:userId/suspend", requireRole('admin'), async (req, res) => {
     try {
         const { supabase: serviceClient } = require("../db");
         const { error } = await serviceClient
@@ -736,6 +733,146 @@ router.post("/security-reviews/complete", requireRole('admin'), async (req, res)
         res.json(data);
     } catch (e) {
         console.error('[Admin] security-reviews POST error:', e.message);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+
+// ─── Access & Flags ─────────────────────────────────────────────────────────
+// Tables are applied manually via api/migrations/023_app_flags.sql.
+// Until then GET returns defaults + migration_pending; PATCH returns 503.
+
+const FLAG_META = {
+    bank_sync: { category: 'feature', label: 'Bank Sync (Plaid)' },
+    invoicing: { category: 'feature', label: 'Invoicing' },
+    mileage: { category: 'feature', label: 'Mileage' },
+    gear_depreciation: { category: 'feature', label: 'Gear Depreciation' },
+    tax_review: { category: 'feature', label: 'Tax & Schedule C Review' },
+    ai_assistant: { category: 'feature', label: 'AI Assistant' },
+    bot_security_reviews: { category: 'bot', label: 'Bot: Security Reviews' },
+    bot_saas_management: { category: 'bot', label: 'Bot: SaaS Management' },
+    bot_readonly_ops: { category: 'bot', label: 'Bot: Read-only Ops' },
+    bot_require_human_confirm: { category: 'bot', label: 'Bot: Require Human Confirm on Writes' },
+};
+
+function isMigrationMissingError(err) {
+    if (!err) return false;
+    const msg = String(err.message || err.details || '').toLowerCase();
+    return (
+        err.code === '42P01' ||
+        err.code === 'PGRST202' ||
+        err.code === 'PGRST205' ||
+        err.code === '42883' ||
+        msg.includes('does not exist') ||
+        msg.includes('could not find the table') ||
+        msg.includes('schema cache') ||
+        msg.includes('set_app_flag')
+    );
+}
+
+// GET /admin/flags
+router.get("/flags", requireRole('admin'), async (req, res) => {
+    try {
+        const { flags, migrationPending } = await getFlags();
+        const list = Object.keys(DEFAULTS).map((key) => ({
+            key,
+            enabled: !!flags[key],
+            category: FLAG_META[key]?.category || (key.startsWith('bot_') ? 'bot' : 'feature'),
+            label: FLAG_META[key]?.label || key,
+        }));
+        res.json({
+            flags: list,
+            migration_pending: !!migrationPending,
+            ...(migrationPending ? { message: 'app_flags migration not applied yet — showing built-in defaults' } : {}),
+        });
+    } catch (e) {
+        console.error('[Admin] flags GET error:', e.message);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// GET /admin/flags/audit — must be registered before /flags/:key
+router.get("/flags/audit", requireRole('admin'), async (req, res) => {
+    try {
+        const { supabase: serviceClient } = require("../db");
+        if (!serviceClient) return res.status(503).json({ error: "Service client unavailable" });
+        const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 200);
+        const { data, error } = await serviceClient
+            .from('app_flag_audit')
+            .select('id, key, old_value, new_value, reason, changed_by, changed_at')
+            .order('changed_at', { ascending: false })
+            .limit(limit);
+        if (error) {
+            if (isMigrationMissingError(error)) {
+                return res.json({ entries: [], migration_pending: true });
+            }
+            throw error;
+        }
+        res.json({ entries: data || [], migration_pending: false });
+    } catch (e) {
+        console.error('[Admin] flags audit GET error:', e.message);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// PATCH /admin/flags/:key  body: { enabled: boolean, reason: non-empty string }
+router.patch("/flags/:key", requireRole('admin'), async (req, res) => {
+    try {
+        const key = req.params.key;
+        if (!Object.prototype.hasOwnProperty.call(DEFAULTS, key)) {
+            return res.status(404).json({ error: `Unknown flag key: ${key}` });
+        }
+        const enabled = req.body?.enabled;
+        const reason = typeof req.body?.reason === 'string' ? req.body.reason.trim() : '';
+        if (typeof enabled !== 'boolean') {
+            return res.status(400).json({ error: 'enabled must be a boolean' });
+        }
+        if (!reason) {
+            return res.status(400).json({ error: 'reason is required and must be non-empty' });
+        }
+
+        const { supabase: serviceClient } = require("../db");
+        if (!serviceClient) return res.status(503).json({ error: "Service client unavailable" });
+
+        const { data, error } = await serviceClient.rpc('set_app_flag', {
+            p_key: key,
+            p_enabled: enabled,
+            p_reason: reason,
+            p_actor: req.user.id,
+        });
+
+        if (error) {
+            if (isMigrationMissingError(error)) {
+                return res.status(503).json({
+                    error: 'migration_pending',
+                    message: 'Run api/migrations/023_app_flags.sql in the Supabase SQL editor before changing flags.',
+                });
+            }
+            const msg = error.message || '';
+            if (/reason is required/i.test(msg)) {
+                return res.status(400).json({ error: 'reason is required and must be non-empty' });
+            }
+            if (/unknown flag key/i.test(msg)) {
+                return res.status(404).json({ error: `Unknown flag key: ${key}` });
+            }
+            throw error;
+        }
+
+        bustFlagCache();
+        const row = Array.isArray(data) ? data[0] : data;
+        res.json({
+            ok: true,
+            flag: {
+                key,
+                enabled: row?.enabled ?? enabled,
+                category: FLAG_META[key]?.category,
+                label: FLAG_META[key]?.label,
+                updated_at: row?.updated_at,
+                updated_by: row?.updated_by,
+            },
+        });
+    } catch (e) {
+        console.error('[Admin] flags PATCH error:', e.message);
         res.status(500).json({ error: e.message });
     }
 });

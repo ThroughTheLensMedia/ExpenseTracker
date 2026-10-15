@@ -1,6 +1,12 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.34.0', date: 'OCT 15, 2026', color: '#635bff', items: [
+        '<strong>New:</strong> Administration → <strong>Access &amp; Flags</strong> — turn user-facing features (bank sync, invoicing, mileage, gear, tax review, assistant) on or off globally. Every change needs a reason and is logged.',
+        '<strong>New:</strong> When a feature is off, non-admin users no longer see it in the menu and the matching API routes return a clear disabled response. Admins are unaffected.',
+        '<strong>Improved:</strong> Sensitive admin tools (export/import, Cloudflare purge, subscription extend/suspend, daily report preview) now require an admin role.',
+        '<strong>Note:</strong> Public invoice pay links and existing ledger data stay available. Bot capability switches are recorded for later enforcement.',
+    ]},
     { version: '7.33.1', date: 'OCT 13, 2026', color: '#635bff', items: [
         '<strong>Improved:</strong> The homepage now describes what the app actually does: invoicing with online card payment, CRM pipeline, bank import or live bank sync, mileage, gear depreciation and Schedule C category review.',
         '<strong>Fixed:</strong> The HoneyBook and Bonsai comparison pages now mention the lead pipeline and Clients page.',
