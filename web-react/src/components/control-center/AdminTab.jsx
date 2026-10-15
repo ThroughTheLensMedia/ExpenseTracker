@@ -3,11 +3,13 @@ import React, { useState } from 'react';
 import SaasTab from './SaasTab.jsx';
 import SystemLogsTab from './SystemLogsTab.jsx';
 import SecurityReviewTab from './SecurityReviewTab.jsx';
+import AccessFlagsTab from './AccessFlagsTab.jsx';
 
 const SECTIONS = [
     { key: 'saas',     label: 'SaaS Management' },
     { key: 'logs',     label: 'System Logs' },
     { key: 'security', label: 'Security' },
+    { key: 'flags', label: 'Access & Flags' },
 ];
 
 export default function AdminTab({ user, allSubscriptions, betaCodes, dailyStats, statusMsg, onReload, initialSection }) {
@@ -57,6 +59,7 @@ export default function AdminTab({ user, allSubscriptions, betaCodes, dailyStats
                 )}
                 {section === 'logs' && <SystemLogsTab />}
                 {section === 'security' && <SecurityReviewTab />}
+                {section === 'flags' && <AccessFlagsTab />}
             </div>
         </div>
     );
