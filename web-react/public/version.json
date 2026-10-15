@@ -1,1 +1,1 @@
-{"version":"7.34.0","release_date":"2026-10-15","codename":"Lumière Ledger","notes":"Admin Access & Flags: feature toggles, locked admin routes, server+client feature gates"}
+{"version":"7.34.1","release_date":"2026-10-15","codename":"Lumière Ledger","notes":"Security: dependency updates (multer, axios, proxy-addr, dompurify) and database hardening"}
