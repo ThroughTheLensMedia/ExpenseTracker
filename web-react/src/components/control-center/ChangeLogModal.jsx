@@ -1,6 +1,9 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.34.2', date: 'OCT 16, 2026', color: '#635bff', items: [
+        '<strong>Fixed:</strong> When a client hits Reply on an invoice email, the reply now goes to <strong>you</strong> (your Profile Email). Before, replies could land in a shared support inbox instead, so you never saw them.',
+    ]},
     { version: '7.34.0', date: 'OCT 15, 2026', color: '#635bff', items: [
         '<strong>New:</strong> Administration → <strong>Access &amp; Flags</strong> — turn user-facing features (bank sync, invoicing, mileage, gear, tax review, assistant) on or off globally. Every change needs a reason and is logged.',
         '<strong>New:</strong> When a feature is off, non-admin users no longer see it in the menu and the matching API routes return a clear disabled response. Admins are unaffected.',

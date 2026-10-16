@@ -42,7 +42,8 @@ async function sendInvoiceEmail({ to, subject, body, attachments, fromName, repl
         };
         
         if (replyTo) {
-            payload.reply_to = replyTo;
+            // Resend's Node SDK reads camelCase `replyTo`; a snake_case `reply_to` key is silently dropped.
+            payload.replyTo = replyTo;
         }
 
         if (cc) {
@@ -332,7 +333,7 @@ async function sendContactRelayEmail({ senderName, senderEmail, messageContent }
         const data = await resend.emails.send({
             from: fromEmail,
             to: [adminEmail],
-            reply_to: senderEmail,
+            replyTo: senderEmail,
             subject: `📬 New Customer Inquiry: ${senderName || 'Inquiry'}`,
             html: html
         });

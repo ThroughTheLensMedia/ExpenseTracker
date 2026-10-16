@@ -3,6 +3,20 @@
 All notable changes to this project are documented here.
 Format: `[vX.X.X] — YYYY-MM-DD`
 
+## [v7.34.2] — 2026-10-16
+
+### Fixed — Client replies to invoice emails went to support@throughthelens.media, not the photographer
+
+Reported 2026-10-15: a client replied "The money is sent" to Invoice #INV-10037 and the reply arrived at `support@throughthelens.media` (the platform owner's inbox) instead of the photographer who owns the invoice. Every invoice goes out FROM the shared verified address; the photographer is supposed to be reached via the Reply-To header. That header was never being sent.
+
+- **Root cause:** `utils/mailer.js` set `payload.reply_to`, but the Resend Node SDK builds its API request from its own camelCase fields (`replyTo`) and silently drops unknown keys. No error, no log, HTTP 200. `cc` is spelled the same in both forms, so the photographer's CC copy kept working, which hid the bug (the photographer saw the invoice go out, but their client's reply never reached them). Present since the Reply-To feature was written (Apr 2026, v5.0.0). Affected every user's invoice emails, client emails (`POST /clients/:id/email`) and the contact relay.
+- `api/utils/mailer.js` — `sendInvoiceEmail` and `sendContactRelayEmail` now pass `replyTo`.
+- `api/tests/invoice-approval-cc.test.js` — mocked-SDK test now asserts `replyTo` and that no `reply_to` key is sent.
+- `api/tests/mailer-reply-to-real-sdk.test.js` (new) — runs the REAL installed `resend` package and intercepts only `fetch`, asserting the JSON body Resend would receive has `reply_to`. Verified to fail on the old code and pass on the fix. The old mock-only test could never catch this.
+- Version files: `version.json`, `App.jsx`, `ChangeLogModal.jsx`.
+- **Not changed:** the shared FROM address (still `support@throughthelens.media`, the only verified sending domain). Invoices already sent keep their old headers; replies to those still go to support@.
+- Privacy note: no data-access flaw. Invoice data was never visible across accounts, only misrouted replies. The approval/payment notices already went to each owner's own Profile Email.
+
 ## [v7.34.0] — 2026-10-15
 
 ### Added — Access & Flags (admin control center)
@@ -107,6 +121,11 @@ The compare pages only existed after the SPA ran JS, so crawlers saw `index.html
 
 - `CHANGELOG.md`, `ChangeLogModal.jsx`, `ROADMAP.md`, `AGENTS.md`, `CLAUDE.md`, `version.json`, `App.jsx` (`CURRENT_VERSION`).
 - Minor bump (new public pages), matching v7.23.0 (dedicated Clients page).
+
+## [Tooling, unversioned] — 2026-10-06 — NAS backup tooling
+
+- `scripts/` — `backup-code.sh`, `backup-data.sh` + `export-data.mjs` (read-only Supabase export, encrypted), `backup-after-change.sh`, `backup-all.sh`, `deploy.sh`, `deploy-guard.sh`, `install-*.sh`, `move-local-backups-to-nas.sh`.
+- `.gitignore` — bundles/backup folders. No app code changed, so no version bump.
 
 ## [v7.31.1] — 2026-10-04
 

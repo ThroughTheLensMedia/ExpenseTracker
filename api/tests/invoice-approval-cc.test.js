@@ -184,7 +184,8 @@ test('mailer sends CC to Resend alongside the unchanged client recipient and Rep
     await sendInvoiceEmail({ to: 'chelsea@example.test', subject: 'S', body: '<p>B</p>', fromName: 'Example Studio', replyTo: 'owner@example.test', cc: 'owner@example.test' });
     assert.deepEqual(resendPayload.to, ['chelsea@example.test']);
     assert.deepEqual(resendPayload.cc, ['owner@example.test']);
-    assert.equal(resendPayload.reply_to, 'owner@example.test');
+    assert.equal(resendPayload.replyTo, 'owner@example.test');
+    assert.equal('reply_to' in resendPayload, false, 'snake_case reply_to is dropped by the Resend SDK');
 
     await sendInvoiceEmail({ to: 'chelsea@example.test', subject: 'S', body: '<p>B</p>', replyTo: 'owner@example.test' });
     assert.equal('cc' in resendPayload, false);

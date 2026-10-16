@@ -1,1 +1,1 @@
-{"version":"7.34.1","release_date":"2026-10-15","codename":"Lumière Ledger","notes":"Security: dependency updates (multer, axios, proxy-addr, dompurify) and database hardening"}
+{"version":"7.34.2","release_date":"2026-10-16","codename":"Lumière Ledger","notes":"Client replies to invoice emails now reach the photographer"}

@@ -16,7 +16,7 @@ The world's most elite, AI-driven financial command center for creative professi
 
 | Property | Value |
 |----------|-------|
-| **Version** | v7.34.0 |
+| **Version** | v7.34.2 |
 | **Status** | Active Development — Open Public Launch |
 | **Deploy target** | `www.lumiereledger.com` (primary) — `app.throughthelens.media` 301 redirects to it |
 | **Deployment** | Vercel (auto-deploy on `git push origin main`) |
@@ -205,6 +205,7 @@ Express 4.19 API (api/)
 - **Verified sending domain:** `throughthelens.media` ONLY. `lumiereledger.com` is NOT verified — Resend silently drops all mail from unverified domains (API returns 200, nothing delivers).
 - **Correct `RESEND_FROM`:** `Lumière Ledger <support@throughthelens.media>` — branded display name, verified sending domain.
 - **✅ Fixed v7.10.11:** `api/routes/feedback.js` was the one remaining file with a hardcoded fallback pointing at the unverified `support@lumiereledger.com` domain — corrected to `support@throughthelens.media`, matching `server.js` and `mailer.js`.
+- **Reply-To must be `replyTo` (camelCase), never `reply_to` (v7.34.2):** the Resend Node SDK silently drops unknown keys (no error, HTTP 200). Invoices are sent FROM the shared `support@throughthelens.media`, so the photographer is reachable ONLY through the Reply-To header. When it was snake_case, client replies landed in Joshua's inbox for months — one photographer's client's reply exposed another tenant's business to the platform owner. Rules: (1) use the SDK's documented field names in every `resend.emails.send()` call (`replyTo`, `cc`, `bcc`, `attachments`) — never raw API names; (2) any new send path that is meant to reach a tenant's customer MUST set `replyTo` to that tenant's Profile Email; (3) a test that mocks `resend` cannot prove a header is sent — `api/tests/mailer-reply-to-real-sdk.test.js` runs the real SDK and intercepts `fetch`; extend it for new send paths.
 - **Queueing:** `emailQueue.js` uses inline `withRetry()` (3 attempts, linear backoff) — Bull was removed v7.8.90. No Redis dependency. Direct Resend calls with retry.
 
 ### Cloudflare
@@ -442,6 +443,10 @@ Plaid-connected accounts use `source: 'plaid'` regardless of institution. Known 
 
 ---
 
+- **Silently-dropped SDK options (v7.34.2):** `payload.reply_to = ...` passed to the Resend SDK was ignored with no error, so invoice Reply-To never worked and client replies went to `support@throughthelens.media` (the platform owner) instead of the photographer — a tenant-privacy leak by mail routing, not a data-access bug. The unit test mocked the whole `resend` module and only checked that our code set the key, so it passed while production was broken. General rule: when a third-party SDK takes a config object, use the SDK's own documented property names, and test against the REAL SDK with only the network call stubbed — a mock of the SDK proves nothing about what the SDK sends. Local `api/node_modules` had resend 2.1.0 while production (lockfile) ran 6.16.0 — and `api/node_modules` is tracked in git (4,655 files), so running `npm ci` there dirties ~1,700 tracked files; revert with `git checkout -- api/node_modules` before committing.
+
+---
+
 ## ENCRYPTION_KEY Rotation Runbook
 
 **When to rotate:** suspected key leak, annual security review, staff offboarding.
@@ -476,3 +481,13 @@ OLD_ENCRYPTION_KEY=<current_key> ENCRYPTION_KEY=<new_key> node api/scripts/rotat
 - File upload: **never use `capture="environment"`** — forces camera-only, blocks gallery/file picker
 - Session persistence: `autoRefreshToken: true` + `persistSession: true` + `visibilitychange` listener
 - PWA manifest: `web-react/public/manifest.json` — name, icons, `display: standalone`
+
+## Backups (NAS)
+
+All code and data back up to the NAS at `/Volumes/home/Projects/Lumiere Ledger/` (`smb://100.97.171.33/home`). Standard: `/Volumes/home/Projects/_Backup Standard/`.
+
+- **Code:** git bundle of `main` + tags, refreshed on every commit (post-commit hook) and before every deploy.
+- **Data:** AES-256 encrypted archive of every Supabase table, auth users, Storage buckets (`receipts`, `documents`), local `data/`, and the `.env` files. Passphrase lives in the password manager and the macOS Keychain item `nas-backup-lumiere-ledger`, never on the NAS or in the repo.
+- **One command:** `./scripts/backup-all.sh`. **Deploy:** `./scripts/deploy.sh` (backs up first, stops if that fails, pushes `main`, checks the live `version.json`). `--dry-run`, `SKIP_BACKUP=1`, `ALLOW_DIRTY=1` as emergency switches.
+- Nothing runs on a schedule. Data entered between commits is covered only by Supabase's own backups or a manual `backup-data.sh`.
+- Rules: no data or secrets in GitHub; exports are read-only against production; never print secrets.
