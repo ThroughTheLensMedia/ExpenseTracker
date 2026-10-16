@@ -488,6 +488,6 @@ All code and data back up to the NAS at `/Volumes/home/Projects/Lumiere Ledger/`
 
 - **Code:** git bundle of `main` + tags, refreshed on every commit (post-commit hook) and before every deploy.
 - **Data:** AES-256 encrypted archive of every Supabase table, auth users, Storage buckets (`receipts`, `documents`), local `data/`, and the `.env` files. Passphrase lives in the password manager and the macOS Keychain item `nas-backup-lumiere-ledger`, never on the NAS or in the repo.
-- **One command:** `./scripts/backup-all.sh`. **Deploy:** `./scripts/deploy.sh` (backs up first, stops if that fails, pushes `main`, checks the live `version.json`). `--dry-run`, `SKIP_BACKUP=1`, `ALLOW_DIRTY=1` as emergency switches.
+- **Backups: PAUSED (2026-10-16).** `./scripts/deploy.sh` no longer backs up to the NAS first; it just pushes `main` and checks the live `version.json` (`--dry-run`, `ALLOW_DIRTY=1`). The backup scripts (`backup-all.sh`, `backup-code.sh`, `backup-data.sh`) remain for manual use once a new backup location is chosen — until then the only backups are git history and Supabase's own.
 - Nothing runs on a schedule. Data entered between commits is covered only by Supabase's own backups or a manual `backup-data.sh`.
 - Rules: no data or secrets in GitHub; exports are read-only against production; never print secrets.
