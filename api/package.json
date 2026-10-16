@@ -20,7 +20,7 @@
     "jwks-rsa": "^4.0.1",
     "libsodium-wrappers": "^0.7.15",
     "multer": "^2.1.0",
-    "pdf-parse": "^1.1.1",
+    "pdf-parse": "^2.4.5",
     "plaid": "^29.0.0",
     "resend": "^6.12.4",
     "stripe": "^17.7.0",
