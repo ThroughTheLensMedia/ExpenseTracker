@@ -1,12 +1,23 @@
 const express = require("express");
 const multer = require("multer");
-const fileType = require("file-type");
 const { supabase } = require("../db");
 const { getGeminiModel } = require("../utils/gemini");
 const { decryptOrPlain } = require("../utils/cryptoUtil");
 const { deriveReceiptToken } = require("../utils/tokenUtils");
 
 const router = express.Router();
+
+// file-type v17+ is ESM-only; load it once via a cached dynamic import from this CommonJS module.
+let fileTypeModulePromise = null;
+function loadFileType() {
+    if (!fileTypeModulePromise) {
+        fileTypeModulePromise = import("file-type").catch((err) => {
+            fileTypeModulePromise = null;
+            throw err;
+        });
+    }
+    return fileTypeModulePromise;
+}
 
 /**
  * validateFileType(buffer, filename)
@@ -17,7 +28,8 @@ async function validateFileType(buffer, filename) {
     const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
 
     try {
-        const type = await fileType.fromBuffer(buffer);
+        const { fileTypeFromBuffer } = await loadFileType();
+        const type = await fileTypeFromBuffer(buffer);
 
         if (!type) {
             return { valid: false, error: 'File type unrecognized' };
