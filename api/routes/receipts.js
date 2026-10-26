@@ -1,6 +1,5 @@
 const express = require("express");
 const multer = require("multer");
-const fileType = require("file-type");
 const { supabase } = require("../db");
 const { getGeminiModel } = require("../utils/gemini");
 const { decryptOrPlain } = require("../utils/cryptoUtil");
@@ -17,7 +16,8 @@ async function validateFileType(buffer, filename) {
     const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
 
     try {
-        const type = await fileType.fromBuffer(buffer);
+        const { fileTypeFromBuffer } = await import('file-type');
+        const type = await fileTypeFromBuffer(buffer);
 
         if (!type) {
             return { valid: false, error: 'File type unrecognized' };

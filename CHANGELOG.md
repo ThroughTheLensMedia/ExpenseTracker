@@ -3,6 +3,24 @@
 All notable changes to this project are documented here.
 Format: `[vX.X.X] — YYYY-MM-DD`
 
+## [v7.34.3] — 2026-10-26
+
+### Security — dependency patches (weekly audit 2026-10-26)
+
+All fixes are transitive overrides or direct dep bumps; no app logic changed.
+
+**api:**
+- `multer` bumped to `^2.5.0` — fixes DoS via pending async fileFilter after request teardown (GHSA-q7qp-rjg7-q26m)
+- `file-type` bumped to `^21.3.4` — fixes infinite-loop DoS on malformed ASF input (GHSA-5v7r-6r5c-r473); `receipts.js` updated to use ESM dynamic `import('file-type')` since 21.x is pure ESM
+- Overrides added: `follow-redirects 1.16.1` (credential header leak, GHSA-q3jh-wrc6-jgq8), `body-parser 1.20.9` (compressed-body DoS, GHSA-27r3-jxmh-p828), `proxy-addr ^2.0.8` (critical IP-spoofing, GHSA-jqcg-44mw-7w3h), `axios ^1.20.0` and `brace-expansion ^2.1.7` (multiple DoS advisories), `@vercel/functions > zod ^4.6.6` (memory exhaustion in nested zod copy, GHSA-mrhx-c7xc-m3w5)
+- Direct `zod ^3.23.8` dep unchanged — GHSA-mrhx-c7xc-m3w5 HIGH, mitigated by existing `express.json({ limit: "10mb" })`; 3→4 migration is a separate task
+
+**web-react:**
+- `vite` bumped to `^7.3.7` — fixes dev-server file-serve and launch-editor advisories (GHSA-587h-7wmj-h5pm + moderates/low)
+- Transitive `zod` updated to `^4.6.6` via `npm audit fix` — 0 vulnerabilities remaining
+
+---
+
 ## [v7.34.2] — 2026-10-16
 
 ### Fixed — Client replies to invoice emails went to support@throughthelens.media, not the photographer
