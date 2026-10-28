@@ -24,6 +24,44 @@ const VITE_PRICE = {
     studio_annual:  import.meta.env.VITE_STRIPE_PRICE_STUDIO_ANNUAL,
 };
 
+// The logo is saved as a base64 data URL inside the settings POST, and Vercel rejects
+// request bodies over ~4.5MB with a 413 — so shrink it client-side before it's stored.
+const LOGO_MAX_DIM = 800;
+const LOGO_MAX_CHARS = 1024 * 1024;
+
+const loadImage = (file) => new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not read that image. Try a PNG or JPG.')); };
+    img.src = url;
+});
+
+const resizeLogo = async (file) => {
+    const img = await loadImage(file);
+    const srcW = img.naturalWidth || LOGO_MAX_DIM;
+    const srcH = img.naturalHeight || LOGO_MAX_DIM;
+    const scale = Math.min(1, LOGO_MAX_DIM / Math.max(srcW, srcH));
+    const w = Math.max(1, Math.round(srcW * scale));
+    const h = Math.max(1, Math.round(srcH * scale));
+
+    const render = (type, quality) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (type === 'image/jpeg') { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h); }
+        ctx.drawImage(img, 0, 0, w, h);
+        return canvas.toDataURL(type, quality);
+    };
+
+    // PNG keeps transparency; fall back to JPEG only if the PNG is still too big
+    let out = render('image/png');
+    if (out.length > LOGO_MAX_CHARS) out = render('image/jpeg', 0.85);
+    if (out.length > LOGO_MAX_CHARS) throw new Error('Logo is too large even after resizing. Try a simpler image.');
+    return out;
+};
+
 export default function ProfileTab({ settings, setSettings, onReload, billingOnly = false }) {
     const [msg, setMsg] = useState('');
     const [showStripeKey, setShowStripeKey] = useState(false);
@@ -48,14 +86,19 @@ export default function ProfileTab({ settings, setSettings, onReload, billingOnl
         }
     };
 
-    const handleLogoUpload = (e) => {
-        const file = e.target.files[0];
+    const handleLogoUpload = async (e) => {
+        const input = e.target;
+        const file = input.files[0];
         if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            setSettings(prev => ({ ...prev, logo_url: ev.target.result }));
-        };
-        reader.readAsDataURL(file);
+        try {
+            const logo_url = await resizeLogo(file);
+            setSettings(prev => ({ ...prev, logo_url }));
+            setMsg('');
+        } catch (err) {
+            setMsg(`Error: ${err.message}`);
+        } finally {
+            input.value = '';
+        }
     };
 
     const handleSaveSettings = async (e) => {
@@ -272,6 +315,9 @@ export default function ProfileTab({ settings, setSettings, onReload, billingOnl
                             <input type="file" accept="image/*" onChange={handleLogoUpload} style={{ display: 'none' }} />
                             {settings.logo_url ? 'Change Logo' : 'Upload Logo'}
                         </label>
+                        <small className="muted" style={{ display: 'block', marginTop: 6, fontSize: 12 }}>
+                            PNG or JPG, about 800px wide, under 1MB. Larger images are resized automatically.
+                        </small>
                     </div>
                     {settings.logo_url && (
                         <div style={{ flexShrink: 0, width: '100px', height: '64px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.07)' }}>

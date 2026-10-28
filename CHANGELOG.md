@@ -3,6 +3,20 @@
 All notable changes to this project are documented here.
 Format: `[vX.X.X] — YYYY-MM-DD`
 
+## [v7.34.4] — 2026-10-28
+
+### Fixed — Business Profile save failed with HTTP 413 when the logo was large
+
+Reported 2026-10-28: a customer uploaded a 3.4MB PNG logo, hit Save Business Profile, and got a red 413.
+
+- **Evidence:** `vercel logs --status-code 413` showed three 413s on `/api/settings` at 14:32:03, 14:32:48 and 14:36:33 (source `static`, no function invocation — rejected at the Vercel edge before Express ran, which is why `get_runtime_errors` was empty). The save is `POST /api/settings` with the whole settings object; the logo travels inside it as a base64 data URL (`logo_url`). 3.4MB × 4/3 ≈ 4.5MB, right at Vercel's ~4.5MB function request-body limit. `express.json({ limit: "10mb" })` never came into play. The edge logs labeled the rejected requests `GET`; the save is a POST, so the method label on edge-rejected requests is unreliable.
+- **Fix:** `ProfileTab.jsx` `handleLogoUpload` now resizes the chosen image on a canvas (longest side ≤ 800px, never upscaled) before it's stored. Output is PNG (keeps transparency); if that is still over ~1MB it falls back to JPEG 0.85. Unreadable files show `Error: Could not read that image...` and leave the existing logo untouched. The file input is reset so the same file can be re-picked.
+- **UI:** helper text under Upload Logo — "PNG or JPG, about 800px wide, under 1MB. Larger images are resized automatically."
+- **Tested** (real function in a browser): 3.4MB noisy PNG → 800×633 JPEG ≈ 410KB; 2400×1200 transparent PNG → 800×400 PNG, alpha preserved; 300×100 JPG → unchanged size; corrupt file → rejected with message.
+- **Not changed:** already-saved large logos are not shrunk until re-uploaded. API, database and `vercel.json` untouched.
+
+---
+
 ## [v7.34.3] — 2026-10-26
 
 ### Security — dependency patches (weekly audit 2026-10-26)

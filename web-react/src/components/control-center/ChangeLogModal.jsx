@@ -1,6 +1,10 @@
 import React from 'react';
 
 const RELEASES = [
+    { version: '7.34.4', date: 'OCT 28, 2026', color: '#635bff', items: [
+        '<strong>Fixed:</strong> Saving your Business Profile with a large logo no longer fails with a 413 error. Logos are now resized automatically when you upload them.',
+        '<strong>Improved:</strong> The logo uploader now shows a size tip: PNG or JPG, about 800px wide, under 1MB. Transparent PNG logos stay transparent.',
+    ]},
     { version: '7.34.2', date: 'OCT 16, 2026', color: '#635bff', items: [
         '<strong>Fixed:</strong> When a client hits Reply on an invoice email, the reply now goes to <strong>you</strong> (your Profile Email). Before, replies could land in a shared support inbox instead, so you never saw them.',
     ]},
